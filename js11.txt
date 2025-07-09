@@ -1,0 +1,35 @@
+.parent {
+  opacity: 0; /* Начальная прозрачность */
+  transform: translateY(50px); /* Сдвигаем блок вниз */
+  transition: 
+    opacity 0.6s ease-out, 
+    transform 0.6s ease-out; /* Плавные анимации */
+}
+
+.parent.show {
+  opacity: 1; /* Показываем блок */
+  transform: translateY(0); /* Возвращаем на исходную позицию */
+}
+
+----------------------------------------
+
+document.addEventListener('DOMContentLoaded', () => {
+  const parentBlock = document.querySelector('.parent');
+  
+  // Создаем IntersectionObserver
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      // Добавляем класс при появлении блока в зоне видимости
+      if (entry.isIntersecting) {
+        parentBlock.classList.add('show');
+        // Отключаем наблюдение после срабатывания (опционально)
+        observer.unobserve(parentBlock);
+      }
+    });
+  }, {
+    threshold: 0.1 // Срабатывает при 10% видимости элемента
+  });
+
+  // Начинаем наблюдение
+  observer.observe(parentBlock);
+});
