@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .digit-container {
+            display: inline-block;
+            height: 1em;
+            overflow: hidden;
+            vertical-align: bottom;
+        }
+        .digit-wheel {
+            display: inline-block;
+            transition: transform 2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+    </style>
+</head>
+<body>
+    <div data-count="111 000" class="another-thing-2025__count-people-col">
+        <p>000 000</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Инициализация блоков
+            const blocks = document.querySelectorAll('.another-thing-2025__count-people-col');
+            blocks.forEach(block => initBlock(block));
+            
+            // Обработчик скролла
+            window.addEventListener('scroll', handleScroll);
+            handleScroll(); // Проверка при загрузке
+        });
+
+        function initBlock(block) {
+            const dataCount = block.dataset.count.replace(/\s/g, '');
+            const p = block.querySelector('p');
+            const targetDigits = dataCount.split('').map(Number);
+            
+            // Сохраняем оригинальный HTML
+            const originalHTML = p.innerHTML;
+            p.innerHTML = '';
+            
+            // Создаем структуру для анимации
+            originalHTML.split('').forEach(char => {
+                if (/[0-9]/.test(char)) {
+                    const container = document.createElement('span');
+                    container.className = 'digit-container';
+                    
+                    const wheel = document.createElement('div');
+                    wheel.className = 'digit-wheel';
+                    
+                    // Создаем цифры от 0 до 9
+                    for (let i = 0; i <= 10; i++) {
+                        const digit = document.createElement('div');
+                        digit.textContent = i % 10;
+                        wheel.appendChild(digit);
+                    }
+                    
+                    container.appendChild(wheel);
+                    p.appendChild(container);
+                } else {
+                    p.appendChild(document.createTextNode(char));
+                }
+            });
+        }
+
+        function handleScroll() {
+            const blocks = document.querySelectorAll('.another-thing-2025__count-people-col');
+            const triggerOffset = window.innerHeight * 0.8;
+            
+            blocks.forEach(block => {
+                if (block.dataset.animated) return;
+                
+                const rect = block.getBoundingClientRect();
+                if (rect.top < triggerOffset && rect.bottom > 100) {
+                    animateBlock(block);
+                    block.dataset.animated = true;
+                }
+            });
+        }
+
+        function animateBlock(block) {
+            const dataCount = block.dataset.count.replace(/\s/g, '');
+            const targetDigits = dataCount.split('').map(Number);
+            const digitWheels = block.querySelectorAll('.digit-wheel');
+            const baseDuration = 2000;
+            
+            digitWheels.forEach((wheel, index) => {
+                if (index >= targetDigits.length) return;
+                
+                const targetDigit = targetDigits[index];
+                // Случайные вариации длительности для эффекта
+                const duration = baseDuration * (0.9 + Math.random() * 0.2);
+                // Вычисление смещения с дополнительными оборотами
+                const offset = (10 - targetDigit) * -1 + Math.floor(Math.random() * 5) * 10;
+                
+                // Сброс позиции перед анимацией
+                wheel.style.transition = 'none';
+                wheel.style.transform = 'translateY(0)';
+                
+                // Запуск анимации
+                setTimeout(() => {
+                    wheel.style.transition = `transform ${duration}ms cubic-bezier(0.34, 1.56, 0.64, 1)`;
+                    wheel.style.transform = `translateY(${offset}em)`;
+                }, 50);
+            });
+        }
+    </script>
+</body>
+</html>
