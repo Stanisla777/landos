@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digit Wheel Animation</title>
+    <style>
+        .digit-container {
+            display: inline-block;
+            height: 1em;
+            overflow: hidden;
+            vertical-align: top;
+            position: relative;
+            width: 0.6em;
+        }
+        
+        .digit-strip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: transform 2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .digit-strip span {
+            display: block;
+            height: 1em;
+            text-align: center;
+            line-height: 1em;
+        }
+        
+        .space {
+            display: inline-block;
+            width: 0.4em;
+        }
+    </style>
+</head>
+<body>
+    <!-- Пример блока с данными -->
+    <div data-count="111 000" class="another-thing-2025__count-people-col">
+        <p>000 000</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Список всех блоков с анимацией
+            const countBlocks = document.querySelectorAll('.another-thing-2025__count-people-col');
+            
+            // Функция для создания HTML-структуры цифрового колеса
+            function createDigitWheel(digit) {
+                const container = document.createElement('div');
+                container.className = 'digit-container';
+                
+                const strip = document.createElement('div');
+                strip.className = 'digit-strip';
+                
+                // Создаем 20 цифр (два полных набора)
+                for (let i = 0; i < 20; i++) {
+                    const span = document.createElement('span');
+                    span.textContent = i % 10;
+                    strip.appendChild(span);
+                }
+                
+                container.appendChild(strip);
+                return {
+                    container,
+                    strip,
+                    digit
+                };
+            }
+
+            // Функция для замены цифр на анимированные колеса
+            function replaceDigitsWithWheels(p, dataCount) {
+                const originalContent = p.textContent;
+                const cleanData = dataCount.replace(/\s/g, '');
+                let digitIndex = 0;
+                
+                p.innerHTML = '';
+                
+                for (let i = 0; i < originalContent.length; i++) {
+                    if (originalContent[i] === ' ') {
+                        const space = document.createElement('span');
+                        space.className = 'space';
+                        p.appendChild(space);
+                    } else {
+                        const digitValue = parseInt(cleanData[digitIndex]);
+                        const wheel = createDigitWheel(digitValue);
+                        p.appendChild(wheel.container);
+                        digitIndex++;
+                    }
+                }
+                
+                return p.querySelectorAll('.digit-strip');
+            }
+
+            // Функция для запуска анимации
+            function animateDigitWheel(strip, digit) {
+                const steps = 10 + digit;
+                const height = strip.firstElementChild.offsetHeight;
+                const randomOffset = Math.random() * 0.3 + 0.9; // Случайная скорость
+                
+                // Сбрасываем трансформацию
+                strip.style.transition = 'none';
+                strip.style.transform = 'translateY(0)';
+                
+                // Запускаем анимацию в следующем фрейме
+                requestAnimationFrame(() => {
+                    strip.style.transition = `transform ${2 * randomOffset}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
+                    strip.style.transform = `translateY(-${steps * height}px)`;
+                });
+            }
+
+            // Основная функция инициализации
+            function init() {
+                countBlocks.forEach(block => {
+                    const dataCount = block.dataset.count;
+                    const p = block.querySelector('p');
+                    
+                    // Заменяем цифры на анимированные элементы
+                    const digitStrips = replaceDigitsWithWheels(p, dataCount);
+                    
+                    // Запускаем анимацию с небольшой задержкой
+                    setTimeout(() => {
+                        const cleanData = dataCount.replace(/\s/g, '');
+                        digitStrips.forEach((strip, index) => {
+                            const digit = parseInt(cleanData[index]);
+                            animateDigitWheel(strip, digit);
+                        });
+                    }, 300);
+                });
+            }
+
+            // Инициализируем анимацию
+            init();
+        });
+    </script>
+</body>
+</html>
