@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Анимированный счётчик</title>
+    <style>
+        body {
+            height: 200vh; /* Для тестирования скролла */
+            padding: 20px;
+        }
+        
+        .another-thing-2025__count-people-col {
+            margin: 500px 0;
+            font-size: 3em;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div data-count="111 000" class="another-thing-2025__count-people-col">
+        <p>000 000</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Находим все блоки со счётчиками
+            const counters = document.querySelectorAll('.another-thing-2025__count-people-col');
+            
+            // Инициализация блоков
+            counters.forEach(block => {
+                const dataCount = block.dataset.count;
+                const p = block.querySelector('p');
+                
+                // Заменяем все цифры на нули с сохранением форматирования
+                p.textContent = dataCount.replace(/\d/g, '0');
+            });
+
+            // Функция проверки видимости блока
+            function isBlockVisible(block, offset = 100) {
+                const rect = block.getBoundingClientRect();
+                return (
+                    rect.top >= 0 &&
+                    rect.bottom <= (window.innerHeight - offset)
+                );
+            }
+
+            // Функция анимации цифр
+            function animateDigit(element, finalValue) {
+                const duration = 1500 + Math.random() * 1000; // Случайная скорость
+                const startTime = performance.now();
+                const startValue = 0;
+                const circles = 2; // Количество полных кругов
+                
+                function update(time) {
+                    const elapsed = time - startTime;
+                    let progress = Math.min(elapsed / duration, 1);
+                    
+                    // Эффект замедления в конце
+                    progress = 1 - Math.pow(1 - progress, 3);
+                    
+                    // Вычисляем текущее значение с "крутящимся" эффектом
+                    const current = Math.floor(
+                        progress * (startValue + 10 * circles + finalValue)
+                    ) % 10;
+                    
+                    element.textContent = current;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(update);
+                    } else {
+                        element.textContent = finalValue; // Фиксируем финальное значение
+                    }
+                }
+                
+                requestAnimationFrame(update);
+            }
+
+            // Функция запуска анимации для видимых блоков
+            function startCounters() {
+                counters.forEach(block => {
+                    if (block.dataset.animated) return;
+                    
+                    if (isBlockVisible(block)) {
+                        block.dataset.animated = "true";
+                        const dataCount = block.dataset.count;
+                        const digits = block.querySelectorAll('p > span');
+                        
+                        // Разбиваем значение на отдельные цифры (игнорируем пробелы)
+                        const targetDigits = dataCount
+                            .split('')
+                            .filter(ch => /\d/.test(ch))
+                            .map(Number);
+                        
+                        // Запускаем анимацию для каждой цифры
+                        digits.forEach((digitSpan, i) => {
+                            setTimeout(() => {
+                                animateDigit(digitSpan, targetDigits[i]);
+                            }, 100 * i); // Задержка для эффекта последовательности
+                        });
+                    }
+                });
+            }
+
+            // Обработчики событий
+            window.addEventListener('scroll', startCounters);
+            window.addEventListener('resize', startCounters);
+            
+            // Первоначальная проверка
+            startCounters();
+        });
+    </script>
+</body>
+</html>
