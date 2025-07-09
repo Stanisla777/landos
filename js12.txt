@@ -1,0 +1,60 @@
+<style>
+.parent .child {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.parent .child.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const parent = document.querySelector('.parent');
+  const children = document.querySelectorAll('.parent .child');
+  let animated = false;
+
+  // Функция проверки видимости элемента
+  function isElementVisible(el) {
+    const rect = el.getBoundingClientRect();
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    return (
+      rect.top <= windowHeight * 0.9 && // Когда 90% элемента появилось
+      rect.bottom >= 0
+    );
+  }
+
+  // Функция запуска анимации
+  function animateChildren() {
+    children.forEach((child, index) => {
+      setTimeout(() => {
+        child.classList.add('show');
+      }, index * 150); // Задержка 150мс между элементами
+    });
+  }
+
+  // Проверка при загрузке
+  if (isElementVisible(parent) && !animated) {
+    animated = true;
+    animateChildren();
+  }
+
+  // Обработчик скролла с троттлингом
+  let isScrolling = false;
+  window.addEventListener('scroll', () => {
+    if (isScrolling) return;
+    isScrolling = true;
+    
+    setTimeout(() => {
+      if (!animated && isElementVisible(parent)) {
+        animated = true;
+        animateChildren();
+      }
+      isScrolling = false;
+    }, 100);
+  });
+});
+</script>
