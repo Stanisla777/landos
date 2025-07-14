@@ -1,0 +1,168 @@
+// Проверка видимости блока
+function isBlockVisible(block, offset = 60) {
+  const rect = block.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  return rect.top <= viewportHeight - offset && rect.bottom >= offset;
+}
+
+// Функция для создания HTML-структуры цифрового колеса
+function createDigitWheel(digit) {
+  const container = document.createElement('div');
+  container.className = 'digit-container';
+  container.dataset.digit = digit; // Сохраняем цифру
+
+  const strip = document.createElement('div');
+  strip.className = 'digit-strip';
+
+  for (let i = 0; i < 20; i++) {
+    const span = document.createElement('div');
+    span.textContent = i % 10;
+    strip.appendChild(span);
+  }
+
+  container.appendChild(strip);
+  return {
+    container,
+    strip
+  };
+}
+
+// Замена цифр на анимированные колеса
+function replaceDigitsWithWheels(p, dataCount) {
+  const originalContent = p.textContent;
+  const cleanData = dataCount.replace(/\s/g, '');
+  let digitIndex = 0;
+
+  p.innerHTML = '';
+  const strips = [];
+
+  for (let i = 0; i < originalContent.length; i++) {
+    if (originalContent[i] === ' ') {
+      const space = document.createElement('div');
+      space.className = 'space';
+      p.appendChild(space);
+    } else {
+      const digitValue = parseInt(cleanData[digitIndex]);
+      const wheel = createDigitWheel(digitValue);
+      p.appendChild(wheel.container);
+      strips.push(wheel.strip);
+      digitIndex++;
+    }
+  }
+
+  return strips;
+}
+
+// Сброс анимации
+function resetAnimation(strip) {
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateY(0)';
+  void strip.offsetHeight; // Принудительный reflow
+}
+
+// Анимация цифрового колеса
+function animateDigitWheel(strip, digit) {
+  const height = strip.firstElementChild.offsetHeight;
+  const steps = 10 + digit;
+  const randomOffset = Math.random() * 0.3 + 0.9;
+
+  resetAnimation(strip);
+  
+  requestAnimationFrame(() => {
+    strip.style.transition = `transform ${2 * randomOffset}s cubic-bezier(0.34, 1.56, 0.64, 1)`;
+    strip.style.transform = `translateY(-${steps * height}px)`;
+  });
+}
+
+// Инициализация блока
+function initBlock(block) {
+  if (block.classList.contains('initialized')) return;
+
+  const dataCount = block.dataset.count;
+  const p = block.querySelector('.js--at-count-people-text');
+  p.classList.remove('opacity-0');
+
+  const digitStrips = replaceDigitsWithWheels(p, dataCount);
+
+  setTimeout(() => {
+    digitStrips.forEach((strip, index) => {
+      const digit = parseInt(dataCount.replace(/\s/g, '')[index]);
+      animateDigitWheel(strip, digit);
+    });
+  }, 300);
+
+  block.classList.add('initialized');
+}
+
+// Перезапуск анимации для блока
+function resetAndAnimate(block) {
+  const digitContainers = block.querySelectorAll('.digit-container');
+  digitContainers.forEach(container => {
+    const strip = container.querySelector('.digit-strip');
+    const digit = parseInt(container.dataset.digit);
+    animateDigitWheel(strip, digit);
+  });
+}
+
+// Инициализация видимых блоков
+function initVisibleNotInitialized() {
+  const notInitBlocks = document.querySelectorAll('.js--count-people:not(.initialized)');
+  notInitBlocks.forEach(block => {
+    if (isBlockVisible(block)) {
+      initBlock(block);
+    }
+  });
+}
+
+// Перезапуск анимации для видимых блоков
+function reanimateVisibleInitialized() {
+  const initBlocks = document.querySelectorAll('.js--count-people.initialized');
+  initBlocks.forEach(block => {
+    if (isBlockVisible(block)) {
+      resetAndAnimate(block);
+    }
+  });
+}
+
+// Троттлинг для оптимизации
+function throttle(func, limit) {
+  let lastFunc;
+  let lastRan;
+  return function() {
+    const context = this;
+    const args = arguments;
+    if (!lastRan) {
+      func.apply(context, args);
+      lastRan = Date.now();
+    } else {
+      clearTimeout(lastFunc);
+      lastFunc = setTimeout(function() {
+        if ((Date.now() - lastRan) >= limit) {
+          func.apply(context, args);
+          lastRan = Date.now();
+        }
+      }, limit - (Date.now() - lastRan));
+    }
+  };
+}
+
+// Обработчики событий
+function handleScroll() {
+  initVisibleNotInitialized();
+}
+
+function handleResize() {
+  initVisibleNotInitialized();
+  reanimateVisibleInitialized();
+}
+
+// Экспорт основной функции
+export default function counterThing() {
+  const throttledResize = throttle(handleResize, 100);
+  
+  window.addEventListener('scroll', handleScroll);
+  window.addEventListener('resize', throttledResize);
+  
+  // Инициализация при загрузке
+  initVisibleNotInitialized();
+}
