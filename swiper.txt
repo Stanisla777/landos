@@ -1,0 +1,64 @@
+function initSwiperWithAutoHeight() {
+  const swiper = new Swiper('.swiper', {
+    // Базовые настройки Swiper
+    loop: true,
+    autoHeight: false, // Отключаем встроенный autoHeight
+    
+    // Инициализация после создания DOM
+    on: {
+      init: function() {
+        updateSwiperHeight(this);
+      },
+      resize: function() {
+        updateSwiperHeight(this);
+      },
+      slideChange: function() {
+        updateSwiperHeight(this);
+      }
+    }
+  });
+
+  // Функция обновления высоты
+  function updateSwiperHeight(swiperInstance) {
+    // Сбрасываем временные стили
+    swiperInstance.wrapperEl.style.height = '';
+    swiperInstance.slides.forEach(slide => slide.style.height = 'auto');
+    
+    // Определяем высоту самого высокого слайда
+    let maxHeight = 0;
+    swiperInstance.slides.forEach(slide => {
+      if (slide.offsetHeight > maxHeight) {
+        maxHeight = slide.offsetHeight;
+      }
+    });
+    
+    // Устанавливаем высоту враппера и слайдов
+    swiperInstance.wrapperEl.style.height = `${maxHeight}px`;
+    swiperInstance.slides.forEach(slide => {
+      slide.style.height = `${maxHeight}px`;
+    });
+    
+    // Форсируем обновление Swiper
+    swiperInstance.update();
+  }
+
+  // Обработка загрузки изображений
+  const swiperImages = document.querySelectorAll('.swiper-slide img');
+  swiperImages.forEach(img => {
+    img.addEventListener('load', () => updateSwiperHeight(swiper));
+  });
+
+  return swiper;
+}
+
+// Инициализация
+const mySwiper = initSwiperWithAutoHeight();
+
+// Оптимизация для resize-событий
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    updateSwiperHeight(mySwiper);
+  }, 250);
+});
