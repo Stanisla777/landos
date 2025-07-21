@@ -1,0 +1,326 @@
+/* eslint-disable */
+import Swiper, {
+  Navigation, Pagination, Autoplay, Thumbs, EffectFade
+} from 'swiper';
+import paginationSlider_s from './redesign-site/paginationSlider';
+import arrowSlider from './redesign-site/arrowSlider';
+// eslint-disable-next-line no-unused-vars
+import setEqualHeight from './TemplateScript/updateBlockHeights';
+import RemoveClassBody from './redesign-site/allow-body-scrolling';
+
+Swiper.use([Navigation, Pagination, Autoplay, Thumbs, EffectFade]);
+
+let swiper;
+let resizeTimeOut;
+
+
+// Функция обновления высоты
+function updateSwiperHeight(swiperInstance) {
+  // Сбрасываем временные стили
+  swiper.wrapperEl.style.height = '';
+  swiper.slides.forEach(slide => slide.style.height = 'auto');
+
+  // Определяем высоту самого высокого слайда
+  let maxHeight = 0;
+  swiper.slides.forEach(slide => {
+    if (slide.offsetHeight > maxHeight) {
+      maxHeight = slide.offsetHeight;
+    }
+  });
+
+  // Устанавливаем высоту враппера и слайдов
+  swiper.wrapperEl.style.height = `${maxHeight}px`;
+  swiper.slides.forEach(slide => {
+    slide.style.height = `${maxHeight}px`;
+  });
+
+  // Форсируем обновление Swiper
+  swiper.update();
+}
+
+
+
+function appraisalSlider() {
+  const array_slider = document.querySelectorAll('.js--slider-construtor')
+  let data_space_between= {
+    'desctop': '16',
+    'tablet': '14',
+    'mobile': '0'
+  };
+  let data_count_slide= {
+    'large_desctop': '4',
+    'desctop':'4',
+    'small_desctop': '3',
+    'tablet': '2',
+    'mobile': '1'
+  };
+  let data_simulate_touch_mobile=true
+  let data_arrows= {
+    'arrow_left': '',
+    'arrow_right': ''
+  }
+  let data_pagination = {'pagination':''}
+  let data_loop = {
+    'desctop': 'false',
+    'small_desctop': 'false',
+    'tablet': 'false',
+    'mobile': 'false'
+  }
+  let data_simulation_touch= {
+    'desctop': 'false',
+    'tablet': 'false',
+    'mobile': 'true'
+  };
+
+  let auto_height = false
+  let same_height_slides = false
+
+  for (let item of array_slider) {
+
+
+    if (item.hasAttribute('data-space-between')) {
+      data_space_between = item.getAttribute('data-space-between')
+      data_space_between = JSON.parse(data_space_between);
+    }
+
+    if (item.hasAttribute('data-count-slide')) {
+      data_count_slide = item.getAttribute('data-count-slide')
+      data_count_slide = JSON.parse(data_count_slide);
+    }
+
+
+
+    if (item.hasAttribute('data-simulate-touch')) {
+      data_simulate_touch_mobile = item.getAttribute('data-simulate-touch')
+      data_simulate_touch_mobile = JSON.parse(data_simulate_touch_mobile);
+    }
+
+    if (item.hasAttribute('data-loop')) {
+      data_loop = item.getAttribute('data-loop')
+      data_loop = JSON.parse(data_loop);
+    }
+
+    if (item.hasAttribute('data-arrows')) {
+      data_arrows = item.getAttribute('data-arrows')
+      data_arrows = JSON.parse(data_arrows);
+    }
+
+    if (item.hasAttribute('data-pagination')) {
+      data_pagination = item.getAttribute('data-pagination')
+      data_pagination = JSON.parse(data_pagination);
+    }
+
+    if (item.hasAttribute('data-simulation-touch')) {
+      data_simulation_touch = item.getAttribute('data-simulation-touch')
+      data_simulation_touch = JSON.parse(data_simulation_touch);
+    }
+
+    if (item.hasAttribute('auto-height')) {
+      auto_height = item.getAttribute('auto-height')
+      auto_height = JSON.parse(auto_height);
+    }
+    if (item.hasAttribute('same-height-slides')) {
+      same_height_slides = item.getAttribute('same-height-slides')
+      same_height_slides = JSON.parse(same_height_slides);
+    }
+
+
+    swiper = new Swiper(item, {
+      init: true,
+      slidesPerView: parseInt(data_count_slide.desctop),
+      spaceBetween: parseInt(data_space_between.desctop),
+
+      observer:true,
+      observerParents:true,
+      observeSlideChildren:true,
+      loop: true,
+      autoHeight: false,
+      pagination: {
+        el: `${data_pagination.pagination}`,
+        clickable: true
+      },
+      navigation: {
+        nextEl: `${data_arrows.arrow_right}`,
+        prevEl: `${data_arrows.arrow_left}`,
+      },
+      breakpoints: {
+        0: {
+          loop: JSON.parse(data_loop.mobile),
+          autoHeight:auto_height,
+          slidesPerView: parseInt(data_count_slide.mobile),
+          spaceBetween: parseInt(data_space_between.mobile),
+          simulateTouch:JSON.parse(data_simulation_touch.mobile),
+          allowTouchMove:JSON.parse(data_simulation_touch.mobile)
+        },
+        590: {
+          loop: JSON.parse(data_loop.tablet),
+          autoHeight:auto_height,
+          slidesPerView: parseInt(data_count_slide.tablet),
+          spaceBetween: parseInt(data_space_between.tablet),
+          simulateTouch:JSON.parse(data_simulation_touch.tablet),
+          allowTouchMove:JSON.parse(data_simulation_touch.tablet)
+
+        },
+        768: {
+          loop: JSON.parse(data_loop.small_desctop),
+          autoHeight:auto_height,
+          slidesPerView: parseInt(data_count_slide.small_desctop),
+          spaceBetween: parseInt(data_space_between.desctop),
+          simulateTouch:JSON.parse(data_simulation_touch.desctop),
+          allowTouchMove:JSON.parse(data_simulation_touch.desctop)
+        },
+        1100: {
+          loop: JSON.parse(data_loop.desctop),
+          autoHeight:auto_height,
+          slidesPerView: parseInt(data_count_slide.desctop),
+          spaceBetween: parseInt(data_space_between.desctop),
+          simulateTouch:JSON.parse(data_simulation_touch.desctop),
+          allowTouchMove:JSON.parse(data_simulation_touch.desctop),
+
+        },
+        1360: {
+          loop: JSON.parse(data_loop.desctop),
+          autoHeight:auto_height,
+          slidesPerView: parseInt(data_count_slide.large_desctop),
+          spaceBetween: parseInt(data_space_between.desctop),
+          simulateTouch:JSON.parse(data_simulation_touch.desctop),
+          allowTouchMove:JSON.parse(data_simulation_touch.desctop)
+        },
+
+      },
+      on: {
+        beforeInit:(el)=>{
+          if( window.innerWidth > 768 ){
+            if (el.$el[0].closest('.js--marathon-new__schedule-swiper')
+              && el.$el[0].closest('.js--marathon-new__schedule-swiper')
+                .querySelector('.marathon-new-last__schedule-stories')) {
+
+              const array_left = el.$el[0].closest('.js--marathon-new__schedule-swiper')
+                .querySelectorAll('.swiper-slide-arrow__left');
+              const width_el = el.$el[0].closest('.js--marathon-new__schedule-swiper')
+                .querySelector('.marathon-new-last__schedule-stories').offsetWidth;
+
+              for (let item of array_left) {
+                item.style.left = `-${width_el + 50}px`
+              }
+            }
+          }
+
+
+        },
+        afterInit: function (el) {
+          if(el.$el && el.$el[0].closest('.js--general-style-slider.before-init')) {
+            el.$el[0].closest('.js--general-style-slider').classList.remove('before-init')
+          }
+          paginationSlider_s(el)
+        },
+        resize:function (el){
+          // updateSwiperHeight(swiper);
+
+          setTimeout(()=>{
+            swiper.update()
+            swiper.updateAutoHeight()
+          },1000)
+          paginationSlider_s(el)
+          if( window.innerWidth > 768 ){
+            if (el.$el[0].closest('.js--marathon-new__schedule-swiper')
+              && el.$el[0].closest('.js--marathon-new__schedule-swiper')
+                .querySelector('.marathon-new-last__schedule-stories')) {
+
+              const array_left = el.$el[0].closest('.js--marathon-new__schedule-swiper')
+                .querySelectorAll('.swiper-slide-arrow__left');
+              const width_el = el.$el[0].closest('.js--marathon-new__schedule-swiper')
+                .querySelector('.marathon-new-last__schedule-stories').offsetWidth;
+
+              for (let item of array_left) {
+                item.style.left = `-${width_el + 50}px`
+              }
+            }
+          }
+          if (same_height_slides) {
+            // if (el && el.$el!==undefined) {
+            //   setEqualHeight(el.$el[0].querySelectorAll('.swiper-slide'));
+            // }
+          }
+        },
+        init:function (el) {
+          // if (same_height_slides) {
+          //   if (el && el.$el!==undefined) {
+          //     setEqualHeight(el.$el[0].querySelectorAll('.swiper-slide'));
+          //   }
+          // }
+
+        }
+      },
+
+    });
+
+    item.querySelectorAll('.advanced-editor__gallery-wr-img picture img').forEach(img => {
+      const updateHeight = () => swiper.updateAutoHeight();
+      if(img.complete) {
+        updateHeight()
+      } else {
+        img.addEventListener('load', updateHeight)
+        img.addEventListener('error', updateHeight)
+      }
+    })
+
+  }
+}
+
+function destroySwiper() {
+  if (swiper) {
+    swiper.destroy(true,true);
+    swiper=null
+  }
+}
+
+function debounce (func, delay = 300) {
+  let timer;
+  return () => {
+    clearTimeout(timer);
+    timer = setTimeout(()=> func(),delay)
+  }
+}
+
+
+
+//слайдер конструктор
+export default function slideConstructor() {
+  appraisalSlider()
+
+  let resizeTimeout;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        // updateSwiperHeight(swiper);
+        // destroySwiper();
+        // appraisalSlider();
+    }, 300);
+  });
+
+
+
+  // window.addEventListener('resize',debounce(() => {
+  //   console.log('Моя функция');
+  //   destroySwiper();
+  //   appraisalSlider();
+  // }))
+
+
+  // window.addEventListener('resize', () => {
+  //   // clearTimeout(resizeTimeOut)
+  //   // resizeTimeOut = setTimeout(() => {
+  //   //   destroySwiper();
+  //   //   setTimeout(()=>{
+  //   //     appraisalSlider()
+  //   //   },500)
+  //   //
+  //   // })
+  // })
+
+
+}
+
+
+
