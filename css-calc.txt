@@ -1,30 +1,24 @@
-.calc-tax-deduc-new__row-title-main-container(
-            v-if="transfer_tooltip!==null&&transfer_tooltip.hasOwnProperty('data-required-income')&&transfer_tooltip['data-required-income']['info']!==''&&transfer_tooltip['data-required-income']['size']!==''&&transfer_tooltip['data-required-income']['size']==='big'&&transfer_tooltip['data-required-income'].hasOwnProperty('size')"
-          )
+.calc-tax-deduc-new__row-title-main-container
+  template(v-if="transfer_tooltip && transfer_tooltip['data-required-income'] && transfer_tooltip['data-required-income'].info && transfer_tooltip['data-required-income'].size === 'big'")
+    .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container(
+      v-if="!transfer_tooltip['data-required-income'].show || transfer_tooltip['data-required-income'].show === 'clickEl'"
+    )
+      p Необходимый доход
+      .content-note(
+        @click="openModal"
+        :data-tooltip="transfer_tooltip['data-required-income'].name || ''"
+      )
+    .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container(
+      v-else-if="transfer_tooltip['data-required-income'].show === 'mouseoverEl'"
+    )
+      p Необходимый доход
+      .content-note(
+        @mouseover="openModal"
+        :data-tooltip="transfer_tooltip['data-required-income'].name || ''"
+      )
+  
+  .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container(v-else)
+    p.calc-tax-deduc-new__row-title Необходимый доход
 
-            .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container(
-              v-if="(transfer_tooltip['data-required-income'].hasOwnProperty('show')&&transfer_tooltip['data-required-income']['show']==='clickEl')||!transfer_tooltip['data-required-income'].hasOwnProperty('show')"
-            )
-              p Необходимый доход
-              .content-note(
-                @click="openModal"
-                :data-tooltip="transfer_tooltip['data-required-income']['name']?transfer_tooltip['data-required-income']['name']:''"
-              )
-            .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container(
-              v-if="transfer_tooltip['data-required-income'].hasOwnProperty('show')&&transfer_tooltip['data-required-income']['show']==='mouseoverEl'"
-            )
-              p Необходимый доход
-              .content-note(
-                @mouseover="openModal"
-                :data-tooltip="transfer_tooltip['data-required-income']['name']?transfer_tooltip['data-required-income']['name']:''"
-              )
-
-          .calc-tax-deduc-new__row-title-main-container(v-if="transfer_tooltip===null||!transfer_tooltip.hasOwnProperty('data-required-income')||transfer_tooltip['data-required-income']['info']===''")
-            .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
-              p.calc-tax-deduc-new__row-title Необходимый доход
-
-
-
-
-          .calc-tax-deduc-new__result-container-value
-            p.calc-tax-deduc-new__result-value {{required_income | format_decimal}} ₽
+.calc-tax-deduc-new__result-container-value
+  p.calc-tax-deduc-new__result-value {{ required_income | format_decimal }} ₽
