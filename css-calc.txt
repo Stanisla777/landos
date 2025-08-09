@@ -1,43 +1,30 @@
-mounted() {
-  const tooltips = {};
-  const attributes = this.$el.attributes;
+.calc-tax-deduc-new__row-title-main-container(
+            v-if="transfer_tooltip!==null&&transfer_tooltip.hasOwnProperty('data-required-income')&&transfer_tooltip['data-required-income']['info']!==''&&transfer_tooltip['data-required-income']['size']!==''&&transfer_tooltip['data-required-income']['size']==='big'&&transfer_tooltip['data-required-income'].hasOwnProperty('size')"
+          )
 
-  // Перебираем все атрибуты элемента
-  for (let i = 0; i < attributes.length; i++) {
-    const attr = attributes[i];
-    
-    // Проверяем, начинается ли атрибут с 'tooltip-'
-    if (attr.name.startsWith('tooltip-')) {
-      try {
-        // Парсим JSON из значения атрибута
-        const value = JSON.parse(attr.value);
-        
-        // Извлекаем имя из названия атрибута (удаляем 'tooltip-' и заменяем дефисы на подчеркивания)
-        const name = attr.name.replace('tooltip-', '').replace(/-/g, '_');
-        
-        // Добавляем свойство name, если его нет в объекте
-        if (!value.name) {
-          value.name = attr.name.replace('tooltip-', '');
-        }
-        
-        // Добавляем в результирующий объект
-        tooltips[name] = value;
-      } catch (error) {
-        console.error(`Ошибка парсинга атрибута ${attr.name}:`, error);
-      }
-    }
-  }
+            .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container(
+              v-if="(transfer_tooltip['data-required-income'].hasOwnProperty('show')&&transfer_tooltip['data-required-income']['show']==='clickEl')||!transfer_tooltip['data-required-income'].hasOwnProperty('show')"
+            )
+              p Необходимый доход
+              .content-note(
+                @click="openModal"
+                :data-tooltip="transfer_tooltip['data-required-income']['name']?transfer_tooltip['data-required-income']['name']:''"
+              )
+            .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container(
+              v-if="transfer_tooltip['data-required-income'].hasOwnProperty('show')&&transfer_tooltip['data-required-income']['show']==='mouseoverEl'"
+            )
+              p Необходимый доход
+              .content-note(
+                @mouseover="openModal"
+                :data-tooltip="transfer_tooltip['data-required-income']['name']?transfer_tooltip['data-required-income']['name']:''"
+              )
 
-  // Теперь tooltips содержит все распарсенные данные
-  // Например, для атрибута tooltip-initial-payment='{"size":"small","info":"Какая-то информация"}'
-  // получим:
-  // {
-  //   initial_payment: {info: 'Какая-то информация', name: 'initial-payment', size: 'small'},
-  //   ...
-  // }
-  
-  // Можно отправить в хранилище
-  if (Object.keys(tooltips).length > 0) {
-    Storage.dispatch('Action', tooltips);
-  }
-}
+          .calc-tax-deduc-new__row-title-main-container(v-if="transfer_tooltip===null||!transfer_tooltip.hasOwnProperty('data-required-income')||transfer_tooltip['data-required-income']['info']===''")
+            .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
+              p.calc-tax-deduc-new__row-title Необходимый доход
+
+
+
+
+          .calc-tax-deduc-new__result-container-value
+            p.calc-tax-deduc-new__result-value {{required_income | format_decimal}} ₽
