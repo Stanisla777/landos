@@ -1,2 +1,73 @@
-TypeError: Cannot read properties of undefined (reading 'payment')
-    at e.mutationTotalCalculate
+Добавьте проверки перед расчетами в mutationTotalCalculate:
+
+mutationTotalCalculate(state) {
+  // Проверяем, что все необходимые параметры валидны
+  if (!state.loanAmount || !state.annualInterestRate || !state.loanTerm || !state.startMortage) {
+    return;
+  }
+  
+  // Проверяем, что loanAmount положительный
+  if (state.loanAmount <= 0) {
+    return;
+  }
+
+  // Проверяем, что срок кредита положительный
+  if (state.loanTerm <= 0) {
+    return;
+  }
+
+  state.shedule = calculateMortgageSheduleFirst(
+    state.loanAmount, 
+    state.annualInterestRate,
+    state.loanTerm,
+    state.startMortage,
+    state.array_early_repayment
+  );
+  
+  // Проверяем, что график платежей не пустой
+  if (!state.shedule.length) {
+    return;
+  }
+
+  //сумма уплаченных налогов
+  state.amount_taxes_paid = payAllInterest(state.shedule);
+  //считаю основной долг + проценты уплаченные
+  state.debt_interest = state.amount_taxes_paid + state.loanAmount;
+
+  //считаю налоговый вычет
+  state.tax_deduction_property = state.loanAmount * 0.13;
+  if (state.tax_deduction_property > state.transfer_parametr.max_tax_deduction_property) {
+    state.tax_deduction_property = state.transfer_parametr.max_tax_deduction_property;
+  }
+
+  state.tax_deduction_interest = state.amount_taxes_paid * 0.13;
+  if (state.tax_deduction_interest > state.transfer_parametr.max_tax_deduction_interest) {
+    state.tax_deduction_interest = state.transfer_parametr.max_tax_deduction_interest;
+  }
+
+  state.total_tax_deduction = state.tax_deduction_property + state.tax_deduction_interest;
+
+  //считаю необходимый доход
+  state.required_income = state.shedule[0].payment / 0.5;
+}
+
+Также стоит добавить проверки в функцию calculateMortgageSheduleFirst:
+
+function calculateMortgageSheduleFirst(
+  loanAmount,
+  annualInterestRate,
+  initialTermMonths,
+  startDate,
+  prepayments = []
+) {
+  // Добавляем проверки входных параметров
+  if (!loanAmount || loanAmount <= 0 || 
+      !annualInterestRate || annualInterestRate < 0 || 
+      !initialTermMonths || initialTermMonths <= 0 || 
+      !startDate) {
+    return [];
+  }
+
+  // Остальной код функции остается без изменений
+  // ...
+}
