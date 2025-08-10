@@ -1,55 +1,59 @@
- div.calc-tax-deduc-new__block.mobile-padding.grey
-    .calc-tax-deduc-new__result-container-title
-      h3.calc-tax-deduc-new__block-title.big Данные о погашении
-    .calc-tax-deduc-new__result-body
-      .calc-tax-deduc-new__result-row.two-column
-        template
-          component-tooltip(:tooltip="'data-loan-amount'" :infoValue="loanAmount" title-text="Сумма кредита")
-        template
-          component-tooltip(:tooltip="'data-interest-rate'" :infoValue="parseInt(annualInterestRate)" title-text="Ставка")
-
-      .calc-tax-deduc-new__result-row.two-column
-        template
-          component-tooltip(:tooltip="'data-monthly-payment'" :infoValue="firstPayment" title-text="Ежемесячный платеж")
-        template
-          component-tooltip(:tooltip="'data-debt-interest'" :infoValue="debt_interest" title-text="Ежемесячный платеж")
-
-
-      .calc-tax-deduc-new__result-row.two-column
-        template
-          component-tooltip(:tooltip="'data-tax-deduction'" :infoValue="total_tax_deduction" title-text="Налоговый вычет")
-        template
-          component-tooltip(:tooltip="'data-required-income'" :infoValue="required_income" title-text="Необходимый доход")
-
-
-computed:{
-    transfer_tooltip(){
-      return Storage.getters.TRANSFERTOOLTIP
-    },
-    loanAmount(){
-      return Storage.getters.LOANAMOUNT
-    },
-    annualInterestRate(){
-      return Storage.getters.ANNUALINTERESTRATE
-    },
-    // shedule(){
-    //   return Storage.getters.SHEDULE
-    // },
-    debt_interest(){
-      return Storage.getters.DEBTINTEREST
-    },
-    total_tax_deduction(){
-      return Storage.getters.TOTALTAXDEDUCTION
-    },
-    required_income(){
-      return Storage.getters.REQUIREDINCOME
-    },
+plugins: [
+  store => {
+    let oldValues = null;
+    store.watch(
+      state => ({
+        loanAmount: state.loanAmount,
+        annualInterestRate: state.annualInterestRate,
+        loanTerm: state.loanTerm
+      }),
+      (newValues) => {
+        if (!oldValues || 
+            oldValues.loanAmount !== newValues.loanAmount ||
+            oldValues.annualInterestRate !== newValues.annualInterestRate ||
+            oldValues.loanTerm !== newValues.loanTerm) {
+          store.commit('mutationTotalCalculate');
+          oldValues = {...newValues};
+        }
+      },
+      { deep: true }
+    )
+  }
+],
 
 
-    shedule() {
-      return Storage.getters.SHEDULE
-    },
-    firstPayment() {
-      return this.shedule.length > 0 ? this.shedule[0].payment : 0;
-    }
+
+Добавьте в состояние флаг isCalculating и показывайте значения только когда расчёты завершены:
+
+state: {
+  // ...
+  isCalculating: false,
+  // ...
+}
+
+mutationTotalCalculate(state) {
+  state.isCalculating = true;
+  
+  // Ваши текущие расчёты
+  state.shedule = calculateMortgageSheduleFirst(
+    state.loanAmount,state.annualInterestRate,state.loanTerm,state.startMortage,state.array_early_repayment
+  );
+  // ... остальные расчёты
+  
+  state.isCalculating = false;
+}
+
+В компоненте:
+component-tooltip(
+  :tooltip="'data-monthly-payment'" 
+  :infoValue="isCalculating ? null : firstPayment" 
+  title-text="Ежемесячный платеж"
+)
+
+Добавьте computed свойство:
+computed: {
+  isCalculating() {
+    return Storage.state.isCalculating;
   },
+  // ...
+}
