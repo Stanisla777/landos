@@ -1,48 +1,15 @@
-.calc-tax-deduc-new__result-col.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent(v-if="shedule.length > 0")
-  //- Основной контейнер заголовка
-  .calc-tax-deduc-new__row-title-main-container(v-if="transfer_tooltip && transfer_tooltip['data-required-income']")
-    .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
-      p Необходимый доход
-      
-      //- Вариант для маленького тултипа или мобильной версии
-      template(v-if="!transfer_tooltip['data-required-income']['size'] || transfer_tooltip['data-required-income']['size'] === 'small'")
-        span.content-note.desctop.content-note__center.js--content-note(v-if="tooltip_result['loan-amount'] !== ''")
-          span.content-note__text {{ transfer_tooltip["data-required-income"]["info"] }}
-        span.content-note.mobile(
-          v-if="transfer_tooltip['data-required-income']['info'] !== ''"
-          @click="openTooltipMobile"
-        )
-        
-      //- Вариант для большого тултипа
-      template(v-else-if="transfer_tooltip['data-required-income']['size'] === 'big'")
-        .content-note(
-          v-if="!transfer_tooltip['data-required-income'].hasOwnProperty('show') || transfer_tooltip['data-required-income']['show'] === 'clickEl'"
-          @click="openModal"
-          :data-tooltip="transfer_tooltip['data-required-income']['name'] || ''"
-        )
-        .content-note(
-          v-else-if="transfer_tooltip['data-required-income']['show'] === 'mouseoverEl'"
-          @mouseover="openModal"
-          :data-tooltip="transfer_tooltip['data-required-income']['name'] || ''"
-        )
-    
-    //- Модальное окно для мобильной версии
-    div(v-if="transfer_tooltip['data-required-income']['info'] !== '' && (!transfer_tooltip['data-required-income']['size'] || transfer_tooltip['data-required-income']['size'] === 'small')")
-      .select__background.modal-special-background(@click="closeTooltipMobile")
-      .select-list__selection-window.modal-special-styles.js--openlist-body
-        .select-list__head
-          p Необходимый доход
-          .select-list__head-close(@click="closeTooltipMobile")
-            svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
-              path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
-        .select-list__wr-search.mor-rep-calculators__wr-search
-          p {{ transfer_tooltip["data-required-income"]["info"] }}
+template
+          component-tooltip(:tooltip="'data-monthly-payment'" :infoValue="shedule[0].payment" title-text="Ежемесячный платеж")
 
-  //- Заголовок по умолчанию (если нет данных для тултипа)
-  .calc-tax-deduc-new__row-title-main-container(v-else)
-    .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
-      p.calc-tax-deduc-new__row-title Необходимый доход
 
-  //- Значение (вынесено за пределы условий, так как оно одно для всех вариантов)
-  .calc-tax-deduc-new__result-container-value
-    p.calc-tax-deduc-new__result-value {{ required_income | format_decimal }} ₽
+store => {
+      store.watch(
+        state => [state.loanAmount, state.annualInterestRate,state.loanTerm],
+        ()=>{
+          store.commit('mutationTotalCalculate')
+          // store.commit('mutationTotalCalculate')
+        },
+        {deep:true}
+      )
+    }
+  ],
