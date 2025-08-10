@@ -1,46 +1,55 @@
-Добавьте проверку на существование элемента массива перед обращением к нему:
-computed: {
-  shedule() {
-    return this.$store.getters.SHEDULE;
+ div.calc-tax-deduc-new__block.mobile-padding.grey
+    .calc-tax-deduc-new__result-container-title
+      h3.calc-tax-deduc-new__block-title.big Данные о погашении
+    .calc-tax-deduc-new__result-body
+      .calc-tax-deduc-new__result-row.two-column
+        template
+          component-tooltip(:tooltip="'data-loan-amount'" :infoValue="loanAmount" title-text="Сумма кредита")
+        template
+          component-tooltip(:tooltip="'data-interest-rate'" :infoValue="parseInt(annualInterestRate)" title-text="Ставка")
+
+      .calc-tax-deduc-new__result-row.two-column
+        template
+          component-tooltip(:tooltip="'data-monthly-payment'" :infoValue="firstPayment" title-text="Ежемесячный платеж")
+        template
+          component-tooltip(:tooltip="'data-debt-interest'" :infoValue="debt_interest" title-text="Ежемесячный платеж")
+
+
+      .calc-tax-deduc-new__result-row.two-column
+        template
+          component-tooltip(:tooltip="'data-tax-deduction'" :infoValue="total_tax_deduction" title-text="Налоговый вычет")
+        template
+          component-tooltip(:tooltip="'data-required-income'" :infoValue="required_income" title-text="Необходимый доход")
+
+
+computed:{
+    transfer_tooltip(){
+      return Storage.getters.TRANSFERTOOLTIP
+    },
+    loanAmount(){
+      return Storage.getters.LOANAMOUNT
+    },
+    annualInterestRate(){
+      return Storage.getters.ANNUALINTERESTRATE
+    },
+    // shedule(){
+    //   return Storage.getters.SHEDULE
+    // },
+    debt_interest(){
+      return Storage.getters.DEBTINTEREST
+    },
+    total_tax_deduction(){
+      return Storage.getters.TOTALTAXDEDUCTION
+    },
+    required_income(){
+      return Storage.getters.REQUIREDINCOME
+    },
+
+
+    shedule() {
+      return Storage.getters.SHEDULE
+    },
+    firstPayment() {
+      return this.shedule.length > 0 ? this.shedule[0].payment : 0;
+    }
   },
-  firstPayment() {
-    return this.shedule.length > 0 ? this.shedule[0].payment : 0;
-  }
-}
-
-
-mutationCostProperty(state, received_perem) {
-  state.cost_property = received_perem;
-  
-  // Проверяем, нужно ли пересчитывать первоначальный взнос
-  const shouldRecalculate = parseInt(state.initial_payment) < parseInt(state.initial_payment_from_cost) || 
-                          parseInt(state.initial_payment) > parseInt(state.cost_property);
-  
-  state.recalculation_initial_payment = shouldRecalculate;
-  
-  // Если пересчёт не нужен, обновляем loanAmount
-  if (!shouldRecalculate) {
-    state.loanAmount = parseInt(state.cost_property) - parseInt(state.initial_payment);
-  }
-}
-
-Добавьте debounce для полей ввода, чтобы вычисления происходили после того, как пользователь закончил ввод:
-
-methods: {
-  updateCostProperty: _.debounce(function(value) {
-    this.$store.dispatch('ActionCostProperty', value);
-  }, 500),
-  updateInitialPayment: _.debounce(function(value) {
-    this.$store.dispatch('ActionInitialPayment', value);
-  }, 500)
-}
-
-В компоненте, где отображаются финальные цифры, добавьте проверку на завершение всех вычислений:
-computed: {
-  isCalculating() {
-    return this.$store.state.recalculation_initial_payment;
-  },
-  displayValue() {
-    return this.isCalculating ? 'Вычисляется...' : this.finalValue;
-  }
-}
