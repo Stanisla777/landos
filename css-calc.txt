@@ -1,10 +1,46 @@
-
-template
-          component-tooltip( :infoValue="shedule[0].payment")
-computed:{
-    
-    shedule(){
-      return Storage.getters.SHEDULE
-    },
-   
+Добавьте проверку на существование элемента массива перед обращением к нему:
+computed: {
+  shedule() {
+    return this.$store.getters.SHEDULE;
   },
+  firstPayment() {
+    return this.shedule.length > 0 ? this.shedule[0].payment : 0;
+  }
+}
+
+
+mutationCostProperty(state, received_perem) {
+  state.cost_property = received_perem;
+  
+  // Проверяем, нужно ли пересчитывать первоначальный взнос
+  const shouldRecalculate = parseInt(state.initial_payment) < parseInt(state.initial_payment_from_cost) || 
+                          parseInt(state.initial_payment) > parseInt(state.cost_property);
+  
+  state.recalculation_initial_payment = shouldRecalculate;
+  
+  // Если пересчёт не нужен, обновляем loanAmount
+  if (!shouldRecalculate) {
+    state.loanAmount = parseInt(state.cost_property) - parseInt(state.initial_payment);
+  }
+}
+
+Добавьте debounce для полей ввода, чтобы вычисления происходили после того, как пользователь закончил ввод:
+
+methods: {
+  updateCostProperty: _.debounce(function(value) {
+    this.$store.dispatch('ActionCostProperty', value);
+  }, 500),
+  updateInitialPayment: _.debounce(function(value) {
+    this.$store.dispatch('ActionInitialPayment', value);
+  }, 500)
+}
+
+В компоненте, где отображаются финальные цифры, добавьте проверку на завершение всех вычислений:
+computed: {
+  isCalculating() {
+    return this.$store.state.recalculation_initial_payment;
+  },
+  displayValue() {
+    return this.isCalculating ? 'Вычисляется...' : this.finalValue;
+  }
+}
