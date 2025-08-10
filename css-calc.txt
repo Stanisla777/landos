@@ -1,3 +1,57 @@
-family-mortgage-calculator(
-  answers='[{"loanAmount":"8000000"},{"initialPayment":"800000"},{"bet":"8"},{"loanTerm":"12"}]'
-)
+export default new Vuex.Store({
+  state:{
+    //новое
+    transfer_parametr:null, //параметры, которые приходят из атрибутов html
+    transfer_tooltip:null, //все тултипы
+    calculating_initial_payment_cost:true, //если true то первоначальный взнос может меняться, когда меняется стоимость, если false то при изменении стоимости первоначальный взнос меняться не будет
+    initial_payment_from_cost:0, //первоначальный взнос рассчитанный от стоимости недвижимости умноженное на 0,2
+    cost_property:0, //стоимость недвижимости
+    initial_payment:0, //первоначальный взнос непосредственно когда меняется соответствующее поле
+    loanAmount:0, //первоначальная сумма кредита (стоимость недвижимости - первоначальный взнос)
+    recalculation_initial_payment:false, //От флага зависит делать перерасчёт первоначального взноса или нет
+    annualInterestRate:0.1, //процентная ставка ипотеки
+    loanTerm:0, //срок кредита
+    modal_tooltip_attribute_data:null, //значение дата модалки, коорую открываем, чтобы определить, какой контент подставлять
+    modal_tooltip_status:false, //true - модалка с тултипами открывается, false - модалка закрывается
+    modal_mail_send_status:false, //true - модалка с отправкой почты открывается, false - модалка закрывается
+    dateLoanReceipt:[], //дата начала кредита = равно текущая дата в виде массива [7,2025]
+
+    startMonth:null, //месяц взятия кредита
+    startYear:0,//год взятия кредита
+    startMortage:'',
+    startMortageDiff:'',
+    min_date_mobile:`${new Date().getFullYear() - 30}-01-01`, //для календаря дата оформления кредита, коорый находится в графике платежей в мобилке
+    shedule:[], // график платежей, который будет формироваться без досрочек и ипотечных каникул
+    amount_taxes_paid:0, // сумма уплаченных налогов
+    debt_interest:0, // основной долг + проценты
+    tax_deduction_property:0, //имущественный вычет
+    tax_deduction_interest:0, //вычет по процентам
+    total_tax_deduction:0, // налоговый вычет имущественный вычет + вычет по процентам
+    required_income:0, //необходимый налог
+
+    answers:null, //если расчётами делятся другие пользователи
+    answers_to_send: {} //то, что собираю для поделиться
+  },
+
+plugins: [
+    store => {
+      store.watch(
+        state => [state.loanAmount, state.annualInterestRate, state.loanTerm],
+        ([loanAmount, annualInterestRate, loanTerm]) => {
+          // Вызываем расчет только если все параметры валидны
+          if (loanAmount > 0 && annualInterestRate >= 0 && loanTerm > 0) {
+            store.commit('mutationTotalCalculate');
+            store.commit('mutationCollectAnswer');
+          }
+        },
+        {deep: true,immediate:false}
+      )
+    }
+  ]
+
+mutationCollectAnswer(state) {
+      Vue.set(state.answers_to_send,'loanAmount',state.cost_property)
+      Vue.set(state.answers_to_send,'initialPayment',state.initial_payment)
+      Vue.set(state.answers_to_send,'bet',state.annualInterestRate)
+      Vue.set(state.answers_to_send,'loanTerm',state.loanTerm)
+    }
