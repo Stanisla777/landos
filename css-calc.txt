@@ -11,79 +11,65 @@ receivedDateMobile([year, month]) {
 async smoothScrollToElement(element) {
   const container = this.$refs.mobileShedule;
   
-  // Сначала убедимся, что контейнер виден в viewport
+  // Сначала скроллим контейнер в видимую область
   await this.scrollContainerIntoView(container);
   
-  // Даем браузеру время на отрисовку после скролла страницы
-  await new Promise(resolve => setTimeout(resolve, 50));
-  
-  // Затем скроллим внутри контейнера
+  // Затем скроллим к элементу внутри контейнера
   await this.scrollToElementInContainer(container, element);
 },
 
 async scrollContainerIntoView(container) {
-  // Получаем актуальные координаты после возможных изменений DOM
   const containerRect = container.getBoundingClientRect();
   const viewportHeight = window.innerHeight;
+  const buffer = 20; // Отступ от краев
   
-  // Вычисляем сколько контейнера видно
-  const visibleHeight = Math.min(containerRect.bottom, viewportHeight) - Math.max(containerRect.top, 0);
-  const visibilityRatio = visibleHeight / containerRect.height;
+  // Проверяем, виден ли контейнер
+  const containerTop = containerRect.top;
+  const containerBottom = containerRect.bottom;
   
-  // Если видно меньше 80% контейнера, скроллим страницу
-  if (visibilityRatio < 0.8) {
-    // Центрируем контейнер в viewport
-    const targetScroll = window.scrollY + containerRect.top - (viewportHeight - containerRect.height) / 2;
+  if (containerTop < buffer || containerBottom > viewportHeight - buffer) {
+    // Вычисляем позицию для скролла страницы
+    const targetScroll = containerTop < buffer 
+      ? window.scrollY + containerTop - buffer
+      : window.scrollY + containerBottom - viewportHeight + buffer;
+    
     await this.animateScroll(window, targetScroll, 600);
   }
 },
 
 async scrollToElementInContainer(container, element) {
-  // Получаем актуальные координаты после возможных изменений DOM
   const containerRect = container.getBoundingClientRect();
   const elementRect = element.getBoundingClientRect();
+  const buffer = 20; // Отступ от краев
   
   // Вычисляем позицию элемента относительно контейнера
-  const elementTopRelative = elementRect.top - containerRect.top + container.scrollTop;
-  const elementBottomRelative = elementRect.bottom - containerRect.top + container.scrollTop;
+  const elementTop = elementRect.top - containerRect.top + container.scrollTop;
+  const elementBottom = elementRect.bottom - containerRect.top + container.scrollTop;
   
   const containerHeight = container.clientHeight;
-  const buffer = 20; // Отступ
   
   // Вычисляем целевую позицию скролла
   let targetScroll;
-  if (elementTopRelative - buffer < container.scrollTop) {
-    // Элемент выше видимой области - скроллим чтобы элемент был сверху с отступом
-    targetScroll = elementTopRelative - buffer;
-  } else if (elementBottomRelative + buffer > container.scrollTop + containerHeight) {
-    // Элемент ниже видимой области - скроллим чтобы элемент был снизу с отступом
-    targetScroll = elementBottomRelative - containerHeight + buffer;
+  if (elementTop - buffer < container.scrollTop) {
+    // Элемент выше видимой области - скроллим вверх
+    targetScroll = elementTop - buffer;
+  } else if (elementBottom + buffer > container.scrollTop + containerHeight) {
+    // Элемент ниже видимой области - скроллим вниз
+    targetScroll = elementBottom - containerHeight + buffer;
   } else {
     // Элемент уже виден
     return;
   }
-  
-  // Ограничиваем целевую позицию допустимыми значениями
-  targetScroll = Math.max(0, Math.min(targetScroll, container.scrollHeight - containerHeight));
   
   await this.animateScroll(container, targetScroll, 600);
 },
 
 animateScroll(element, targetPosition, duration) {
   return new Promise(resolve => {
-    const startPosition = element === window ? window.scrollY : element.scrollTop;
+    const startPosition = element === window 
+      ? window.scrollY || window.pageYOffset 
+      : element.scrollTop;
     const distance = targetPosition - startPosition;
-    
-    // Если расстояние слишком мало, не анимируем
-    if (Math.abs(distance) < 2) {
-      if (element === window) {
-        window.scrollTo(0, targetPosition);
-      } else {
-        element.scrollTop = targetPosition;
-      }
-      return resolve();
-    }
-    
     let startTime = null;
 
     const animation = (timestamp) => {
