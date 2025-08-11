@@ -14,18 +14,20 @@ methods: {
   async smoothScrollToElement(element) {
     const container = this.$refs.mobileShedule;
     
-    // Проверяем, виден ли элемент в контейнере
-    const elementVisible = this.isElementVisibleInContainer(container, element);
+    // Проверяем, виден ли контейнер
+    const containerVisible = this.isElementInViewport(container);
     
-    if (!elementVisible) {
-      // Сначала плавно скроллим контейнер в область видимости (если нужно)
-      if (!this.isElementInViewport(container)) {
-        await this.scrollIntoViewSmoothly(container);
-      }
+    if (!containerVisible) {
+      // Если контейнер не виден, плавно скроллим к нему с помощью нашей анимации
+      const containerTop = container.getBoundingClientRect().top;
+      const targetScroll = window.pageYOffset + containerTop - 20; // 20px отступ сверху
       
-      // Затем плавно скроллим к элементу внутри контейнера
-      this.scrollInsideContainer(container, element);
+      // Анимируем скролл окна к контейнеру
+      await this.animateScroll(window, targetScroll, 600);
     }
+    
+    // Затем скроллим внутри контейнера
+    this.scrollInsideContainer(container, element);
   },
 
   scrollInsideContainer(container, element) {
@@ -45,68 +47,35 @@ methods: {
     );
   },
 
-  isElementVisibleInContainer(container, element) {
-    const containerRect = container.getBoundingClientRect();
-    const elementRect = element.getBoundingClientRect();
-    
-    return (
-      elementRect.top >= containerRect.top &&
-      elementRect.bottom <= containerRect.bottom
-    );
-  },
-
-  scrollIntoViewSmoothly(element) {
-    return new Promise(resolve => {
-      element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      setTimeout(resolve, 800); // Время должно соответствовать длительности анимации
-    });
-  },
-
   animateScroll(element, targetPosition, duration) {
-    const startPosition = element.scrollTop;
-    const distance = targetPosition - startPosition;
-    let startTime = null;
+    return new Promise(resolve => {
+      const startPosition = element.scrollTop || element.pageYOffset;
+      const distance = targetPosition - startPosition;
+      let startTime = null;
 
-    const animation = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const progress = timestamp - startTime;
-      const percentage = Math.min(progress / duration, 1);
-      
-      // Кубическая easing функция для плавности
-      const easing = t => t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1;
-      const scrollNow = startPosition + (distance * easing(percentage));
+      const animation = (timestamp) => {
+        if (!startTime) startTime = timestamp;
+        const progress = timestamp - startTime;
+        const percentage = Math.min(progress / duration, 1);
+        
+        // Кубическая easing функция для плавности
+        const easing = t => t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1;
+        const scrollNow = startPosition + (distance * easing(percentage));
 
-      element.scrollTop = scrollNow;
+        if (element === window) {
+          window.scrollTo(0, scrollNow);
+        } else {
+          element.scrollTop = scrollNow;
+        }
 
-      if (progress < duration) {
-        window.requestAnimationFrame(animation);
-      }
-    };
+        if (progress < duration) {
+          window.requestAnimationFrame(animation);
+        } else {
+          resolve();
+        }
+      };
 
-    window.requestAnimationFrame(animation);
+      window.requestAnimationFrame(animation);
+    });
   }
-}
-
-
-/////////////////////////
-scrollInsideContainer(container, element) {
-  const elementRect = element.getBoundingClientRect();
-  const containerRect = container.getBoundingClientRect();
-  const relativeTop = elementRect.top - containerRect.top;
-  const targetScroll = container.scrollTop + relativeTop - 20; // 20px отступ сверху
-  
-  container.scrollTo({
-    top: targetScroll,
-    behavior: 'smooth'
-  });
-},
-
------
-.mor-rep-calculators__shedule-calendar-mobile-container {
-  margin-top: 37px;
-  max-height: 878px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 15px;
-  scroll-behavior: smooth;
 }
