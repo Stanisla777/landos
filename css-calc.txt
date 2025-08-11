@@ -1,78 +1,13 @@
 receivedDateMobile([year, month]) {
-  const dateString = `${year}-${month}`;
-  this.$nextTick(() => {
-    const targetElement = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
-    if (!targetElement) return;
+      const dateString = `${year}-${month}`;
+      this.$nextTick(()=>{
+        const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`)
+        if (element) {
+          element.scrollIntoView({
+            behavior:'smooth',
+            block:'start'
+          })
+        }
+      })
 
-    // Находим первый прокручиваемый родительский элемент
-    let scrollContainer = targetElement;
-    while (scrollContainer && scrollContainer !== document.body) {
-      const style = window.getComputedStyle(scrollContainer);
-      if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
-        break;
-      }
-      scrollContainer = scrollContainer.parentNode;
     }
-
-    // Если не нашли контейнер со скроллом, используем window
-    if (!scrollContainer || scrollContainer === document.body) {
-      scrollContainer = window;
-    }
-
-    const isWindow = scrollContainer === window;
-    
-    // Получаем текущую позицию скролла
-    const startPosition = isWindow 
-      ? window.pageYOffset 
-      : scrollContainer.scrollTop;
-    
-    // Получаем положение элемента относительно viewport
-    const targetRect = targetElement.getBoundingClientRect();
-    
-    // Вычисляем конечную позицию скролла
-    let targetPosition;
-    if (isWindow) {
-      // Для window учитываем текущий scroll страницы
-      targetPosition = targetRect.top + window.pageYOffset;
-    } else {
-      // Для контейнера получаем его положение на странице и его текущий scroll
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const containerScrollTop = scrollContainer.scrollTop;
-      
-      // Позиция элемента относительно контейнера
-      const elementTopRelativeToContainer = targetRect.top - containerRect.top;
-      
-      // Желаемая позиция скролла контейнера
-      targetPosition = containerScrollTop + elementTopRelativeToContainer;
-    }
-
-    const distance = targetPosition - startPosition - 10; // 10px отступ сверху
-    const duration = 800;
-    let startTime = null;
-
-    function animation(currentTime) {
-      if (startTime === null) startTime = currentTime;
-      const timeElapsed = currentTime - startTime;
-      const progress = Math.min(timeElapsed / duration, 1);
-      const ease = easeInOutQuad(progress);
-
-      const newPosition = startPosition + distance * ease;
-      
-      if (isWindow) {
-        window.scrollTo(0, newPosition);
-      } else {
-        scrollContainer.scrollTop = newPosition;
-      }
-
-      if (timeElapsed < duration) {
-        requestAnimationFrame(animation);
-      }
-    }
-
-    function easeInOutQuad(t) {
-      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    }
-
-    requestAnimationFrame(animation);
-  });
-}
