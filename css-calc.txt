@@ -1,13 +1,48 @@
 receivedDateMobile([year, month]) {
-      const dateString = `${year}-${month}`;
-      this.$nextTick(()=>{
-        const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`)
-        if (element) {
-          element.scrollIntoView({
-            behavior:'smooth',
-            block:'start'
-          })
+  const dateString = `${year}-${month}`;
+  this.$nextTick(() => {
+    const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
+    if (element) {
+      // Получаем позицию элемента относительно viewport
+      const elementRect = element.getBoundingClientRect();
+      // Получаем позицию контейнера
+      const container = this.$refs.mobileShedule;
+      const containerRect = container.getBoundingClientRect();
+      
+      // Вычисляем позицию для скролла
+      const scrollPosition = elementRect.top - containerRect.top + container.scrollTop;
+      
+      // Плавный скролл с помощью requestAnimationFrame
+      const duration = 500; // Длительность анимации в мс
+      const start = container.scrollTop;
+      const change = scrollPosition - start;
+      const startTime = performance.now();
+      
+      const animateScroll = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeInOutQuad = progress < 0.5 
+          ? 2 * progress * progress 
+          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+        
+        container.scrollTop = start + change * easeInOutQuad;
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
         }
-      })
-
+      };
+      
+      requestAnimationFrame(animateScroll);
     }
+  });
+}
+
+
+// После получения elementRect
+if (elementRect.top < 0 || elementRect.bottom > window.innerHeight) {
+  // Элемент вне viewport - скроллим страницу
+  window.scrollTo({
+    top: window.scrollY + elementRect.top - 100, // 100px отступ сверху
+    behavior: 'smooth'
+  });
+}
