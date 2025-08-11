@@ -1,67 +1,60 @@
-async receivedDateMobile([year, month]) {
+receivedDateMobile([year, month]) {
   const dateString = `${year}-${month}`;
-  await this.$nextTick();
-  
-  const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
-  if (!element) return;
-
-  const container = this.$refs.mobileShedule;
-  const containerRect = container.getBoundingClientRect();
-  const elementRect = element.getBoundingClientRect();
-
-  // Проверяем, виден ли элемент в контейнере
-  const isElementInContainer = (
-    elementRect.top >= containerRect.top &&
-    elementRect.bottom <= containerRect.bottom
-  );
-
-  // Проверяем, виден ли контейнер в viewport
-  const isContainerInView = (
-    containerRect.top >= 0 &&
-    containerRect.bottom <= window.innerHeight
-  );
-
-  // Если контейнер не полностью в viewport, сначала скроллим страницу к контейнеру
-  if (!isContainerInView) {
-    await this.smoothScrollTo(container);
-  }
-
-  // Если элемент не виден в контейнере, скроллим контейнер к элементу
-  if (!isElementInContainer) {
-    await this.smoothScrollInside(container, element);
-  }
-},
-
-// Плавный скролл страницы к элементу
-smoothScrollTo(element) {
-  return new Promise(resolve => {
-    element.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest'
-    });
+  this.$nextTick(() => {
+    const container = this.$refs.mobileShedule;
+    const element = container.querySelector(`[data-date="${dateString}"]`);
     
-    // Ждём завершения скролла
-    setTimeout(resolve, 1000);
-  });
-},
+    if (!element) return;
 
-// Плавный скролл внутри контейнера
-smoothScrollInside(container, element) {
-  return new Promise(resolve => {
-    // Вычисляем позицию элемента относительно контейнера
-    const scrollPosition = element.offsetTop - container.offsetTop;
+    // Функция для плавного скролла
+    const smoothScroll = (target, scrollable, offset = 0) => {
+      const targetRect = target.getBoundingClientRect();
+      const scrollableRect = scrollable.getBoundingClientRect();
+      
+      // Вычисляем позицию для скролла
+      const scrollPosition = scrollable.scrollTop + targetRect.top - scrollableRect.top - offset;
+      
+      // Анимация скролла
+      const start = scrollable.scrollTop;
+      const change = scrollPosition - start;
+      const duration = 500; // milliseconds
+      let startTime = null;
+
+      const animateScroll = (currentTime) => {
+        if (!startTime) startTime = currentTime;
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = easeInOutQuad(progress);
+        scrollable.scrollTop = start + change * ease;
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
+    };
+
+    // Функция для easing (плавности)
+    function easeInOutQuad(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    // Сначала скроллим страницу, чтобы контейнер был в видимой области
+    const containerRect = container.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
     
-    // Плавный скролл с помощью CSS transitions
-    container.style.scrollBehavior = 'smooth';
-    container.scrollTop = scrollPosition;
-    
-    // Возвращаем стандартное поведение после скролла
-    setTimeout(() => {
-      container.style.scrollBehavior = 'auto';
-      resolve();
-    }, 1000);
+    if (containerRect.top < 0 || containerRect.bottom > windowHeight) {
+      // Контейнер не полностью в видимой области - скроллим страницу
+      smoothScroll(container, document.documentElement, 20);
+      
+      // После скролла страницы скроллим внутри контейнера
+      setTimeout(() => {
+        smoothScroll(element, container, 10);
+      }, 500); // Задержка должна соответствовать длительности анимации
+    } else {
+      // Контейнер уже в видимой области - просто скроллим внутри
+      smoothScroll(element, container, 10);
+    }
   });
 }
-
-scroll-behavior: smooth;
-  transition: scroll-behavior 0.3s ease;
