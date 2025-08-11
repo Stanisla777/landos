@@ -20,18 +20,31 @@ receivedDateMobile([year, month]) {
     }
 
     const isWindow = scrollContainer === window;
+    
+    // Получаем текущую позицию скролла
     const startPosition = isWindow 
       ? window.pageYOffset 
       : scrollContainer.scrollTop;
     
+    // Получаем положение элемента относительно viewport
     const targetRect = targetElement.getBoundingClientRect();
-    const containerRect = isWindow 
-      ? { top: 0 } 
-      : scrollContainer.getBoundingClientRect();
     
-    const targetPosition = isWindow
-      ? targetRect.top + window.pageYOffset
-      : targetRect.top - containerRect.top + scrollContainer.scrollTop;
+    // Вычисляем конечную позицию скролла
+    let targetPosition;
+    if (isWindow) {
+      // Для window учитываем текущий scroll страницы
+      targetPosition = targetRect.top + window.pageYOffset;
+    } else {
+      // Для контейнера получаем его положение на странице и его текущий scroll
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const containerScrollTop = scrollContainer.scrollTop;
+      
+      // Позиция элемента относительно контейнера
+      const elementTopRelativeToContainer = targetRect.top - containerRect.top;
+      
+      // Желаемая позиция скролла контейнера
+      targetPosition = containerScrollTop + elementTopRelativeToContainer;
+    }
 
     const distance = targetPosition - startPosition - 10; // 10px отступ сверху
     const duration = 800;
@@ -43,10 +56,12 @@ receivedDateMobile([year, month]) {
       const progress = Math.min(timeElapsed / duration, 1);
       const ease = easeInOutQuad(progress);
 
+      const newPosition = startPosition + distance * ease;
+      
       if (isWindow) {
-        window.scrollTo(0, startPosition + distance * ease);
+        window.scrollTo(0, newPosition);
       } else {
-        scrollContainer.scrollTop = startPosition + distance * ease;
+        scrollContainer.scrollTop = newPosition;
       }
 
       if (timeElapsed < duration) {
