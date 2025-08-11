@@ -7,54 +7,61 @@ receivedDateMobile([year, month]) {
     if (!element) return;
 
     // Функция для плавного скролла
-    const smoothScroll = (target, scrollable, offset = 0) => {
-      const targetRect = target.getBoundingClientRect();
-      const scrollableRect = scrollable.getBoundingClientRect();
-      
-      // Вычисляем позицию для скролла
-      const scrollPosition = scrollable.scrollTop + targetRect.top - scrollableRect.top - offset;
-      
-      // Анимация скролла
-      const start = scrollable.scrollTop;
-      const change = scrollPosition - start;
-      const duration = 500; // milliseconds
+    const smoothScroll = (target, offset = 0) => {
+      const startPosition = target.scrollTop;
+      const targetPosition = offset;
+      const distance = targetPosition - startPosition;
+      const duration = 500; // продолжительность в ms
       let startTime = null;
 
-      const animateScroll = (currentTime) => {
+      const animation = (currentTime) => {
         if (!startTime) startTime = currentTime;
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const ease = easeInOutQuad(progress);
-        scrollable.scrollTop = start + change * ease;
-        
-        if (progress < 1) {
-          requestAnimationFrame(animateScroll);
+        const timeElapsed = currentTime - startTime;
+        const run = easeInOutQuad(timeElapsed, startPosition, distance, duration);
+        target.scrollTop = run;
+        if (timeElapsed < duration) {
+          requestAnimationFrame(animation);
         }
       };
 
-      requestAnimationFrame(animateScroll);
+      // Функция для плавности
+      const easeInOutQuad = (t, b, c, d) => {
+        t /= d / 2;
+        if (t < 1) return c / 2 * t * t + b;
+        t--;
+        return -c / 2 * (t * (t - 2) - 1) + b;
+      };
+
+      requestAnimationFrame(animation);
     };
 
-    // Функция для easing (плавности)
-    function easeInOutQuad(t) {
-      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    }
-
-    // Сначала скроллим страницу, чтобы контейнер был в видимой области
+    // Проверяем, виден ли элемент в viewport
     const containerRect = container.getBoundingClientRect();
-    const windowHeight = window.innerHeight;
-    
-    if (containerRect.top < 0 || containerRect.bottom > windowHeight) {
-      // Контейнер не полностью в видимой области - скроллим страницу
-      smoothScroll(container, document.documentElement, 20);
+    const elementRect = element.getBoundingClientRect();
+
+    // Если элемент выше контейнера
+    if (elementRect.top < containerRect.top) {
+      // Сначала скроллим контейнер в окне
+      smoothScroll(document.documentElement, container.offsetTop);
       
-      // После скролла страницы скроллим внутри контейнера
+      // Затем скроллим внутри контейнера с небольшой задержкой
       setTimeout(() => {
-        smoothScroll(element, container, 10);
-      }, 500); // Задержка должна соответствовать длительности анимации
-    } else {
-      // Контейнер уже в видимой области - просто скроллим внутри
-      smoothScroll(element, container, 10);
+        smoothScroll(container, element.offsetTop - container.offsetTop);
+      }, 500);
+    } 
+    // Если элемент ниже контейнера
+    else if (elementRect.bottom > containerRect.bottom) {
+      // Сначала скроллим контейнер в окне
+      smoothScroll(document.documentElement, container.offsetTop + container.offsetHeight - window.innerHeight);
+      
+      // Затем скроллим внутри контейнера с небольшой задержкой
+      setTimeout(() => {
+        smoothScroll(container, element.offsetTop - container.offsetTop - (container.offsetHeight - element.offsetHeight));
+      }, 500);
+    } 
+    // Если элемент виден, просто скроллим внутри контейнера
+    else {
+      smoothScroll(container, element.offsetTop - container.offsetTop);
     }
   });
 }
