@@ -66,208 +66,179 @@ export default {
   mixins: [numberFormatting],
   data() {
     return {
-      realtySlider: '',
-      dataField: 0,
-      dataFieldForCalculation: 0,
-      subsidies: 0,
+      realtySlider: null,
+      dataField: '6,0',
+      dataFieldForCalculation: 6.0,
       stepApartment: 0.1,
       stgMin: 0.1,
       stgMiddle: 50,
       stgMax: 100,
-      start: 6,
+      start: 6.0,
       input_salary: false,
       slider: false,
       mask_interest: null,
-      isSliderUpdating: false, // Флаг для отслеживания обновления слайдера
-      isMaskUpdating: false   // Флаг для отслеживания обновления маски
+      isUpdating: false // Флаг для предотвращения рекурсивных обновлений
     }
   },
   methods: {
+    formatValue(value) {
+      return parseFloat(value).toFixed(1).toString().replace('.', ',')
+    },
+
     initRealtySlider() {
       this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
         start: [this.start],
         connect: 'lower',
-        initial: this.stgMin,
         step: 0.1,
         range: {
           min: this.stgMin,
           max: this.stgMax
         },
+      })
+
+      this.realtySlider.on('start', () => {
+        this.input_salary = false
       });
 
-      this.realtySlider.on('start', (val, handle) => {
-        this.isSliderUpdating = true;
-        if (this.mask_interest !== null) {
-          this.mask_interest.destroy();
-          this.mask_interest = null;
-        }
+      this.realtySlider.on('slide', (values, handle) => {
+        if (this.isUpdating) return
+        this.isUpdating = true
+        
+        const value = parseFloat(values[handle])
+        this.updateInputValue(value)
+        
+        this.isUpdating = false
       });
 
-      this.realtySlider.on('update', (val, handle) => {
-        if (this.isMaskUpdating) return;
+      this.realtySlider.on('set', (values, handle) => {
+        if (this.isUpdating) return
+        this.isUpdating = true
         
-        this.input_salary = false;
-        const formattedValue = parseFloat(val[handle]).toFixed(1).toString().replace('.', ',');
+        const value = parseFloat(values[handle])
+        this.updateInputValue(value)
+        this.updateStoreValue(value)
         
-        if (this.$refs.realtyInput) {
-          this.$refs.realtyInput.value = formattedValue;
-        }
-        
-        this.dataField = formattedValue;
-      });
-
-      this.realtySlider.on('set', (val, handle) => {
-        this.input_salary = false;
-        const value = parseFloat(val[handle]).toFixed(1);
-        const formattedValue = value.toString().replace('.', ',');
-        
-        if (this.$refs.realtyInput) {
-          this.$refs.realtyInput.value = formattedValue;
-        }
-        
-        this.dataField = formattedValue;
-        this.dataFieldForCalculation = value;
-        
-        if (this.mask_interest) {
-          this.isMaskUpdating = true;
-          this.mask_interest.unmaskedValue = value.toString();
-          this.mask_interest.updateValue();
-          this.isMaskUpdating = false;
-        }
-        
-        this.inputCost();
-        this.isSliderUpdating = false;
+        this.isUpdating = false
       });
     },
 
-    inputCost() {
-      if (!this.$refs.realtyInput) return;
-      
+    initInputMask() {
       const maskOptions = {
         mask: Number,
-        scale: 1, // Изменили на 1, так как у вас только один знак после запятой
+        scale: 1,
         thousandsSeparator: '',
-        padFractionalZeros: false,
-        normalizeZeros: 'trim',
+        padFractionalZeros: true,
+        normalizeZeros: true,
         radix: ',',
         mapToRadix: ['.', ','],
-        min: 0.1,
-        max: 100,
+        min: this.stgMin,
+        max: this.stgMax,
         autofix: true,
-        prepare: (value) => {
-          return value.replace(/[бю\/]/gi, ',');
-        }
+        prepare: (value) => value.replace(/[бю\/]/gi, ',')
       };
 
-      this.mask_interest = new IMask(this.$refs.realtyInput, maskOptions);
-      this.mask_interest.value = String(this.start).replace('.', ',');
+      this.mask_interest = new IMask(this.$refs.realtyInput, maskOptions)
+      this.mask_interest.value = this.formatValue(this.start)
 
       this.mask_interest.on('accept', () => {
-        if (this.isSliderUpdating || !this.mask_interest.typedValue) return;
+        if (this.isUpdating || !this.mask_interest.typedValue) return
+        this.isUpdating = true
         
-        this.isMaskUpdating = true;
-        let value = this.mask_interest.typedValue;
+        let value = parseFloat(this.mask_interest.unmaskedValue)
+        if (isNaN(value)) value = this.stgMin
         
-        if (value > 100) {
-          value = 100;
-          this.mask_interest.typedValue = 100;
-        }
+        // Корректируем значение, если оно выходит за границы
+        if (value < this.stgMin) value = this.stgMin
+        if (value > this.stgMax) value = this.stgMax
         
-        if (value < 0.1) {
-          value = 0.1;
-          this.mask_interest.typedValue = 0.1;
-        }
+        this.updateSliderValue(value)
+        this.updateStoreValue(value)
         
-        this.dataField = this.mask_interest.value;
-        this.dataFieldForCalculation = value;
-        
-        if (this.realtySlider) {
-          this.realtySlider.set(value);
-        }
-        
-        Storage.dispatch('ActionInterestRate', this.mask_interest.unmaskedValue);
-        this.isMaskUpdating = false;
+        this.isUpdating = false
       });
+    },
+
+    updateInputValue(value) {
+      const formattedValue = this.formatValue(value)
+      this.dataField = formattedValue
+      this.dataFieldForCalculation = value
+      
+      if (this.mask_interest) {
+        this.mask_interest.unmaskedValue = value.toString()
+      } else {
+        this.$refs.realtyInput.value = formattedValue
+      }
+    },
+
+    updateSliderValue(value) {
+      if (this.realtySlider) {
+        this.realtySlider.set(value)
+      }
+    },
+
+    updateStoreValue(value) {
+      Storage.dispatch('ActionInterestRate', value)
     },
 
     inputFocus(el) {
-      const element = el.currentTarget;
-      element.querySelector('input').focus();
+      const element = el.currentTarget
+      element.querySelector('input').focus()
     },
 
     keyUp(e) {
       if (e.key === 'Enter') {
-        this.$refs.realtyInput.blur();
+        this.$refs.realtyInput.blur()
       }
     },
 
     inpRemoveMark(el) {
       const element = el.currentTarget;
       if (element.value === '0' || element.value === '0 %') {
-        element.value = '';
+        element.value = ''
       }
     },
 
     inputBlur(el) {
       const element = el.currentTarget;
-      element.closest('.js--tex-deduc-input').classList.remove('input-focus');
+      element.closest('.js--tex-deduc-input').classList.remove('input-focus')
       
-      if (element.value === '') {
-        this.realtySlider.set(0.1);
-        if (this.mask_interest) {
-          this.mask_interest.value = '0,1';
-        }
-      } else {
-        if (this.realtySlider) {
-          const value = parseFloat(element.value.replace(',', '.'));
-          this.realtySlider.set(value);
-        }
+      if (!element.value || element.value === '') {
+        this.updateSliderValue(this.stgMin)
+        this.updateInputValue(this.stgMin)
+        this.updateStoreValue(this.stgMin)
       }
-    }
+    },
   },
-  
+
   beforeDestroy() {
     if (this.mask_interest) {
-      this.mask_interest.destroy();
+      this.mask_interest.destroy()
     }
     if (this.realtySlider) {
-      this.realtySlider.destroy();
+      this.realtySlider.destroy()
     }
   },
-  
+
   mounted() {
-    this.initRealtySlider();
-    this.inputCost();
-    
-    Storage.dispatch('ActionInterestRate', this.start.toString());
-    
-    if (this.answers === null) {
-      Storage.dispatch('ActionInterestRate', this.start.toString());
-    } else {
-      const initialValue = parseFloat(this.answers.bet);
-      this.realtySlider.set(initialValue);
-      if (this.mask_interest) {
-        this.mask_interest.value = initialValue.toFixed(1).toString().replace('.', ',');
-      }
-      Storage.dispatch('ActionInterestRate', initialValue.toString());
+    this.initRealtySlider()
+    this.initInputMask()
+    this.updateStoreValue(this.start)
+
+    if (this.answers && this.answers.bet) {
+      const initialValue = parseFloat(this.answers.bet)
+      this.updateSliderValue(initialValue)
+      this.updateInputValue(initialValue)
+      this.updateStoreValue(initialValue)
     }
   },
-  
+
   computed: {
     transfer_tooltip() {
-      return Storage.getters.TRANSFERTOOLTIP;
+      return Storage.getters.TRANSFERTOOLTIP
     },
     answers() {
-      return Storage.getters.ANSWERS;
+      return Storage.getters.ANSWERS
     },
-  },
-  
-  watch: {
-    dataFieldForCalculation(newVal) {
-      if (newVal == 100.0 && this.mask_interest) {
-        this.mask_interest.value = '100';
-      }
-    }
   }
 };
 </script>
