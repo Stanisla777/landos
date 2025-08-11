@@ -18,15 +18,13 @@ methods: {
     const containerVisible = this.isElementInViewport(container);
     
     if (!containerVisible) {
-      // Если контейнер не виден, плавно скроллим к нему с помощью нашей анимации
-      const containerTop = container.getBoundingClientRect().top;
-      const targetScroll = window.pageYOffset + containerTop - 20; // 20px отступ сверху
-      
-      // Анимируем скролл окна к контейнеру
+      // Плавно скроллим к контейнеру с помощью нашей анимации
+      const containerRect = container.getBoundingClientRect();
+      const targetScroll = window.scrollY + containerRect.top - 20; // 20px отступ сверху
       await this.animateScroll(window, targetScroll, 600);
     }
     
-    // Затем скроллим внутри контейнера
+    // Затем плавно скроллим внутри контейнера
     this.scrollInsideContainer(container, element);
   },
 
@@ -34,7 +32,8 @@ methods: {
     const elementRect = element.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     const relativeTop = elementRect.top - containerRect.top;
-    const targetScroll = container.scrollTop + relativeTop - 20; // 20px отступ сверху
+    const currentScroll = container.scrollTop;
+    const targetScroll = currentScroll + relativeTop - 20; // 20px отступ сверху
     
     this.animateScroll(container, targetScroll, 600);
   },
@@ -49,7 +48,7 @@ methods: {
 
   animateScroll(element, targetPosition, duration) {
     return new Promise(resolve => {
-      const startPosition = element.scrollTop || element.pageYOffset;
+      const startPosition = element.scrollTop || window.scrollY;
       const distance = targetPosition - startPosition;
       let startTime = null;
 
@@ -77,5 +76,26 @@ methods: {
 
       window.requestAnimationFrame(animation);
     });
+  }
+}  
+
+
+-----------------------------
+
+scrollInsideContainer(container, element) {
+  const elementRect = element.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  
+  // Проверяем, виден ли элемент в контейнере
+  const isVisible = (
+    elementRect.top >= containerRect.top &&
+    elementRect.bottom <= containerRect.bottom
+  );
+  
+  if (!isVisible) {
+    const relativeTop = elementRect.top - containerRect.top;
+    const currentScroll = container.scrollTop;
+    const targetScroll = currentScroll + relativeTop - 20;
+    this.animateScroll(container, targetScroll, 600);
   }
 }
