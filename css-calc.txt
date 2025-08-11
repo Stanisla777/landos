@@ -1,78 +1,41 @@
-receivedDateMobile([year, month]) {
-  const dateString = `${year}-${month}`;
-  this.$nextTick(() => {
-    const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
-    if (element) {
-      this.smoothScrollToElement(element);
-    }
-  });
-},
-
 async smoothScrollToElement(element) {
   const container = this.$refs.mobileShedule;
   
-  // Вычисляем все необходимые позиции сразу
+  // Вычисляем все необходимые позиции
   const elementRect = element.getBoundingClientRect();
   const containerRect = container.getBoundingClientRect();
   
-  // Вычисляем конечную позицию скролла внутри контейнера
+  // Вычисляем позицию элемента относительно контейнера
   const relativeTop = elementRect.top - containerRect.top;
-  const targetContainerScroll = container.scrollTop + relativeTop - 20;
+  const targetContainerScroll = container.scrollTop + relativeTop - 20; // -20 для отступа
   
-  // Проверяем, виден ли контейнер
-  const containerVisible = this.isElementInViewport(container);
+  // Вычисляем, насколько контейнер не виден в viewport
+  const containerTopInViewport = containerRect.top;
+  const containerBottomInViewport = containerRect.bottom;
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
   
-  if (!containerVisible) {
-    // Вычисляем позицию скролла страницы, чтобы контейнер был виден
-    const targetWindowScroll = window.scrollY + containerRect.top - 20;
-    
-    // Анимируем скролл страницы и контейнера одновременно
+  // Определяем, нужно ли скроллить страницу
+  let targetWindowScroll = null;
+  
+  // Если верх контейнера выше viewport (частично или полностью не виден сверху)
+  if (containerTopInViewport < 0) {
+    targetWindowScroll = window.scrollY + containerRect.top - 20;
+  }
+  // Если низ контейнера ниже viewport (частично или полностью не виден снизу)
+  else if (containerBottomInViewport > viewportHeight) {
+    // Вычисляем, насколько нужно проскроллить, чтобы показать низ контейнера
+    const scrollNeeded = containerBottomInViewport - viewportHeight + 20;
+    targetWindowScroll = window.scrollY + scrollNeeded;
+  }
+  
+  // Если нужно скроллить и страницу, и контейнер
+  if (targetWindowScroll !== null) {
     await Promise.all([
       this.animateScroll(window, targetWindowScroll, 600),
       this.animateScroll(container, targetContainerScroll, 600)
     ]);
   } else {
-    // Если контейнер уже виден, просто скроллим внутри него
+    // Если контейнер полностью в viewport, скроллим только контейнер
     await this.animateScroll(container, targetContainerScroll, 600);
   }
 },
-
-isElementInViewport(el) {
-  const rect = el.getBoundingClientRect();
-  return (
-    rect.top >= 0 &&
-    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
-  );
-},
-
-animateScroll(element, targetPosition, duration) {
-  return new Promise(resolve => {
-    const startPosition = element.scrollTop || window.scrollY;
-    const distance = targetPosition - startPosition;
-    let startTime = null;
-
-    const animation = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const progress = timestamp - startTime;
-      const percentage = Math.min(progress / duration, 1);
-      
-      // Кубическая easing функция для плавности
-      const easing = t => t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1;
-      const scrollNow = startPosition + (distance * easing(percentage));
-
-      if (element === window) {
-        window.scrollTo(0, scrollNow);
-      } else {
-        element.scrollTop = scrollNow;
-      }
-
-      if (progress < duration) {
-        window.requestAnimationFrame(animation);
-      } else {
-        resolve();
-      }
-    };
-
-    window.requestAnimationFrame(animation);
-  });
-}
