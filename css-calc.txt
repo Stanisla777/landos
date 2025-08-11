@@ -1,51 +1,52 @@
-receivedDateMobile([year, month]) {
-  const dateString = `${year}-${month}`;
-  this.$nextTick(() => {
-    const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
-    if (!element) return;
-
+methods: {
+  receivedDateMobile([year, month]) {
+    const dateString = `${year}-${month}`;
+    this.$nextTick(() => {
+      const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
+      if (element) {
+        this.smoothScrollToElement(element);
+      }
+    });
+  },
+  
+  smoothScrollToElement(element) {
     // Проверяем поддержку smooth scroll
     const supportsSmoothScroll = 'scrollBehavior' in document.documentElement.style;
     
     if (supportsSmoothScroll) {
-      // Нативный smooth scroll
+      // Для современных браузеров
       element.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
     } else {
-      // Полифил для плавного скролла
-      this.smoothScrollPolyfill(element);
+      // Полифил для старых браузеров и iOS
+      const container = this.$refs.mobileShedule;
+      const targetPosition = element.offsetTop - container.offsetTop;
+      const startPosition = container.scrollTop;
+      const distance = targetPosition - startPosition;
+      const duration = 500; // Длительность анимации в мс
+      let startTime = null;
+      
+      const animation = (currentTime) => {
+        if (!startTime) startTime = currentTime;
+        const timeElapsed = currentTime - startTime;
+        const run = this.easeInOutQuad(timeElapsed, startPosition, distance, duration);
+        container.scrollTop = run;
+        if (timeElapsed < duration) {
+          requestAnimationFrame(animation);
+        }
+      };
+      
+      requestAnimationFrame(animation);
     }
-  });
-},
-methods: {
-  smoothScrollPolyfill(target) {
-    const container = this.$refs.mobileShedule;
-    const targetRect = target.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    
-    // Вычисляем позицию относительно контейнера
-    const scrollTop = container.scrollTop;
-    const targetTop = targetRect.top - containerRect.top + scrollTop;
-    
-    const startTime = performance.now();
-    const duration = 500; // Длительность анимации в ms
-    
-    const animateScroll = (time) => {
-      const elapsed = time - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Эффект easing (можно изменить на другой)
-      const easing = (t) => t<.5 ? 2*t*t : -1+(4-2*t)*t;
-      
-      container.scrollTop = scrollTop + (targetTop - scrollTop) * easing(progress);
-      
-      if (progress < 1) {
-        requestAnimationFrame(animateScroll);
-      }
-    };
-    
-    requestAnimationFrame(animateScroll);
+  },
+  
+  easeInOutQuad(t, b, c, d) {
+    // Функция плавности анимации
+    t /= d/2;
+    if (t < 1) return c/2*t*t + b;
+    t--;
+    return -c/2 * (t*(t-2) - 1) + b;
   }
 }
