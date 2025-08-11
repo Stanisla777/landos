@@ -1,13 +1,51 @@
 receivedDateMobile([year, month]) {
-      const dateString = `${year}-${month}`;
-      this.$nextTick(()=>{
-        const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`)
-        if (element) {
-          element.scrollIntoView({
-            behavior:'smooth',
-            block:'start'
-          })
-        }
-      })
+  const dateString = `${year}-${month}`;
+  this.$nextTick(() => {
+    const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
+    if (!element) return;
 
+    // Проверяем поддержку smooth scroll
+    const supportsSmoothScroll = 'scrollBehavior' in document.documentElement.style;
+    
+    if (supportsSmoothScroll) {
+      // Нативный smooth scroll
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    } else {
+      // Полифил для плавного скролла
+      this.smoothScrollPolyfill(element);
     }
+  });
+},
+methods: {
+  smoothScrollPolyfill(target) {
+    const container = this.$refs.mobileShedule;
+    const targetRect = target.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    
+    // Вычисляем позицию относительно контейнера
+    const scrollTop = container.scrollTop;
+    const targetTop = targetRect.top - containerRect.top + scrollTop;
+    
+    const startTime = performance.now();
+    const duration = 500; // Длительность анимации в ms
+    
+    const animateScroll = (time) => {
+      const elapsed = time - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Эффект easing (можно изменить на другой)
+      const easing = (t) => t<.5 ? 2*t*t : -1+(4-2*t)*t;
+      
+      container.scrollTop = scrollTop + (targetTop - scrollTop) * easing(progress);
+      
+      if (progress < 1) {
+        requestAnimationFrame(animateScroll);
+      }
+    };
+    
+    requestAnimationFrame(animateScroll);
+  }
+}
