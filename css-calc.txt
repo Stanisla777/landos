@@ -11,38 +11,77 @@ methods: {
 
   smoothScrollToElement(element) {
     const container = this.$refs.mobileShedule;
+    
+    // 1. Сначала скроллим сам контейнер в видимую область страницы
+    this.scrollElementIntoView(container, () => {
+      // 2. Затем скроллим внутри контейнера
+      this.scrollInsideContainer(container, element);
+    });
+  },
+
+  scrollElementIntoView(element, callback) {
+    const elementRect = element.getBoundingClientRect();
+    const offset = 20; // Небольшой отступ от края
+    
+    // Проверяем, виден ли элемент полностью
+    const isInView = (
+      elementRect.top >= 0 &&
+      elementRect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
+    );
+    
+    if (isInView) {
+      callback();
+      return;
+    }
+
+    // Вычисляем позицию для скролла
+    const targetPosition = elementRect.top + window.pageYOffset - offset;
+    
+    this.animateScroll(document.documentElement, targetPosition, 500, callback);
+  },
+
+  scrollInsideContainer(container, element) {
     const containerRect = container.getBoundingClientRect();
     const elementRect = element.getBoundingClientRect();
-
+    
     // Вычисляем позицию элемента относительно контейнера
-    const scrollTop = container.scrollTop;
-    const elementPositionInContainer = elementRect.top - containerRect.top + scrollTop;
+    const elementTopInContainer = elementRect.top - containerRect.top + container.scrollTop;
+    const containerHeight = container.clientHeight;
+    const elementHeight = element.offsetHeight;
+    
+    // Вычисляем конечную позицию скролла (block: 'start')
+    const targetScrollPosition = elementTopInContainer;
+    
+    this.animateScroll(container, targetScrollPosition, 500);
+  },
 
-    // Вычисляем конечную позицию скролла с учетом block: 'start'
-    const targetScrollPosition = elementPositionInContainer;
-
-    // Текущая позиция скролла
-    const startPosition = container.scrollTop;
-    const distance = targetScrollPosition - startPosition;
-    const duration = 500; // Длительность анимации в мс
+  animateScroll(element, targetPosition, duration, callback) {
+    const startPosition = element.scrollTop || window.pageYOffset;
+    const distance = targetPosition - startPosition;
     let startTime = null;
 
-    const animateScroll = (timestamp) => {
+    const animation = (timestamp) => {
       if (!startTime) startTime = timestamp;
       const progress = timestamp - startTime;
       const percentage = Math.min(progress / duration, 1);
       
-      // Используем easing функцию для более плавного эффекта
-      const easing = (t) => t<.5 ? 2*t*t : -1+(4-2*t)*t;
+      // Кубическая easing функция для плавности
+      const easing = t => t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1;
       const scrollNow = startPosition + (distance * easing(percentage));
       
-      container.scrollTop = scrollNow;
+      if (element === document.documentElement) {
+        window.scrollTo(0, scrollNow);
+      } else {
+        element.scrollTop = scrollNow;
+      }
 
       if (progress < duration) {
-        window.requestAnimationFrame(animateScroll);
+        window.requestAnimationFrame(animation);
+      } else if (callback) {
+        callback();
       }
     };
 
-    window.requestAnimationFrame(animateScroll);
+    window.requestAnimationFrame(animation);
   }
 }
