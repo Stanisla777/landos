@@ -14,70 +14,76 @@ async smoothScrollToElement(element) {
   // Сначала убедимся, что контейнер виден в viewport
   await this.scrollContainerIntoView(container);
   
+  // Даем браузеру время на отрисовку после скролла страницы
+  await new Promise(resolve => setTimeout(resolve, 50));
+  
   // Затем скроллим внутри контейнера
   await this.scrollToElementInContainer(container, element);
 },
 
 async scrollContainerIntoView(container) {
+  // Получаем актуальные координаты после возможных изменений DOM
   const containerRect = container.getBoundingClientRect();
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const viewportHeight = window.innerHeight;
   
-  // Проверяем, полностью ли контейнер в viewport
-  const buffer = 20; // Небольшой отступ
-  const isFullyVisible = 
-    containerRect.top >= buffer && 
-    containerRect.bottom <= (viewportHeight - buffer);
+  // Вычисляем сколько контейнера видно
+  const visibleHeight = Math.min(containerRect.bottom, viewportHeight) - Math.max(containerRect.top, 0);
+  const visibilityRatio = visibleHeight / containerRect.height;
   
-  if (!isFullyVisible) {
-    // Вычисляем позицию для скролла страницы
-    let targetScroll;
-    if (containerRect.top < buffer) {
-      // Контейнер выше viewport - скроллим вверх
-      targetScroll = window.scrollY + containerRect.top - buffer;
-    } else {
-      // Контейнер ниже viewport - скроллим вниз
-      targetScroll = window.scrollY + containerRect.bottom - viewportHeight + buffer;
-    }
-    
+  // Если видно меньше 80% контейнера, скроллим страницу
+  if (visibilityRatio < 0.8) {
+    // Центрируем контейнер в viewport
+    const targetScroll = window.scrollY + containerRect.top - (viewportHeight - containerRect.height) / 2;
     await this.animateScroll(window, targetScroll, 600);
   }
 },
 
 async scrollToElementInContainer(container, element) {
+  // Получаем актуальные координаты после возможных изменений DOM
   const containerRect = container.getBoundingClientRect();
   const elementRect = element.getBoundingClientRect();
   
-  // Вычисляем относительную позицию элемента внутри контейнера
-  const relativeTop = elementRect.top - containerRect.top;
-  const relativeBottom = elementRect.bottom - containerRect.top;
+  // Вычисляем позицию элемента относительно контейнера
+  const elementTopRelative = elementRect.top - containerRect.top + container.scrollTop;
+  const elementBottomRelative = elementRect.bottom - containerRect.top + container.scrollTop;
   
-  const containerHeight = containerRect.height;
-  const buffer = 20; // Небольшой отступ
+  const containerHeight = container.clientHeight;
+  const buffer = 20; // Отступ
   
-  // Проверяем, виден ли элемент в контейнере
-  const isElementVisible = 
-    relativeTop >= buffer && 
-    relativeBottom <= (containerHeight - buffer);
-  
-  if (!isElementVisible) {
-    // Вычисляем целевую позицию скролла
-    let targetScroll;
-    if (relativeTop < buffer) {
-      // Элемент выше видимой области - скроллим вверх
-      targetScroll = container.scrollTop + relativeTop - buffer;
-    } else {
-      // Элемент ниже видимой области - скроллим вниз
-      targetScroll = container.scrollTop + relativeBottom - containerHeight + buffer;
-    }
-    
-    await this.animateScroll(container, targetScroll, 600);
+  // Вычисляем целевую позицию скролла
+  let targetScroll;
+  if (elementTopRelative - buffer < container.scrollTop) {
+    // Элемент выше видимой области - скроллим чтобы элемент был сверху с отступом
+    targetScroll = elementTopRelative - buffer;
+  } else if (elementBottomRelative + buffer > container.scrollTop + containerHeight) {
+    // Элемент ниже видимой области - скроллим чтобы элемент был снизу с отступом
+    targetScroll = elementBottomRelative - containerHeight + buffer;
+  } else {
+    // Элемент уже виден
+    return;
   }
+  
+  // Ограничиваем целевую позицию допустимыми значениями
+  targetScroll = Math.max(0, Math.min(targetScroll, container.scrollHeight - containerHeight));
+  
+  await this.animateScroll(container, targetScroll, 600);
 },
 
 animateScroll(element, targetPosition, duration) {
   return new Promise(resolve => {
-    const startPosition = element.scrollTop || window.scrollY;
+    const startPosition = element === window ? window.scrollY : element.scrollTop;
     const distance = targetPosition - startPosition;
+    
+    // Если расстояние слишком мало, не анимируем
+    if (Math.abs(distance) < 2) {
+      if (element === window) {
+        window.scrollTo(0, targetPosition);
+      } else {
+        element.scrollTop = targetPosition;
+      }
+      return resolve();
+    }
+    
     let startTime = null;
 
     const animation = (timestamp) => {
