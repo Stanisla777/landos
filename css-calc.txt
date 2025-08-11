@@ -1,139 +1,119 @@
-.select-list__wr-search
-    .select-list__search-item(
-      v-if="answerLink.hasOwnProperty('link')"
-      :data-link="answerLink.link!==''?answerLink.link:''"    
-      @click="handleCopyClick"
-    )
-      // ... остальной код кнопки копирования ...
-    
-    a.select-list__search-item(
-      v-if="answerLink.hasOwnProperty('vk')"
-      :href="answerLink.vk!==''?answerLink.vk:''"
-      @click.prevent="handleLinkClick('vk')"
-    )
-      // ... остальной код ссылки VK ...
-    
-    a.select-list__search-item(
-      v-if="answerLink.hasOwnProperty('tg')"
-      :href="answerLink.tg!==''?answerLink.tg:''"
-      @click.prevent="handleLinkClick('tg')"
-    )
-      // ... остальной код ссылки Telegram ...
-    
-    a.select-list__search-item(
-      v-if="answerLink.hasOwnProperty('wp')"
-      :href="answerLink.wp!==''?answerLink.wp:''"
-      @click.prevent="handleLinkClick('wp')"
-    )
-      // ... остальной код ссылки WhatsApp ...
+//кнопка отправить расчёт
+    async copyLink(event){
+      const link = event.currentTarget.dataset.link;
+      const element = event.currentTarget
 
+      try{
+        if (navigator.clipboard){
+          await navigator.clipboard.writeText(link);
+          element.querySelector('p').textContent='Скопировано';
+          setTimeout(()=>{
+            element.querySelector('p').textContent='Скопировать ссылку';
+          },3000)
+        } else {
+          throw new Error ('not supported')
+        }
 
+      } catch (err) {
+        const texarea = document.createElement('textarea');
+        texarea.value = link;
+        texarea.style.position='fixed';
+        document.body.appendChild(texarea)
+        texarea.select();
+        document.execCommand('copy')
+        document.body.removeChild(texarea)
+        console.log('Ошибка копирования');
+        console.log(err);
+      }
 
-data() {
-  return {
-    lastSentAnswers: null, // храним последние отправленные данные
-    isSending: false,      // флаг отправки запроса
-    pendingLinkAction: null // отложенное действие после запроса
-  }
-},
-methods: {
-  async handleLinkClick(platform) {
-    // Если данные не изменились, просто открываем ссылку
-    if (!this.hasAnswersChanged()) {
-      window.open(this.answerLink[platform], '_blank');
-      return;
-    }
+    },
     
-    // Сохраняем действие для выполнения после запроса
-    this.pendingLinkAction = () => {
-      window.open(this.answerLink[platform], '_blank');
-    };
+
+    //-------ОТПРАВКА-----------------------
+
+    //Поделиться
+    sendingResultsClick(el){
+      const element = el.target;
+      if (element.classList.contains('js--calc-shedule-footer-share')){
+        if (this.can_share===1 && this.flag_send_results===true) {
+          // this.sendingResult('result');//для финальной отправки нужно это
+          this.sendingResultToApi(888)//это не нужно
+        }
+      }
+    },
+
     
-    // Отправляем запрос
-    await this.sendingResultToApi();
-  },
-  
-  async handleCopyClick(event) {
-    // Если данные не изменились, просто копируем ссылку
-    if (!this.hasAnswersChanged()) {
-      this.copyLink(event);
-      return;
-    }
-    
-    // Сохраняем действие для выполнения после запроса
-    this.pendingLinkAction = () => {
-      this.copyLink(event);
-    };
-    
-    // Отправляем запрос
-    await this.sendingResultToApi();
-  },
-  
-  hasAnswersChanged() {
-    if (!this.lastSentAnswers) return true;
-    
-    // Простое сравнение объектов (можно улучшить для глубокого сравнения)
-    return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers);
-  },
-  
-  async sendingResultToApi() {
-    if (this.isSending) return;
-    
-    this.isSending = true;
-    
-    let data = {
-      "calculatorId": this.calculatorId,
-      "answers": this.answersToSand,
-    }
-    
-    try {
-      const res = await axios({
-        method: 'post',
-        url: '/api/',
+    sendingResult(flag){
+      this.captchaInit(flag);
+      let recaptchaKey = null;
+      if(typeof conf !== 'undefined'){
+        recaptchaKey = conf.smartcaptcha_key
+      }
+      if ((typeof recaptchaKey !== 'undefined') && recaptchaKey!==null) {
+        window.smartCaptcha.execute(this.captcha_id);
+      }
+    },
+    captchaInit(flag) {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (flag==='result'){
+            this.sendingResultToApi(token)
+          }
+          if (flag==='mail') {
+            this.sendingMailToApi(token)
+          }
+        },
+      });
+    },
+
+    //отправка расчётов
+    sendingResultToApi(token){
+      let data = {
+        "calculatorId": this.calculatorId,
+        "answers": this.answersToSand,
+        "smart-token": token
+      }
+      
+      axios({
+        method:'post',
+        url:'/api/',
+
         headers: {
           "Content-type": "application/json; charset=UTF-8",
           'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
         },
-        data: data
-      });
-      
-      if (res.data.code === 200 && res.data.result) {
-        Storage.dispatch('ActionDescriptionAfterSand', null);
-        Storage.dispatch('ActionAnswersId', res.data.result.answersId);
-        Storage.dispatch('ActionAnswerLink', res.data.result.answerLink);
-        
-        // Сохраняем последние отправленные данные
-        this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
-      } else {
-        if (res.data.description) {
-          Storage.dispatch('ActionDescriptionAfterSand', res.data.description);
-        }
-        if (res.data.code) {
-          this.answer_code = res.data.code;
-        }
-      }
-      
-      this.answersToSand = [];
-      
-      // Выполняем отложенное действие после успешного запроса
-      if (this.pendingLinkAction) {
-        this.pendingLinkAction();
-        this.pendingLinkAction = null;
-      }
-      
-    } catch (error) {
-      if (error.response && error.response.data !== undefined) {
-        console.log(error.response);
-        Storage.dispatch('ActionDescriptionAfterSand', error.response.data.description);
-      }
-      console.log(error);
-    } finally {
-      this.isSending = false;
-    }
-  },
-  
-  async copyLink(event) {
-    // ... существующий код copyLink ...
-  }
-}
 
+        data:data
+      })
+        .then((res)=>{
+          if(res.data.code===200&&res.data.result){
+
+            Storage.dispatch('ActionDescriptionAfterSand',null)
+            Storage.dispatch('ActionAnswersId',res.data.result.answersId)
+            Storage.dispatch('ActionAnswerLink',res.data.result.answerLink)
+          }
+          if (res.data.code!==200) {
+            if (res.data.description) {
+              Storage.dispatch('ActionDescriptionAfterSand',res.data.description)
+            }
+            if (res.data.code) {
+              this.answer_code=res.data.code
+            }
+          }
+          this.answersToSand=[]
+        })
+
+        //Если запрос с ошибкой
+        .catch((error)=> {
+          if(error.response){
+            if (error.response.data!==undefined){
+              console.log(error.response);
+              Storage.dispatch('ActionDescriptionAfterSand',error.response.data.description)
+            }
+          }
+          // state.preload_btn=false
+          console.log(error);
+        });
+    },
