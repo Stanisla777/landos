@@ -1,32 +1,43 @@
 receivedDateMobile([year, month]) {
-      const dateString = `${year}-${month}`;
-      this.$nextTick(()=>{
-        const targetElement = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
-        if (targetElement) {
-          const startPosition = window.pageYOffset;
-          const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+  const dateString = `${year}-${month}`;
+  this.$nextTick(() => {
+    const container = this.$refs.mobileShedule; // ваш контейнер со скроллом
+    const targetElement = container.querySelector(`[data-date="${dateString}"]`);
+    
+    if (targetElement && container) {
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = targetElement.getBoundingClientRect();
+      
+      // Вычисляем позицию относительно контейнера
+      const relativePosition = targetRect.top - containerRect.top;
+      
+      // Вычисляем сколько нужно проскроллить (с отступом 10px сверху)
+      const scrollToPosition = container.scrollTop + relativePosition - 10;
+      
+      const startPosition = container.scrollTop;
+      const distance = scrollToPosition - startPosition;
+      const duration = 800;
+      let startTime = null;
 
-          const distance = targetPosition -startPosition - 10;
-          const duration = 800;
-          let startTime = null;
+      function animation(currentTime) {
+        if (startTime === null) startTime = currentTime;
+        const timeElapsed = currentTime - startTime;
 
-          function animation(currentTime) {
-            if (startTime === null) startTime = currentTime;
-            const timeElapsed = currentTime - startTime;
+        const progress = Math.min(timeElapsed / duration, 1);
+        const ease = easeInOutQuad(progress);
 
-            const progress = Math.min(timeElapsed / duration, 1);
-            const ease = easeInOutQuad(progress)
-
-            window.scrollTo(0, startPosition + distance * ease);
-            if (timeElapsed < duration) {
-              requestAnimationFrame(animation)
-            }
-          }
-          function easeInOutQuad(t){
-            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-          }
-          requestAnimationFrame(animation)
+        container.scrollTop = startPosition + distance * ease;
+        
+        if (timeElapsed < duration) {
+          requestAnimationFrame(animation);
         }
-      })
-
+      }
+      
+      function easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      }
+      
+      requestAnimationFrame(animation);
     }
+  });
+}
