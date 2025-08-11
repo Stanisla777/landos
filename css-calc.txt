@@ -1,67 +1,51 @@
 receivedDateMobile([year, month]) {
   const dateString = `${year}-${month}`;
   this.$nextTick(() => {
-    const container = this.$refs.mobileShedule;
-    const element = container.querySelector(`[data-date="${dateString}"]`);
-    
-    if (!element) return;
-
-    // Функция для плавного скролла
-    const smoothScroll = (target, offset = 0) => {
-      const startPosition = target.scrollTop;
-      const targetPosition = offset;
-      const distance = targetPosition - startPosition;
-      const duration = 500; // продолжительность в ms
-      let startTime = null;
-
-      const animation = (currentTime) => {
-        if (!startTime) startTime = currentTime;
-        const timeElapsed = currentTime - startTime;
-        const run = easeInOutQuad(timeElapsed, startPosition, distance, duration);
-        target.scrollTop = run;
-        if (timeElapsed < duration) {
-          requestAnimationFrame(animation);
-        }
-      };
-
-      // Функция для плавности
-      const easeInOutQuad = (t, b, c, d) => {
-        t /= d / 2;
-        if (t < 1) return c / 2 * t * t + b;
-        t--;
-        return -c / 2 * (t * (t - 2) - 1) + b;
-      };
-
-      requestAnimationFrame(animation);
-    };
-
-    // Проверяем, виден ли элемент в viewport
-    const containerRect = container.getBoundingClientRect();
-    const elementRect = element.getBoundingClientRect();
-
-    // Если элемент выше контейнера
-    if (elementRect.top < containerRect.top) {
-      // Сначала скроллим контейнер в окне
-      smoothScroll(document.documentElement, container.offsetTop);
-      
-      // Затем скроллим внутри контейнера с небольшой задержкой
-      setTimeout(() => {
-        smoothScroll(container, element.offsetTop - container.offsetTop);
-      }, 500);
-    } 
-    // Если элемент ниже контейнера
-    else if (elementRect.bottom > containerRect.bottom) {
-      // Сначала скроллим контейнер в окне
-      smoothScroll(document.documentElement, container.offsetTop + container.offsetHeight - window.innerHeight);
-      
-      // Затем скроллим внутри контейнера с небольшой задержкой
-      setTimeout(() => {
-        smoothScroll(container, element.offsetTop - container.offsetTop - (container.offsetHeight - element.offsetHeight));
-      }, 500);
-    } 
-    // Если элемент виден, просто скроллим внутри контейнера
-    else {
-      smoothScroll(container, element.offsetTop - container.offsetTop);
+    const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
+    if (element) {
+      this.smoothScrollToElement(element);
     }
   });
+},
+
+methods: {
+  smoothScrollToElement(element) {
+    // Получаем контейнер с скроллом (либо document для основного скролла)
+    const container = this.$refs.mobileShedule;
+    const isContainerScrollable = container.scrollHeight > container.clientHeight;
+    
+    const targetScroll = isContainerScrollable 
+      ? container.scrollTop + element.getBoundingClientRect().top - container.getBoundingClientRect().top
+      : window.scrollY + element.getBoundingClientRect().top;
+    
+    const startPosition = isContainerScrollable ? container.scrollTop : window.scrollY;
+    const distance = targetScroll - startPosition;
+    const duration = 500; // Длительность анимации в мс
+    let startTime = null;
+    
+    const animateScroll = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = timestamp - startTime;
+      const percentage = Math.min(progress / duration, 1);
+      
+      // Кубическая функция для плавности
+      const easing = percentage < 0.5 
+        ? 4 * percentage * percentage * percentage 
+        : 1 - Math.pow(-2 * percentage + 2, 3) / 2;
+      
+      const scrollPosition = startPosition + distance * easing;
+      
+      if (isContainerScrollable) {
+        container.scrollTop = scrollPosition;
+      } else {
+        window.scrollTo(0, scrollPosition);
+      }
+      
+      if (progress < duration) {
+        window.requestAnimationFrame(animateScroll);
+      }
+    };
+    
+    window.requestAnimationFrame(animateScroll);
+  }
 }
