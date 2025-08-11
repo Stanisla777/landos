@@ -5,53 +5,46 @@ async smoothScrollToElement(element) {
   const elementRect = element.getBoundingClientRect();
   const containerRect = container.getBoundingClientRect();
   
-  // Вычисляем конечную позицию скролла внутри контейнера
+  // Вычисляем относительную позицию элемента внутри контейнера
   const relativeTop = elementRect.top - containerRect.top;
-  const targetContainerScroll = container.scrollTop + relativeTop - 20;
+  const targetContainerScroll = container.scrollTop + relativeTop - 20; // -20 для небольшого отступа
   
-  // Проверяем, виден ли элемент в контейнере
-  const isElementVisibleInContainer = 
-    relativeTop >= 0 && 
-    (relativeTop + elementRect.height) <= containerRect.height;
+  // Проверяем, виден ли контейнер в окне браузера
+  const containerVisible = this.isElementInViewport(container);
   
-  // Проверяем, виден ли контейнер полностью
-  const isContainerFullyVisible = this.isElementFullyInViewport(container);
+  // Проверяем, будет ли элемент виден после скролла контейнера
+  const elementVisibleAfterScroll = 
+    (targetContainerScroll >= 0) && 
+    (targetContainerScroll <= container.scrollHeight - container.clientHeight);
   
-  if (!isContainerFullyVisible) {
-    // Вычисляем позицию скролла страницы, чтобы контейнер был виден
-    // и элемент был доступен для скролла внутри контейнера
-    const containerTopRelativeToViewport = containerRect.top - window.scrollY;
-    const containerBottomRelativeToViewport = containerRect.bottom - window.scrollY;
-    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  if (!containerVisible) {
+    // Если контейнер не виден, скроллим страницу к контейнеру
+    const targetWindowScroll = window.scrollY + containerRect.top - 20;
     
-    let targetWindowScroll;
-    
-    if (containerRect.height > viewportHeight) {
-      // Если контейнер выше viewport, скроллим к его началу
-      targetWindowScroll = window.scrollY + containerRect.top - 20;
-    } else {
-      // Иначе центрируем контейнер в viewport
-      targetWindowScroll = window.scrollY + containerRect.top - ((viewportHeight - containerRect.height) / 2);
-    }
-    
-    // Анимируем скролл страницы и контейнера одновременно
     await Promise.all([
       this.animateScroll(window, targetWindowScroll, 600),
-      this.animateScroll(container, targetContainerScroll, 600)
+      elementVisibleAfterScroll ? this.animateScroll(container, targetContainerScroll, 600) : Promise.resolve()
     ]);
-  } else if (!isElementVisibleInContainer) {
-    // Если контейнер виден, но элемент нет - скроллим только контейнер
+  } else if (elementVisibleAfterScroll) {
+    // Если контейнер виден и элемент будет виден после скролла
     await this.animateScroll(container, targetContainerScroll, 600);
+  } else {
+    // Если элемент не будет виден после скролла контейнера (например, в самом низу)
+    // Скроллим страницу так, чтобы элемент оказался внизу видимой области
+    const elementBottomRelative = relativeTop + elementRect.height;
+    const targetWindowScroll = window.scrollY + containerRect.top + elementBottomRelative - window.innerHeight + 20;
+    
+    await Promise.all([
+      this.animateScroll(window, targetWindowScroll, 600),
+      this.animateScroll(container, container.scrollHeight - container.clientHeight, 600)
+    ]);
   }
-  // Если и контейнер и элемент видны - ничего не делаем
 },
 
-isElementFullyInViewport(el) {
+isElementInViewport(el) {
   const rect = el.getBoundingClientRect();
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-  
   return (
     rect.top >= 0 &&
-    rect.bottom <= viewportHeight
+    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
   );
 },
