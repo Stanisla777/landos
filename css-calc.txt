@@ -1,31 +1,30 @@
 receivedDateMobile([year, month]) {
   const dateString = `${year}-${month}`;
   this.$nextTick(() => {
-    const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
-    if (element) {
-      // Получаем позицию элемента относительно viewport
-      const elementRect = element.getBoundingClientRect();
-      // Получаем позицию контейнера
-      const container = this.$refs.mobileShedule;
-      const containerRect = container.getBoundingClientRect();
+    const container = this.$refs.mobileShedule;
+    const element = container.querySelector(`[data-date="${dateString}"]`);
+    
+    if (!element) return;
+
+    // Функция для плавного скролла
+    const smoothScroll = (target, scrollContainer, offset = 0) => {
+      const targetRect = target.getBoundingClientRect();
+      const containerRect = scrollContainer.getBoundingClientRect();
       
-      // Вычисляем позицию для скролла
-      const scrollPosition = elementRect.top - containerRect.top + container.scrollTop;
+      // Вычисляем позицию элемента относительно контейнера
+      const scrollPosition = targetRect.top - containerRect.top + scrollContainer.scrollTop - offset;
       
-      // Плавный скролл с помощью requestAnimationFrame
-      const duration = 500; // Длительность анимации в мс
-      const start = container.scrollTop;
+      // Анимируем скролл
+      const start = scrollContainer.scrollTop;
       const change = scrollPosition - start;
       const startTime = performance.now();
+      const duration = 800; // Продолжительность анимации в мс
       
       const animateScroll = (currentTime) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const easeInOutQuad = progress < 0.5 
-          ? 2 * progress * progress 
-          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-        
-        container.scrollTop = start + change * easeInOutQuad;
+        const ease = easeInOutQuad(progress);
+        scrollContainer.scrollTop = start + change * ease;
         
         if (progress < 1) {
           requestAnimationFrame(animateScroll);
@@ -33,16 +32,27 @@ receivedDateMobile([year, month]) {
       };
       
       requestAnimationFrame(animateScroll);
+    };
+
+    // Функция для плавности анимации
+    const easeInOutQuad = (t) => {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    };
+
+    // Сначала скроллим страницу, чтобы контейнер был в видимой области
+    const containerTop = container.getBoundingClientRect().top;
+    const pageOffset = window.pageYOffset;
+    const viewportHeight = window.innerHeight;
+    const containerHeight = container.offsetHeight;
+    
+    // Если контейнер не полностью в видимой области
+    if (containerTop < 0 || containerTop + containerHeight > viewportHeight) {
+      smoothScroll(container, document.documentElement, 20);
     }
-  });
-}
-
-
-// После получения elementRect
-if (elementRect.top < 0 || elementRect.bottom > window.innerHeight) {
-  // Элемент вне viewport - скроллим страницу
-  window.scrollTo({
-    top: window.scrollY + elementRect.top - 100, // 100px отступ сверху
-    behavior: 'smooth'
+    
+    // Затем скроллим внутри контейнера к нужному элементу
+    setTimeout(() => {
+      smoothScroll(element, container, 20);
+    }, 100);
   });
 }
