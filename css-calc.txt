@@ -20,63 +20,53 @@ methods: {
     // Проверяем, есть ли скролл у контейнера
     const hasContainerScroll = container.scrollHeight > container.clientHeight;
     
+    // Вычисляем видимость элемента в контейнере
+    const isElementFullyVisible = (
+      elementRect.top >= containerRect.top && 
+      elementRect.bottom <= containerRect.bottom
+    );
+    
     if (hasContainerScroll) {
-      // Проверяем, полностью ли элемент виден в контейнере
-      const isFullyVisible = (
-        elementRect.top >= containerRect.top && 
-        elementRect.bottom <= containerRect.bottom
-      );
-      
-      if (!isFullyVisible) {
+      // Если элемент не полностью виден в контейнере
+      if (!isElementFullyVisible) {
         // Вычисляем позицию для скролла контейнера
-        const containerScrollTop = container.scrollTop;
-        const elementOffsetTop = element.offsetTop - container.offsetTop;
-        const elementHeight = element.offsetHeight;
-        const containerHeight = container.clientHeight;
+        const elementMiddle = elementRect.top + elementRect.height/2;
+        const containerMiddle = containerRect.top + container.clientHeight/2;
+        const scrollAmount = elementMiddle - containerMiddle;
         
-        // Позиционируем элемент по центру контейнера
-        let scrollTo = elementOffsetTop - (containerHeight - elementHeight) / 2;
-        
-        // Ограничиваем скролл границами контейнера
-        scrollTo = Math.max(0, Math.min(scrollTo, container.scrollHeight - containerHeight));
-        
-        // Применяем скролл
-        container.scrollTop = scrollTo;
-        
-        // После скролла контейнера проверяем, нужно ли скроллить страницу
-        this.$nextTick(() => {
-          const newElementRect = element.getBoundingClientRect();
-          const viewportHeight = window.innerHeight;
-          
-          // Если нижняя часть элемента все еще ниже viewport (с учетом отступа)
-          if (newElementRect.bottom > viewportHeight - 20) {
-            const pageScrollTo = window.pageYOffset + newElementRect.top - (viewportHeight - newElementRect.height) / 2;
-            this.smoothScrollTo(pageScrollTo);
-          }
-        });
+        // Плавный скролл контейнера
+        this.smoothScroll(container, container.scrollTop + scrollAmount);
       }
     } else {
       // Если скролла у контейнера нет, скроллим страницу
-      const pageScrollTo = window.pageYOffset + elementRect.top - (window.innerHeight - elementRect.height) / 2;
-      this.smoothScrollTo(pageScrollTo);
+      const elementTopRelativeToViewport = elementRect.top;
+      const targetScroll = window.pageYOffset + elementTopRelativeToViewport - (window.innerHeight / 3);
+      
+      // Плавный скролл страницы
+      this.smoothScroll(window, targetScroll);
     }
   },
   
-  smoothScrollTo(targetPosition) {
-    const startPosition = window.pageYOffset;
-    const distance = targetPosition - startPosition;
-    
-    // Не скроллим если расстояние меньше 1px
-    if (Math.abs(distance) < 1) return;
-    
-    const duration = Math.min(500, Math.abs(distance) * 0.5);
+  smoothScroll(scrollable, targetPosition) {
+    const isWindow = scrollable === window;
+    const currentPosition = isWindow ? window.pageYOffset : scrollable.scrollTop;
+    const distance = targetPosition - currentPosition;
+    const duration = 300;
     let startTime = null;
     
     const animation = (currentTime) => {
       if (!startTime) startTime = currentTime;
       const timeElapsed = currentTime - startTime;
-      const run = this.easeInOutQuad(timeElapsed, startPosition, distance, duration);
-      window.scrollTo(0, run);
+      const progress = Math.min(timeElapsed / duration, 1);
+      const easeProgress = this.easeInOutQuad(progress);
+      const newPosition = currentPosition + distance * easeProgress;
+      
+      if (isWindow) {
+        window.scrollTo(0, newPosition);
+      } else {
+        scrollable.scrollTop = newPosition;
+      }
+      
       if (timeElapsed < duration) {
         requestAnimationFrame(animation);
       }
@@ -85,11 +75,10 @@ methods: {
     requestAnimationFrame(animation);
   },
   
-  easeInOutQuad(t, b, c, d) {
-    t /= d / 2;
-    if (t < 1) return c / 2 * t * t + b;
-    t--;
-    return -c / 2 * (t * (t - 2) - 1) + b;
+  easeInOutQuad(progress) {
+    return progress < 0.5 
+      ? 2 * progress * progress 
+      : -1 + (4 - 2 * progress) * progress;
   },
   
   handleScroll(event) {
