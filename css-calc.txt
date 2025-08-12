@@ -58,7 +58,7 @@
         @click="rangeInputSlider"
       )
     .property-calculator__wr-range
-      p.property-calculator__range {{ formatMillions(stgMin) }} млн
+      p.property-calculator__range {{ formatMillions(initial_payment_from_cost) }} млн
       p.property-calculator__range {{ formatMillions(Math.ceil((stgMin + stgMax) / 2)) }} млн
       p.property-calculator__range {{ formatMillions(stgMax) }} млн
 </template>
@@ -117,7 +117,7 @@ export default {
         step: this.stepApartment,
         initial: this.stgMin,
         range: {
-          min: this.stgMin,
+          min: this.initial_payment_from_cost,
           max: this.stgMax
         },
       });
@@ -299,26 +299,39 @@ export default {
     dataFieldForCalculation(){
     },
     initial_payment_from_cost(){
-      if (this.calculating_initial_payment_cost) {
-        this.realtySlider.set(this.initial_payment_from_cost);
-      }
       console.log('this.initial_payment_from_cost');
       console.log(this.initial_payment_from_cost);
+      if (this.calculating_initial_payment_cost) {
+        this.realtySlider.set(this.initial_payment_from_cost);
+        if (this.realtySlider) {
+          this.realtySlider.updateOptions({
+            range: {
+              min: this.initial_payment_from_cost,
+              max: this.stgMax
+            }
+          });
+
+          // Также обновите текущее значение, если оно превышает новый максимум
+          // const currentValue = this.realtySlider.get();
+          // if (parseInt(currentValue) > newVal -1) {
+          //   this.realtySlider.set(newVal -1);
+          //   // Storage.dispatch('ActionInitialPayment', newVal -1);
+          // }
+        }
+      }
     },
 
     recalculation_initial_payment(newVal) {
       if (this.recalculation_initial_payment) {
         this.realtySlider.set(this.initial_payment_from_cost);
       }
-      console.log('this.recalculation_initial_payment');
-      console.log(this.recalculation_initial_payment);
     },
 
     stgMax(newVal) {
       if (this.realtySlider) {
         this.realtySlider.updateOptions({
           range: {
-            // min: this.stgMin,
+            min: this.initial_payment_from_cost,
             max: newVal
           }
         });
@@ -342,5 +355,9 @@ export default {
 </script>
 <style scoped>
 </style>
-Ошибка 
-bundle.js:1963 Error: noUiSlider (14.7.0): Missing 'min' or 'max' in 'range'.
+
+
+Ошибки:
+Error in mounted hook: "Error: noUiSlider (14.7.0): 'range' contains invalid value."
+bundle.js:1963 [Vue warn]: Error in callback for watcher "initial_payment_from_cost": "TypeError: this.realtySlider.set is not a function"
+TypeError: this.realtySlider.set is not a function
