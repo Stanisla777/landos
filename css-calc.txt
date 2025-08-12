@@ -1,97 +1,76 @@
 receivedDateMobile([year, month]) {
   const dateString = `${year}-${month}`;
   this.$nextTick(() => {
-    const container = this.$refs.mobileShedule; // скроллируемый блок
+    const container = this.$refs.mobileShedule; // блок с max-height и overflow
     const element = container.querySelector(`[data-date="${dateString}"]`);
-    const pageContainer = document.documentElement; // или другой контейнер страницы
 
-    if (!element) return;
+    if (!element || !container) return;
 
-    const animateScroll = (start, end, duration, updateFn) => {
-      const startTime = performance.now();
+    this.scrollToElementSmoothly(container, element);
+  });
+},
 
-      const ease = (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1; // easeInOutCubic
-
-      const step = (currentTime) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easedProgress = ease(progress);
-        const value = start + (end - start) * easedProgress;
-        updateFn(value);
-
-        if (progress < 1) {
-          requestAnimationFrame(step);
-        }
-      };
-
-      requestAnimationFrame(step);
-    };
-
+methods: {
+  scrollToElementSmoothly(container, targetElement) {
     const containerRect = container.getBoundingClientRect();
-    const elementRect = element.getBoundingClientRect();
+    const targetRect = targetElement.getBoundingClientRect();
+    const pageRect = document.documentElement.getBoundingClientRect();
 
-    const elementTopRelativeToContainer = elementRect.top - containerRect.top + container.scrollTop;
-    const elementBottomRelativeToContainer = elementRect.bottom - containerRect.top + container.scrollTop;
+    const containerScrollTop = container.scrollTop;
+    const targetTopRelative = targetRect.top - containerRect.top; // позиция элемента относительно контейнера
+    const containerVisibleHeight = containerRect.height;
 
-    const isElementVisible =
-      elementTopRelativeToContainer >= container.scrollTop &&
-      elementBottomRelativeToContainer <= container.scrollTop + container.clientHeight;
+    // Сколько нужно проскроллить внутри контейнера, чтобы элемент был сверху
+    const neededScrollTop = targetTopRelative;
 
-    if (isElementVisible) {
-      // Элемент уже виден — ничего не делаем
+    // Проверим, можем ли мы проскроллить внутри контейнера
+    const maxScroll = container.scrollHeight - container.clientHeight;
+
+    if (neededScrollTop <= container.scrollTop + 5 && neededScrollTop >= container.scrollTop - 5) {
+      // Уже в зоне видимости, ничего не делаем
       return;
     }
 
-    // Нужно скроллить
-    const targetContainerScrollTop = elementTopRelativeToContainer - container.clientTop;
-
-    // Проверим, можем ли мы скроллить блок до нужной позиции
-    const maxContainerScroll = container.scrollHeight - container.clientHeight;
-
-    if (targetContainerScrollTop <= maxContainerScroll) {
-      // Сначала скроллим блок
-      animateScroll(
-        container.scrollTop,
-        targetContainerScrollTop,
-        500,
-        (value) => {
-          container.scrollTop = value;
-        }
-      );
-
-      // Проверим, после скролла блока, элемент в зоне видимости страницы?
-      const finalElementRect = element.getBoundingClientRect();
-      const isElementInViewport =
-        finalElementRect.top >= 0 &&
-        finalElementRect.bottom <= window.innerHeight;
-
-      if (!isElementInViewport) {
-        // Доскроллим страницу
-        const pageScrollTop = window.pageYOffset;
-        const targetPageScrollTop = finalElementRect.top + pageScrollTop - 20; // небольшой отступ
-
-        animateScroll(
-          pageScrollTop,
-          targetPageScrollTop,
-          500,
-          (value) => {
-            window.scrollTo(0, value);
-          }
-        );
-      }
-    } else {
-      // Блок не может скроллиться до элемента — скроллим страницу
-      const pageScrollTop = window.pageYOffset;
-      const targetPageScrollTop = elementRect.top + pageScrollTop - 20;
-
-      animateScroll(
-        pageScrollTop,
-        targetPageScrollTop,
-        500,
-        (value) => {
-          window.scrollTo(0, value);
-        }
-      );
+    // === Случай 1: можно проскроллить внутри контейнера ===
+    if (neededScrollTop >= 0 && neededScrollTop <= maxScroll) {
+      this.smoothScrollTo(container, 'scrollTop', neededScrollTop, 300, (value) => {
+        container.scrollTop = value;
+      });
     }
-  });
+    // === Случай 2: элемент выше контейнера или не влезает в контейнер после скролла ===
+    else {
+      // Нужно проскроллить всю страницу так, чтобы контейнер оказался сверху
+      const pageScrollTarget = pageRect.top + containerRect.top - 10; // с небольшим отступом
+
+      this.smoothScrollTo(window, 'scrollY', pageScrollTarget, 300, (value) => {
+        window.scrollTo(0, value);
+      });
+    }
+  },
+
+  smoothScrollTo(element, property, target, duration, setValue) {
+    const start = element[property];
+    const change = target - start;
+    let startTime = null;
+
+    const animateScroll = (currentTime) => {
+      if (startTime === null) startTime = currentTime;
+      const timeElapsed = currentTime - startTime;
+      const progress = Math.min(timeElapsed / duration, 1);
+
+      // easeInOutCubic
+      const ease = progress < 0.5
+        ? 4 * progress * progress * progress
+        : (progress - 1) * (2 * progress - 2) * (2 * progress - 2) + 1;
+
+      const val = start + change * ease;
+      setValue(val);
+
+      if (timeElapsed < duration) {
+        requestAnimationFrame(animateScroll);
+      }
+    };
+
+    requestAnimationFrame(animateScroll);
+  }
 }
