@@ -1,3 +1,23 @@
-p.property-calculator__range {{ (stgMin / 1000000).toFixed(2).replace('.', ',') }} млн
-p.property-calculator__range {{ (Math.ceil((stgMin + stgMax) / 2 / 1000000 * 100) / 100).toFixed(2).replace('.', ',') }} млн
-p.property-calculator__range {{ (Math.ceil(stgMax / 1000000 * 100) / 100).toFixed(2).replace('.', ',') }} млн
+methods: {
+  formatMillions(value) {
+    const millions = value / 1000000;
+    
+    // Округляем вверх до 2 знаков после запятой
+    const rounded = Math.ceil(millions * 100) / 100;
+    
+    // Форматируем с 2 знаками после запятой, заменя точку на запятую
+    let formatted = rounded.toFixed(2).replace('.', ',');
+    
+    // Убираем лишние нули после запятой, если они есть
+    if (formatted.endsWith(',00')) {
+      formatted = formatted.replace(',00', '');
+    }
+    
+    return formatted;
+  }
+}
+
+p.property-calculator__range {{ formatMillions(stgMin) }} млн
+p.property-calculator__range {{ formatMillions(Math.ceil((stgMin + stgMax) / 2)) }} млн
+p.property-calculator__range {{ formatMillions(stgMax) }} млн
+
