@@ -1,29 +1,21 @@
 /**
- * Плавный скролл к элементу
- * @param {HTMLElement|string} target - Элемент или селектор
- * @param {object} options - Опции
- * @param {number} [options.duration=1000] - Длительность анимации (мс)
- * @param {number} [options.offset=0] - Смещение от верха элемента (px)
+ * Плавный скролл к элементу с поддержкой всех браузеров и overflow-контейнеров
+ * @param {HTMLElement|string} target - Элемент или селектор элемента
+ * @param {object} [options] - Настройки
+ * @param {number} [options.offset=0] - Дополнительный отступ
+ * @param {number} [options.duration=600] - Длительность анимации (мс)
  * @param {string} [options.easing='easeInOutQuad'] - Функция плавности
  */
 function smoothScrollTo(target, options = {}) {
+  // Параметры по умолчанию
   const {
-    duration = 1000,
     offset = 0,
+    duration = 600,
     easing = 'easeInOutQuad'
   } = options;
 
-  // Поддержка разных easing-функций
+  // Поддерживаемые функции плавности
   const easingFunctions = {
-    linear(t) {
-      return t;
-    },
-    easeInQuad(t) {
-      return t * t;
-    },
-    easeOutQuad(t) {
-      return t * (2 - t);
-    },
     easeInOutQuad(t) {
       return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
     },
@@ -32,58 +24,87 @@ function smoothScrollTo(target, options = {}) {
     },
     easeOutCubic(t) {
       return (--t) * t * t + 1;
-    },
-    easeInOutCubic(t) {
-      return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
     }
   };
 
-  const easingFn = easingFunctions[easing] || easingFunctions.easeInOutQuad;
-
-  // Получаем целевой элемент
+  // Получаем элемент
   const element = typeof target === 'string' 
     ? document.querySelector(target) 
     : target;
+  
+  if (!element) return;
 
-  if (!element) {
-    console.warn('Smooth scroll: target element not found');
-    return;
-  }
+  // Находим ближайший scrollable-родитель
+  const findScrollableParent = (el) => {
+    if (!el) return document.documentElement;
+    
+    let parent = el.parentElement;
+    while (parent) {
+      const style = window.getComputedStyle(parent);
+      if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        // Проверяем, что элемент действительно может скроллиться
+        if (parent.scrollHeight > parent.clientHeight) {
+          return parent;
+        }
+      }
+      parent = parent.parentElement;
+    }
+    return document.documentElement;
+  };
 
-  const startPos = window.pageYOffset;
-  const targetPos = getElementPosition(element) - offset;
-  const distance = targetPos - startPos;
+  const scrollContainer = findScrollableParent(element);
+  const isBody = scrollContainer === document.documentElement;
+
+  // Вычисляем позицию элемента относительно контейнера
+  const containerRect = scrollContainer.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  
+  let targetPosition = (isBody 
+    ? window.pageYOffset + elementRect.top
+    : scrollContainer.scrollTop + elementRect.top - containerRect.top) + offset;
+
+  // Ограничиваем максимальную позицию скролла
+  const maxScroll = isBody
+    ? document.documentElement.scrollHeight - window.innerHeight
+    : scrollContainer.scrollHeight - scrollContainer.clientHeight;
+  
+  targetPosition = Math.min(targetPosition, maxScroll);
+
+  const startPosition = isBody ? window.pageYOffset : scrollContainer.scrollTop;
+  const distance = targetPosition - startPosition;
   let startTime = null;
 
-  function getElementPosition(el) {
-    const rect = el.getBoundingClientRect();
-    return rect.top + window.pageYOffset;
-  }
-
-  function animation(currentTime) {
-    if (startTime === null) startTime = currentTime;
-    const timeElapsed = currentTime - startTime;
-    const progress = Math.min(timeElapsed / duration, 1);
+  // Функция анимации
+  const animateScroll = (timestamp) => {
+    if (!startTime) startTime = timestamp;
+    const elapsed = timestamp - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = easingFunctions[easing](progress);
     
-    window.scrollTo(0, startPos + distance * easingFn(progress));
+    const scrollTo = startPosition + distance * easeProgress;
     
-    if (timeElapsed < duration) {
-      window.requestAnimationFrame(animation);
+    if (isBody) {
+      window.scrollTo(0, scrollTo);
+    } else {
+      scrollContainer.scrollTop = scrollTo;
     }
-  }
+    
+    if (elapsed < duration) {
+      window.requestAnimationFrame(animateScroll);
+    }
+  };
 
-  // iOS требует использование requestAnimationFrame
-  window.requestAnimationFrame(animation);
+  // Запускаем анимацию
+  window.requestAnimationFrame(animateScroll);
 }
 
-// Полифилл для requestAnimationFrame
+// Полифил для requestAnimationFrame
 (function() {
   const vendors = ['ms', 'moz', 'webkit', 'o'];
-  for (let x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-    window.requestAnimationFrame = window[`${vendors[x]}RequestAnimationFrame`];
-    window.cancelAnimationFrame = 
-      window[`${vendors[x]}CancelAnimationFrame`] || 
-      window[`${vendors[x]}CancelRequestAnimationFrame`];
+  for (let i = 0; i < vendors.length && !window.requestAnimationFrame; ++i) {
+    window.requestAnimationFrame = window[`${vendors[i]}RequestAnimationFrame`];
+    window.cancelAnimationFrame = window[`${vendors[i]}CancelAnimationFrame`] || 
+                                 window[`${vendors[i]}CancelRequestAnimationFrame`];
   }
 
   if (!window.requestAnimationFrame) {
@@ -106,50 +127,10 @@ function smoothScrollTo(target, options = {}) {
   }
 }());
 
-// Создаем плагин для Vue
-const SmoothScrollPlugin = {
-  install(Vue) {
-    Vue.prototype.$smoothScroll = smoothScrollTo;
-    
-    Vue.directive('smooth-scroll', {
-      inserted(el, binding) {
-        el.addEventListener('click', (e) => {
-          e.preventDefault();
-          const target = binding.value || el.getAttribute('href');
-          const options = binding.modifiers || {};
-          smoothScrollTo(target, options);
-        });
-      }
-    });
-  }
-};
+------------------------------------------------------------
 
-// Экспортируем для использования без Vue
-export { smoothScrollTo, SmoothScrollPlugin };
-
------------------------------------------------------------------
-
-Использование в Vue 2
-import Vue from 'vue';
-import { SmoothScrollPlugin } from './smooth-scroll';
-
-Vue.use(SmoothScrollPlugin);
-
-// Теперь можно использовать в компонентах:
-// this.$smoothScroll('#section', { duration: 800, offset: 20 });
-
-// Или как директиву:
-// <a href="#section" v-smooth-scroll>Scroll to section</a>
-
-------------------------------------------------------------------------
-
-Использование без Vue
-javascript
-import { smoothScrollTo } from './smooth-scroll';
-
-// Скролл к элементу с ID "section"
-smoothScrollTo('#section', {
-  duration: 800,
-  offset: 20,
-  easing: 'easeInOutCubic'
+smoothScrollTo('#myElement', {
+  offset: -20,    // Отступ от элемента
+  duration: 1000,  // Длительность анимации
+  easing: 'easeOutCubic' // Тип анимации
 });
