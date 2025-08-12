@@ -1,127 +1,47 @@
 plugins: [
   store => {
-    // Флаг для предотвращения рекурсивных обновлений
-    let isUpdating = false;
+    // Флаг для предотвращения множественных вычислений
+    let isCalculating = false;
     
-    // Основной watch для критических параметров
+    const calculateAndUpdate = () => {
+      if (isCalculating) return;
+      isCalculating = true;
+      
+      // Обновляем answers_to_send
+      Vue.set(store.state.answers_to_send, 'loanAmount', store.state.cost_property);
+      Vue.set(store.state.answers_to_send, 'initialPayment', store.state.initial_payment);
+      Vue.set(store.state.answers_to_send, 'bet', store.state.annualInterestRate);
+      Vue.set(store.state.answers_to_send, 'loanTerm', store.state.loanTerm);
+      
+      // Выполняем расчет только если все параметры валидны
+      if (store.state.loanAmount > 0 && store.state.annualInterestRate >= 0 && store.state.loanTerm > 0) {
+        store.commit('mutationTotalCalculate');
+      }
+      
+      isCalculating = false;
+    };
+    
+    // Отслеживаем изменения всех необходимых параметров
     store.watch(
-      state => ({
-        loanAmount: state.loanAmount,
-        annualInterestRate: state.annualInterestRate,
-        loanTerm: state.loanTerm,
-        startMortage: state.startMortage
-      }),
-      (newVal, oldVal) => {
-        // Проверяем, что хотя бы одно значение изменилось
-        if (!isUpdating && (
-          newVal.loanAmount !== oldVal.loanAmount ||
-          newVal.annualInterestRate !== oldVal.annualInterestRate ||
-          newVal.loanTerm !== oldVal.loanTerm ||
-          newVal.startMortage !== oldVal.startMortage
-        )) {
-          isUpdating = true;
-          
-          // Вызываем оба мутатора синхронно
-          store.commit('mutationTotalCalculate');
-          store.commit('mutationCollectAnswer');
-          
-          // Даём Vue время обновить DOM перед следующим циклом
-          Vue.nextTick(() => {
-            isUpdating = false;
-          });
-        }
-      },
-      { deep: true, immediate: false }
+      () => [
+        store.state.cost_property,
+        store.state.initial_payment,
+        store.state.annualInterestRate,
+        store.state.loanTerm,
+        store.state.loanAmount
+      ],
+      calculateAndUpdate,
+      { deep: true, immediate: true }
     );
-    
-    // Отдельные watch-еры для answers_to_send
-    ['cost_property', 'initial_payment', 'annualInterestRate', 'loanTerm'].forEach(prop => {
-      store.watch(
-        state => state[prop],
-        (newValue) => {
-          if (!isUpdating) {
-            const map = {
-              'cost_property': 'loanAmount',
-              'initial_payment': 'initialPayment',
-              'annualInterestRate': 'bet',
-              'loanTerm': 'loanTerm'
-            };
-            Vue.set(store.state.answers_to_send, map[prop], newValue);
-          }
-        },
-        { deep: true }
-      );
-    });
   }
 ]
 
-------------------------------------------
+В компоненте, где отображаются результаты, добавьте проверку на полную загрузку данных:
 
-mutationTotalCalculate(state) {
-  // Проверяем, что все необходимые параметры установлены и валидны
-  if (!state.loanAmount || state.loanAmount <= 0 || 
-      !state.annualInterestRate || state.annualInterestRate < 0 ||
-      !state.loanTerm || state.loanTerm <= 0 ||
-      !state.startMortage) {
-    return;
+computed: {
+  isDataReady() {
+    return this.$store.state.shedule.length > 0 && 
+           this.$store.state.debt_interest > 0 &&
+           this.$store.state.total_tax_deduction > 0;
   }
-
-  // Вычисляем график платежей
-  const newShedule = calculateMortgageSheduleFirst(
-    state.loanAmount,
-    state.annualInterestRate,
-    state.loanTerm,
-    state.startMortage,
-    state.array_early_repayment
-  );
-
-  // Если график не изменился, не обновляем состояние
-  if (JSON.stringify(newShedule) === JSON.stringify(state.shedule)) {
-    return;
-  }
-
-  // Обновляем состояние одним атомарным действием
-  state.shedule = newShedule;
-  
-  // Все последующие вычисления делаем только если есть график
-  if (newShedule.length > 0) {
-    state.amount_taxes_paid = payAllInterest(newShedule);
-    state.debt_interest = state.amount_taxes_paid + state.loanAmount;
-    
-    // Вычисляем налоговые вычеты
-    state.tax_deduction_property = Math.min(
-      state.loanAmount * 0.13,
-      state.transfer_parametr.max_tax_deduction_property
-    );
-    
-    state.tax_deduction_interest = Math.min(
-      state.amount_taxes_paid * 0.13,
-      state.transfer_parametr.max_tax_deduction_interest
-    );
-    
-    state.total_tax_deduction = state.tax_deduction_property + state.tax_deduction_interest;
-    
-    // Вычисляем необходимый доход
-    if (newShedule[0] && newShedule[0].payment) {
-      state.required_income = newShedule[0].payment / 0.5;
-    }
-  }
-}
-
-----------------------------------
-
-mutationCollectAnswer(state) {
-  const answers = {
-    loanAmount: state.cost_property,
-    initialPayment: state.initial_payment,
-    bet: state.annualInterestRate,
-    loanTerm: state.loanTerm
-  };
-  
-  // Обновляем только если значения действительно изменились
-  Object.keys(answers).forEach(key => {
-    if (state.answers_to_send[key] !== answers[key]) {
-      Vue.set(state.answers_to_send, key, answers[key]);
-    }
-  });
 }
