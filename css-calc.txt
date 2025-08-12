@@ -1,72 +1,87 @@
+receivedDateMobile([year, month]) {
+  const dateString = `${year}-${month}`;
+  this.$nextTick(() => {
+    const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
+    
+    if (element) {
+      setTimeout(() => {
+        this.scrollToElement(element);
+      }, 20);
+    }
+  });
+},
+
 methods: {
-  receivedDateMobile([year, month]) {
-    const dateString = `${year}-${month}`;
-    this.$nextTick(() => {
-      const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
-      
-      if (element) {
-        setTimeout(() => {
-          this.scrollToElement(element);
-        }, 20);
-      }
-    });
-  },
-  
   scrollToElement(element) {
     const container = this.$refs.mobileShedule;
-    const containerRect = container.getBoundingClientRect();
-    const elementRect = element.getBoundingClientRect();
+    const containerHeight = container.clientHeight;
+    const containerScrollTop = container.scrollTop;
+    const elementTop = element.offsetTop;
+    const elementHeight = element.clientHeight;
     
     // Проверяем, есть ли скролл у контейнера
-    const hasContainerScroll = container.scrollHeight > container.clientHeight;
-    
-    // Вычисляем видимость элемента в контейнере
-    const isElementFullyVisible = (
-      elementRect.top >= containerRect.top && 
-      elementRect.bottom <= containerRect.bottom
-    );
+    const hasContainerScroll = container.scrollHeight > containerHeight;
     
     if (hasContainerScroll) {
-      // Если элемент не полностью виден в контейнере
+      // Проверяем, виден ли элемент полностью в текущей видимой области
+      const isElementFullyVisible = 
+        elementTop >= containerScrollTop && 
+        (elementTop + elementHeight) <= (containerScrollTop + containerHeight);
+      
+      // Если элемент не полностью виден, скроллим контейнер
       if (!isElementFullyVisible) {
-        // Вычисляем позицию для скролла контейнера
-        const elementMiddle = elementRect.top + elementRect.height/2;
-        const containerMiddle = containerRect.top + container.clientHeight/2;
-        const scrollAmount = elementMiddle - containerMiddle;
+        // Позиционируем элемент вверху контейнера
+        container.scrollTop = elementTop;
         
-        // Плавный скролл контейнера
-        this.smoothScroll(container, container.scrollTop + scrollAmount);
+        // Проверяем, хватило ли скролла контейнера для полного отображения элемента
+        const newContainerScrollTop = container.scrollTop;
+        const isElementStillNotFullyVisible = 
+          (elementTop + elementHeight) > (newContainerScrollTop + containerHeight);
+        
+        // Если после скролла контейнера элемент всё ещё не полностью виден,
+        // скроллим страницу до контейнера
+        if (isElementStillNotFullyVisible) {
+          this.scrollPageToContainer(container);
+        }
       }
     } else {
-      // Если скролла у контейнера нет, скроллим страницу
-      const elementTopRelativeToViewport = elementRect.top;
-      const targetScroll = window.pageYOffset + elementTopRelativeToViewport - (window.innerHeight / 3);
-      
-      // Плавный скролл страницы
-      this.smoothScroll(window, targetScroll);
+      // Если скролла у контейнера нет, скроллим страницу до контейнера
+      this.scrollPageToContainer(container);
     }
   },
   
-  smoothScroll(scrollable, targetPosition) {
-    const isWindow = scrollable === window;
-    const currentPosition = isWindow ? window.pageYOffset : scrollable.scrollTop;
-    const distance = targetPosition - currentPosition;
-    const duration = 300;
+  scrollPageToContainer(container) {
+    const containerRect = container.getBoundingClientRect();
+    const containerTop = containerRect.top + window.pageYOffset;
+    const containerHeight = containerRect.height;
+    const windowHeight = window.innerHeight;
+    
+    // Вычисляем позицию для скролла страницы
+    let scrollTo = containerTop;
+    
+    // Если контейнер выше середины экрана, скроллим до его верха
+    if (containerRect.top < windowHeight / 2) {
+      scrollTo = containerTop;
+    } else {
+      // Иначе скроллим так, чтобы контейнер был по центру экрана
+      scrollTo = containerTop - (windowHeight / 2) + (containerHeight / 2);
+    }
+    
+    // Плавный скролл страницы без использования smooth behavior
+    this.smoothScrollTo(scrollTo);
+  },
+  
+  smoothScrollTo(targetPosition) {
+    const startPosition = window.pageYOffset;
+    const distance = targetPosition - startPosition;
+    const duration = 300; // Длительность анимации в мс
     let startTime = null;
     
     const animation = (currentTime) => {
       if (!startTime) startTime = currentTime;
       const timeElapsed = currentTime - startTime;
-      const progress = Math.min(timeElapsed / duration, 1);
-      const easeProgress = this.easeInOutQuad(progress);
-      const newPosition = currentPosition + distance * easeProgress;
-      
-      if (isWindow) {
-        window.scrollTo(0, newPosition);
-      } else {
-        scrollable.scrollTop = newPosition;
-      }
-      
+      const run = this.easeInOutQuad(timeElapsed, startPosition, distance, duration);
+      window.scrollTo(0, run);
       if (timeElapsed < duration) {
         requestAnimationFrame(animation);
       }
@@ -75,16 +90,10 @@ methods: {
     requestAnimationFrame(animation);
   },
   
-  easeInOutQuad(progress) {
-    return progress < 0.5 
-      ? 2 * progress * progress 
-      : -1 + (4 - 2 * progress) * progress;
-  },
-  
-  handleScroll(event) {
-    // Предотвращаем скролл страницы, если скроллится контейнер
-    if (event.target === this.$refs.mobileShedule) {
-      event.stopPropagation();
-    }
+  easeInOutQuad(t, b, c, d) {
+    t /= d / 2;
+    if (t < 1) return c / 2 * t * t + b;
+    t--;
+    return -c / 2 * (t * (t - 2) - 1) + b;
   }
 }
