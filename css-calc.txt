@@ -6,91 +6,70 @@ methods: {
       
       if (element) {
         setTimeout(() => {
-          this.scrollToElementSafely(element);
+          this.scrollToElement(element);
         }, 20);
       }
     });
   },
   
-  scrollToElementSafely(element) {
+  scrollToElement(element) {
     const container = this.$refs.mobileShedule;
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const containerRect = container.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
     
     // Проверяем, есть ли скролл у контейнера
     const hasContainerScroll = container.scrollHeight > container.clientHeight;
     
-    // Получаем позиции элемента относительно контейнера и документа
-    const containerRect = container.getBoundingClientRect();
-    const elementRect = element.getBoundingClientRect();
-    
-    // Позиция элемента относительно контейнера
-    const elementTopInContainer = elementRect.top - containerRect.top;
-    const elementBottomInContainer = elementRect.bottom - containerRect.top;
-    
     if (hasContainerScroll) {
-      // Проверяем, виден ли элемент полностью в контейнере
-      const isFullyVisible = elementTopInContainer >= 0 && 
-                            elementBottomInContainer <= container.clientHeight;
+      // Проверяем, полностью ли элемент виден в контейнере
+      const isFullyVisible = (
+        elementRect.top >= containerRect.top && 
+        elementRect.bottom <= containerRect.bottom
+      );
       
       if (!isFullyVisible) {
         // Вычисляем позицию для скролла контейнера
-        const targetScroll = elementTopInContainer - (container.clientHeight - element.clientHeight) / 2;
+        const containerScrollTop = container.scrollTop;
+        const elementOffsetTop = element.offsetTop - container.offsetTop;
+        const elementHeight = element.offsetHeight;
+        const containerHeight = container.clientHeight;
         
-        // Ограничиваем максимальный скролл
-        const maxScroll = container.scrollHeight - container.clientHeight;
-        const finalScroll = Math.min(Math.max(0, targetScroll), maxScroll);
+        // Позиционируем элемент по центру контейнера
+        let scrollTo = elementOffsetTop - (containerHeight - elementHeight) / 2;
         
-        // Для iOS используем обычный scrollTop, для других - smooth
-        if (isIOS) {
-          container.scrollTop = finalScroll;
-        } else {
-          container.scrollTo({
-            top: finalScroll,
-            behavior: 'smooth'
-          });
-        }
+        // Ограничиваем скролл границами контейнера
+        scrollTo = Math.max(0, Math.min(scrollTo, container.scrollHeight - containerHeight));
+        
+        // Применяем скролл
+        container.scrollTop = scrollTo;
         
         // После скролла контейнера проверяем, нужно ли скроллить страницу
         this.$nextTick(() => {
           const newElementRect = element.getBoundingClientRect();
-          const isElementInViewport = newElementRect.top >= 0 && 
-                                    newElementRect.bottom <= window.innerHeight;
+          const viewportHeight = window.innerHeight;
           
-          if (!isElementInViewport) {
-            this.scrollPageToElement(element, isIOS);
+          // Если нижняя часть элемента все еще ниже viewport (с учетом отступа)
+          if (newElementRect.bottom > viewportHeight - 20) {
+            const pageScrollTo = window.pageYOffset + newElementRect.top - (viewportHeight - newElementRect.height) / 2;
+            this.smoothScrollTo(pageScrollTo);
           }
         });
       }
     } else {
-      // Если у контейнера нет скролла, скроллим страницу
-      this.scrollPageToElement(element, isIOS);
-    }
-  },
-  
-  scrollPageToElement(element, isIOS) {
-    const elementRect = element.getBoundingClientRect();
-    const offset = window.pageYOffset;
-    const targetPosition = offset + elementRect.top - (window.innerHeight - elementRect.height) / 2;
-    
-    if (isIOS) {
-      // Для iOS используем кастомный плавный скролл
-      this.smoothScrollTo(targetPosition);
-    } else {
-      // Для других браузеров - нативный smooth
-      window.scrollTo({
-        top: targetPosition,
-        behavior: 'smooth'
-      });
+      // Если скролла у контейнера нет, скроллим страницу
+      const pageScrollTo = window.pageYOffset + elementRect.top - (window.innerHeight - elementRect.height) / 2;
+      this.smoothScrollTo(pageScrollTo);
     }
   },
   
   smoothScrollTo(targetPosition) {
     const startPosition = window.pageYOffset;
     const distance = targetPosition - startPosition;
-    if (distance === 0) return;
     
-    const duration = 300;
+    // Не скроллим если расстояние меньше 1px
+    if (Math.abs(distance) < 1) return;
+    
+    const duration = Math.min(500, Math.abs(distance) * 0.5);
     let startTime = null;
     
     const animation = (currentTime) => {
