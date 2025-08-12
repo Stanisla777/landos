@@ -1,39 +1,97 @@
 receivedDateMobile([year, month]) {
   const dateString = `${year}-${month}`;
   this.$nextTick(() => {
-    const container = this.$refs.mobileShedule; // контейнер с max-height и overflow
+    const container = this.$refs.mobileShedule; // скроллируемый блок
     const element = container.querySelector(`[data-date="${dateString}"]`);
+    const pageContainer = document.documentElement; // или другой контейнер страницы
 
     if (!element) return;
 
-    this.$nextTick(() => {
-      // Попробуем проскроллить элемент вверх контейнера
-      element.scrollIntoView({
-        block: 'start',
-        inline: 'nearest',
-        behavior: 'smooth'
-      });
+    const animateScroll = (start, end, duration, updateFn) => {
+      const startTime = performance.now();
 
-      // После анимации (или сразу, если поведение не 'auto') проверим видимость
-      // Но так как поведение 'smooth' — мы не можем точно знать, когда закончится
-      // Поэтому используем небольшой setTimeout как fallback
-      setTimeout(() => {
-        const containerRect = container.getBoundingClientRect();
-        const elementRect = element.getBoundingClientRect();
+      const ease = (t) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1; // easeInOutCubic
 
-        // Проверим, находится ли элемент **в пределах контейнера**
-        const isElementInContainer =
-          elementRect.top >= containerRect.top &&
-          elementRect.bottom <= containerRect.bottom;
+      const step = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = ease(progress);
+        const value = start + (end - start) * easedProgress;
+        updateFn(value);
 
-        if (!isElementInContainer) {
-          // Элемент не полностью в контейнере — скроллим страницу, чтобы контейнер влез
-          container.scrollIntoView({
-            block: 'start',
-            behavior: 'smooth'
-          });
+        if (progress < 1) {
+          requestAnimationFrame(step);
         }
-      }, 100); // 100мс — минимальная задержка, чтобы scrollIntoView начал работать
-    });
+      };
+
+      requestAnimationFrame(step);
+    };
+
+    const containerRect = container.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
+
+    const elementTopRelativeToContainer = elementRect.top - containerRect.top + container.scrollTop;
+    const elementBottomRelativeToContainer = elementRect.bottom - containerRect.top + container.scrollTop;
+
+    const isElementVisible =
+      elementTopRelativeToContainer >= container.scrollTop &&
+      elementBottomRelativeToContainer <= container.scrollTop + container.clientHeight;
+
+    if (isElementVisible) {
+      // Элемент уже виден — ничего не делаем
+      return;
+    }
+
+    // Нужно скроллить
+    const targetContainerScrollTop = elementTopRelativeToContainer - container.clientTop;
+
+    // Проверим, можем ли мы скроллить блок до нужной позиции
+    const maxContainerScroll = container.scrollHeight - container.clientHeight;
+
+    if (targetContainerScrollTop <= maxContainerScroll) {
+      // Сначала скроллим блок
+      animateScroll(
+        container.scrollTop,
+        targetContainerScrollTop,
+        500,
+        (value) => {
+          container.scrollTop = value;
+        }
+      );
+
+      // Проверим, после скролла блока, элемент в зоне видимости страницы?
+      const finalElementRect = element.getBoundingClientRect();
+      const isElementInViewport =
+        finalElementRect.top >= 0 &&
+        finalElementRect.bottom <= window.innerHeight;
+
+      if (!isElementInViewport) {
+        // Доскроллим страницу
+        const pageScrollTop = window.pageYOffset;
+        const targetPageScrollTop = finalElementRect.top + pageScrollTop - 20; // небольшой отступ
+
+        animateScroll(
+          pageScrollTop,
+          targetPageScrollTop,
+          500,
+          (value) => {
+            window.scrollTo(0, value);
+          }
+        );
+      }
+    } else {
+      // Блок не может скроллиться до элемента — скроллим страницу
+      const pageScrollTop = window.pageYOffset;
+      const targetPageScrollTop = elementRect.top + pageScrollTop - 20;
+
+      animateScroll(
+        pageScrollTop,
+        targetPageScrollTop,
+        500,
+        (value) => {
+          window.scrollTo(0, value);
+        }
+      );
+    }
   });
 }
