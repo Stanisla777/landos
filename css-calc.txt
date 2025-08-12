@@ -1,43 +1,155 @@
-receivedDateMobile([year, month]) {
-  const dateString = `${year}-${month}`;
-  this.$nextTick(() => {
-    setTimeout(() => {
-      const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
-      if (element) {
-        // Альтернатива scrollIntoView с более плавным скроллом
-        this.smoothScrollToElement(element);
-      }
-    }, 50); // Небольшая задержка для гарантии рендера
-  });
-},
+/**
+ * Плавный скролл к элементу
+ * @param {HTMLElement|string} target - Элемент или селектор
+ * @param {object} options - Опции
+ * @param {number} [options.duration=1000] - Длительность анимации (мс)
+ * @param {number} [options.offset=0] - Смещение от верха элемента (px)
+ * @param {string} [options.easing='easeInOutQuad'] - Функция плавности
+ */
+function smoothScrollTo(target, options = {}) {
+  const {
+    duration = 1000,
+    offset = 0,
+    easing = 'easeInOutQuad'
+  } = options;
 
-// Метод для плавного скролла
-smoothScrollToElement(element) {
-  const container = this.$refs.mobileShedule;
-  const elementRect = element.getBoundingClientRect();
-  const containerRect = container.getBoundingClientRect();
-  
-  const scrollTop = elementRect.top - containerRect.top + container.scrollTop;
-  
-  // Используем requestAnimationFrame для плавности
-  const start = container.scrollTop;
-  const change = scrollTop - start;
-  const startTime = performance.now();
-  const duration = 500; // Длительность анимации в мс
-  
-  function animateScroll(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const easeInOutQuad = progress < 0.5 
-      ? 2 * progress * progress 
-      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+  // Поддержка разных easing-функций
+  const easingFunctions = {
+    linear(t) {
+      return t;
+    },
+    easeInQuad(t) {
+      return t * t;
+    },
+    easeOutQuad(t) {
+      return t * (2 - t);
+    },
+    easeInOutQuad(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    },
+    easeInCubic(t) {
+      return t * t * t;
+    },
+    easeOutCubic(t) {
+      return (--t) * t * t + 1;
+    },
+    easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+    }
+  };
+
+  const easingFn = easingFunctions[easing] || easingFunctions.easeInOutQuad;
+
+  // Получаем целевой элемент
+  const element = typeof target === 'string' 
+    ? document.querySelector(target) 
+    : target;
+
+  if (!element) {
+    console.warn('Smooth scroll: target element not found');
+    return;
+  }
+
+  const startPos = window.pageYOffset;
+  const targetPos = getElementPosition(element) - offset;
+  const distance = targetPos - startPos;
+  let startTime = null;
+
+  function getElementPosition(el) {
+    const rect = el.getBoundingClientRect();
+    return rect.top + window.pageYOffset;
+  }
+
+  function animation(currentTime) {
+    if (startTime === null) startTime = currentTime;
+    const timeElapsed = currentTime - startTime;
+    const progress = Math.min(timeElapsed / duration, 1);
     
-    container.scrollTop = start + change * easeInOutQuad;
+    window.scrollTo(0, startPos + distance * easingFn(progress));
     
-    if (progress < 1) {
-      requestAnimationFrame(animateScroll);
+    if (timeElapsed < duration) {
+      window.requestAnimationFrame(animation);
     }
   }
-  
-  requestAnimationFrame(animateScroll);
+
+  // iOS требует использование requestAnimationFrame
+  window.requestAnimationFrame(animation);
 }
+
+// Полифилл для requestAnimationFrame
+(function() {
+  const vendors = ['ms', 'moz', 'webkit', 'o'];
+  for (let x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+    window.requestAnimationFrame = window[`${vendors[x]}RequestAnimationFrame`];
+    window.cancelAnimationFrame = 
+      window[`${vendors[x]}CancelAnimationFrame`] || 
+      window[`${vendors[x]}CancelRequestAnimationFrame`];
+  }
+
+  if (!window.requestAnimationFrame) {
+    let lastTime = 0;
+    window.requestAnimationFrame = function(callback) {
+      const currTime = new Date().getTime();
+      const timeToCall = Math.max(0, 16 - (currTime - lastTime));
+      const id = window.setTimeout(() => {
+        callback(currTime + timeToCall);
+      }, timeToCall);
+      lastTime = currTime + timeToCall;
+      return id;
+    };
+  }
+
+  if (!window.cancelAnimationFrame) {
+    window.cancelAnimationFrame = function(id) {
+      clearTimeout(id);
+    };
+  }
+}());
+
+// Создаем плагин для Vue
+const SmoothScrollPlugin = {
+  install(Vue) {
+    Vue.prototype.$smoothScroll = smoothScrollTo;
+    
+    Vue.directive('smooth-scroll', {
+      inserted(el, binding) {
+        el.addEventListener('click', (e) => {
+          e.preventDefault();
+          const target = binding.value || el.getAttribute('href');
+          const options = binding.modifiers || {};
+          smoothScrollTo(target, options);
+        });
+      }
+    });
+  }
+};
+
+// Экспортируем для использования без Vue
+export { smoothScrollTo, SmoothScrollPlugin };
+
+-----------------------------------------------------------------
+
+Использование в Vue 2
+import Vue from 'vue';
+import { SmoothScrollPlugin } from './smooth-scroll';
+
+Vue.use(SmoothScrollPlugin);
+
+// Теперь можно использовать в компонентах:
+// this.$smoothScroll('#section', { duration: 800, offset: 20 });
+
+// Или как директиву:
+// <a href="#section" v-smooth-scroll>Scroll to section</a>
+
+------------------------------------------------------------------------
+
+Использование без Vue
+javascript
+import { smoothScrollTo } from './smooth-scroll';
+
+// Скролл к элементу с ID "section"
+smoothScrollTo('#section', {
+  duration: 800,
+  offset: 20,
+  easing: 'easeInOutCubic'
+});
