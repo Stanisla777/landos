@@ -2,98 +2,38 @@ receivedDateMobile([year, month]) {
   const dateString = `${year}-${month}`;
   this.$nextTick(() => {
     const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
-    
-    if (element) {
+    const container = this.$refs.mobileShedule; // ваш контейнер с max-height и overflow
+
+    if (element && container) {
       setTimeout(() => {
-        this.scrollToElement(element);
+        // Сначала пытаемся проскроллить внутри контейнера
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start', // элемент вверху контейнера
+          inline: 'nearest'
+        });
+
+        // Через небольшой интервал проверим, виден ли элемент
+        // Это нужно, потому что scrollIntoView может не сработать, если контейнер не прокручивается
+        setTimeout(() => {
+          const elementRect = element.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+
+          // Проверяем, находится ли элемент полностью в пределах контейнера
+          const isElementVisibleInContainer =
+            elementRect.top >= containerRect.top &&
+            elementRect.bottom <= containerRect.bottom;
+
+          if (!isElementVisibleInContainer) {
+            // Если элемент не виден в контейнере (например, скролл контейнера закончился),
+            // тогда скроллим всю страницу так, чтобы **верх контейнера** был вверху экрана
+            container.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }, 100); // Даем время на анимацию scrollIntoView
       }, 20);
     }
   });
-},
-
-methods: {
-  scrollToElement(element) {
-    const container = this.$refs.mobileShedule;
-    const containerHeight = container.clientHeight;
-    const containerScrollTop = container.scrollTop;
-    const elementTop = element.offsetTop;
-    const elementHeight = element.clientHeight;
-    
-    // Проверяем, есть ли скролл у контейнера
-    const hasContainerScroll = container.scrollHeight > containerHeight;
-    
-    if (hasContainerScroll) {
-      // Проверяем, виден ли элемент полностью в текущей видимой области
-      const isElementFullyVisible = 
-        elementTop >= containerScrollTop && 
-        (elementTop + elementHeight) <= (containerScrollTop + containerHeight);
-      
-      // Если элемент не полностью виден, скроллим контейнер
-      if (!isElementFullyVisible) {
-        // Позиционируем элемент вверху контейнера
-        container.scrollTop = elementTop;
-        
-        // Проверяем, хватило ли скролла контейнера для полного отображения элемента
-        const newContainerScrollTop = container.scrollTop;
-        const isElementStillNotFullyVisible = 
-          (elementTop + elementHeight) > (newContainerScrollTop + containerHeight);
-        
-        // Если после скролла контейнера элемент всё ещё не полностью виден,
-        // скроллим страницу до контейнера
-        if (isElementStillNotFullyVisible) {
-          this.scrollPageToContainer(container);
-        }
-      }
-    } else {
-      // Если скролла у контейнера нет, скроллим страницу до контейнера
-      this.scrollPageToContainer(container);
-    }
-  },
-  
-  scrollPageToContainer(container) {
-    const containerRect = container.getBoundingClientRect();
-    const containerTop = containerRect.top + window.pageYOffset;
-    const containerHeight = containerRect.height;
-    const windowHeight = window.innerHeight;
-    
-    // Вычисляем позицию для скролла страницы
-    let scrollTo = containerTop;
-    
-    // Если контейнер выше середины экрана, скроллим до его верха
-    if (containerRect.top < windowHeight / 2) {
-      scrollTo = containerTop;
-    } else {
-      // Иначе скроллим так, чтобы контейнер был по центру экрана
-      scrollTo = containerTop - (windowHeight / 2) + (containerHeight / 2);
-    }
-    
-    // Плавный скролл страницы без использования smooth behavior
-    this.smoothScrollTo(scrollTo);
-  },
-  
-  smoothScrollTo(targetPosition) {
-    const startPosition = window.pageYOffset;
-    const distance = targetPosition - startPosition;
-    const duration = 300; // Длительность анимации в мс
-    let startTime = null;
-    
-    const animation = (currentTime) => {
-      if (!startTime) startTime = currentTime;
-      const timeElapsed = currentTime - startTime;
-      const run = this.easeInOutQuad(timeElapsed, startPosition, distance, duration);
-      window.scrollTo(0, run);
-      if (timeElapsed < duration) {
-        requestAnimationFrame(animation);
-      }
-    };
-    
-    requestAnimationFrame(animation);
-  },
-  
-  easeInOutQuad(t, b, c, d) {
-    t /= d / 2;
-    if (t < 1) return c / 2 * t * t + b;
-    t--;
-    return -c / 2 * (t * (t - 2) - 1) + b;
-  }
 }
