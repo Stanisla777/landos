@@ -1,8 +1,8 @@
 receivedDateMobile([year, month]) {
   const dateString = `${year}-${month}`;
   this.$nextTick(() => {
-    const container = this.$refs.mobileShedule; // блок с max-height и overflow
-    const element = container.querySelector(`[data-date="${dateString}"]`);
+    const container = this.$refs.mobileShedule;
+    const element = container?.querySelector(`[data-date="${dateString}"]`);
 
     if (!element || !container) return;
 
@@ -17,39 +17,50 @@ methods: {
     const pageRect = document.documentElement.getBoundingClientRect();
 
     const containerScrollTop = container.scrollTop;
-    const targetTopRelative = targetRect.top - containerRect.top; // позиция элемента относительно контейнера
-    const containerVisibleHeight = containerRect.height;
+    const containerHeight = container.clientHeight;
+    const containerScrollHeight = container.scrollHeight;
 
-    // Сколько нужно проскроллить внутри контейнера, чтобы элемент был сверху
-    const neededScrollTop = targetTopRelative;
+    const targetTopInContainer = targetElement.offsetTop;
+    const targetBottomInContainer = targetTopInContainer + targetRect.height;
 
-    // Проверим, можем ли мы проскроллить внутри контейнера
-    const maxScroll = container.scrollHeight - container.clientHeight;
+    const maxContainerScroll = containerScrollHeight - containerHeight;
 
-    if (neededScrollTop <= container.scrollTop + 5 && neededScrollTop >= container.scrollTop - 5) {
-      // Уже в зоне видимости, ничего не делаем
+    // === 1. Проверим: элемент уже в зоне видимости контейнера (с небольшим запасом)?
+    const currentVisibleTop = containerScrollTop;
+    const currentVisibleBottom = containerScrollTop + containerHeight;
+
+    const margin = 2; // небольшой запас, чтобы не дергать скролл при почти правильной позиции
+    if (
+      targetTopInContainer >= currentVisibleTop - margin &&
+      targetBottomInContainer <= currentVisibleBottom + margin
+    ) {
+      // Элемент уже в зоне видимости — ничего не делаем
       return;
     }
 
-    // === Случай 1: можно проскроллить внутри контейнера ===
-    if (neededScrollTop >= 0 && neededScrollTop <= maxScroll) {
-      this.smoothScrollTo(container, 'scrollTop', neededScrollTop, 300, (value) => {
+    // === 2. Попробуем проскроллить ВНУТРИ контейнера
+    // Нам нужно, чтобы элемент оказался вверху контейнера
+    const desiredScrollTop = targetTopInContainer;
+
+    if (desiredScrollTop <= maxContainerScroll && desiredScrollTop >= 0) {
+      // Внутри контейнера можно проскроллить
+      this.smoothScrollTo(container, 'scrollTop', desiredScrollTop, 300, (value) => {
         container.scrollTop = value;
       });
+      return;
     }
-    // === Случай 2: элемент выше контейнера или не влезает в контейнер после скролла ===
-    else {
-      // Нужно проскроллить всю страницу так, чтобы контейнер оказался сверху
-      const pageScrollTarget = pageRect.top + containerRect.top - 10; // с небольшим отступом
 
-      this.smoothScrollTo(window, 'scrollY', pageScrollTarget, 300, (value) => {
-        window.scrollTo(0, value);
-      });
-    }
+    // === 3. Если элемент ВЫШЕ контейнера или НИЖЕ, но контейнер уже в конце
+    // Тогда скроллим ВСЮ СТРАНИЦУ так, чтобы контейнер встал вверху экрана
+    const targetPageScroll = pageRect.top + containerRect.top - 10; // с небольшим отступом сверху
+
+    this.smoothScrollTo(window, 'scrollY', targetPageScroll, 300, (value) => {
+      window.scrollTo(0, value);
+    });
   },
 
   smoothScrollTo(element, property, target, duration, setValue) {
-    const start = element[property];
+    const start = element === window ? window.pageYOffset : element[property];
     const change = target - start;
     let startTime = null;
 
