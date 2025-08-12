@@ -1,264 +1,43 @@
-<template lang="pug">
-  .calc-tax-deduc-new__block.mobile-padding.mor-rep-calculators__block-schedule.mobile.grey.js--container-block(
-          v-show="shedule.length>0"
-        )
-      h3.calc-tax-deduc-new__block-title.big График платежей
+receivedDateMobile([year, month]) {
+  const dateString = `${year}-${month}`;
+  this.$nextTick(() => {
+    setTimeout(() => {
+      const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`);
+      if (element) {
+        // Альтернатива scrollIntoView с более плавным скроллом
+        this.smoothScrollToElement(element);
+      }
+    }, 50); // Небольшая задержка для гарантии рендера
+  });
+},
 
-      .mor-rep-calculators__shedule-calendar
-        component-calendar-mobile-shedule(
-          @sendDateMobile="receivedDateMobile"
-        )
-
-      .mor-rep-calculators__cal-mobile-item-container
-        .calc-tax-deduc-new__area.mor-rep-calculators__shedule-calendar-mobile-container(ref="mobileShedule")
-          .mor-rep-calculators__shedule-calendar-mobile-item.calc-tax-deduc-new__area.js-accordion-parent-calc(
-            v-for='(item,index) in shedule' :key="index"
-            :data-date="`${item.year}-${item.month}`"
-
-          )
-            .mor-rep-calculators__shedule-calendar-mobile-wr-row(@click="dropdownAreaMobileShedule")
-              .mor-rep-calculators__shedule-calendar-mobile-row
-                .mor-rep-calculators__calendar-mobile-item-col
-                  .mor-rep-calculators__shedule-calendar-mobile-month {{item.nameMonth}}, {{item.year}}
-                .mor-rep-calculators__calendar-mobile-item-col.row
-                  .mor-rep-calculators__shedule-calendar-mobile-value {{item.payment | format_decimal}}  ₽
-                  .mor-rep-calculators__shedule-calendar-mobile-icon
-
-
-
-            .calc-tax-deduc-new__wr-function-block.active(@transitionend="handleTransitionEnd")
-              .calc-tax-deduc-new__acc-wr
-                .mor-rep-calculators__shedule-calendar-mobile
-                  .mor-rep-calculators__shedule-calendar-mobile-row
-                    .mor-rep-calculators__calendar-mobile-item-col
-                      p.mor-rep-calculators__shedule-calendar-mobile-key Задолженность
-                      .mor-rep-calculators__shedule-calendar-mobile-value {{item.remainingBalance | format_decimal}} ₽
-                    .mor-rep-calculators__calendar-mobile-item-col
-                      p.mor-rep-calculators__shedule-calendar-mobile-key Сумма платежа
-                      .mor-rep-calculators__shedule-calendar-mobile-value {{item.payment | format_decimal}}  ₽
-
-                  .mor-rep-calculators__shedule-calendar-mobile-row.margin
-                    .mor-rep-calculators__calendar-mobile-item-col
-                      p.mor-rep-calculators__shedule-calendar-mobile-key.col-1 Погашение процентов
-                      .mor-rep-calculators__shedule-calendar-mobile-value {{item.interest | format_decimal}} ₽
-                    .mor-rep-calculators__calendar-mobile-item-col
-                      p.mor-rep-calculators__shedule-calendar-mobile-key.col-2 Погашение основного долга
-                      .mor-rep-calculators__shedule-calendar-mobile-value {{item.principal | format_decimal}} ₽
-
-
-
-
-      .mor-rep-calculators__shedule-footer-share
-        .mor-rep-calculators__shedule-footer-share-item.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent(v-if="can_share===1&&answerLink!==null")
-          .btn_s.transparent_black_border.hover-green.btn-icon-share(@click="openTooltipMobile") Отправить расчёт
-          div
-            .select__background.modal-special-background(@click="closeTooltipMobile")
-            .select-list__selection-window.mor-rep-calculators__selection-window-share.modal-special-styles.js--openlist-body
-              .select-list__head
-                p Отправить расчёт
-                .select-list__head-close(@click="closeTooltipMobile")
-                  svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
-                    path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
-
-              template
-                component-payment-list-soc
-      .mor-rep-calculators__input-error.mor-rep-calculators__after-sand-error(v-show="description_after_sand!==null") {{description_after_sand}}
-
-
-</template>
-<script>
-import Vue from 'vue';
-import eventBus from '../development-tools/eventBus.vue';
-import Storage from '../development-tools/state.vue';
-import numberFormatting from '../mixin/numberFormatting.js';
-import ComponentCalendarMobileShedule from '../components/v-2-component-calendar-mobile-shedule.vue';
-import ComponentPaymentListSoc from '../components/v-component-payment-list-soc.vue';
-
-export default {
-  name: 'v-component-payment-list-mobile',
-  mixins: [numberFormatting],
-  props:[],
-  data(){
-    return {
-      description_after_sand:null,
-      description_after_sand_mail:null,
-      isAnimatingMobile:false,
-
-
-
+// Метод для плавного скролла
+smoothScrollToElement(element) {
+  const container = this.$refs.mobileShedule;
+  const elementRect = element.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  
+  const scrollTop = elementRect.top - containerRect.top + container.scrollTop;
+  
+  // Используем requestAnimationFrame для плавности
+  const start = container.scrollTop;
+  const change = scrollTop - start;
+  const startTime = performance.now();
+  const duration = 500; // Длительность анимации в мс
+  
+  function animateScroll(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeInOutQuad = progress < 0.5 
+      ? 2 * progress * progress 
+      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+    
+    container.scrollTop = start + change * easeInOutQuad;
+    
+    if (progress < 1) {
+      requestAnimationFrame(animateScroll);
     }
-  },
-  methods:{
-
-
-    receivedDateMobile([year, month]) {
-      const dateString = `${year}-${month}`;
-      this.$nextTick(()=>{
-        const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`)
-        if (element) {
-          element.scrollIntoView({
-            behavior:'smooth',
-            block:'start'
-          })
-        }
-      })
-
-    },
-
-    dropdownAreaMobileShedule(e){
-      const target = e.target
-      const element = e.currentTarget;
-      // console.log(element);
-      const parent = element.closest('.js-accordion-parent-calc');
-      if (parent){
-        if (this.isAnimatingMobile) return
-        this.isAnimatingMobile = true
-
-        if(parent.classList.contains('active')){
-          parent.classList.remove('active-overflow')
-          setTimeout(()=>{
-            parent.classList.remove('active')
-          },300)
-        }
-        else{
-          parent.classList.add('active')
-          setTimeout(()=>{
-            parent.classList.add('active-overflow')
-          },500)
-        }
-      }
-
-    },
-    handleTransitionEnd(event){
-      if (event.propertyName==='grid-template-rows') {
-        this.isAnimatingMobile=false
-      }
-    },
-
-  },
-
-
-
-----------------------------------------------------
-
-<template lang="pug">
-  .calc-tax-deduc-new__container-block.js--calc-row-input
-    .calc-tax-deduc-new__col-input.js--credit-calendar-input.js--tex-deduc-input.js--for-clear-field.js--calendar-data
-      input.property-calculator__value.js--calendar-field.js--mobile-calendar-shedule(
-        type="text"
-        placeholder="ММ.ГГГГ"
-        inputmode="numeric"
-        @keyup="fieldNotEmpty"
-        @input="changeDate"
-        @click ="showCalendar"
-        @blur = "inputBlur"
-        @focus="replaceMonthFocus"
-        @keydown="inputKeyDown"
-      )
-      .js__vanilla-calendar-calc.vanilla-calendar-style-new.property-calculator__vanilla-calendar.js-calendar-mobile-shedule(
-        @click.stop ="showCalendar"
-      )
-      .mor-rep-calculators__calendar-container-icon
-        .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
-            @click="clearInputCalendar"
-          )
-        .property-calculator__input-additional-elem(
-          @click ="showCalendar"
-        )
-          svg(width='16', height='16', viewbox='0 0 16 16', fill='none', xmlns='http://www.w3.org/2000/svg')
-            path(fill-rule='evenodd', clip-rule='evenodd', d='M4.66699 0.666687C5.03518 0.666687 5.33366 0.965164 5.33366 1.33335V2.00002H10.667V1.33335C10.667 0.965164 10.9655 0.666687 11.3337 0.666687C11.7018 0.666687 12.0003 0.965164 12.0003 1.33335V2.00002H14.0609C14.696 2.00002 15.3337 2.47837 15.3337 3.21214V14.1212C15.3337 14.855 14.696 15.3334 14.0609 15.3334H1.93972C1.30462 15.3334 0.666992 14.855 0.666992 14.1212V3.21214C0.666992 2.47837 1.30462 2.00002 1.93972 2.00002H4.00033V1.33335C4.00033 0.965164 4.2988 0.666687 4.66699 0.666687ZM4.00033 3.33335H2.00033V6.00002H14.0003V3.33335H12.0003V4.00002C12.0003 4.36821 11.7018 4.66669 11.3337 4.66669C10.9655 4.66669 10.667 4.36821 10.667 4.00002V3.33335H5.33366V4.00002C5.33366 4.36821 5.03518 4.66669 4.66699 4.66669C4.2988 4.66669 4.00033 4.36821 4.00033 4.00002V3.33335ZM14.0003 7.33335H2.00033V14H14.0003V7.33335Z', fill='#252628')
-
-</template>
-<script>
-import eventBus from '../development-tools/eventBus.vue';
-import Storage from '../development-tools/state.vue';
-
-import VanillaCalendar from '../../vanilla-calendar2';
-import numberFormatting from '../mixin/numberFormatting.js';
-let maskCalendarMortgageData
-export default {
-  name: 'v-2-component-calendar',
-  mixins: [numberFormatting],
-  // props:['min_date_mobile','max_date_mobile','loanTerm'],
-
-  data(){
-    return {
-      calendarMobile:null,
-      parent:null,
-      month:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
-      minDate: {month:1,year:1995},
-      maxDate: {month:12,year:2026}
-    }
-  },
-  methods:{
-
-    initPluginCalendarVanilla(month=this.formatMonth(this.min_date_mobile),year=this.formatYear(this.min_date_mobile)){
-      const key_word_this=this
-      let range={
-        min:key_word_this.formatYearMonthMinDate(key_word_this.min_date_mobile),
-        max:key_word_this.formatYearMonthMaxDate(key_word_this.min_date_mobile)
-      }
-      let selected= {
-        month: key_word_this.formatMonth(this.min_date_mobile),
-        year:key_word_this.formatYear(this.min_date_mobile)
-      }
-      const element = document.querySelector('.js-calendar-mobile-shedule')
-      if (element!==null) {
-        this.parent = element.closest('.js--container-block')
-        this.calendarMobile = new VanillaCalendar('.js-calendar-mobile-shedule', {
-          type: 'year',
-          settings: {
-            lang: 'ru',
-            range: range,
-            selected: {
-              month: month,
-              year: year
-            },
-          },
-          actions: {
-            clickMonth(e, dates) {
-              if (dates.length !== 0) {
-                const parent = e.target.closest('.js--credit-calendar-input');
-                const container = e.target.closest('.js__vanilla-calendar-calc')
-                const array_month = [ 'январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь']
-                let title_month;
-                let title_year;
-                if (container && container.querySelector('.vanilla-calendar-year')) {
-                  title_year = container.querySelector('.vanilla-calendar-year').textContent
-                }
-                if(parent){
-                  e.target.closest('.js__vanilla-calendar-calc').classList.remove('active');
-                  parent.querySelector('input').value = `${array_month[dates.selectedMonth]}, ${dates.selectedYear}`;
-                  if (e.target.closest('.js--calc-row-input')) {
-                    e.target.closest('.js--calc-row-input').querySelector('.js--clear-calc-tax').classList.add('active')
-                  }
-                }
-                key_word_this.$emit('sendDateMobile',[dates.selectedYear,parseInt(dates.selectedMonth)+1])
-              }
-            },
-            clickYear(e, dates) {
-
-              let isClicked = false
-              const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                  const targetElement = document.querySelector(('.js-calendar-mobile-shedule .vanilla-calendar-header__content .vanilla-calendar-month'))
-                  if (targetElement) {
-                    if (!isClicked) {
-                      targetElement.click()
-                      isClicked=true
-                      observer.disconnect()
-                    }
-                  }
-                })
-              })
-              observer.observe(document.body, {
-                childList: true,
-                subtree: true
-              })
-            }
-          }
-        })
-        this.calendarMobile.init();
-      }
-
-    },
+  }
+  
+  requestAnimationFrame(animateScroll);
+}
