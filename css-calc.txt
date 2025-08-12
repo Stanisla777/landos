@@ -1,375 +1,48 @@
-<template lang="pug">
-  .calc-tax-deduc-new__container-block.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent
-    .calc-tax-deduc-new__row-title-main-container(
-      v-if="(transfer_tooltip!==null&&transfer_tooltip['initial-payment']&&transfer_tooltip['initial-payment']['info']!=='')&&(transfer_tooltip['initial-payment']['size']===''||transfer_tooltip['initial-payment']['size']==='small'||transfer_tooltip['initial-payment']['size']===undefined)"
-    )
-      .calc-tax-deduc-new__row-title-container
-        p.calc-tax-deduc-new__row-title Первоначальный взнос, ₽
-        span.content-note.desctop.content-note__center.js--content-note
-          span.content-note__text {{transfer_tooltip["initial-payment"]["info"]}}
-        span.content-note.mobile(
-          v-if="transfer_tooltip['initial-payment']['info']!==''"
-          @click="openTooltipMobile"
-        )
-      div(v-if="transfer_tooltip['initial-payment']['info']!==''")
-        .select__background.modal-special-background(@click="closeTooltipMobile")
-        .select-list__selection-window.modal-special-styles.js--openlist-body
-          .select-list__head
-            p Первоначальный взнос, ₽
-            .select-list__head-close(@click="closeTooltipMobile")
-              svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
-                path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
-          .select-list__wr-search.mor-rep-calculators__wr-search
-            p {{transfer_tooltip["initial-payment"]["info"]}}
+Добавьте проверку на существование слайдера перед вызовом метода set:
 
+recalculation_initial_payment(newVal) {
+  if (newVal && this.realtySlider && this.realtySlider.set) {
+    this.realtySlider.set(this.initial_payment_from_cost);
+  }
+},
 
-    .calc-tax-deduc-new__row-title-main-container(
-      v-if="transfer_tooltip!==null&&transfer_tooltip['initial-payment']&&transfer_tooltip['initial-payment']['info']!==''&&transfer_tooltip['initial-payment']['size']!==''&&transfer_tooltip['initial-payment']['size']==='big'&&transfer_tooltip['initial-payment']['size']!==undefined"
-    )
-      .calc-tax-deduc-new__row-title-container
-        p.calc-tax-deduc-new__row-title Первоначальный взнос, ₽
-        .content-note(
-          @click="openModal"
-          :data-tooltip="transfer_tooltip['initial-payment']['name']?transfer_tooltip['initial-payment']['name']:''"
-        )
+Также стоит добавить аналогичные проверки в других местах, где вы используете методы слайдера, например в watch для initial_payment_from_cost:
+initial_payment_from_cost(newVal) {
+  if (!this.realtySlider || !this.realtySlider.updateOptions) return;
 
-    .calc-tax-deduc-new__row-title-main-container(v-if="transfer_tooltip===null||transfer_tooltip['initial-payment']['info']===''")
-      .calc-tax-deduc-new__row-title-container
-        p.calc-tax-deduc-new__row-title Первоначальный взнос, ₽
+  const min = Math.min(newVal, this.stgMax);
+  const max = Math.max(newVal, this.stgMax);
 
-
-
-
-    .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
-      input(
-        type="text"
-        inputmode="numeric"
-        ref="realtyInputInitialPayment"
-        @keyup="keyUp"
-        @change ="inputValue"
-        @paste="inputPast"
-        @blur="moveAnotherElement"
-        @focus="inpFocus"
-        @input="numberFormattingThousandths(stgMax,$event)"
-      )
-
-      .range-input__slider(
-        ref="mortgageInitialPayment"
-        @click="rangeInputSlider"
-      )
-    .property-calculator__wr-range
-      p.property-calculator__range {{ formatMillions(initial_payment_from_cost) }} млн
-      p.property-calculator__range {{ formatMillions(Math.ceil((stgMin + stgMax) / 2)) }} млн
-      p.property-calculator__range {{ formatMillions(stgMax) }} млн
-</template>
-<script>
-import eventBus from '../development-tools/eventBus.vue';
-import noUiSlider from 'nouislider';
-import Storage from '../development-tools/state.vue';
-import numberFormatting from '../mixin/numberFormatting.js';
-export default {
-  name: 'v-credit-amount',
-  mixins: [numberFormatting],
-  data(){
-    return {
-
-      realtySlider: '', // Слайдер "Стоимость недвижимости"
-      dataField: 0, // Стоимость недвижимости
-      dataFieldForCalculation: 0,
-      subsidies: 0,
-      stepApartment: 1, // Шаг для range инпутов
-      // stgMin: 625000 * (this.transfer_parametr.initial_payment_perc / 100), // Минимальное значение поля стоимости
-      // stgMin: 250000, // Минимальное значение поля стоимости
-      stgMiddle: Math.floor((this.stgMin + this.stgMax) / 2),
-      // stgMax: 60000000, // Максимальное значение поля стоимости
-      input_salary:false,
-      start:6000000
+  this.realtySlider.updateOptions({
+    range: {
+      min: min,
+      max: max
     }
-  },
-  methods:{
-    formatMillions(value) {
-      const millions = value / 1000000;
+  });
 
-      // Округляем вверх до 2 знаков после запятой
-      const rounded = Math.ceil(millions * 100) / 100;
+  if (this.calculating_initial_payment_cost && this.realtySlider.set) {
+    this.realtySlider.set(newVal);
+  }
+},
 
-      // Форматируем с 2 знаками после запятой, заменя точку на запятую
-      let formatted = rounded.toFixed(2).replace('.', ',');
+И в watch для stgMax:
+stgMax(newVal) {
+  if (!this.realtySlider || !this.realtySlider.updateOptions) return;
 
-      // Убираем лишние нули после запятой, если они есть
-      if (formatted.endsWith(',00')) {
-        formatted = formatted.replace(',00', '');
-      }
+  const min = Math.min(this.initial_payment_from_cost, newVal);
+  const max = Math.max(this.initial_payment_from_cost, newVal);
 
-      return formatted;
-    },
-
-    //новое
-    rangeInputSlider(){
-      Storage.dispatch('ActionInitialPaymentIsChanged',false)
-    },
-
-
-    initRealtySlider() {
-      // Проверяем, что значения корректны
-      const min = Math.min(this.initial_payment_from_cost, this.stgMax);
-      const max = Math.max(this.initial_payment_from_cost, this.stgMax);
-
-      // Уничтожаем предыдущий слайдер, если он существует
-      if (this.realtySlider && this.realtySlider.destroy) {
-        this.realtySlider.destroy();
-      }
-
-      try {
-        this.realtySlider = noUiSlider.create(this.$refs.mortgageInitialPayment, {
-          start: [this.initial_payment_from_cost],
-          connect: 'lower',
-          step: this.stepApartment,
-          initial: this.stgMin,
-          range: {
-            min: this.initial_payment_from_cost,
-            max: this.stgMax
-          },
-        });
-        this.realtySlider.on('start', (val,handle) => {
-          this.$refs.realtyInputInitialPayment.closest('.js--tex-deduc-input').classList.add('input-focus')
-        })
-        this.realtySlider.on('end', (val,handle) => {
-          this.$refs.realtyInputInitialPayment.closest('.js--tex-deduc-input').classList.remove('input-focus')
-        })
-        this.realtySlider.on('update', (val,handle) => {
-
-          this.input_salary = false
-          this.$refs.realtyInputInitialPayment.value = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
-          this.dataField = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
-        });
-        this.realtySlider.on('set', (val,handle) => {
-
-          this.input_salary = false
-          this.$refs.realtyInputInitialPayment.value = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
-          this.dataField = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
-          this.dataFieldForCalculation = parseInt(val[handle]).toFixed(0)
-          this.$nextTick(() => {
-            setTimeout(()=>{
-              Storage.dispatch('ActionInitialPayment',parseInt(val[handle]).toFixed(0))
-            },300)
-          })
-        });
-        this.realtySlider.on('end', (val,handle) => {});
-      } catch (error){
-        console.error('Error initializing slider:', error);
-      }
-
-
-
-
-
-    },
-
-
-    keyUp(e) {
-      const element = e.currentTarget
-
-
-      if(element.value!==''&&(parseInt(element.value.replace(/\s/g, ''))>=this.stgMin)&&parseInt(element.value.replace(/\s/g, ''))<=this.stgMax){
-        // Storage.dispatch('ActionInitialPayment',parseInt(element.value.replace(/\s/g, '')))
-        // Storage.dispatch('ActionInitialPaymentIsChanged',false)
-        // this.realtySlider.set(parseInt(element.value.replace(/\s/g, '')));
-      }
-
-      else if(parseInt(element.value.replace(/\s/g, ''))>this.stgMax)  {
-        // // Storage.dispatch('ActionFinalWindow',true)
-        // Storage.dispatch('ActionInitialPayment',parseInt(this.stgMax))
-        // Storage.dispatch('ActionInitialPaymentIsChanged',false)
-        // this.realtySlider.set(this.stgMax);
-      }
-      else if(parseInt(element.value.replace(/\s/g, ''))<this.stgMin)  {
-        // // Storage.dispatch('ActionFinalWindow',true)
-        // Storage.dispatch('ActionInitialPayment',parseInt(this.stgMin))
-        // Storage.dispatch('ActionInitialPaymentIsChanged',false)
-      }
-
-      if(parseInt(element.value.replace(/\s/g, ''))>=this.stgMax){
-        this.dataField = this.stgMax.toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
-      }
-
-
-    },
-    inputValue(el){
-      const element = el.currentTarget;
-
-      if(element.value!==''&&(parseInt(element.value.replace(/\s/g, ''))>=this.stgMin)&&parseInt(element.value.replace(/\s/g, ''))<=this.stgMax){
-        Storage.dispatch('ActionInitialPayment',parseInt(element.value.replace(/\s/g, '')))
-        Storage.dispatch('ActionInitialPaymentIsChanged',false)
-        this.realtySlider.set(parseInt(element.value.replace(/\s/g, '')));
-      }
-
-      else if(parseInt(element.value.replace(/\s/g, ''))>this.stgMax)  {
-        Storage.dispatch('ActionInitialPayment',parseInt(this.stgMax))
-        Storage.dispatch('ActionInitialPaymentIsChanged',false)
-        this.realtySlider.set(this.stgMax);
-      }
-      else if(parseInt(element.value.replace(/\s/g, ''))<this.stgMin)  {
-        Storage.dispatch('ActionInitialPayment',parseInt(this.stgMin))
-        Storage.dispatch('ActionInitialPaymentIsChanged',false)
-      }
-
-
-      let value = element.value
-      value = parseInt(value.replace(/\s/g, ''));
-      if(value>this.stgMax)  {
-        this.dataFieldForCalculation = this.stgMax
-
-      }
-      if(value<this.stgMin)  {
-        this.dataFieldForCalculation = this.stgMin
-        this.realtySlider.set(this.stgMin);
-      }
-    },
-    inputPast(el){
-      const element = el.currentTarget;
-      let element_val = (el.clipboardData || window.clipboardData).getData('text');
-      if ( element_val.search(/[^0-9]/g) != -1 ) {
-        el.preventDefault();
-      }
-    },
-
-    moveAnotherElement(el) {
-      const element = el.currentTarget;
-      element.closest('.js--tex-deduc-input').classList.remove('input-focus')
-      if (element.value==='') {
-        element.value = this.stgMin;
-        this.realtySlider.set(this.stgMin);
-        Storage.dispatch('ActionInitialPayment',this.stgMin)
-        Storage.dispatch('ActionInitialPaymentIsChanged',false)
-
-      }
-    },
-
-    calculationPageLoad(){
-      Storage.dispatch('ActionInitialPayment',parseInt(this.dataFieldForCalculation))
-      Storage.dispatch('ActionInitialPaymentIsChanged',false)
-    },
-
-  },
-  mounted(){
-    console.log('this.cost_property');
-    console.log(this.stgMax);
-    this.initRealtySlider()
-    // Storage.dispatch('ActionInitialPayment',parseInt(this.dataField.replace(/\s/g, '')));
-    if (this.answers===null) {
-      Storage.dispatch('ActionInitialPayment',parseInt(this.dataField.replace(/\s/g, '')));
+  this.realtySlider.updateOptions({
+    range: {
+      min: min,
+      max: max
     }
-    else {
-      this.realtySlider.set(parseInt(this.answers.initialPayment));
-      Storage.dispatch('ActionInitialPaymentIsChanged',false)
-      Storage.dispatch('ActionInitialPayment',parseInt(this.answers.initialPayment));
+  });
+
+  if (this.realtySlider.get && this.realtySlider.set) {
+    const currentValue = parseInt(this.realtySlider.get());
+    if (currentValue > newVal) {
+      this.realtySlider.set(newVal);
     }
-
-  },
-  computed:{
-    transfer_parametr(){
-      return Storage.getters.TRANSFERPARAMETR
-    },
-    stgMin(){
-      return 625000 * (this.transfer_parametr.initial_payment_perc / 100)
-    },
-    initial_payment_from_cost(){
-      return Storage.getters.INITIALPAYMENTFROMCOST
-    },
-
-    calculating_initial_payment_cost(){
-      return Storage.getters.CALCULATINGINITIALPAYMENTCOST
-    },
-    initial_payment(){
-      return Storage.getters.INITIALPAYMENT
-    },
-    recalculation_initial_payment(){
-      return Storage.getters.RECALCULATIONINITIALPAYMENT
-    },
-    transfer_tooltip(){
-      return Storage.getters.TRANSFERTOOLTIP
-    },
-    answers(){
-      return Storage.getters.ANSWERS
-    },
-    stgMax(){
-      return (Storage.getters.COSTPROPERTY - 1)
-    },
-
-
-
-
-
-
-  },
-  watch:{
-    dataField(){
-    },
-    dataFieldForCalculation(){
-    },
-    initial_payment_from_cost(newVal) {
-      if (!this.realtySlider || !this.realtySlider.updateOptions) return;
-
-      const min = Math.min(newVal, this.stgMax);
-      const max = Math.max(newVal, this.stgMax);
-
-      this.realtySlider.updateOptions({
-        range: {
-          min: min,
-          max: max
-        }
-      });
-
-      if (this.calculating_initial_payment_cost) {
-        this.realtySlider.set(newVal);
-      }
-    },
-    stgMax(newVal) {
-      if (!this.realtySlider || !this.realtySlider.updateOptions) return;
-
-      const min = Math.min(this.initial_payment_from_cost, newVal);
-      const max = Math.max(this.initial_payment_from_cost, newVal);
-
-      this.realtySlider.updateOptions({
-        range: {
-          min: min,
-          max: max
-        }
-      });
-
-      // Обновляем текущее значение, если оно выходит за новые границы
-      const currentValue = parseInt(this.realtySlider.get());
-      if (currentValue > newVal) {
-        this.realtySlider.set(newVal);
-      }
-    },
-
-    recalculation_initial_payment(newVal) {
-      if (this.recalculation_initial_payment) {
-        this.realtySlider.set(this.initial_payment_from_cost);
-      }
-    },
-
-
-
-
-
-  },
-  beforeDestroy() {
-    if (this.realtySlider && this.realtySlider.destroy) {
-      this.realtySlider.destroy();
-    }
-  },
-  created(){
-  },
-  components:{}
-};
-</script>
-<style scoped>
-</style>
-Ошибка:
-Error in callback for watcher "recalculation_initial_payment": "TypeError: this.realtySlider.set is not a function"
-TypeError: this.realtySlider.set is not a function
-    at i.recalculation_initial_payment
-
+  }
+},
