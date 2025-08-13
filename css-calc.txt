@@ -1,57 +1,7 @@
-initRealtySlider() {
-  this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
-    start: [Math.round(this.start)], // Округляем начальное значение до целого
-    connect: 'lower',
-    step: 1, // Только целые шаги
-    range: {
-      min: Math.round(this.stgMin), // Минимальное значение (0.1 округляем до 0)
-      max: Math.floor(this.stgMax) // Максимальное целое
-    },
-  })
-
-  this.realtySlider.on('start', () => {
-    this.input_salary = false
-    // Сохраняем дробную часть текущего значения
-    const currentValue = parseFloat(this.mask_interest.unmaskedValue.replace(',', '.')) || this.stgMin;
-    this.decimalPart = currentValue % 1; // Сохраняем дробную часть
-    // Если значение меньше 0.1, устанавливаем 0.1
-    if (currentValue < this.stgMin) {
-      this.decimalPart = 0.1;
-    }
-  });
-
-  this.realtySlider.on('slide', (values, handle) => {
-    if (this.isUpdating) return;
-    this.isUpdating = true;
-
-    // Получаем целую часть из слайдера
-    const integerValue = Math.round(values[handle]);
-    // Формируем новое значение: целая часть + сохраненная дробная
-    let newValue = integerValue + (this.decimalPart || 0);
-    
-    // Гарантируем, что значение не будет меньше 0.1
-    if (newValue < this.stgMin) {
-      newValue = this.stgMin;
-    }
-    
-    this.updateInputValue(newValue);
-    this.isUpdating = false;
-  });
-
-  this.realtySlider.on('set', (values, handle) => {
-    if (this.isUpdating) return;
-    this.isUpdating = true;
-
-    const integerValue = Math.round(values[handle]);
-    let newValue = integerValue + (this.decimalPart || 0);
-    
-    if (newValue < this.stgMin) {
-      newValue = this.stgMin;
-    }
-    
-    this.updateInputValue(newValue);
-    this.updateStoreValue(newValue);
-    this.isUpdating = false;
-    this.decimalPart = null; // Сбрасываем сохраненную дробную часть
-  });
-},
+formatValue(value) {
+  value = parseFloat(value);
+  if (isNaN(value)) value = this.stgMin;
+  if (value < this.stgMin) value = this.stgMin;
+  if (value > this.stgMax) value = this.stgMax;
+  return value.toFixed(2).toString().replace('.', ','); // Всегда 2 знака после запятой
+}
