@@ -1,75 +1,11 @@
-<template lang="pug">
-.calc-tax-deduc-new__container-block.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent
-  .calc-tax-deduc-new__row-title-main-container(
-    v-if="(transfer_tooltip!==null&&transfer_tooltip['interest-rate']&&transfer_tooltip['interest-rate']['info']!=='')&&(transfer_tooltip['interest-rate']['size']===''||transfer_tooltip['interest-rate']['size']==='small'||transfer_tooltip['interest-rate']['size']===undefined)"
-  )
-    .calc-tax-deduc-new__row-title-container
-      p.calc-tax-deduc-new__row-title Процентная ставка, %
-      span.content-note.desctop.content-note__center.js--content-note
-        span.content-note__text {{transfer_tooltip["interest-rate"]["info"]}}
-      span.content-note.mobile(
-        v-if="transfer_tooltip['interest-rate']['info']!==''"
-        @click="openTooltipMobile"
-      )
-    div(v-if="transfer_tooltip['interest-rate']['info']!==''")
-      .select__background.modal-special-background(@click="closeTooltipMobile")
-      .select-list__selection-window.modal-special-styles.js--openlist-body
-        .select-list__head
-          p Процентная ставка, %
-          .select-list__head-close(@click="closeTooltipMobile")
-            svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
-              path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
-        .select-list__wr-search.mor-rep-calculators__wr-search
-          p {{transfer_tooltip["interest-rate"]["info"]}}
-
-  .calc-tax-deduc-new__row-title-main-container(
-    v-if="transfer_tooltip!==null&&transfer_tooltip['interest-rate']&&transfer_tooltip['interest-rate']['info']!==''&&transfer_tooltip['interest-rate']['size']!==''&&transfer_tooltip['interest-rate']['size']==='big'&&transfer_tooltip['interest-rate']['size']!==undefined"
-  )
-    .calc-tax-deduc-new__row-title-container
-      p.calc-tax-deduc-new__row-title Процентная ставка, %
-      .content-note(
-        @click="openModal"
-        :data-tooltip="transfer_tooltip['interest-rate']['name']?transfer_tooltip['interest-rate']['name']:''"
-      )
-
-  .calc-tax-deduc-new__row-title-main-container(v-if="transfer_tooltip===null||transfer_tooltip['interest-rate']['info']===''")
-    .calc-tax-deduc-new__row-title-container
-      p.calc-tax-deduc-new__row-title Процентная ставка, %
-
-  .calc-tax-deduc-new__col-input.js--number-old-rate.js--tex-deduc-input(@click="inputFocus")
-    input(
-      inputmode="decimal"
-      type="text"
-      ref="realtyInput"
-      @focus="inpFocus"
-      @blur="inputBlur"
-      @click="inpRemoveMark"
-      @keyup="keyUp"
-    )
-    .range-input__slider(ref="mortgagePrice")
-  .calc-tax-deduc-new__wr-range
-    p {{String(stgMin).replace('.', ',')}}
-    p {{stgMiddle}}
-    p {{stgMax}}
-</template>
-
-<script>
-import eventBus from '../development-tools/eventBus.vue';
-import noUiSlider from 'nouislider';
-import Storage from '../development-tools/state.vue';
-import IMask from 'imask';
-import numberFormatting from '../mixin/numberFormatting.js';
-import onlyNumbers from '../custom-scripts/only-numbers.js'
-
 export default {
   name: 'v-interest-rate',
   mixins: [numberFormatting],
   data() {
     return {
       realtySlider: null,
-      dataField: '6,0',
+      dataField: '6,00',
       dataFieldForCalculation: 6.0,
-      stepApartment: 0.1,
       stgMin: 0.1,
       stgMiddle: 50,
       stgMax: 100,
@@ -77,35 +13,58 @@ export default {
       input_salary: false,
       slider: false,
       mask_interest: null,
-      isUpdating: false // Флаг для предотвращения рекурсивных обновлений
-    }
-  },
-  methods: {
+      isUpdating: false,
+      lastSliderValue: 6.0,
+      wasInteger: false // Флаг для отслеживания целых чисел при движении ползунка
+
+
+------
+
+methods: {
     formatValue(value) {
-      return parseFloat(value).toFixed(1).toString().replace('.', ',')
+      // Форматируем с двумя знаками после запятой
+      return parseFloat(value).toFixed(2).toString().replace('.', ',')
     },
 
     initRealtySlider() {
       this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
         start: [this.start],
         connect: 'lower',
-        step: 0.01,
+        step: 1, // Шаг только для целых чисел
         range: {
           min: this.stgMin,
           max: this.stgMax
         },
       })
 
-      this.realtySlider.on('start', () => {
+      this.realtySlider.on('start', (values) => {
         this.input_salary = false
+        const currentValue = parseFloat(values[0])
+        // Проверяем, было ли значение целым числом (например, 6.00)
+        this.wasInteger = currentValue % 1 === 0
       });
 
       this.realtySlider.on('slide', (values, handle) => {
         if (this.isUpdating) return
         this.isUpdating = true
 
-        const value = parseFloat(values[handle])
+        let value = parseFloat(values[handle])
+        
+        // Если предыдущее значение было целым (например, 6.00), сохраняем .00 при движении
+        if (this.wasInteger) {
+          value = Math.round(value) // Округляем до целого
+        } else {
+          // Иначе сохраняем сотые из предыдущего значения
+          const previousValue = this.dataFieldForCalculation
+          const decimalPart = previousValue % 1
+          value = Math.round(value) + decimalPart
+        }
+        
+        // Гарантируем минимальное значение 0.1
+        if (value < this.stgMin) value = this.stgMin
+        
         this.updateInputValue(value)
+        this.lastSliderValue = value
 
         this.isUpdating = false
       });
@@ -114,9 +73,22 @@ export default {
         if (this.isUpdating) return
         this.isUpdating = true
 
-        const value = parseFloat(values[handle])
+        let value = parseFloat(values[handle])
+        
+        // Аналогичная логика для финального установления значения
+        if (this.wasInteger) {
+          value = Math.round(value)
+        } else {
+          const previousValue = this.dataFieldForCalculation
+          const decimalPart = previousValue % 1
+          value = Math.round(value) + decimalPart
+        }
+        
+        if (value < this.stgMin) value = this.stgMin
+        
         this.updateInputValue(value)
         this.updateStoreValue(value)
+        this.lastSliderValue = value
 
         this.isUpdating = false
       });
@@ -125,7 +97,7 @@ export default {
     initInputMask() {
       const maskOptions = {
         mask: Number,
-        scale: 2,
+        scale: 2, // Разрешаем две цифры после запятой
         thousandsSeparator: '',
         padFractionalZeros: true,
         normalizeZeros: true,
@@ -151,8 +123,11 @@ export default {
         if (value < this.stgMin) value = this.stgMin
         if (value > this.stgMax) value = this.stgMax
 
-        this.updateSliderValue(value)
+        // При ручном вводе сохраняем точное значение
+        this.updateSliderValue(Math.floor(value)) // Ползунок устанавливаем на целую часть
         this.updateStoreValue(value)
+        this.lastSliderValue = value
+        this.wasInteger = value % 1 === 0
 
         this.isUpdating = false
       });
@@ -172,7 +147,7 @@ export default {
 
     updateSliderValue(value) {
       if (this.realtySlider) {
-        this.realtySlider.set(value)
+        this.realtySlider.set(Math.floor(value)) // Устанавливаем только целую часть
       }
     },
 
@@ -206,6 +181,8 @@ export default {
         this.updateSliderValue(this.stgMin)
         this.updateInputValue(this.stgMin)
         this.updateStoreValue(this.stgMin)
+        this.lastSliderValue = this.stgMin
+        this.wasInteger = false
       }
     },
   },
@@ -223,25 +200,15 @@ export default {
     this.initRealtySlider()
     this.initInputMask()
     this.updateStoreValue(this.start)
+    this.lastSliderValue = this.start
+    this.wasInteger = this.start % 1 === 0
 
     if (this.answers && this.answers.bet) {
       const initialValue = parseFloat(this.answers.bet)
       this.updateSliderValue(initialValue)
       this.updateInputValue(initialValue)
       this.updateStoreValue(initialValue)
+      this.lastSliderValue = initialValue
+      this.wasInteger = initialValue % 1 === 0
     }
   },
-
-  computed: {
-    transfer_tooltip() {
-      return Storage.getters.TRANSFERTOOLTIP
-    },
-    answers() {
-      return Storage.getters.ANSWERS
-    },
-  }
-};
-</script>
-
-<style scoped>
-</style>
