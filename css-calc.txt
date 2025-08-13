@@ -32,8 +32,6 @@ import Storage from '../development-tools/state.vue';
 import VanillaCalendar from '../../vanilla-calendar2';
 import numberFormatting from '../mixin/numberFormatting.js';
 
-let maskCalendarMortgageData;
-
 export default {
   name: 'v-2-component-calendar',
   mixins: [numberFormatting],
@@ -43,14 +41,15 @@ export default {
       parent: null,
       month: ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
       minDate: { month: 1, year: 1995 },
-      maxDate: { month: 12, year: 2026 }
+      maxDate: { month: 12, year: 2026 },
+      yearObserver: null
     };
   },
   methods: {
     initPluginCalendarVanilla(month = this.formatMonth(this.min_date_mobile), year = this.formatYear(this.min_date_mobile)) {
       const key_word_this = this;
 
-      let range = {
+      const range = {
         min: key_word_this.formatYearMonthMinDate(key_word_this.min_date_mobile),
         max: key_word_this.formatYearMonthMaxDate(key_word_this.min_date_mobile)
       };
@@ -60,6 +59,7 @@ export default {
 
       this.parent = element.closest('.js--container-block');
 
+      // Уничтожаем предыдущий экземпляр
       if (this.calendarMobile) {
         this.calendarMobile.destroy();
       }
@@ -69,17 +69,14 @@ export default {
         settings: {
           lang: 'ru',
           range: range,
-          selected: {
-            month: month,
-            year: year
-          }
+          selected: { month, year }
         },
         actions: {
           clickMonth(e, dates) {
             if (dates && dates.selectedYear && dates.selectedMonth !== undefined) {
               const parent = e.target.closest('.js--credit-calendar-input');
               const container = e.target.closest('.js__vanilla-calendar-calc');
-              const array_month = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+              const array_month = this.month;
 
               if (parent) {
                 const input = parent.querySelector('input');
@@ -96,31 +93,45 @@ export default {
             }
           },
           clickYear(e, dates) {
-            let isClicked = false;
-            const observer = new MutationObserver(function(mutations) {
-              mutations.forEach(function() {
-                const targetElement = document.querySelector('.js-calendar-mobile-shedule .vanilla-calendar-header__content .vanilla-calendar-month');
-                if (targetElement && !isClicked) {
-                  targetElement.click();
-                  isClicked = true;
-                  observer.disconnect();
-                }
-              });
-            });
-            observer.observe(document.body, {
-              childList: true,
-              subtree: true
-            });
+            // После клика на год — открывается выбор месяца
+            // Подождём, пока обновится DOM
+            setTimeout(() => {
+              this.disableOutOfRangeMonths();
+            }, 100);
           }
         }
       });
 
       this.calendarMobile.init();
 
-      // После инициализации — ручное отключение месяцев
+      // Убираем старый observer
+      if (this.yearObserver) {
+        this.yearObserver.disconnect();
+      }
+
+      // Наблюдаем за изменением года
+      this.setupYearObserver();
+
+      // Отключаем месяцы сразу
       this.$nextTick(() => {
         this.disableOutOfRangeMonths();
       });
+    },
+
+    setupYearObserver() {
+      const calendarEl = document.querySelector('.js-calendar-mobile-shedule');
+      if (!calendarEl) return;
+
+      this.yearObserver = new MutationObserver(() => {
+        this.$nextTick(() => {
+          this.disableOutOfRangeMonths();
+        });
+      });
+
+      const yearEl = calendarEl.querySelector('.vanilla-calendar-year');
+      if (yearEl) {
+        this.yearObserver.observe(yearEl, { childList: true, subtree: true });
+      }
     },
 
     disableOutOfRangeMonths() {
@@ -130,9 +141,7 @@ export default {
       const yearEl = calendarEl.querySelector('.vanilla-calendar-year');
       if (!yearEl) return;
 
-      const yearText = yearEl.textContent ? yearEl.textContent.trim() : '';
-      if (!yearText) return;
-
+      const yearText = yearEl.textContent.trim();
       const currentYear = parseInt(yearText, 10);
       if (isNaN(currentYear)) return;
 
@@ -140,53 +149,45 @@ export default {
       const minNum = this.dateToNumber(this.minDate);
       const maxNum = this.dateToNumber(this.maxDate);
 
-      monthEls.forEach(function(monthEl, index) {
+      monthEls.forEach((monthEl, index) => {
         const monthIndex = index + 1; // 1-based
-        const dateObj = { year: currentYear, month: monthIndex };
-        const dateNum = this.dateToNumber(dateObj);
+        const dateNum = currentYear * 12 + (monthIndex - 1);
 
         if (dateNum < minNum || dateNum > maxNum) {
           monthEl.style.pointerEvents = 'none';
           monthEl.classList.add('vanilla-calendar-months__month--disabled');
+          monthEl.classList.remove('vanilla-calendar-months__month--selected'); // на всякий случай
         } else {
           monthEl.style.pointerEvents = '';
           monthEl.classList.remove('vanilla-calendar-months__month--disabled');
         }
-      }.bind(this));
+      });
     },
 
     CalendarVanillaClose() {
       let count = 0;
-      document.body.onclick = function() {
+      document.body.onclick = () => {
         const array_parent = document.querySelectorAll('.js--credit-calendar-input');
         const array_element = document.querySelectorAll('.js__vanilla-calendar-calc.active');
-        array_parent.forEach(function(item) {
-          item.onclick = function(w) {
-            w.stopImmediatePropagation();
-          };
+
+        array_parent.forEach(item => {
+          item.onclick = w => w.stopImmediatePropagation();
         });
+
         if (count > 0) {
-          array_element.forEach(function(el) {
-            el.classList.remove('active');
-          });
+          array_element.forEach(el => el.classList.remove('active'));
         }
-        if (count < 1) {
-          count += 1;
-        }
+        if (count < 1) count++;
       };
     },
 
     fieldNotEmpty(e) {
-      let element = e instanceof Event ? e.currentTarget : e;
+      const element = e.currentTarget;
       const parent = element.closest('.js--calc-row-input');
       if (parent) {
         const clearBtn = parent.querySelector('.js--clear-calc-tax');
         if (clearBtn) {
-          if (element.value.length > 0) {
-            clearBtn.classList.add('active');
-          } else {
-            clearBtn.classList.remove('active');
-          }
+          clearBtn.classList.toggle('active', element.value.length > 0);
         }
       }
     },
@@ -207,11 +208,11 @@ export default {
     changeDate(e) {
       const target = e.target;
       let value = target.value.replace(/[^\d.]/g, '');
-      let parts = value.split('.');
-      let monthPart = parts[0].substring(0, 2);
-      let yearPart = parts[1] ? parts[1].substring(0, 4) : '';
+      const parts = value.split('.');
+      const monthPart = parts[0].substring(0, 2);
+      const yearPart = parts[1] ? parts[1].substring(0, 4) : '';
       let newValue = monthPart;
-      if (monthPart.length >= 2 || (parts.length > 1 && yearPart.length > 0)) {
+      if (monthPart.length >= 2 || yearPart) {
         newValue += '.' + yearPart;
       }
 
@@ -226,11 +227,11 @@ export default {
       }
 
       if (target.value.replace(/(_|\s)+/g, "").length === 7) {
-        let [monthStr, yearStr] = target.value.split('.');
-        let month = parseInt(monthStr, 10) || 0;
-        let year = parseInt(yearStr, 10) || 0;
+        const [monthStr, yearStr] = target.value.split('.');
+        let month = parseInt(monthStr, 10) || 1;
+        let year = parseInt(yearStr, 10) || new Date().getFullYear();
 
-        if (month < 1 || month > 12) month = Math.min(Math.max(month, 1), 12);
+        month = Math.min(Math.max(month, 1), 12);
         if (year < this.minDate.year) {
           year = this.minDate.year;
           month = this.minDate.month;
@@ -242,11 +243,12 @@ export default {
         if (year === this.maxDate.year) month = Math.min(month, this.maxDate.month);
 
         const current = { month, year };
-        if (this.dateToNumber(current) < this.dateToNumber(this.minDate)) {
-          Object.assign(current, this.minDate);
-        } else if (this.dateToNumber(current) > this.dateToNumber(this.maxDate)) {
-          Object.assign(current, this.maxDate);
-        }
+        const currentNum = this.dateToNumber(current);
+        const minNum = this.dateToNumber(this.minDate);
+        const maxNum = this.dateToNumber(this.maxDate);
+
+        if (currentNum < minNum) Object.assign(current, this.minDate);
+        if (currentNum > maxNum) Object.assign(current, this.maxDate);
 
         target.value = this.formatDate(current.month, current.year);
         setTimeout(() => {
@@ -256,57 +258,43 @@ export default {
     },
 
     showCalendar(el) {
-      const element = el.currentTarget;
       document.querySelectorAll('.js__vanilla-calendar-calc').forEach(el => {
         el.classList.remove('active');
       });
-      element.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc').classList.add('active');
+      el.currentTarget.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc').classList.add('active');
     },
 
     formatMonth(dateStr) {
-      if (dateStr) {
-        let parts = dateStr.split('-');
-        let month = parseInt(parts[1], 10) + 1;
-        if (month === 13) month = 1;
-        return month;
-      }
-      return 1;
+      if (!dateStr) return 1;
+      const parts = dateStr.split('-');
+      let month = parseInt(parts[1], 10) + 1;
+      return month > 12 ? 1 : month;
     },
 
     formatYear(dateStr) {
-      if (dateStr) {
-        return dateStr.split('-')[0];
-      }
-      return new Date().getFullYear();
+      return dateStr ? dateStr.split('-')[0] : new Date().getFullYear();
     },
 
     formatYearMonthMinDate(dateStr) {
-      if (dateStr) {
-        let [year, month] = dateStr.split('-');
-        month = parseInt(month, 10) + 2;
-        if (month >= 13) {
-          year = parseInt(year, 10) + Math.floor((month - 1) / 12);
-          month = ((month - 1) % 12) + 1;
-        }
-        return year + '-' + String(month).padStart(2, '0');
-      }
-      return '';
+      if (!dateStr) return '';
+      const [year, month] = dateStr.split('-');
+      const date = new Date(parseInt(year), parseInt(month), 1);
+      date.setMonth(date.getMonth() + 2);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     },
 
     formatYearMonthMaxDate(dateStr) {
-      if (this.loanTerm > 0 && dateStr) {
-        let [year, month] = dateStr.split('-');
-        const date = new Date(parseInt(year), parseInt(month), 1);
-        date.setMonth(date.getMonth() + 1 + this.loanTerm);
-        const newYear = date.getFullYear();
-        const newMonth = date.getMonth();
-        return newYear + '-' + String(newMonth).padStart(2, '0');
-      }
-      return (new Date().getFullYear() + 1) + '-12';
+      if (this.loanTerm <= 0) return `${new Date().getFullYear() + 1}-12`;
+      if (!dateStr) return `${new Date().getFullYear() + 1}-12`;
+
+      const [year, month] = dateStr.split('-');
+      const date = new Date(parseInt(year), parseInt(month), 1);
+      date.setMonth(date.getMonth() + 1 + this.loanTerm);
+      return `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`;
     },
 
     formatDate(month, year) {
-      return String(month).padStart(2, '0') + '.' + String(year).padStart(4, '0');
+      return `${String(month).padStart(2, '0')}.${String(year).padStart(4, '0')}`;
     },
 
     dateToNumber(date) {
@@ -318,7 +306,7 @@ export default {
     },
 
     replaceMonth(el) {
-      let element = el instanceof Event ? el.currentTarget : el;
+      const element = el instanceof Event ? el.currentTarget : el;
       const value = element.value.trim();
       const parts = value.split('.');
       if (parts.length !== 2) return;
@@ -328,7 +316,7 @@ export default {
     },
 
     replaceMonthFocus(e) {
-      let element = e.currentTarget;
+      const element = e.currentTarget;
       const parts = element.value.split(', ');
       if (parts.length === 2) {
         const monthIndex = this.month.indexOf(parts[0]);
@@ -346,7 +334,7 @@ export default {
   },
   computed: {
     loanTerm() {
-      return Storage.getters.TIMECREDIT;
+      return Storage.getters.TIMECREDIT || 0;
     },
     min_date_mobile() {
       return Storage.getters.MINDATEMOBILE;
@@ -354,32 +342,34 @@ export default {
   },
   watch: {
     min_date_mobile() {
-      this.initPluginCalendarVanilla();
-      this.CalendarVanillaClose();
-
-      let [year, month] = this.formatYearMonthMinDate(this.min_date_mobile).split('-');
-      let [yearMax, monthMax] = this.formatYearMonthMaxDate(this.min_date_mobile).split('-');
-
-      this.minDate = { month: parseInt(month), year: parseInt(year) };
-      this.maxDate = { month: parseInt(monthMax), year: parseInt(yearMax) };
+      this.updateDateLimits();
     },
     loanTerm() {
-      this.initPluginCalendarVanilla();
-      this.CalendarVanillaClose();
-
-      let [year, month] = this.formatYearMonthMinDate(this.min_date_mobile).split('-');
-      let [yearMax, monthMax] = this.formatYearMonthMaxDate(this.min_date_mobile).split('-');
+      this.updateDateLimits();
+    }
+  },
+  methods: {
+    updateDateLimits() {
+      const [year, month] = this.formatYearMonthMinDate(this.min_date_mobile).split('-');
+      const [yearMax, monthMax] = this.formatYearMonthMaxDate(this.min_date_mobile).split('-');
 
       this.minDate = { month: parseInt(month), year: parseInt(year) };
       this.maxDate = { month: parseInt(monthMax), year: parseInt(yearMax) };
+
+      this.initPluginCalendarVanilla();
+      this.CalendarVanillaClose();
     }
   },
   mounted() {
-    // Можно инициализировать здесь, если нужно
-    // this.initPluginCalendarVanilla();
-    // this.CalendarVanillaClose();
+    // Инициализация при монтировании
+    this.updateDateLimits();
+    this.CalendarVanillaClose();
   },
-  created() {}
+  beforeDestroy() {
+    if (this.yearObserver) {
+      this.yearObserver.disconnect();
+    }
+  }
 };
 </script>
 
