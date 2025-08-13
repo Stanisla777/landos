@@ -67,68 +67,54 @@ export default {
         max: this.formatYearMonthMaxDate(this.min_date_mobile)
       };
 
-      // Начальный выбранный месяц/год
-      const selectedMonth = month || this.minDate.month;
-      const selectedYear = year || this.minDate.year;
-
       this.calendarMobile = new VanillaCalendar('.js-calendar-mobile-shedule', {
         type: 'year',
         settings: {
           lang: 'ru',
           range: range,
           selected: {
-            month: selectedMonth - 1, // 0-based
-            year: selectedYear
+            month: month,
+            year: year
           }
         },
         actions: {
           clickMonth: (e, dates) => {
-            if (dates.selectedYear !== undefined && dates.selectedMonth !== undefined) {
-              const selectedMonthIndex = dates.selectedMonth; // 0-based
-              const selectedYear = dates.selectedYear;
-
-              // Проверяем, входит ли дата в диапазон
-              const dateNum = selectedYear * 12 + selectedMonthIndex;
-              const minNum = this.dateToNumber(this.minDate);
-              const maxNum = this.dateToNumber(this.maxDate);
-
-              if (dateNum < minNum || dateNum > maxNum) {
-                return; // не обрабатываем
-              }
-
+            if (dates.selectedYear && dates.selectedMonth !== undefined) {
               const parent = e.target.closest('.js--credit-calendar-input');
+              const container = e.target.closest('.js__vanilla-calendar-calc');
+              const array_month = this.month;
+
               if (parent) {
                 const input = parent.querySelector('input');
-                const clearBtn = parent.querySelector('.js--clear-calc-tax');
                 if (input) {
-                  input.value = `${this.month[selectedMonthIndex]}, ${selectedYear}`;
+                  input.value = `${array_month[dates.selectedMonth]}, ${dates.selectedYear}`;
                 }
+                const clearBtn = parent.querySelector('.js--clear-calc-tax');
                 if (clearBtn && parent.closest('.js--calc-row-input')) {
                   clearBtn.classList.add('active');
                 }
-                parent.querySelector('.js__vanilla-calendar-calc').classList.remove('active');
+                container.classList.remove('active');
               }
-
-              this.$emit('sendDateMobile', [selectedYear, selectedMonthIndex + 1]);
+              this.$emit('sendDateMobile', [dates.selectedYear, dates.selectedMonth + 1]);
             }
           },
-          clickYear: () => {
-            // После клика на год — дожидаемся рендера месяцев
-            this.$nextTick(() => {
+          clickYear: (e, dates) => {
+            // Оригинальный обработчик для переключения на месяцы
+            const targetMonth = e.target.closest('.vanilla-calendar-month');
+            if (targetMonth) {
+              targetMonth.click();
+            }
+            
+            // После небольшой задержки обновляем состояние месяцев
+            setTimeout(() => {
               this.setupMonthDisabling();
-              this.observeYearChange();
-            });
+            }, 50);
           }
         }
       });
 
       this.calendarMobile.init();
-
-      // После инициализации настраиваем отключение
-      this.$nextTick(() => {
-        this.setupMonthDisabling();
-        this.observeYearChange();
-      });
+      this.observeYearChange();
     },
 
     setupMonthDisabling() {
@@ -147,8 +133,8 @@ export default {
       const maxNum = this.dateToNumber(this.maxDate);
 
       monthEls.forEach((monthEl, index) => {
-        const monthIndex = index + 1; // 1-based
-        const dateNum = currentYear * 12 + (monthIndex - 1); // 0-based month
+        const monthIndex = index; // 0-based
+        const dateNum = currentYear * 12 + monthIndex;
 
         if (dateNum < minNum || dateNum > maxNum) {
           monthEl.classList.add('vanilla-calendar-months__month--disabled');
@@ -167,15 +153,13 @@ export default {
       const headerYearEl = container.querySelector('.vanilla-calendar-year');
       if (!headerYearEl) return;
 
-      // Удаляем старый observer
+      // Удаляем старый observer, если он есть
       if (this.observer) {
         this.observer.disconnect();
       }
 
       this.observer = new MutationObserver(() => {
-        this.$nextTick(() => {
-          this.setupMonthDisabling();
-        });
+        this.setupMonthDisabling();
       });
 
       this.observer.observe(headerYearEl, {
@@ -188,9 +172,9 @@ export default {
     CalendarVanillaClose() {
       let count = 0;
       const handler = () => {
-        const activeCalendars = document.querySelectorAll('.js__vanilla-calendar-calc.active');
+        const array_element = document.querySelectorAll('.js__vanilla-calendar-calc.active');
         if (count > 0) {
-          activeCalendars.forEach(el => el.classList.remove('active'));
+          array_element.forEach(el => el.classList.remove('active'));
         }
         if (count < 1) count++;
       };
@@ -202,9 +186,8 @@ export default {
       document.body.addEventListener('click', handler);
       document.body._calendarClickHandler = handler;
 
-      // Предотвращаем всплытие кликов в поле
       document.querySelectorAll('.js--credit-calendar-input').forEach(item => {
-        item.onclick = (e) => e.stopImmediatePropagation();
+        item.onclick = e => e.stopImmediatePropagation();
       });
     },
 
@@ -288,12 +271,9 @@ export default {
       document.querySelectorAll('.js__vanilla-calendar-calc').forEach(el => {
         el.classList.remove('active');
       });
-      const calendar = el.currentTarget.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc');
-      calendar.classList.add('active');
-
+      el.currentTarget.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc').classList.add('active');
       this.$nextTick(() => {
         this.setupMonthDisabling();
-        this.observeYearChange();
       });
     },
 
@@ -421,7 +401,7 @@ export default {
 .vanilla-calendar-months__month--disabled {
   opacity: 0.5;
   pointer-events: none;
-  color: #aaa;
   cursor: not-allowed;
+  color: #aaa;
 }
 </style>
