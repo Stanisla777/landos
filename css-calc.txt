@@ -67,8 +67,9 @@ export default {
   data() {
     return {
       realtySlider: null,
-      dataField: '6,00',
+      dataField: '6,0',
       dataFieldForCalculation: 6.0,
+      stepApartment: 0.1,
       stgMin: 0.1,
       stgMiddle: 50,
       stgMax: 100,
@@ -76,22 +77,19 @@ export default {
       input_salary: false,
       slider: false,
       mask_interest: null,
-      isUpdating: false,
-      previousSliderValue: 6.0,
-      previousDecimalPart: 0.0
+      isUpdating: false // Флаг для предотвращения рекурсивных обновлений
     }
   },
   methods: {
     formatValue(value) {
-      // Форматируем с двумя десятичными знаками
-      return parseFloat(value).toFixed(2).toString().replace('.', ',')
+      return parseFloat(value).toFixed(1).toString().replace('.', ',')
     },
 
     initRealtySlider() {
       this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
         start: [this.start],
         connect: 'lower',
-        step: 1, // Шаг теперь целый
+        step: 0.01,
         range: {
           min: this.stgMin,
           max: this.stgMax
@@ -100,58 +98,28 @@ export default {
 
       this.realtySlider.on('start', () => {
         this.input_salary = false
-        // Запоминаем текущее значение перед началом движения
-        const currentValue = parseFloat(this.mask_interest.unmaskedValue || this.start);
-        this.previousSliderValue = currentValue;
-        this.previousDecimalPart = this.getDecimalPart(currentValue);
       });
 
       this.realtySlider.on('slide', (values, handle) => {
         if (this.isUpdating) return
         this.isUpdating = true
 
-        let value = parseFloat(values[handle]);
-        
-        // Если предыдущее значение было целым (например, 6.00) и мы на минимуме (0.10)
-        // то сохраняем целые значения при движении вверх
-        if (this.previousDecimalPart === 0 && this.previousSliderValue === this.stgMin) {
-          value = Math.floor(value);
-        } else {
-          // Иначе сохраняем десятичную часть
-          value = Math.floor(value) + this.previousDecimalPart;
-        }
-        
-        // Гарантируем, что значение не меньше минимального
-        value = Math.max(value, this.stgMin);
-        
-        this.updateInputValue(value);
-        this.isUpdating = false;
+        const value = parseFloat(values[handle])
+        this.updateInputValue(value)
+
+        this.isUpdating = false
       });
 
       this.realtySlider.on('set', (values, handle) => {
         if (this.isUpdating) return
         this.isUpdating = true
 
-        let value = parseFloat(values[handle]);
-        
-        // Аналогичная логика для конечного значения
-        if (this.previousDecimalPart === 0 && this.previousSliderValue === this.stgMin) {
-          value = Math.floor(value);
-        } else {
-          value = Math.floor(value) + this.previousDecimalPart;
-        }
-        
-        value = Math.max(value, this.stgMin);
-        
-        this.updateInputValue(value);
-        this.updateStoreValue(value);
-        this.isUpdating = false;
-      });
-    },
+        const value = parseFloat(values[handle])
+        this.updateInputValue(value)
+        this.updateStoreValue(value)
 
-    getDecimalPart(value) {
-      // Получаем дробную часть числа
-      return parseFloat((value - Math.floor(value)).toFixed(2);
+        this.isUpdating = false
+      });
     },
 
     initInputMask() {
@@ -180,13 +148,10 @@ export default {
         if (isNaN(value)) value = this.stgMin
 
         // Корректируем значение, если оно выходит за границы
-        value = Math.max(value, this.stgMin)
-        value = Math.min(value, this.stgMax)
+        if (value < this.stgMin) value = this.stgMin
+        if (value > this.stgMax) value = this.stgMax
 
-        // Сохраняем десятичную часть для ползунка
-        this.previousDecimalPart = this.getDecimalPart(value);
-        
-        this.updateSliderValue(Math.floor(value))
+        this.updateSliderValue(value)
         this.updateStoreValue(value)
 
         this.isUpdating = false
@@ -207,7 +172,7 @@ export default {
 
     updateSliderValue(value) {
       if (this.realtySlider) {
-        this.realtySlider.set(Math.floor(value))
+        this.realtySlider.set(value)
       }
     },
 
@@ -238,11 +203,9 @@ export default {
       element.closest('.js--tex-deduc-input').classList.remove('input-focus')
 
       if (!element.value || element.value === '') {
-        const minValue = this.stgMin;
-        this.updateSliderValue(minValue)
-        this.updateInputValue(minValue)
-        this.updateStoreValue(minValue)
-        this.previousDecimalPart = this.getDecimalPart(minValue);
+        this.updateSliderValue(this.stgMin)
+        this.updateInputValue(this.stgMin)
+        this.updateStoreValue(this.stgMin)
       }
     },
   },
@@ -260,14 +223,12 @@ export default {
     this.initRealtySlider()
     this.initInputMask()
     this.updateStoreValue(this.start)
-    this.previousDecimalPart = this.getDecimalPart(this.start);
 
     if (this.answers && this.answers.bet) {
       const initialValue = parseFloat(this.answers.bet)
       this.updateSliderValue(initialValue)
       this.updateInputValue(initialValue)
       this.updateStoreValue(initialValue)
-      this.previousDecimalPart = this.getDecimalPart(initialValue);
     }
   },
 
@@ -284,3 +245,189 @@ export default {
 
 <style scoped>
 </style>
+
+
+--------------------------------------------------------------------------------------
+
+data() {
+  return {
+    realtySlider: null,
+    dataField: '6,0',
+    dataFieldForCalculation: 6.0,
+    stepApartment: 0.1,
+    stgMin: 0.1,
+    stgMiddle: 50,
+    stgMax: 100,
+    start: 6.0,
+    input_salary: false,
+    slider: false,
+    mask_interest: null,
+    isUpdating: false,
+    fractionalPart: 0.00, // Сохраняем сотые при движении ползунком
+    wasManualInput: false // Флаг: был ли ввод с клавиатуры
+  }
+},
+
+-------------------------------------------------------------------------
+
+updateInputValue(value) {
+  // Округляем до сотых
+  const roundedValue = Math.round(value * 100) / 100
+  const formattedValue = roundedValue.toString().replace('.', ',')
+
+  this.dataField = formattedValue
+  this.dataFieldForCalculation = roundedValue
+
+  // Сохраняем дробную часть для будущего использования ползунком
+  if (!this.isSliderDragging) {
+    this.fractionalPart = roundedValue - Math.floor(roundedValue)
+  }
+
+  if (this.mask_interest) {
+    this.mask_interest.unmaskedValue = roundedValue.toString()
+  } else {
+    this.$refs.realtyInput.value = formattedValue
+  }
+},
+
+-------------------------------------------------------------------------------------
+
+updateSliderValue(value) {
+  if (this.realtySlider) {
+    const roundedValue = Math.round(value * 100) / 100
+    this.realtySlider.set(roundedValue)
+  }
+},
+
+------------------------------------------------------------------------------------
+updateStoreValue(value) {
+  const roundedValue = Math.round(value * 100) / 100
+  Storage.dispatch('ActionInterestRate', roundedValue)
+},
+------------------------------------------------------------------------------
+
+this.realtySlider.on('slide', (values, handle) => {
+  if (this.isUpdating) return
+  this.isUpdating = true
+  this.isSliderDragging = true
+
+  const rawValue = parseFloat(values[handle])
+  let newValue
+
+  // Если значение близко к 0.1 — фиксируем как 0.1
+  if (rawValue <= 0.1) {
+    newValue = 0.1
+  } else {
+    // Иначе — двигаем целую часть, сохраняя дробную часть
+    const integerPart = Math.floor(rawValue)
+    newValue = integerPart + this.fractionalPart
+
+    // Если значение не менялось вручную, и было целым — сохраняем .00
+    if (!this.wasManualInput && this.fractionalPart === 0) {
+      newValue = integerPart
+    }
+
+    // Ограничиваем максимум
+    if (newValue > this.stgMax) newValue = this.stgMax
+    if (newValue < 0.1) newValue = 0.1
+  }
+
+  this.updateInputValue(newValue)
+  this.isSliderDragging = false
+  this.isUpdating = false
+});
+
+this.realtySlider.on('set', (values, handle) => {
+  if (this.isUpdating) return
+  this.isUpdating = true
+  this.isSliderDragging = true
+
+  const rawValue = parseFloat(values[handle])
+  let newValue
+
+  if (rawValue <= 0.1) {
+    newValue = 0.1
+  } else {
+    const integerPart = Math.floor(rawValue)
+    newValue = integerPart + this.fractionalPart
+
+    if (!this.wasManualInput && this.fractionalPart === 0) {
+      newValue = integerPart
+    }
+
+    if (newValue > this.stgMax) newValue = this.stgMax
+    if (newValue < 0.1) newValue = 0.1
+  }
+
+  this.updateInputValue(newValue)
+  this.updateStoreValue(newValue)
+  this.isSliderDragging = false
+  this.isUpdating = false
+});
+
+-----------------------------------------------------------------------
+this.mask_interest.on('accept', () => {
+  if (this.isUpdating || !this.mask_interest.typedValue) return
+  this.isUpdating = true
+
+  let value = parseFloat(this.mask_interest.unmaskedValue.replace(',', '.'))
+  if (isNaN(value)) value = this.stgMin
+
+  // Корректируем на минимум
+  if (value < this.stgMin) value = this.stgMin
+  if (value > this.stgMax) value = this.stgMax
+
+  // Сохраняем дробную часть
+  this.fractionalPart = value - Math.floor(value)
+  this.wasManualInput = true // Флаг: пользователь вводил вручную
+
+  this.updateSliderValue(value)
+  this.updateInputValue(value)
+  this.updateStoreValue(value)
+
+  this.isUpdating = false
+});
+
+------------------------------------------------------------------------------
+inputBlur(el) {
+  const element = el.currentTarget
+  element.closest('.js--tex-deduc-input').classList.remove('input-focus')
+
+  if (!element.value || element.value === '') {
+    this.wasManualInput = false // Сброс флага
+    this.fractionalPart = 0.1 - 0 // = 0.1
+    this.updateSliderValue(0.1)
+    this.updateInputValue(0.1)
+    this.updateStoreValue(0.1)
+  }
+}
+---------------------------------------------------------------------------------
+mounted() {
+  this.initRealtySlider()
+  this.initInputMask()
+  this.updateStoreValue(this.start)
+
+  // Инициализация дробной части
+  this.fractionalPart = this.start - Math.floor(this.start)
+  if (this.fractionalPart === 0) this.wasManualInput = false
+  else this.wasManualInput = true
+
+  if (this.answers && this.answers.bet) {
+    const initialValue = parseFloat(this.answers.bet)
+    const clampedValue = Math.max(this.stgMin, Math.min(this.stgMax, initialValue))
+
+    this.fractionalPart = clampedValue - Math.floor(clampedValue)
+    this.wasManualInput = true
+
+    this.updateSliderValue(clampedValue)
+    this.updateInputValue(clampedValue)
+    this.updateStoreValue(clampedValue)
+  }
+},
+----------------------------------------------------------------------
+data() {
+  return {
+    // ... остальные поля
+    isSliderDragging: false, // Добавить
+  }
+}
