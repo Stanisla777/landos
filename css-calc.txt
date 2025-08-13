@@ -3,33 +3,27 @@ scrollToElementSmart(container, targetElement) {
   const targetRect = targetElement.getBoundingClientRect();
   const pageScrollTop = window.scrollY;
 
-  // Абсолютная позиция верха контейнера на странице
-  const containerAbsoluteTop = containerRect.top + pageScrollTop;
-  const targetAbsoluteTop = targetRect.top + pageScrollTop;
-
   const targetTopInContainer = targetRect.top - containerRect.top + container.scrollTop;
   const maxContainerScroll = container.scrollHeight - container.clientHeight;
 
-  // Желаемая позиция скролла контейнера (чтобы элемент был вверху контейнера)
+  // Желаемая позиция скролла контейнера, чтобы элемент был вверху
   const desiredContainerScroll = Math.max(0, Math.min(targetTopInContainer, maxContainerScroll));
 
-  // Может ли контейнер вообще скроллиться?
+  // Проверка: может ли контейнер проскроллиться?
   const canScrollContainer = container.scrollHeight > container.clientHeight;
 
   if (canScrollContainer) {
-    // Пытаемся проскроллить контейнер, чтобы элемент был вверху
+    // Скроллим контейнер, чтобы элемент оказался вверху контейнера
     this.smoothScrollTo(container, 'scrollTop', desiredContainerScroll, 300, (val) => {
       container.scrollTop = val;
     });
 
-    // После завершения анимации проверяем, виден ли элемент на экране
+    // После анимации проверяем, попал ли элемент в нужную позицию на экране
     setTimeout(() => {
       const finalTargetRect = targetElement.getBoundingClientRect();
-      if (
-        finalTargetRect.top < 0 ||
-        finalTargetRect.bottom > window.innerHeight
-      ) {
-        // Элемент частично или полностью вне экрана — подкручиваем страницу
+
+      // Если элемент выходит за пределы экрана — подкручиваем страницу
+      if (finalTargetRect.top < 0 || finalTargetRect.bottom > window.innerHeight) {
         const newPageScrollTop = window.scrollY + finalTargetRect.top - 10;
         this.smoothScrollTo(window, 'scrollY', newPageScrollTop, 300, (val) => {
           window.scrollTo(0, val);
@@ -37,20 +31,10 @@ scrollToElementSmart(container, targetElement) {
       }
     }, 310);
   } else {
-    // Контейнер не скроллится — скроллим страницу к контейнеру (или к элементу?)
-    // Но лучше скроллить к элементу, если он ниже контейнера?
-    // Однако, если контейнер не скроллится, и элемент в нём — скроллим к контейнеру
-
-    // Всё же, лучше скроллить к элементу, если он не в экране
-    const elementVisible = (
-      targetAbsoluteTop >= pageScrollTop &&
-      targetAbsoluteTop < pageScrollTop + window.innerHeight
-    );
-
-    if (!elementVisible) {
-      this.smoothScrollTo(window, 'scrollY', targetAbsoluteTop - 10, 300, (val) => {
-        window.scrollTo(0, val);
-      });
-    }
+    // Контейнер не скроллится — скроллим страницу к самому элементу (вверх экрана)
+    const targetPageScrollTop = pageScrollTop + targetRect.top - 10; // 10 — небольшой отступ сверху
+    this.smoothScrollTo(window, 'scrollY', targetPageScrollTop, 300, (val) => {
+      window.scrollTo(0, val);
+    });
   }
 },
