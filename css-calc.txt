@@ -68,103 +68,96 @@ export default {
     return {
       realtySlider: null,
       dataField: '6,00',
-      dataFieldForCalculation: 6.00,
-      stepApartment: 0.1,
+      dataFieldForCalculation: 6.0,
       stgMin: 0.1,
       stgMiddle: 50,
       stgMax: 100,
-      start: 6.00,
+      start: 6.0,
       input_salary: false,
       slider: false,
       mask_interest: null,
       isUpdating: false,
-      lastSliderValue: 6.00,
-      decimalPart: 0.00, // Хранит дробную часть (сотые)
-      wasInteger: false // Флаг, указывающий было ли число целым перед изменением
+      previousSliderValue: 6.0,
+      previousDecimalPart: 0.0
     }
   },
   methods: {
     formatValue(value) {
-      // Форматируем с двумя знаками после запятой
+      // Форматируем с двумя десятичными знаками
       return parseFloat(value).toFixed(2).toString().replace('.', ',')
     },
 
     initRealtySlider() {
       this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
-        start: [Math.floor(this.start)],
+        start: [this.start],
         connect: 'lower',
-        step: 1, // Шаг теперь только целые числа
+        step: 1, // Шаг теперь целый
         range: {
-          min: Math.floor(this.stgMin), // Минимум 0 (целая часть)
-          max: Math.floor(this.stgMax)
+          min: this.stgMin,
+          max: this.stgMax
         },
       })
 
       this.realtySlider.on('start', () => {
         this.input_salary = false
-        // При начале движения запоминаем текущее значение
-        const currentValue = parseFloat(this.mask_interest.unmaskedValue || this.start)
-        this.decimalPart = this.getDecimalPart(currentValue)
-        this.wasInteger = this.isInteger(currentValue)
+        // Запоминаем текущее значение перед началом движения
+        const currentValue = parseFloat(this.mask_interest.unmaskedValue || this.start);
+        this.previousSliderValue = currentValue;
+        this.previousDecimalPart = this.getDecimalPart(currentValue);
       });
 
       this.realtySlider.on('slide', (values, handle) => {
         if (this.isUpdating) return
         this.isUpdating = true
 
-        let value = parseFloat(values[handle])
+        let value = parseFloat(values[handle]);
         
-        // Если двигаем от минимального значения (0.1) и было целое число
-        if (this.lastSliderValue <= this.stgMin && this.wasInteger) {
-          this.decimalPart = 0 // Сохраняем 0 в дробной части
+        // Если предыдущее значение было целым (например, 6.00) и мы на минимуме (0.10)
+        // то сохраняем целые значения при движении вверх
+        if (this.previousDecimalPart === 0 && this.previousSliderValue === this.stgMin) {
+          value = Math.floor(value);
+        } else {
+          // Иначе сохраняем десятичную часть
+          value = Math.floor(value) + this.previousDecimalPart;
         }
         
-        // Добавляем сохраненную дробную часть
-        value += this.decimalPart
-        
         // Гарантируем, что значение не меньше минимального
-        value = Math.max(value, this.stgMin)
+        value = Math.max(value, this.stgMin);
         
-        this.updateInputValue(value)
-        this.lastSliderValue = value
-
-        this.isUpdating = false
+        this.updateInputValue(value);
+        this.isUpdating = false;
       });
 
       this.realtySlider.on('set', (values, handle) => {
         if (this.isUpdating) return
         this.isUpdating = true
 
-        let value = parseFloat(values[handle])
-        value += this.decimalPart
-        value = Math.max(value, this.stgMin)
+        let value = parseFloat(values[handle]);
         
-        this.updateInputValue(value)
-        this.updateStoreValue(value)
-        this.lastSliderValue = value
-
-        this.isUpdating = false
+        // Аналогичная логика для конечного значения
+        if (this.previousDecimalPart === 0 && this.previousSliderValue === this.stgMin) {
+          value = Math.floor(value);
+        } else {
+          value = Math.floor(value) + this.previousDecimalPart;
+        }
+        
+        value = Math.max(value, this.stgMin);
+        
+        this.updateInputValue(value);
+        this.updateStoreValue(value);
+        this.isUpdating = false;
       });
     },
 
-    isInteger(value) {
-      return value % 1 === 0;
-    },
-
     getDecimalPart(value) {
-      // Получаем дробную часть числа (сотые)
-      const str = value.toString()
-      const decimalIndex = str.indexOf('.')
-      if (decimalIndex === -1) return 0.00
-      
-      const decimalStr = str.substring(decimalIndex + 1)
-      return parseFloat('0.' + decimalStr)
+      // Получаем дробную часть числа
+      return parseFloat((value - Math.floor(value)).toFixed(2);
     },
 
     initInputMask() {
       const maskOptions = {
         mask: Number,
-        scale: 2, // Два знака после запятой
+        scale: 2,
         thousandsSeparator: '',
         padFractionalZeros: true,
         normalizeZeros: true,
@@ -189,14 +182,12 @@ export default {
         // Корректируем значение, если оно выходит за границы
         value = Math.max(value, this.stgMin)
         value = Math.min(value, this.stgMax)
+
+        // Сохраняем десятичную часть для ползунка
+        this.previousDecimalPart = this.getDecimalPart(value);
         
-        // Запоминаем дробную часть при ручном вводе
-        this.decimalPart = this.getDecimalPart(value)
-        this.wasInteger = this.isInteger(value)
-        
-        this.updateSliderValue(Math.floor(value)) // Для слайдера используем целую часть
+        this.updateSliderValue(Math.floor(value))
         this.updateStoreValue(value)
-        this.lastSliderValue = value
 
         this.isUpdating = false
       });
@@ -216,8 +207,7 @@ export default {
 
     updateSliderValue(value) {
       if (this.realtySlider) {
-        // Для слайдера используем только целую часть
-        this.realtySlider.set(value)
+        this.realtySlider.set(Math.floor(value))
       }
     },
 
@@ -248,12 +238,11 @@ export default {
       element.closest('.js--tex-deduc-input').classList.remove('input-focus')
 
       if (!element.value || element.value === '') {
-        this.decimalPart = 0.00
-        this.wasInteger = true
-        this.updateSliderValue(Math.floor(this.stgMin))
-        this.updateInputValue(this.stgMin)
-        this.updateStoreValue(this.stgMin)
-        this.lastSliderValue = this.stgMin
+        const minValue = this.stgMin;
+        this.updateSliderValue(minValue)
+        this.updateInputValue(minValue)
+        this.updateStoreValue(minValue)
+        this.previousDecimalPart = this.getDecimalPart(minValue);
       }
     },
   },
@@ -271,18 +260,14 @@ export default {
     this.initRealtySlider()
     this.initInputMask()
     this.updateStoreValue(this.start)
-    this.lastSliderValue = this.start
-    this.decimalPart = this.getDecimalPart(this.start)
-    this.wasInteger = this.isInteger(this.start)
+    this.previousDecimalPart = this.getDecimalPart(this.start);
 
     if (this.answers && this.answers.bet) {
       const initialValue = parseFloat(this.answers.bet)
-      this.decimalPart = this.getDecimalPart(initialValue)
-      this.wasInteger = this.isInteger(initialValue)
-      this.updateSliderValue(Math.floor(initialValue))
+      this.updateSliderValue(initialValue)
       this.updateInputValue(initialValue)
       this.updateStoreValue(initialValue)
-      this.lastSliderValue = initialValue
+      this.previousDecimalPart = this.getDecimalPart(initialValue);
     }
   },
 
