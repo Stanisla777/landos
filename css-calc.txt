@@ -1,45 +1,65 @@
-initRealtySlider() {
-  this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
-    start: [Math.floor(this.start)], // Округляем начальное значение вниз
-    connect: 'lower',
-    step: 1, // Только целые шаги
-    range: {
-      min: 0, // Минимальное целое значение всегда 0
-      max: Math.floor(this.stgMax) // Максимальное целое
-    },
-  })
+range: {
+  min: 0,        // Ползунок начинается с 0
+  max: this.stgMax // Ползунок идёт до 100 (целое)
+}
 
-  this.realtySlider.on('start', () => {
-    this.input_salary = false
-    // Сохраняем дробную часть текущего значения
-    const currentValue = parseFloat(this.mask_interest.unmaskedValue.replace(',', '.'));
-    this.decimalPart = currentValue % 1; // Сохраняем дробную часть
-  });
+this.realtySlider.on('slide', (values, handle) => {
+  if (this.isUpdating) return;
+  this.isUpdating = true;
 
-  this.realtySlider.on('slide', (values, handle) => {
-    if (this.isUpdating) return
-    this.isUpdating = true
+  const integerValue = parseFloat(values[handle]); // Уже целое, шаг 1
+  const newValue = integerValue + (this.decimalPart || 0);
 
-    const integerValue = Math.round(values[handle]);
-    // Добавляем сохраненную дробную часть, но не меньше 0.1
-    const newValue = integerValue + Math.max((this.decimalPart || 0), 0.1);
-    
-    this.updateInputValue(newValue)
+  this.updateInputValue(newValue);
 
-    this.isUpdating = false
-  });
+  this.isUpdating = false;
+});
 
-  this.realtySlider.on('set', (values, handle) => {
-    if (this.isUpdating) return
-    this.isUpdating = true
+this.realtySlider.on('set', (values, handle) => {
+  if (this.isUpdating) return;
+  this.isUpdating = true;
 
-    const integerValue = Math.round(values[handle]);
-    const newValue = integerValue + Math.max((this.decimalPart || 0), 0.1);
-    
-    this.updateInputValue(newValue)
-    this.updateStoreValue(newValue)
+  const integerValue = parseFloat(values[handle]);
+  const newValue = integerValue + (this.decimalPart || 0);
 
-    this.isUpdating = false
-    this.decimalPart = null;
-  });
-},
+  this.updateInputValue(newValue);
+  this.updateStoreValue(newValue);
+
+  this.isUpdating = false;
+  this.decimalPart = null; // Сброс дробной части после установки
+});
+
+start: [Math.floor(parseFloat(this.start))],
+
+this.mask_interest.on('accept', () => {
+  if (this.isUpdating || !this.mask_interest.typedValue) return;
+  this.isUpdating = true;
+
+  let value = parseFloat(this.mask_interest.unmaskedValue);
+  if (isNaN(value)) value = this.stgMin;
+
+  // Ограничение по min/max
+  if (value < this.stgMin) value = this.stgMin;
+  if (value > this.stgMax) value = this.stgMax;
+
+  // Сохраняем дробную часть для будущего изменения ползунком
+  this.decimalPart = value % 1;
+
+  this.updateSliderValue(Math.floor(value)); // Передаём только целую часть в ползунок
+  this.updateInputValue(value);
+  this.updateStoreValue(value);
+
+  this.isUpdating = false;
+});
+
+
+inputBlur(el) {
+  const element = el.currentTarget;
+  element.closest('.js--tex-deduc-input').classList.remove('input-focus')
+
+  if (!this.mask_interest.value || this.mask_interest.value === '') {
+    this.updateSliderValue(Math.floor(this.stgMin)); // 0
+    this.updateInputValue(this.stgMin); // 0.1
+    this.updateStoreValue(this.stgMin);
+  }
+}
