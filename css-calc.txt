@@ -1,45 +1,76 @@
-initRealtySlider() {
-  this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
-    start: [Math.floor(this.start)], // Округляем начальное значение вниз
-    connect: 'lower',
-    step: 1, // Только целые шаги
-    range: {
-      min: 0, // Минимальное целое значение всегда 0
-      max: Math.floor(this.stgMax) // Максимальное целое
-    },
-  })
+methods: {
+  formatValue(value) {
+    // Сохраняем дробную часть при форматировании
+    const integerPart = Math.floor(value);
+    const decimalPart = (value % 1).toFixed(2).substring(1);
+    return integerPart.toString().replace('.', ',') + decimalPart;
+  },
 
-  this.realtySlider.on('start', () => {
-    this.input_salary = false
-    // Сохраняем дробную часть текущего значения
-    const currentValue = parseFloat(this.mask_interest.unmaskedValue.replace(',', '.'));
-    this.decimalPart = currentValue % 1; // Сохраняем дробную часть
-  });
+  initInputMask() {
+    const maskOptions = {
+      mask: Number,
+      scale: 2,
+      thousandsSeparator: '',
+      padFractionalZeros: true,
+      normalizeZeros: true,
+      radix: ',',
+      mapToRadix: ['.', ','],
+      min: this.stgMin,
+      max: this.stgMax,
+      autofix: true,
+      prepare: (value) => value.replace(/[бю\/]/gi, ',')
+    };
 
-  this.realtySlider.on('slide', (values, handle) => {
-    if (this.isUpdating) return
-    this.isUpdating = true
+    this.mask_interest = new IMask(this.$refs.realtyInput, maskOptions);
+    this.mask_interest.value = this.formatValue(this.start);
 
-    const integerValue = Math.round(values[handle]);
-    // Добавляем сохраненную дробную часть, но не меньше 0.1
-    const newValue = integerValue + Math.max((this.decimalPart || 0), 0.1);
-    
-    this.updateInputValue(newValue)
+    this.mask_interest.on('accept', () => {
+      if (this.isUpdating || !this.mask_interest.typedValue) return;
+      this.isUpdating = true;
 
-    this.isUpdating = false
-  });
+      let value = parseFloat(this.mask_interest.unmaskedValue.replace(',', '.'));
+      if (isNaN(value)) value = this.stgMin;
 
-  this.realtySlider.on('set', (values, handle) => {
-    if (this.isUpdating) return
-    this.isUpdating = true
+      // Сохраняем дробную часть при ручном вводе
+      const decimalPart = value % 1;
+      this.decimalPart = decimalPart > 0 ? decimalPart : null;
 
-    const integerValue = Math.round(values[handle]);
-    const newValue = integerValue + Math.max((this.decimalPart || 0), 0.1);
-    
-    this.updateInputValue(newValue)
-    this.updateStoreValue(newValue)
+      // Корректируем значение
+      if (value < this.stgMin) value = this.stgMin;
+      if (value > this.stgMax) value = this.stgMax;
 
-    this.isUpdating = false
-    this.decimalPart = null;
-  });
-},
+      this.updateSliderValue(Math.floor(value));
+      this.updateStoreValue(value);
+
+      this.isUpdating = false;
+    });
+  },
+
+  initRealtySlider() {
+    this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
+      start: [Math.floor(this.start)],
+      connect: [true, false],
+      step: 1,
+      range: {
+        'min': [Math.floor(this.stgMin)],
+        'max': [Math.floor(this.stgMax)]
+      }
+    });
+
+    this.realtySlider.on('slide', (values) => {
+      if (this.isUpdating) return;
+      this.isUpdating = true;
+
+      const integerValue = parseFloat(values[0]);
+      // Добавляем сохраненную дробную часть к целому значению ползунка
+      const finalValue = this.decimalPart ? integerValue + this.decimalPart : integerValue;
+
+      this.updateInputValue(finalValue);
+      this.updateStoreValue(finalValue);
+
+      this.isUpdating = false;
+    });
+  },
+
+  // Остальные методы остаются без изменений
+}
