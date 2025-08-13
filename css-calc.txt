@@ -1,41 +1,7 @@
-scrollToElementSmart(container, targetElement) {
-  const containerRect = container.getBoundingClientRect();
-  const targetRect = targetElement.getBoundingClientRect();
-  const pageScrollTop = window.scrollY;
+// Контейнер не скроллится — скроллим страницу к контейнеру
+const containerAbsoluteTop = pageScrollTop + containerRect.top;
+const pageTarget = containerAbsoluteTop - 10; // -10 для отступа сверху
 
-  const targetTopInContainer = targetRect.top - containerRect.top + container.scrollTop;
-  const maxContainerScroll = container.scrollHeight - container.clientHeight;
-  const desiredContainerScroll = Math.max(0, Math.min(targetTopInContainer, maxContainerScroll));
-
-  const canScrollContainer = container.scrollHeight > container.clientHeight;
-
-  if (canScrollContainer) {
-    // Скроллим контейнер
-    this.smoothScrollTo(container, 'scrollTop', desiredContainerScroll, 300, (val) => {
-      container.scrollTop = val;
-    });
-
-    // После анимации проверим видимость элемента на экране
-    setTimeout(() => {
-      const finalTargetRect = targetElement.getBoundingClientRect();
-      if (
-        finalTargetRect.top < 0 ||
-        finalTargetRect.bottom > window.innerHeight
-      ) {
-        // Подкручиваем страницу, чтобы элемент был виден
-        const newPageScrollTop = window.scrollY + finalTargetRect.top - 10;
-        this.smoothScrollTo(window, 'scrollY', newPageScrollTop, 300, (val) => {
-          window.scrollTo(0, val);
-        });
-      }
-    }, 310);
-  } else {
-    // Контейнер не скроллится — скроллим страницу к контейнеру
-    const containerAbsoluteTop = pageScrollTop + containerRect.top;
-    const pageTarget = containerAbsoluteTop - 10;
-
-    this.smoothScrollTo(window, 'scrollY', pageTarget, 300, (val) => {
-      window.scrollTo(0, val);
-    });
-  }
-},
+this.smoothScrollTo(window, 'scrollY', pageTarget, 300, (val) => {
+  window.scrollTo(0, val);
+});
