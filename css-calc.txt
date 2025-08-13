@@ -1,291 +1,100 @@
-<template lang="pug">
-.calc-tax-deduc-new__container-block.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent
-  .calc-tax-deduc-new__row-title-main-container(
-    v-if="(transfer_tooltip!==null&&transfer_tooltip['interest-rate']&&transfer_tooltip['interest-rate']['info']!=='')&&(transfer_tooltip['interest-rate']['size']===''||transfer_tooltip['interest-rate']['size']==='small'||transfer_tooltip['interest-rate']['size']===undefined)"
-  )
-    .calc-tax-deduc-new__row-title-container
-      p.calc-tax-deduc-new__row-title Процентная ставка, %
-      span.content-note.desctop.content-note__center.js--content-note
-        span.content-note__text {{transfer_tooltip["interest-rate"]["info"]}}
-      span.content-note.mobile(
-        v-if="transfer_tooltip['interest-rate']['info']!==''"
-        @click="openTooltipMobile"
-      )
-    div(v-if="transfer_tooltip['interest-rate']['info']!==''")
-      .select__background.modal-special-background(@click="closeTooltipMobile")
-      .select-list__selection-window.modal-special-styles.js--openlist-body
-        .select-list__head
-          p Процентная ставка, %
-          .select-list__head-close(@click="closeTooltipMobile")
-            svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
-              path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
-        .select-list__wr-search.mor-rep-calculators__wr-search
-          p {{transfer_tooltip["interest-rate"]["info"]}}
+this.realtySlider.on('slide', (values, handle) => {
+  if (this.isUpdating) return;
+  this.isUpdating = true;
 
-  .calc-tax-deduc-new__row-title-main-container(
-    v-if="transfer_tooltip!==null&&transfer_tooltip['interest-rate']&&transfer_tooltip['interest-rate']['info']!==''&&transfer_tooltip['interest-rate']['size']!==''&&transfer_tooltip['interest-rate']['size']==='big'&&transfer_tooltip['interest-rate']['size']!==undefined"
-  )
-    .calc-tax-deduc-new__row-title-container
-      p.calc-tax-deduc-new__row-title Процентная ставка, %
-      .content-note(
-        @click="openModal"
-        :data-tooltip="transfer_tooltip['interest-rate']['name']?transfer_tooltip['interest-rate']['name']:''"
-      )
+  let value = parseFloat(values[handle]);
 
-  .calc-tax-deduc-new__row-title-main-container(v-if="transfer_tooltip===null||transfer_tooltip['interest-rate']['info']===''")
-    .calc-tax-deduc-new__row-title-container
-      p.calc-tax-deduc-new__row-title Процентная ставка, %
-
-  .calc-tax-deduc-new__col-input.js--number-old-rate.js--tex-deduc-input(@click="inputFocus")
-    input(
-      inputmode="decimal"
-      type="text"
-      ref="realtyInput"
-      @focus="inpFocus"
-      @blur="inputBlur"
-      @click="inpRemoveMark"
-      @keyup="keyUp"
-    )
-    .range-input__slider(ref="mortgagePrice")
-  .calc-tax-deduc-new__wr-range
-    p {{String(stgMin).replace('.', ',')}}
-    p {{stgMiddle}}
-    p {{stgMax}}
-</template>
-
-<script>
-import eventBus from '../development-tools/eventBus.vue';
-import noUiSlider from 'nouislider';
-import Storage from '../development-tools/state.vue';
-import IMask from 'imask';
-import numberFormatting from '../mixin/numberFormatting.js';
-import onlyNumbers from '../custom-scripts/only-numbers.js'
-
-export default {
-  name: 'v-interest-rate',
-  mixins: [numberFormatting],
-  data() {
-    return {
-      realtySlider: null,
-      dataField: '6,00',
-      dataFieldForCalculation: 6.00,
-      stepApartment: 0.1,
-      stgMin: 0.1,
-      stgMiddle: 50,
-      stgMax: 100,
-      start: 6.00,
-      input_salary: false,
-      slider: false,
-      mask_interest: null,
-      isUpdating: false,
-      lastSliderValue: 6.00,
-      decimalPart: 0.00 // Хранит дробную часть (сотые)
-    }
-  },
-  methods: {
-    formatValue(value) {
-      // Форматируем с двумя знаками после запятой
-      return parseFloat(value).toFixed(2).toString().replace('.', ',')
-    },
-
-    initRealtySlider() {
-      this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
-        start: [this.start],
-        connect: 'lower',
-        step: 1, // Шаг теперь только целые числа
-        range: {
-          min: Math.ceil(this.stgMin), // Минимум округляем вверх до 1
-          max: this.stgMax
-        },
-      })
-
-      this.realtySlider.on('start', () => {
-        this.input_salary = false
-        // При начале движения запоминаем текущее значение
-        const currentValue = parseFloat(this.mask_interest.unmaskedValue || this.start)
-        this.decimalPart = this.getDecimalPart(currentValue)
-      });
-
-      this.realtySlider.on('slide', (values, handle) => {
-        if (this.isUpdating) return
-        this.isUpdating = true
-
-        let value = parseFloat(values[handle])
-        
-        // Если двигаем от минимального значения (0.1) и было целое число
-        if (this.lastSliderValue === this.stgMin && this.decimalPart === 0) {
-          this.decimalPart = 0 // Сохраняем 0 в дробной части
-        }
-        
-        // Добавляем сохраненную дробную часть
-        value += this.decimalPart
-        
-        // Гарантируем, что значение не меньше минимального
-        value = Math.max(value, this.stgMin)
-        
-        this.updateInputValue(value)
-        this.lastSliderValue = value
-
-        this.isUpdating = false
-      });
-
-      this.realtySlider.on('set', (values, handle) => {
-        if (this.isUpdating) return
-        this.isUpdating = true
-
-        let value = parseFloat(values[handle])
-        value += this.decimalPart
-        value = Math.max(value, this.stgMin)
-        
-        this.updateInputValue(value)
-        this.updateStoreValue(value)
-        this.lastSliderValue = value
-
-        this.isUpdating = false
-      });
-    },
-
-    getDecimalPart(value) {
-      // Получаем дробную часть числа (сотые)
-      const str = value.toString()
-      const decimalIndex = str.indexOf('.')
-      if (decimalIndex === -1) return 0.00
-      
-      const decimalStr = str.substring(decimalIndex + 1)
-      return parseFloat('0.' + decimalStr)
-    },
-
-    initInputMask() {
-      const maskOptions = {
-        mask: Number,
-        scale: 2, // Два знака после запятой
-        thousandsSeparator: '',
-        padFractionalZeros: true,
-        normalizeZeros: true,
-        radix: ',',
-        mapToRadix: ['.', ','],
-        min: this.stgMin,
-        max: this.stgMax,
-        autofix: true,
-        prepare: (value) => value.replace(/[бю\/]/gi, ',')
-      };
-
-      this.mask_interest = new IMask(this.$refs.realtyInput, maskOptions)
-      this.mask_interest.value = this.formatValue(this.start)
-
-      this.mask_interest.on('accept', () => {
-        if (this.isUpdating || !this.mask_interest.typedValue) return
-        this.isUpdating = true
-
-        let value = parseFloat(this.mask_interest.unmaskedValue)
-        if (isNaN(value)) value = this.stgMin
-
-        // Корректируем значение, если оно выходит за границы
-        value = Math.max(value, this.stgMin)
-        value = Math.min(value, this.stgMax)
-        
-        // Запоминаем дробную часть при ручном вводе
-        this.decimalPart = this.getDecimalPart(value)
-        
-        this.updateSliderValue(Math.floor(value)) // Для слайдера используем целую часть
-        this.updateStoreValue(value)
-        this.lastSliderValue = value
-
-        this.isUpdating = false
-      });
-    },
-
-    updateInputValue(value) {
-      const formattedValue = this.formatValue(value)
-      this.dataField = formattedValue
-      this.dataFieldForCalculation = value
-
-      if (this.mask_interest) {
-        this.mask_interest.unmaskedValue = value.toString()
-      } else {
-        this.$refs.realtyInput.value = formattedValue
-      }
-    },
-
-    updateSliderValue(value) {
-      if (this.realtySlider) {
-        // Для слайдера используем только целую часть
-        this.realtySlider.set(Math.floor(value))
-      }
-    },
-
-    updateStoreValue(value) {
-      Storage.dispatch('ActionInterestRate', value)
-    },
-
-    inputFocus(el) {
-      const element = el.currentTarget
-      element.querySelector('input').focus()
-    },
-
-    keyUp(e) {
-      if (e.key === 'Enter') {
-        this.$refs.realtyInput.blur()
-      }
-    },
-
-    inpRemoveMark(el) {
-      const element = el.currentTarget;
-      if (element.value === '0' || element.value === '0 %') {
-        element.value = ''
-      }
-    },
-
-    inputBlur(el) {
-      const element = el.currentTarget;
-      element.closest('.js--tex-deduc-input').classList.remove('input-focus')
-
-      if (!element.value || element.value === '') {
-        this.decimalPart = 0.00
-        this.updateSliderValue(this.stgMin)
-        this.updateInputValue(this.stgMin)
-        this.updateStoreValue(this.stgMin)
-        this.lastSliderValue = this.stgMin
-      }
-    },
-  },
-
-  beforeDestroy() {
-    if (this.mask_interest) {
-      this.mask_interest.destroy()
-    }
-    if (this.realtySlider) {
-      this.realtySlider.destroy()
-    }
-  },
-
-  mounted() {
-    this.initRealtySlider()
-    this.initInputMask()
-    this.updateStoreValue(this.start)
-    this.lastSliderValue = this.start
-    this.decimalPart = this.getDecimalPart(this.start)
-
-    if (this.answers && this.answers.bet) {
-      const initialValue = parseFloat(this.answers.bet)
-      this.decimalPart = this.getDecimalPart(initialValue)
-      this.updateSliderValue(initialValue)
-      this.updateInputValue(initialValue)
-      this.updateStoreValue(initialValue)
-      this.lastSliderValue = initialValue
-    }
-  },
-
-  computed: {
-    transfer_tooltip() {
-      return Storage.getters.TRANSFERTOOLTIP
-    },
-    answers() {
-      return Storage.getters.ANSWERS
-    },
+  // Если ползунок на 0, то значение = stgMin (0.1)
+  if (value <= 0) {
+    this.updateInputValue(this.stgMin);
+    this.lastSliderValue = this.stgMin;
+    this.isUpdating = false;
+    return;
   }
-};
-</script>
 
-<style scoped>
-</style>
+  // При движении от 0.1 — если ранее было целое, используем 0.00, иначе — сохранённую дробную часть
+  let finalValue = value;
+  if (this.lastSliderValue === this.stgMin) {
+    // При движении с 0.1 — если было целое, сохраняем 0.00, иначе — decimalPart
+    finalValue = value + (this.decimalPart === 0 ? 0 : this.decimalPart);
+  } else {
+    finalValue = value + this.decimalPart;
+  }
+
+  finalValue = Math.max(finalValue, this.stgMin);
+
+  this.updateInputValue(finalValue);
+  this.lastSliderValue = finalValue;
+
+  this.isUpdating = false;
+});
+
+this.realtySlider.on('set', (values, handle) => {
+  if (this.isUpdating) return;
+  this.isUpdating = true;
+
+  let value = parseFloat(values[handle]);
+
+  if (value <= 0) {
+    this.updateInputValue(this.stgMin);
+    this.updateStoreValue(this.stgMin);
+    this.lastSliderValue = this.stgMin;
+  } else {
+    let finalValue = value;
+    if (this.lastSliderValue === this.stgMin) {
+      finalValue = value + (this.decimalPart === 0 ? 0 : this.decimalPart);
+    } else {
+      finalValue = value + this.decimalPart;
+    }
+    finalValue = Math.max(finalValue, this.stgMin);
+
+    this.updateInputValue(finalValue);
+    this.updateStoreValue(finalValue);
+    this.lastSliderValue = finalValue;
+  }
+
+  this.isUpdating = false;
+});
+
+-----------------------------
+
+inputBlur(el) {
+  const element = el.currentTarget;
+  element.closest('.js--tex-deduc-input').classList.remove('input-focus');
+
+  if (!element.value || element.value === '') {
+    this.decimalPart = 0.00;
+    this.updateSliderValue(0); // Устанавливаем ползунок на 0
+    this.updateInputValue(this.stgMin);
+    this.updateStoreValue(this.stgMin);
+    this.lastSliderValue = this.stgMin;
+  }
+},
+
+----------------------
+updateSliderValue(value) {
+  if (this.realtySlider) {
+    const sliderValue = value <= this.stgMin ? 0 : Math.floor(value);
+    this.realtySlider.set(sliderValue);
+  }
+}
+
+-------------------------
+mounted() {
+  this.initRealtySlider();
+  this.initInputMask();
+
+  let startValue = this.start;
+  if (this.answers && this.answers.bet) {
+    startValue = parseFloat(this.answers.bet);
+    this.decimalPart = this.getDecimalPart(startValue);
+  }
+
+  this.decimalPart = this.getDecimalPart(startValue);
+  this.updateInputValue(startValue);
+  this.updateStoreValue(startValue);
+
+  // Устанавливаем ползунок: если <= 0.1 — 0, иначе целая часть
+  this.updateSliderValue(startValue);
+  this.lastSliderValue = startValue;
+},
