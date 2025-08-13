@@ -1,192 +1,212 @@
-// Обработчик клика на ссылку (VK, TG, WP)
-async handleLinkClick(type) {
-  // Проверяем, изменились ли данные
-  if (this.hasAnswersChanged()) {
-    this.pendingAction = { type: 'open', payload: type };
-    await this.sendResults();
-  } else {
-    // Если не изменились — сразу открываем
-    const link = this.answerLink[type];
-    if (link) {
-      window.open(link, '_blank');
-    }
-  }
-},
-
-// Обработчик клика на копирование
-async handleCopyClick(event) {
-  // Проверяем, изменились ли данные
-  if (this.hasAnswersChanged()) {
-    this.pendingAction = { type: 'copy', payload: event.currentTarget };
-    await this.sendResults();
-  } else {
-    // Если не изменились — сразу копируем
-    const link = this.answerLink.link;
-    if (link) {
-      this.copyLinkManually(link, event.currentTarget);
-    }
-  }
-},
-
-// Проверка, изменились ли данные
-hasAnswersChanged() {
-  if (!this.lastSentAnswers) return true;
-  return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers);
-},
-
-// Отправка результатов
-async sendResults() {
-  if (this.isSending) return;
-
-  this.isSending = true;
-
-  try {
-    await this.sendingResult('result');
-    this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
-
-    // После успешной отправки — выполнить отложенное действие
-    if (this.pendingAction) {
-      const { type, payload } = this.pendingAction;
-
-      if (type === 'open') {
-        const link = this.answerLink[payload];
+export default {
+  data() {
+    return {
+      isSending: false,
+      pendingAction: null,
+      lastSentAnswers: null,
+      captcha_id: null,
+    };
+  },
+  computed: {
+    // Получаем ссылки из Vuex
+    answerLink() {
+      return this.$store.getters.ANSWERSLINK || {};
+    },
+    answersToSand() {
+      return this.$store.getters.ANSWERSTOSEND || {};
+    },
+    calculatorId() {
+      return this.$store.getters.CALCULATORID;
+    },
+  },
+  methods: {
+    // Обработчик клика на ссылку (VK, TG, WP)
+    async handleLinkClick(type) {
+      if (this.hasAnswersChanged()) {
+        this.pendingAction = { type: 'open', payload: type };
+        await this.sendResults();
+      } else {
+        const link = this.answerLink[type];
         if (link) {
           window.open(link, '_blank');
         }
-      } else if (type === 'copy') {
-        const link = this.answerLink.link;
-        if (link) {
-          this.copyLinkManually(link, payload);
-        }
-      }
-
-      this.pendingAction = null;
-    }
-  } catch (error) {
-    console.error('Ошибка при отправке результатов:', error);
-  } finally {
-    this.isSending = false;
-  }
-},
-
-// Унифицированная функция копирования (не привязана к event)
-copyLinkManually(link, element) {
-  try {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(link).then(() => {
-        const p = element.querySelector('p');
-        if (p) {
-          p.textContent = 'Скопировано';
-          setTimeout(() => {
-            p.textContent = 'Скопировать ссылку';
-          }, 3000);
-        }
-      });
-    } else {
-      throw new Error('Clipboard not supported');
-    }
-  } catch (err) {
-    const textarea = document.createElement('textarea');
-    textarea.value = link;
-    textarea.style.position = 'fixed';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-
-    const p = element.querySelector('p');
-    if (p) {
-      p.textContent = 'Скопировано';
-      setTimeout(() => {
-        p.textContent = 'Скопировать ссылку';
-      }, 3000);
-    }
-    console.warn('Clipboard API not available, used fallback');
-  }
-},
-
-// Инициализация капчи и отправка
-sendingResult(flag) {
-  this.captchaInit(flag);
-  let recaptchaKey = null;
-  if (typeof conf !== 'undefined') {
-    recaptchaKey = conf.smartcaptcha_key;
-  }
-  if (recaptchaKey) {
-    window.smartCaptcha.execute(this.captcha_id);
-  }
-},
-
-captchaInit(flag) {
-  this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
-    sitekey: conf.smartcaptcha_key,
-    invisible: true,
-    callback: (token) => {
-      if (flag === 'result') {
-        this.sendingResultToApi(token);
-      } else if (flag === 'mail') {
-        this.sendingMailToApi(token);
       }
     },
-  });
-},
 
-sendingResultToApi(token) {
-  let data = {
-    calculatorId: this.calculatorId,
-    answers: this.answersToSand,
-    'smart-token': token,
-  };
+    // Обработчик клика на копирование
+    async handleCopyClick(event) {
+      const element = event.currentTarget;
+      if (this.hasAnswersChanged()) {
+        this.pendingAction = { type: 'copy', payload: element };
+        await this.sendResults();
+      } else {
+        const link = this.answerLink.link;
+        if (link) {
+          this.copyLinkManually(link, element);
+        }
+      }
+    },
 
-  return new Promise((resolve, reject) => {
-    axios({
-      method: 'post',
-      url: '/api/local/calculator/answers/',
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8',
-        'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-      },
-      data: data,
-    })
-      .then((res) => {
-        if (res.data.code === 200 && res.data.result) {
-          // Обновляем ссылки через Vuex
-          this.$store.dispatch('ActionAnswerLink', res.data.result.answerLink);
+    // Проверка, изменились ли данные
+    hasAnswersChanged() {
+      if (!this.lastSentAnswers) return true;
+      return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers);
+    },
+
+    // Отправка результатов
+    async sendResults() {
+      if (this.isSending) return;
+
+      this.isSending = true;
+
+      try {
+        await this.sendingResult('result');
+        this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
+
+        // После успешной отправки — выполнить отложенное действие
+        if (this.pendingAction) {
+          const { type, payload } = this.pendingAction;
+
+          // Дожидаемся, пока Vuex обновит answerLink (если нужно)
+          await this.$nextTick();
+
+          if (type === 'open') {
+            const link = this.answerLink[payload];
+            if (link) {
+              window.open(link, '_blank');
+            }
+          } else if (type === 'copy') {
+            const link = this.answerLink.link;
+            if (link) {
+              this.copyLinkManually(link, payload);
+            }
+          }
+
+          this.pendingAction = null;
         }
-        if (res.data.description) {
-          this.$store.dispatch('ActionDescriptionAfterSand', res.data.description);
+      } catch (error) {
+        console.error('Ошибка при отправке результатов:', error);
+      } finally {
+        this.isSending = false;
+      }
+    },
+
+    // Унифицированная функция копирования
+    copyLinkManually(link, element) {
+      try {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(link).then(() => {
+            const p = element.querySelector('p');
+            if (p) {
+              p.textContent = 'Скопировано';
+              setTimeout(() => {
+                p.textContent = 'Скопировать ссылку';
+              }, 3000);
+            }
+          }).catch(err => {
+            console.warn('Clipboard write failed:', err);
+            this.fallbackCopy(link, element);
+          });
+        } else {
+          this.fallbackCopy(link, element);
         }
-        if (res.data.code) {
-          this.answer_code = res.data.code;
-        }
-        this.answersToSand = [];
-        resolve();
-      })
-      .catch((error) => {
-        if (error.response?.data?.description) {
-          this.$store.dispatch('ActionDescriptionAfterSand', error.response.data.description);
-        }
-        console.error('Ошибка отправки:', error);
-        reject(error);
+      } catch (err) {
+        this.fallbackCopy(link, element);
+      }
+    },
+
+    // Резервный способ копирования
+    fallbackCopy(link, element) {
+      const textarea = document.createElement('textarea');
+      textarea.value = link;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      const p = element.querySelector('p');
+      if (p) {
+        p.textContent = 'Скопировано';
+        setTimeout(() => {
+          p.textContent = 'Скопировать ссылку';
+        }, 3000);
+      }
+    },
+
+    // Инициализация капчи
+    sendingResult(flag) {
+      this.captchaInit(flag);
+      const recaptchaKey = typeof conf !== 'undefined' ? conf.smartcaptcha_key : null;
+      if (recaptchaKey) {
+        window.smartCaptcha.execute(this.captcha_id);
+      }
+    },
+
+    captchaInit(flag) {
+      if (this.captcha_id) {
+        window.smartCaptcha.remove(this.captcha_id);
+      }
+
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (flag === 'result') {
+            this.sendingResultToApi(token);
+          } else if (flag === 'mail') {
+            this.sendingMailToApi(token);
+          }
+        },
       });
-  });
-}
+    },
 
----------------------------------------------------------
-data() {
-  return {
-    pendingAction: null,
-    isSending: false,
-    lastSentAnswers: null,
-    answerLink: {}, // или из Vuex
-    // ...
-  }
-}
------------------------
-computed: {
-  ...mapGetters(['ANSWERSLINK']),
-  answerLink() {
-    return this.ANSWERSLINK;
-  }
-}
+    // Отправка данных в API
+    sendingResultToApi(token) {
+      const data = {
+        calculatorId: this.calculatorId,
+        answers: this.answersToSand,
+        'smart-token': token,
+      };
+
+      return new Promise((resolve, reject) => {
+        axios({
+          method: 'post',
+          url: '/api/local/calculator/answers/',
+          headers: {
+            'Content-type': 'application/json; charset=UTF-8',
+            'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          },
+          data,
+        })
+          .then((res) => {
+            if (res.data.code === 200 && res.data.result) {
+              // Сохраняем ссылки в Vuex
+              this.$store.dispatch('ActionAnswerLink', res.data.result.answerLink);
+            }
+            if (res.data.description) {
+              this.$store.dispatch('ActionDescriptionAfterSand', res.data.description);
+            }
+            if (res.data.code) {
+              this.answer_code = res.data.code;
+            }
+            resolve();
+          })
+          .catch((error) => {
+            if (error.response?.data?.description) {
+              this.$store.dispatch('ActionDescriptionAfterSand', error.response.data.description);
+            }
+            console.error('Ошибка отправки:', error);
+            reject(error);
+          });
+      });
+    },
+
+    // Заглушка для отправки писем (если используется)
+    sendingMailToApi(token) {
+      // реализация при необходимости
+    },
+  },
+};
