@@ -1,20 +1,195 @@
-document.querySelectorAll('.enabled').forEach((element) => {
-  const prevElement = element.previousElementSibling;
-  const nextElement = element.nextElementSibling;
-  
-  if (prevElement && nextElement && 
-      prevElement.classList.contains('disabled') && 
-      nextElement.classList.contains('disabled')) {
-    element.classList.add('none');
-  }
-});
+// Обработчик клика на ссылку
+    async handleLinkClick(type) {
+      const link = this.answerLink[type];
 
---------------------------------
+      // Проверяем, изменились ли данные с последней отправки
+      if (this.hasAnswersChanged()) {
+        this.pendingLink = link;
+        await this.sendResults();
+      } else {
+        // Если данные не изменились, просто открываем ссылку
+        window.open(link, '_blank');
+      }
+    },
 
-// Этот селектор найдет все .enabled, между двумя .disabled
-document.querySelectorAll('.disabled + .enabled + .disabled').forEach((disabledAfter) => {
-  const enabledElement = disabledAfter.previousElementSibling;
-  if (enabledElement.classList.contains('enabled')) {
-    enabledElement.classList.add('none');
-  }
-});
+    // Обработчик клика на копирование
+    async handleCopyClick(event) {
+      const link = event.currentTarget.dataset.link;
+
+      // Проверяем, изменились ли данные с последней отправки
+      if (this.hasAnswersChanged()) {
+        this.pendingLink = link;
+        await this.sendResults();
+      }
+
+      // Копируем ссылку
+      this.copyLink(event);
+    },
+
+    // Проверка, изменились ли данные с последней отправки
+    hasAnswersChanged() {
+      if (!this.lastSentAnswers) return true;
+
+      // проверка на равенство JSON строк
+      return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers);
+    },
+
+    // Отправка результатов
+    async sendResults() {
+      if (this.isSending) return;
+
+      this.isSending = true;
+
+      try {
+        await this.sendingResult('result');
+        this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
+
+        // Если есть ссылка, которую нужно открыть после отправки
+        if (this.pendingLink) {
+          window.open(this.pendingLink, '_blank');
+          this.pendingLink = null;
+        }
+      } catch (error) {
+        console.error('Ошибка при отправке результатов:', error);
+      } finally {
+        this.isSending = false;
+      }
+    },
+
+
+    copyLink(event) {
+      const link = event.currentTarget.dataset.link;
+      const element = event.currentTarget;
+
+      try {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(link);
+          element.querySelector('p').textContent='Скопировано';
+          setTimeout(() => {
+            element.querySelector('p').textContent='Скопировать ссылку';
+          }, 3000);
+        } else {
+          throw new Error('not supported');
+        }
+      } catch (err) {
+        const textarea = document.createElement('textarea');
+        textarea.value = link;
+        textarea.style.position = 'fixed';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        console.log('Ошибка копирования:', err);
+      }
+    },
+
+    sendingResult(flag) {
+      this.captchaInit(flag);
+      let recaptchaKey = null;
+      if (typeof conf !== 'undefined') {
+        recaptchaKey = conf.smartcaptcha_key;
+      }
+      if ((typeof recaptchaKey !== 'undefined') && recaptchaKey !== null) {
+        window.smartCaptcha.execute(this.captcha_id);
+      }
+    },
+
+    captchaInit(flag) {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (flag === 'result') {
+            this.sendingResultToApi(token);
+          }
+          if (flag === 'mail') {
+            this.sendingMailToApi(token);
+          }
+        },
+      });
+    },
+
+    sendingResultToApi(token) {
+      let data = {
+        "calculatorId": this.calculatorId,
+        "answers": this.answersToSand,
+        "smart-token": token
+      };
+
+      return new Promise((resolve, reject) => {
+        axios({
+          method: 'post',
+          url: '/api/local/calculator/answers/',
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+            'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          },
+          data: data
+        })
+          .then((res) => {
+            if (res.data.code === 200 && res.data.result) {
+              Storage.dispatch('ActionDescriptionAfterSand', null);
+              Storage.dispatch('ActionAnswersId', res.data.result.answersId);
+              Storage.dispatch('ActionAnswerLink', res.data.result.answerLink);
+            }
+            if (res.data.code !== 200) {
+              if (res.data.description) {
+                Storage.dispatch('ActionDescriptionAfterSand', res.data.description);
+              }
+              if (res.data.code) {
+                this.answer_code = res.data.code;
+              }
+            }
+            this.answersToSand = [];
+            resolve();
+          })
+          .catch((error) => {
+            if (error.response) {
+              if (error.response.data !== undefined) {
+                console.log(error.response);
+                Storage.dispatch('ActionDescriptionAfterSand', error.response.data.description);
+              }
+            }
+            console.log(error);
+            reject(error);
+          });
+      });
+    },
+
+
+---------------------------------------------------------------------------------------------------
+
+.select-list__wr-search
+    .select-list__search-item(
+      v-if="answerLink.hasOwnProperty('link')"
+      :data-link="answerLink.link!==''?answerLink.link:''"
+      @click="handleCopyClick"
+    )
+      .select-list__search-item-icon
+       
+      p Скопировать ссылку
+    a.select-list__search-item(
+      v-if="answerLink.hasOwnProperty('vk')"
+      :href="answerLink.vk!==''?answerLink.vk:''"
+      @click.prevent="handleLinkClick('vk')"
+    )
+      .select-list__search-item-icon
+        
+      p ВКонтакте
+    a.select-list__search-item(
+      v-if="answerLink.hasOwnProperty('tg')"
+      :href="answerLink.tg!==''?answerLink.tg:''"
+      @click.prevent="handleLinkClick('tg')"
+    )
+      .select-list__search-item-icon
+        
+      p Telegram
+
+    a.select-list__search-item(
+      v-if="answerLink.hasOwnProperty('wp')"
+      :href="answerLink.wp!==''?answerLink.wp:''"
+      @click.prevent="handleLinkClick('wp')"
+    )
+      .select-list__search-item-icon
+        img(src="/dist/img/WhatsApp.svg")
+      p WhatsApp
