@@ -99,13 +99,8 @@ export default {
             }
           },
           clickYear: (e, dates) => {
-            // Оригинальный обработчик для переключения на месяцы
-            const targetMonth = e.target.closest('.vanilla-calendar-month');
-            if (targetMonth) {
-              targetMonth.click();
-            }
-            
-            // После небольшой задержки обновляем состояние месяцев
+            // Сохраняем стандартное поведение календаря (показ месяцев)
+            // и только после этого применяем наши ограничения
             setTimeout(() => {
               this.setupMonthDisabling();
             }, 50);
@@ -133,15 +128,17 @@ export default {
       const maxNum = this.dateToNumber(this.maxDate);
 
       monthEls.forEach((monthEl, index) => {
-        const monthIndex = index; // 0-based
+        const monthIndex = index; // 0-based (январь = 0)
         const dateNum = currentYear * 12 + monthIndex;
 
         if (dateNum < minNum || dateNum > maxNum) {
           monthEl.classList.add('vanilla-calendar-months__month--disabled');
           monthEl.style.pointerEvents = 'none';
+          monthEl.style.opacity = '0.5';
         } else {
           monthEl.classList.remove('vanilla-calendar-months__month--disabled');
           monthEl.style.pointerEvents = '';
+          monthEl.style.opacity = '';
         }
       });
     },
@@ -153,7 +150,7 @@ export default {
       const headerYearEl = container.querySelector('.vanilla-calendar-year');
       if (!headerYearEl) return;
 
-      // Удаляем старый observer, если он есть
+      // Удаляем старый observer, если есть
       if (this.observer) {
         this.observer.disconnect();
       }
@@ -398,10 +395,5 @@ export default {
 </script>
 
 <style scoped>
-.vanilla-calendar-months__month--disabled {
-  opacity: 0.5;
-  pointer-events: none;
-  cursor: not-allowed;
-  color: #aaa;
-}
+
 </style>
