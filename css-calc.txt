@@ -1,80 +1,41 @@
-receivedDateMobile([year, month]) {
-      const dateString = `${year}-${month}`;
-      this.$nextTick(() => {
-        const container = this.$refs.mobileShedule;
-        const element = container.querySelector(`[data-date="${dateString}"]`);
+scrollToElementSmart(container, targetElement) {
+  const containerRect = container.getBoundingClientRect();
+  const targetRect = targetElement.getBoundingClientRect();
+  const pageScrollTop = window.scrollY;
 
-        if (!element || !container) return;
+  const targetTopInContainer = targetRect.top - containerRect.top + container.scrollTop;
+  const maxContainerScroll = container.scrollHeight - container.clientHeight;
+  const desiredContainerScroll = Math.max(0, Math.min(targetTopInContainer, maxContainerScroll));
 
-        this.scrollToElementSmart(container, element);
-      });
-    },
-    
-    scrollToElementSmart(container, targetElement) {
-      const containerRect = container.getBoundingClientRect();
-      const targetRect = targetElement.getBoundingClientRect();
-      const pageScrollTop = window.scrollY;
+  const canScrollContainer = container.scrollHeight > container.clientHeight;
 
-      const targetTopInContainer = targetRect.top - containerRect.top + container.scrollTop;
-      const maxContainerScroll = container.scrollHeight - container.clientHeight;
+  if (canScrollContainer) {
+    // Скроллим контейнер
+    this.smoothScrollTo(container, 'scrollTop', desiredContainerScroll, 300, (val) => {
+      container.scrollTop = val;
+    });
 
-      // Желаемая позиция скролла контейнера, чтобы элемент был вверху
-      const desiredContainerScroll = Math.max(0, Math.min(targetTopInContainer, maxContainerScroll));
-
-      // Проверка: может ли контейнер проскроллиться до нужной позиции?
-      const canScrollContainer = container.scrollHeight > container.clientHeight;
-
-      if (canScrollContainer) {
-        // Всегда пытаемся проскроллить контейнер, чтобы элемент был вверху
-        this.smoothScrollTo(container, 'scrollTop', desiredContainerScroll, 300, (val) => {
-          container.scrollTop = val;
-        });
-
-        // После анимации проверим, попал ли элемент в видимую область экрана
-        setTimeout(() => {
-          const finalTargetRect = targetElement.getBoundingClientRect();
-          if (
-            finalTargetRect.top < 0 ||
-            finalTargetRect.bottom > window.innerHeight
-          ) {
-            // Элемент всё ещё частично или полностью вне экрана — подкручиваем страницу
-            const newPageScrollTop = window.scrollY + finalTargetRect.top - 10;
-            this.smoothScrollTo(window, 'scrollY', newPageScrollTop, 300, (val) => {
-              window.scrollTo(0, val);
-            });
-          }
-        }, 310);
-      } else {
-        // Контейнер не скроллится — скроллим страницу к контейнеру
-        const pageTarget = pageScrollTop + containerRect.top - 10;
-        this.smoothScrollTo(window, 'scrollY', pageTarget, 300, (val) => {
+    // После анимации проверим видимость элемента на экране
+    setTimeout(() => {
+      const finalTargetRect = targetElement.getBoundingClientRect();
+      if (
+        finalTargetRect.top < 0 ||
+        finalTargetRect.bottom > window.innerHeight
+      ) {
+        // Подкручиваем страницу, чтобы элемент был виден
+        const newPageScrollTop = window.scrollY + finalTargetRect.top - 10;
+        this.smoothScrollTo(window, 'scrollY', newPageScrollTop, 300, (val) => {
           window.scrollTo(0, val);
         });
       }
-    },
+    }, 310);
+  } else {
+    // Контейнер не скроллится — скроллим страницу к контейнеру
+    const containerAbsoluteTop = pageScrollTop + containerRect.top;
+    const pageTarget = containerAbsoluteTop - 10;
 
-    smoothScrollTo(element, property, target, duration, setValue) {
-      const start = element === window ? window.scrollY : element[property];
-      const change = target - start;
-      let startTime = null;
-
-      const animateScroll = (currentTime) => {
-        if (startTime === null) startTime = currentTime;
-        const timeElapsed = currentTime - startTime;
-        const progress = Math.min(timeElapsed / duration, 1);
-
-        // easeInOutCubic
-        const ease = progress < 0.5
-          ? 4 * progress * progress * progress
-          : (progress - 1) * (2 * progress - 2) * (2 * progress - 2) + 1;
-
-        const val = start + change * ease;
-        setValue(val);
-
-        if (timeElapsed < duration) {
-          requestAnimationFrame(animateScroll);
-        }
-      };
-
-      requestAnimationFrame(animateScroll);
-    },
+    this.smoothScrollTo(window, 'scrollY', pageTarget, 300, (val) => {
+      window.scrollTo(0, val);
+    });
+  }
+},
