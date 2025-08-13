@@ -207,4 +207,197 @@ export default {
 
     changeDate(e) {
       const target = e.target;
-      let
+      let value = target.value.replace(/[^\d.]/g, '');
+      const parts = value.split('.');
+      let monthPart = parts[0] ? parts[0].substring(0, 2) : '';
+      let yearPart = parts[1] ? parts[1].substring(0, 4) : '';
+
+      let newValue = monthPart;
+      if (monthPart.length >= 2 || yearPart.length > 0) {
+        newValue += '.' + yearPart;
+      }
+
+      if (newValue !== target.value) {
+        const cursorPos = target.selectionStart;
+        target.value = newValue;
+        target.setSelectionRange(cursorPos, cursorPos);
+      }
+
+      if (target.value.length === 3 && newValue[2] === '.') {
+        target.setSelectionRange(3, 3);
+      }
+
+      if (target.value.replace(/(_|\s)+/g, "").length === 7) {
+        let [monthStr, yearStr] = e.target.value.split('.');
+        let month = parseInt(monthStr, 10) || 0;
+        let year = parseInt(yearStr, 10) || 0;
+
+        if (month < 1) month = 1;
+        if (month > 12) month = 12;
+
+        if (year < this.minDate.year) {
+          year = this.minDate.year;
+          month = this.minDate.month;
+        } else if (year > this.maxDate.year) {
+          year = this.maxDate.year;
+          month = this.maxDate.month;
+        }
+
+        if (year === this.minDate.year) month = Math.max(month, this.minDate.month);
+        if (year === this.maxDate.year) month = Math.min(month, this.maxDate.month);
+
+        const current = { month, year };
+        const currentNum = this.dateToNumber(current);
+        const minNum = this.dateToNumber(this.minDate);
+        const maxNum = this.dateToNumber(this.maxDate);
+
+        if (currentNum < minNum) Object.assign(current, this.minDate);
+        if (currentNum > maxNum) Object.assign(current, this.maxDate);
+
+        e.target.value = this.formatDate(current.month, current.year);
+        setTimeout(() => {
+          this.$emit('sendDateMobile', [current.year, current.month]);
+        }, 400);
+      }
+    },
+
+    formatMonth(dateStr) {
+      if (!dateStr) return 1;
+      const parts = dateStr.split('-');
+      if (parts.length < 2) return 1;
+      const month = parseInt(parts[1], 10);
+      return isNaN(month) ? 1 : month;
+    },
+
+    formatYear(dateStr) {
+      if (!dateStr) return new Date().getFullYear();
+      const year = dateStr.split('-')[0];
+      const num = parseInt(year, 10);
+      return isNaN(num) ? new Date().getFullYear() : num;
+    },
+
+    formatYearMonthMinDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length < 2) return '';
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      if (isNaN(year) || isNaN(month)) return '';
+      const date = new Date(year, month - 1);
+      date.setMonth(date.getMonth() + 1);
+      const m = (date.getMonth() + 1).toString().padStart(2, '0');
+      return `${date.getFullYear()}-${m}`;
+    },
+
+    formatYearMonthMaxDate(dateStr) {
+      if (this.loanTerm === 0) return `${new Date().getFullYear() + 1}-12`;
+      const parts = dateStr.split('-');
+      if (parts.length < 2) return '';
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      if (isNaN(year) || isNaN(month)) return '';
+      const date = new Date(year, month - 1);
+      date.setMonth(date.getMonth() + 1 + this.loanTerm);
+      const m = (date.getMonth() + 1).toString().padStart(2, '0');
+      return `${date.getFullYear()}-${m}`;
+    },
+
+    formatDate(month, year) {
+      return `${String(month).padStart(2, '0')}.${String(year).padStart(4, '0')}`;
+    },
+
+    dateToNumber(date) {
+      return date.year * 12 + (date.month - 1);
+    },
+
+    inputBlur(e) {
+      const target = e.target;
+      const parts = target.value.split('.');
+      if (!parts[0] || !parts[1] || parts[0].length !== 2 || parts[1].length !== 4) {
+        target.value = '';
+      }
+      this.replaceMonth(target);
+    },
+
+    replaceMonth(e) {
+      const element = e.currentTarget || e;
+      const value = element.value.trim();
+      const parts = value.split('.');
+      if (parts.length !== 2) return;
+      const monthNumber = parseInt(parts[0], 10);
+      if (isNaN(monthNumber) || monthNumber < 1 || monthNumber > 12) return;
+      element.value = `${this.month[monthNumber - 1]}, ${parts[1]}`;
+    },
+
+    replaceMonthFocus(e) {
+      const element = e.currentTarget || e;
+      const currentValue = element.value;
+      const parts = currentValue.split(', ');
+      if (parts.length === 2) {
+        const monthName = parts[0];
+        const year = parts[1];
+        const monthIndex = this.month.indexOf(monthName);
+        if (monthIndex !== -1 && year && year.length === 4) {
+          element.value = `${String(monthIndex + 1).padStart(2, '0')}.${year}`;
+        }
+      }
+    },
+
+    inputKeyDown(e) {
+      if (e.key === 'Backspace' && e.target.selectionStart === 3) {
+        e.target.setSelectionRange(2, 2);
+      }
+    }
+  },
+  computed: {
+    loanTerm() {
+      return Storage.getters.TIMECREDIT;
+    },
+    min_date_mobile() {
+      return Storage.getters.MINDATEMOBILE;
+    }
+  },
+  watch: {
+    min_date_mobile(newVal) {
+      if (newVal) {
+        this.initPluginCalendarVanilla();
+        this.updateMinMaxDates();
+      }
+    },
+    loanTerm(newVal) {
+      if (newVal !== undefined) {
+        this.initPluginCalendarVanilla();
+        this.updateMinMaxDates();
+      }
+    }
+  },
+  methods: {
+    updateMinMaxDates() {
+      const minDateStr = this.formatYearMonthMinDate(this.min_date_mobile);
+      const maxDateStr = this.formatYearMonthMaxDate(this.min_date_mobile);
+
+      if (minDateStr) {
+        const [year, month] = minDateStr.split('-');
+        this.minDate = {
+          month: parseInt(month, 10),
+          year: parseInt(year, 10)
+        };
+      }
+
+      if (maxDateStr) {
+        const [yearMax, monthMax] = maxDateStr.split('-');
+        this.maxDate = {
+          month: parseInt(monthMax, 10),
+          year: parseInt(yearMax, 10)
+        };
+      }
+    }
+  },
+  mounted() {
+    this.CalendarVanillaClose();
+  },
+  created() {
+    this.updateMinMaxDates();
+  }
+};
+</script>
