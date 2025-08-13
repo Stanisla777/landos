@@ -1,195 +1,67 @@
 // Обработчик клика на ссылку
-    async handleLinkClick(type) {
-      const link = this.answerLink[type];
+async handleLinkClick(type) {
+  // Проверяем, есть ли уже ссылка
+  if (!this.answerLink[type]) {
+    // Если ссылки нет, отправляем данные
+    this.pendingLink = type; // Сохраняем тип ссылки вместо самой ссылки
+    await this.sendResults();
+    return;
+  }
 
-      // Проверяем, изменились ли данные с последней отправки
-      if (this.hasAnswersChanged()) {
-        this.pendingLink = link;
-        await this.sendResults();
-      } else {
-        // Если данные не изменились, просто открываем ссылку
-        window.open(link, '_blank');
-      }
-    },
+  const link = this.answerLink[type];
 
-    // Обработчик клика на копирование
-    async handleCopyClick(event) {
-      const link = event.currentTarget.dataset.link;
+  // Проверяем, изменились ли данные с последней отправки
+  if (this.hasAnswersChanged()) {
+    this.pendingLink = type; // Сохраняем тип ссылки вместо самой ссылки
+    await this.sendResults();
+  } else {
+    // Если данные не изменились, просто открываем ссылку
+    if (link) {
+      window.open(link, '_blank');
+    }
+  }
+},
 
-      // Проверяем, изменились ли данные с последней отправки
-      if (this.hasAnswersChanged()) {
-        this.pendingLink = link;
-        await this.sendResults();
-      }
+// Обработчик клика на копирование
+async handleCopyClick(event) {
+  const link = event.currentTarget.dataset.link;
 
-      // Копируем ссылку
-      this.copyLink(event);
-    },
+  // Если ссылки нет или данные изменились, отправляем данные
+  if (!link || this.hasAnswersChanged()) {
+    this.pendingLink = 'copy'; // Помечаем, что нужно выполнить копирование
+    await this.sendResults();
+  } else {
+    // Если ссылка есть и данные не изменились, копируем сразу
+    this.copyLink(event);
+  }
+},
 
-    // Проверка, изменились ли данные с последней отправки
-    hasAnswersChanged() {
-      if (!this.lastSentAnswers) return true;
+// Отправка результатов
+async sendResults() {
+  if (this.isSending) return;
 
-      // проверка на равенство JSON строк
-      return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers);
-    },
+  this.isSending = true;
 
-    // Отправка результатов
-    async sendResults() {
-      if (this.isSending) return;
+  try {
+    await this.sendingResult('result');
+    this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
 
-      this.isSending = true;
-
-      try {
-        await this.sendingResult('result');
-        this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
-
-        // Если есть ссылка, которую нужно открыть после отправки
-        if (this.pendingLink) {
-          window.open(this.pendingLink, '_blank');
-          this.pendingLink = null;
+    // Если есть ссылка, которую нужно открыть после отправки
+    if (this.pendingLink) {
+      if (this.pendingLink === 'copy') {
+        // Найти элемент для копирования и вызвать copyLink
+        const element = document.querySelector('[data-link]');
+        if (element) {
+          this.copyLink({ currentTarget: element });
         }
-      } catch (error) {
-        console.error('Ошибка при отправке результатов:', error);
-      } finally {
-        this.isSending = false;
+      } else if (this.answerLink[this.pendingLink]) {
+        window.open(this.answerLink[this.pendingLink], '_blank');
       }
-    },
-
-
-    copyLink(event) {
-      const link = event.currentTarget.dataset.link;
-      const element = event.currentTarget;
-
-      try {
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(link);
-          element.querySelector('p').textContent='Скопировано';
-          setTimeout(() => {
-            element.querySelector('p').textContent='Скопировать ссылку';
-          }, 3000);
-        } else {
-          throw new Error('not supported');
-        }
-      } catch (err) {
-        const textarea = document.createElement('textarea');
-        textarea.value = link;
-        textarea.style.position = 'fixed';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        console.log('Ошибка копирования:', err);
-      }
-    },
-
-    sendingResult(flag) {
-      this.captchaInit(flag);
-      let recaptchaKey = null;
-      if (typeof conf !== 'undefined') {
-        recaptchaKey = conf.smartcaptcha_key;
-      }
-      if ((typeof recaptchaKey !== 'undefined') && recaptchaKey !== null) {
-        window.smartCaptcha.execute(this.captcha_id);
-      }
-    },
-
-    captchaInit(flag) {
-      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
-        sitekey: conf.smartcaptcha_key,
-        invisible: true,
-        callback: (token) => {
-          if (flag === 'result') {
-            this.sendingResultToApi(token);
-          }
-          if (flag === 'mail') {
-            this.sendingMailToApi(token);
-          }
-        },
-      });
-    },
-
-    sendingResultToApi(token) {
-      let data = {
-        "calculatorId": this.calculatorId,
-        "answers": this.answersToSand,
-        "smart-token": token
-      };
-
-      return new Promise((resolve, reject) => {
-        axios({
-          method: 'post',
-          url: '/api/local/calculator/answers/',
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-            'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-          },
-          data: data
-        })
-          .then((res) => {
-            if (res.data.code === 200 && res.data.result) {
-              Storage.dispatch('ActionDescriptionAfterSand', null);
-              Storage.dispatch('ActionAnswersId', res.data.result.answersId);
-              Storage.dispatch('ActionAnswerLink', res.data.result.answerLink);
-            }
-            if (res.data.code !== 200) {
-              if (res.data.description) {
-                Storage.dispatch('ActionDescriptionAfterSand', res.data.description);
-              }
-              if (res.data.code) {
-                this.answer_code = res.data.code;
-              }
-            }
-            this.answersToSand = [];
-            resolve();
-          })
-          .catch((error) => {
-            if (error.response) {
-              if (error.response.data !== undefined) {
-                console.log(error.response);
-                Storage.dispatch('ActionDescriptionAfterSand', error.response.data.description);
-              }
-            }
-            console.log(error);
-            reject(error);
-          });
-      });
-    },
-
-
----------------------------------------------------------------------------------------------------
-
-.select-list__wr-search
-    .select-list__search-item(
-      v-if="answerLink.hasOwnProperty('link')"
-      :data-link="answerLink.link!==''?answerLink.link:''"
-      @click="handleCopyClick"
-    )
-      .select-list__search-item-icon
-       
-      p Скопировать ссылку
-    a.select-list__search-item(
-      v-if="answerLink.hasOwnProperty('vk')"
-      :href="answerLink.vk!==''?answerLink.vk:''"
-      @click.prevent="handleLinkClick('vk')"
-    )
-      .select-list__search-item-icon
-        
-      p ВКонтакте
-    a.select-list__search-item(
-      v-if="answerLink.hasOwnProperty('tg')"
-      :href="answerLink.tg!==''?answerLink.tg:''"
-      @click.prevent="handleLinkClick('tg')"
-    )
-      .select-list__search-item-icon
-        
-      p Telegram
-
-    a.select-list__search-item(
-      v-if="answerLink.hasOwnProperty('wp')"
-      :href="answerLink.wp!==''?answerLink.wp:''"
-      @click.prevent="handleLinkClick('wp')"
-    )
-      .select-list__search-item-icon
-        img(src="/dist/img/WhatsApp.svg")
-      p WhatsApp
+      this.pendingLink = null;
+    }
+  } catch (error) {
+    console.error('Ошибка при отправке результатов:', error);
+  } finally {
+    this.isSending = false;
+  }
+},
