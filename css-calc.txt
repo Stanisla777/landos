@@ -67,42 +67,56 @@ export default {
         max: this.formatYearMonthMaxDate(this.min_date_mobile)
       };
 
+      // Начальный выбранный месяц/год
+      const selectedMonth = month || this.minDate.month;
+      const selectedYear = year || this.minDate.year;
+
       this.calendarMobile = new VanillaCalendar('.js-calendar-mobile-shedule', {
         type: 'year',
         settings: {
           lang: 'ru',
           range: range,
           selected: {
-            month: month,
-            year: year
+            month: selectedMonth - 1, // 0-based
+            year: selectedYear
           }
         },
         actions: {
           clickMonth: (e, dates) => {
-            if (dates.selectedYear && dates.selectedMonth !== undefined) {
-              const parent = e.target.closest('.js--credit-calendar-input');
-              const container = e.target.closest('.js__vanilla-calendar-calc');
-              const array_month = this.month;
+            if (dates.selectedYear !== undefined && dates.selectedMonth !== undefined) {
+              const selectedMonthIndex = dates.selectedMonth; // 0-based
+              const selectedYear = dates.selectedYear;
 
+              // Проверяем, входит ли дата в диапазон
+              const dateNum = selectedYear * 12 + selectedMonthIndex;
+              const minNum = this.dateToNumber(this.minDate);
+              const maxNum = this.dateToNumber(this.maxDate);
+
+              if (dateNum < minNum || dateNum > maxNum) {
+                return; // не обрабатываем
+              }
+
+              const parent = e.target.closest('.js--credit-calendar-input');
               if (parent) {
                 const input = parent.querySelector('input');
-                if (input) {
-                  input.value = `${array_month[dates.selectedMonth]}, ${dates.selectedYear}`;
-                }
                 const clearBtn = parent.querySelector('.js--clear-calc-tax');
+                if (input) {
+                  input.value = `${this.month[selectedMonthIndex]}, ${selectedYear}`;
+                }
                 if (clearBtn && parent.closest('.js--calc-row-input')) {
                   clearBtn.classList.add('active');
                 }
-                container.classList.remove('active');
+                parent.querySelector('.js__vanilla-calendar-calc').classList.remove('active');
               }
-              this.$emit('sendDateMobile', [dates.selectedYear, dates.selectedMonth + 1]);
+
+              this.$emit('sendDateMobile', [selectedYear, selectedMonthIndex + 1]);
             }
           },
           clickYear: () => {
-            // После клика на год — переключаемся на выбор месяца
-            // Подождём немного, чтобы DOM обновился
+            // После клика на год — дожидаемся рендера месяцев
             this.$nextTick(() => {
               this.setupMonthDisabling();
+              this.observeYearChange();
             });
           }
         }
@@ -110,8 +124,11 @@ export default {
 
       this.calendarMobile.init();
 
-      // Инициализация отключения месяцев
-      this.setupMonthDisabling();
+      // После инициализации настраиваем отключение
+      this.$nextTick(() => {
+        this.setupMonthDisabling();
+        this.observeYearChange();
+      });
     },
 
     setupMonthDisabling() {
@@ -131,7 +148,7 @@ export default {
 
       monthEls.forEach((monthEl, index) => {
         const monthIndex = index + 1; // 1-based
-        const dateNum = currentYear * 12 + (monthIndex - 1);
+        const dateNum = currentYear * 12 + (monthIndex - 1); // 0-based month
 
         if (dateNum < minNum || dateNum > maxNum) {
           monthEl.classList.add('vanilla-calendar-months__month--disabled');
@@ -143,13 +160,17 @@ export default {
       });
     },
 
-    // Отслеживаем смену года и перерисовываем активность месяцев
     observeYearChange() {
       const container = document.querySelector('.js-calendar-mobile-shedule');
       if (!container) return;
 
       const headerYearEl = container.querySelector('.vanilla-calendar-year');
       if (!headerYearEl) return;
+
+      // Удаляем старый observer
+      if (this.observer) {
+        this.observer.disconnect();
+      }
 
       this.observer = new MutationObserver(() => {
         this.$nextTick(() => {
@@ -167,9 +188,9 @@ export default {
     CalendarVanillaClose() {
       let count = 0;
       const handler = () => {
-        const array_element = document.querySelectorAll('.js__vanilla-calendar-calc.active');
+        const activeCalendars = document.querySelectorAll('.js__vanilla-calendar-calc.active');
         if (count > 0) {
-          array_element.forEach(el => el.classList.remove('active'));
+          activeCalendars.forEach(el => el.classList.remove('active'));
         }
         if (count < 1) count++;
       };
@@ -181,8 +202,9 @@ export default {
       document.body.addEventListener('click', handler);
       document.body._calendarClickHandler = handler;
 
+      // Предотвращаем всплытие кликов в поле
       document.querySelectorAll('.js--credit-calendar-input').forEach(item => {
-        item.onclick = e => e.stopImmediatePropagation();
+        item.onclick = (e) => e.stopImmediatePropagation();
       });
     },
 
@@ -266,7 +288,9 @@ export default {
       document.querySelectorAll('.js__vanilla-calendar-calc').forEach(el => {
         el.classList.remove('active');
       });
-      el.currentTarget.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc').classList.add('active');
+      const calendar = el.currentTarget.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc');
+      calendar.classList.add('active');
+
       this.$nextTick(() => {
         this.setupMonthDisabling();
         this.observeYearChange();
@@ -397,7 +421,7 @@ export default {
 .vanilla-calendar-months__month--disabled {
   opacity: 0.5;
   pointer-events: none;
-  cursor: not-allowed;
   color: #aaa;
+  cursor: not-allowed;
 }
 </style>
