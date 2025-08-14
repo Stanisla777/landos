@@ -1,68 +1,608 @@
-// Отправка результатов
-async sendResults() {
-  if (this.isSending) return;
+<template lang="pug">
+  .select-list__wr-search
+    .select-list__search-item(
+      v-if="answerLink.hasOwnProperty('link')"
+      :data-link="answerLink.link!==''?answerLink.link:''"
+      @click="handleCopyClick"
+    )
+      .select-list__search-item-icon
+        
+      p Скопировать ссылку
+    a.select-list__search-item(
+      v-if="answerLink.hasOwnProperty('vk')"
+      :href="answerLink.vk!==''?answerLink.vk:''"
+      @click.prevent="handleLinkClick('vk')"
+    )
+      .select-list__search-item-icon
+       
+      p ВКонтакте
+    a.select-list__search-item(
+      v-if="answerLink.hasOwnProperty('tg')"
+      :href="answerLink.tg!==''?answerLink.tg:''"
+      @click.prevent="handleLinkClick('tg')"
+    )
+      .select-list__search-item-icon
+        
+      p Telegram
 
-  this.isSending = true;
+    a.select-list__search-item(
+      v-if="answerLink.hasOwnProperty('wp')"
+      :href="answerLink.wp!==''?answerLink.wp:''"
+      @click.prevent="handleLinkClick('wp')"
+    )
+      .select-list__search-item-icon
+        img(src="/dist/img/WhatsApp.svg")
+      p WhatsApp
+    .select-list__search-item(@click="openModalMail")
+      .select-list__search-item-icon
+        
+      p Отправить на e-mail
 
-  try {
-    // Отправляем данные
-    await this.sendingResult('result');
 
-    // Сохраняем копию отправленных данных
-    this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
+</template>
+<script>
+import Vue from 'vue';
+import eventBus from '../development-tools/eventBus.vue';
+import Storage from '../development-tools/state.vue';
+import numberFormatting from '../mixin/numberFormatting.js';
 
-    // Ждём, пока Vuex обновит answerLink
-    // Мы не можем полагаться только на $nextTick — нужно ждать, пока dispatch выполнится
-    // Но dispatch асинхронен, поэтому используем $nextTick + небольшое ожидание или polling
+export default {
+  name: 'v-component-payment-list',
+  mixins: [numberFormatting],
+  props:[],
+  data(){
+    return {
 
-    // Дожидаемся, пока answerLink обновится
-    await this.waitForAnswerLink();
+    }
+  },
+  methods:{
+    generalFunctionClick(event) {
+      this.copyLink(event);
+      this.handleLinkClick('link', event);
+    },
 
-    // После успешной отправки — выполнить отложенное действие
-    if (this.pendingAction) {
-      const { type, payload } = this.pendingAction;
 
-      if (type === 'open') {
-        const link = this.answerLink[payload];
+  },
+  mounted(){
+
+
+  },
+  filters:{
+  },
+  computed:{
+    answerLink(){
+      return Storage.getters.ANSWERSLINK
+    },
+
+  },
+  watch:{
+  },
+  created(){
+
+  },
+  components:{}
+};
+</script>
+<style scoped>
+</style>
+
+
+----------------------------------------------------------------------------------------
+/* eslint-disable */
+import contentNote from '../../content-note';
+import catalogNew from "../../catalog-new";
+import eventBus from '../development-tools/eventBus.vue';
+import bodyLockMobileFilter from '../../redesign-site/body-lock-mobile-filter';
+import bodyUnlockMobileFilter from '../../redesign-site/body-unlock-mobile-filter';
+import Storage from '../development-tools/state.vue';
+import axios from 'axios';
+let count = 0;
+export default {
+  props: {
+  },
+  data() {
+    return {
+      isAnimatingHolidays:false,
+      //кнопка расчёт отправить
+      // answerLink:{"link":"link.ru","vk":'sss.ru', "tg":'dddd.ru', "wp":"rrr.ru"}, //приходит из ajax
+      // can_share:1, //приходит из ht
+
+      flag_send_results:true,
+      captcha_id:null,
+      answer_code:null,
+
+      lastSentAnswers: null, // Для хранения последних отправленных данных
+      isSending: false,     // Флаг отправки запроса
+      pendingLink: null,      // Ссылка, которую нужно открыть после отправки
+      pendingAction: null, // 'copy' или null
+
+
+    };
+  },
+  watch: {
+  },
+  updated(){
+
+
+
+  },
+  filters:{
+    format_decimal:(val) => {
+      if (val!==undefined && val!==null){
+        return new Intl.NumberFormat("ru-RU").format(Math.abs(val.toFixed(2)));
+      }
+
+    },
+  },
+  created() {
+  },
+  methods:{
+    formatMillions(value) {
+      const millions = value / 1000000;
+
+      // Округляем вверх до 2 знаков после запятой
+      const rounded = Math.ceil(millions * 100) / 100;
+
+      // Форматируем с 2 знаками после запятой, заменя точку на запятую
+      let formatted = rounded.toFixed(2).replace('.', ',');
+
+      // Убираем лишние нули после запятой, если они есть
+      if (formatted.endsWith(',00')) {
+        formatted = formatted.replace(',00', '');
+      }
+
+      return formatted;
+    },
+    formatMillionsFloor(value) {
+      const millions = value / 1000000;
+
+      // Округляем вверх до 2 знаков после запятой
+      const rounded = Math.floor(millions * 100) / 100;
+
+      // Форматируем с 2 знаками после запятой, заменя точку на запятую
+      let formatted = rounded.toFixed(2).replace('.', ',');
+
+      // Убираем лишние нули после запятой, если они есть
+      if (formatted.endsWith(',00')) {
+        formatted = formatted.replace(',00', '');
+      }
+
+      return formatted;
+    },
+
+    openModal(el){
+      const element = el.currentTarget
+      const data = element.getAttribute('data-tooltip')
+      Storage.dispatch('ActionOpenModalStatus',true)
+      Storage.dispatch('ActionOpenModalTooltip',data)
+      this.AddClassBody()
+    },
+    closeTooltipMobile(el){
+      const element = el.currentTarget;
+      const parent = element.closest('.js--tooltip-parent')
+      if (parent) {
+        parent.classList.remove('tooltip-active')
+        bodyUnlockMobileFilter(parent)
+      }
+    },
+    inpFocus(el){
+      const element = el.currentTarget;
+      // element.classList.add('active_inp')
+      element.closest('.js--tex-deduc-input').classList.add('input-focus')
+    },
+    numberFormattingThousandths(count,e) {
+      const element = e.currentTarget;
+      const target = e.target
+      let position = target.selectionStart;
+      const val = parseFloat(element.value.replace(/\s/g, ''))
+      element.value = new Intl.NumberFormat("ru-RU").format(val);
+
+      if (e.inputType==="deleteContentBackward"){
+        target.selectionEnd = position;
+      }
+      if (element.value=='не число') {
+        element.value=''
+      }
+      if (element.value.length > 0 && element.value[0] === '0'){
+        element.value = '1' +  element.value.slice(1)
+      }
+
+      if (element.value.replace(/\s/g, '') > count){
+        element.value=(count).toFixed(0)
+          .toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+      }
+      // if (element.value.replace(/\s/g, '') < this.stgMin){
+      //   element.value=this.stgMin
+      // }
+      this.dataField=element.value
+
+
+    },
+    simplyNumber(count,e) {
+      const element = e.currentTarget;
+      const target = e.target
+      let position = target.selectionStart;
+      const val = parseFloat(element.value.replace(/\s/g, ''))
+      // element.value = new Intl.NumberFormat("ru-RU").format(val);
+
+      if (e.inputType==="deleteContentBackward"){
+        target.selectionEnd = position;
+      }
+      if (element.value=='не число') {
+        element.value=''
+      }
+      if (element.value.length > 0 && element.value[0] === '0'){
+        element.value = '1' +  element.value.slice(1)
+      }
+
+      if (element.value.replace(/\s/g, '') > count){
+        element.value=count
+      }
+      // if (element.value.replace(/\s/g, '') < this.stgMin){
+      //   element.value=this.stgMin
+      // }
+      this.dataField=element.value
+
+
+    },
+    AddClassBody() {
+      document.body.classList.add('body-modal');
+      document.body.classList.add('body-additional-class');
+      document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+      document.ontouchmove = (e) => {
+        e.preventDefault();
+      };
+    },
+    RemoveClassBody() {
+      if (!document.body.classList.contains('body-modal-modals')) {
+        document.body.classList.remove('body-modal');
+        document.body.classList.remove('body-additional-class');
+      }
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    },
+
+    openModalMail(el){
+      const element = el.currentTarget
+      const data = element.getAttribute('data-tooltip')
+      Storage.dispatch('ActionOpenModalMailStatus',true)
+      this.AddClassBody()
+    },
+    //поделиться с мобилки
+    openTooltipMobile(el){
+      const element = el.currentTarget;
+      const parent = element.closest('.js--tooltip-parent')
+      if (parent) {
+        parent.classList.add('tooltip-active')
+        bodyLockMobileFilter(parent);
+        if (this.can_share===1 && this.flag_send_results===true) {
+          this.sendingResult('result');//для финальной отправки нужно это
+          // this.sendingResultToApi(888)//это не нужно
+        }
+      }
+    },
+
+
+
+
+    //-------ОТПРАВКА-----------------------
+
+    // Обработчик клика на ссылку (VK, TG, WP)
+    async handleLinkClick(type) {
+      if (this.hasAnswersChanged()) {
+        this.pendingAction = { type: 'open', payload: type };
+        await this.sendResults();
+      } else {
+        const link = this.answerLink[type];
         if (link) {
           window.open(link, '_blank');
-        } else {
-          console.warn(`Ссылка для ${payload} не найдена`);
         }
-      } else if (type === 'copy') {
+      }
+    },
+
+    // Обработчик клика на копирование
+    async handleCopyClick(event) {
+      const element = event.currentTarget;
+      if (this.hasAnswersChanged()) {
+        this.pendingAction = { type: 'copy', payload: element };
+        await this.sendResults();
+      } else {
         const link = this.answerLink.link;
         if (link) {
-          this.copyLinkManually(link, payload);
-        } else {
-          console.warn('Ссылка для копирования не найдена');
+          this.copyLinkManually(link, element);
         }
       }
+    },
 
-      this.pendingAction = null;
-    }
-  } catch (error) {
-    console.error('Ошибка при отправке результатов:', error);
-  } finally {
-    this.isSending = false;
-  }
-},
+    // Проверка, изменились ли данные
+    hasAnswersChanged() {
+      if (!this.lastSentAnswers) return true;
+      return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers);
+    },
 
-----------------------
-// Ждём, пока answerLink будет обновлён
-async waitForAnswerLink(timeout = 5000) {
-  const start = Date.now();
-  const checkInterval = 100; // каждые 100мс проверяем
+    // Отправка результатов
+    // Отправка результатов
+    async sendResults() {
+      if (this.isSending) return;
 
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      const link = this.answerLink;
-      if (link && Object.keys(link).length > 0 && link.link) {
-        clearInterval(interval);
-        resolve();
-      } else if (Date.now() - start > timeout) {
-        clearInterval(interval);
-        reject(new Error('Таймаут ожидания answerLink'));
+      this.isSending = true;
+
+      try {
+        // Отправляем данные
+        await this.sendingResult('result');
+
+        // Сохраняем копию отправленных данных
+        this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
+
+        // Ждём, пока Vuex обновит answerLink
+        // Мы не можем полагаться только на $nextTick — нужно ждать, пока dispatch выполнится
+        // Но dispatch асинхронен, поэтому используем $nextTick + небольшое ожидание или polling
+
+        // Дожидаемся, пока answerLink обновится
+        await this.waitForAnswerLink();
+
+        // После успешной отправки — выполнить отложенное действие
+        if (this.pendingAction) {
+          const { type, payload } = this.pendingAction;
+
+          if (type === 'open') {
+            const link = this.answerLink[payload];
+            if (link) {
+              window.open(link, '_blank');
+            } else {
+              console.warn(`Ссылка для ${payload} не найдена`);
+            }
+          } else if (type === 'copy') {
+            const link = this.answerLink.link;
+            if (link) {
+              this.copyLinkManually(link, payload);
+            } else {
+              console.warn('Ссылка для копирования не найдена');
+            }
+          }
+
+          this.pendingAction = null;
+        }
+      } catch (error) {
+        console.error('Ошибка при отправке результатов:', error);
+      } finally {
+        this.isSending = false;
       }
-    }, checkInterval);
-  });
-}
+    },
+
+    // Ждём, пока answerLink будет обновлён
+    async waitForAnswerLink(timeout = 5000) {
+      const start = Date.now();
+      const checkInterval = 100; // каждые 100мс проверяем
+
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          const link = this.answerLink;
+          if (link && Object.keys(link).length > 0 && link.link) {
+            clearInterval(interval);
+            resolve();
+          } else if (Date.now() - start > timeout) {
+            clearInterval(interval);
+            reject(new Error('Таймаут ожидания answerLink'));
+          }
+        }, checkInterval);
+      });
+    },
+
+    // Унифицированная функция копирования
+    copyLinkManually(link, element) {
+      try {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(link).then(() => {
+            const p = element.querySelector('p');
+            if (p) {
+              p.textContent = 'Скопировано';
+              setTimeout(() => {
+                p.textContent = 'Скопировать ссылку';
+              }, 3000);
+            }
+          }).catch(err => {
+            console.warn('Clipboard write failed:', err);
+            this.fallbackCopy(link, element);
+          });
+        } else {
+          this.fallbackCopy(link, element);
+        }
+      } catch (err) {
+        this.fallbackCopy(link, element);
+      }
+    },
+
+    // Резервный способ копирования
+    fallbackCopy(link, element) {
+      const textarea = document.createElement('textarea');
+      textarea.value = link;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      const p = element.querySelector('p');
+      if (p) {
+        p.textContent = 'Скопировано';
+        setTimeout(() => {
+          p.textContent = 'Скопировать ссылку';
+        }, 3000);
+      }
+    },
+
+    copyLink(event) {
+      const link = event.currentTarget.dataset.link;
+      const element = event.currentTarget;
+
+      try {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(link);
+          element.querySelector('p').textContent='Скопировано';
+          setTimeout(() => {
+            element.querySelector('p').textContent='Скопировать ссылку';
+          }, 3000);
+        } else {
+          throw new Error('not supported');
+        }
+      } catch (err) {
+        const textarea = document.createElement('textarea');
+        textarea.value = link;
+        textarea.style.position = 'fixed';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        console.log('Ошибка копирования:', err);
+      }
+    },
+
+    // Инициализация капчи
+    sendingResult(flag) {
+      this.captchaInit(flag);
+      const recaptchaKey = typeof conf !== 'undefined' ? conf.smartcaptcha_key : null;
+      if (recaptchaKey) {
+        window.smartCaptcha.execute(this.captcha_id);
+      }
+    },
+
+    captchaInit(flag) {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (flag === 'result') {
+            this.sendingResultToApi(token);
+          } else if (flag === 'mail') {
+            this.sendingMailToApi(token);
+          }
+        },
+      });
+    },
+
+    // Отправка данных в API
+    sendingResultToApi(token) {
+      const data = {
+        calculatorId: this.calculatorId,
+        answers: this.answersToSand,
+        'smart-token': token,
+      };
+
+      return new Promise((resolve, reject) => {
+        axios({
+          method: 'post',
+          url: '/api/local/calculator/answers/',
+          headers: {
+            'Content-type': 'application/json; charset=UTF-8',
+            'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          },
+          data,
+        })
+          .then((res) => {
+            if (res.data.code === 200 && res.data.result) {
+              // Сохраняем ссылки в Vuex
+               Storage.dispatch('ActionAnswerLink', res.data.result.answerLink);
+            }
+            if (res.data.description) {
+               Storage.dispatch('ActionDescriptionAfterSand', res.data.description);
+            }
+            if (res.data.code) {
+              this.answer_code = res.data.code;
+            }
+            resolve();
+          })
+          .catch((error) => {
+            if (error.response) {
+              if (error.response.data !== undefined) {
+                console.log(error.response);
+                Storage.dispatch('ActionDescriptionAfterSand', error.response.data.description);
+              }
+            }
+            console.log(error);
+            reject(error);
+          });
+      });
+    },
+
+    sendingMailToApi(token) {
+      const modal_main_content = this.$refs.dataModalMail.querySelector('.js--modal-main-content');
+      const modal_success_content = this.$refs.dataModalMail.querySelector('.js--modal-wr-success');
+      const modal_failed_content = this.$refs.dataModalMail.querySelector('.js--modal-wr-failed');
+      let data = {
+        "userEmail": this.mask_mail.value,
+        "smart-token": token,
+        "answersId": this.answersId,
+        "agree": this.check_agree_advertisement
+      };
+
+      axios({
+        method: 'post',
+        url: '/api/local/calculator/answers/sendmail/',
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+        data: data
+      })
+        .then((res) => {
+          if (modal_main_content) {
+            modal_main_content.classList.add('unactive');
+          }
+          if (modal_success_content) {
+            modal_success_content.classList.add('active');
+          }
+        })
+        .catch((error) => {
+          if (error.response.data !== undefined && error.response.data.description !== undefined) {
+            console.log(error.response);
+            this.description_after_sand_mail = error.response.data.description;
+          }
+          console.log(error);
+          if (modal_main_content) {
+            modal_main_content.classList.add('unactive');
+          }
+          if (modal_failed_content) {
+            modal_failed_content.classList.add('active');
+          }
+        });
+    },
+
+    mouseOutShare(el){
+      // const element = el.currentTarget;
+      // this.$refs.TooltipShare.style.display='none'
+    },
+
+
+  },
+  mounted() {
+    contentNote();
+    catalogNew();
+  },
+  computed:{
+    answerLink(){
+      return Storage.getters.ANSWERSLINK
+    },
+    can_share(){
+      return Storage.getters.CANSHARE
+    },
+    calculatorId(){
+      return Storage.getters.CALCULATORID
+    },
+    answersToSand(){
+      return Storage.getters.ANSWERSTOSEND
+    },
+    answersId(){
+      return Storage.getters.ANSWERSID
+    },
+
+
+
+
+  },
+};
+
