@@ -81,3 +81,73 @@ requestAnimationFrame(() => {
     this.scrollToElementSmart(container, element);
   });
 });
+
+
+
+/-----------------------deepsek
+scrollToElementSmart(container, targetElement) {
+  // Добавляем небольшую задержку для гарантии обновления layout
+  setTimeout(() => {
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = targetElement.getBoundingClientRect();
+    const pageScrollTop = window.scrollY || window.pageYOffset;
+    const containerScrollTop = container.scrollTop;
+
+    // Вычисляем позицию элемента относительно контейнера
+    const targetTopInContainer = targetRect.top - containerRect.top + containerScrollTop;
+    const targetBottomInContainer = targetTopInContainer + targetRect.height;
+    
+    const containerHeight = container.clientHeight;
+    const maxContainerScroll = container.scrollHeight - containerHeight;
+
+    // Проверяем, есть ли скролл у контейнера
+    const canScrollContainer = container.scrollHeight > containerHeight;
+
+    if (canScrollContainer) {
+      // Вычисляем желаемую позицию скролла контейнера
+      let desiredContainerScroll;
+      
+      // Если элемент выше видимой области
+      if (targetTopInContainer < containerScrollTop) {
+        desiredContainerScroll = targetTopInContainer;
+      } 
+      // Если элемент ниже видимой области
+      else if (targetBottomInContainer > containerScrollTop + containerHeight) {
+        desiredContainerScroll = targetBottomInContainer - containerHeight;
+      } 
+      // Если элемент уже виден
+      else {
+        return;
+      }
+
+      // Ограничиваем скролл в пределах возможного
+      desiredContainerScroll = Math.max(0, Math.min(desiredContainerScroll, maxContainerScroll));
+
+      // Плавный скролл контейнера
+      this.smoothScrollTo(container, 'scrollTop', desiredContainerScroll, 300, (val) => {
+        container.scrollTop = val;
+      });
+
+      // После скролла контейнера проверяем, нужно ли скроллить страницу
+      setTimeout(() => {
+        const finalTargetRect = targetElement.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+        // Если элемент все еще не в видимой области viewport
+        if (finalTargetRect.top < 0 || finalTargetRect.bottom > viewportHeight) {
+          const targetTop = pageScrollTop + finalTargetRect.top - 20; // 20px отступ сверху
+          this.smoothScrollTo(window, 'scrollY', targetTop, 300, (val) => {
+            window.scrollTo(0, val);
+          });
+        }
+      }, 350);
+    } else {
+      // Если контейнер не скроллится - скроллим страницу к элементу
+      const targetTop = pageScrollTop + targetRect.top - 20; // 20px отступ сверху
+      this.smoothScrollTo(window, 'scrollY', targetTop, 300, (val) => {
+        window.scrollTo(0, val);
+      });
+    }
+  }, 50); // Небольшая задержка 50ms
+},
+
