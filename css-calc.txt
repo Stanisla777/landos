@@ -1,149 +1,55 @@
-receivedDateMobile([year, month]) {
-      const dateString = `${year}-${month}`;
-      this.$nextTick(() => {
-        const container = this.$refs.mobileShedule;
-        const element = container.querySelector(`[data-date="${dateString}"]`);
+numberFormattingThousandths(maxValue, e) {
+      const el = e.currentTarget;
+      const prevValue = el.value;
+      const selectionStart = el.selectionStart;
 
-        if (!element || !container) return;
+      // Сохраняем позицию до форматирования
+      let cursorPos = selectionStart;
 
-        this.scrollToElementSmart(container, element);
-      });
-    },
-
-    scrollToElementSmart(container, targetElement) {
-      const containerRect = container.getBoundingClientRect();
-      const targetRect = targetElement.getBoundingClientRect();
-      const pageScrollTop = window.scrollY;
-
-      const targetTopInContainer = targetRect.top - containerRect.top + container.scrollTop;
-      const maxContainerScroll = container.scrollHeight - container.clientHeight;
-
-      // Желаемая позиция скролла контейнера, чтобы элемент был вверху
-      const desiredContainerScroll = Math.max(0, Math.min(targetTopInContainer, maxContainerScroll));
-
-      // Проверка: может ли контейнер проскроллиться?
-      const canScrollContainer = container.scrollHeight > container.clientHeight;
-
-      if (canScrollContainer) {
-        // Скроллим контейнер, чтобы элемент оказался вверху контейнера
-        this.smoothScrollTo(container, 'scrollTop', desiredContainerScroll, 300, (val) => {
-          container.scrollTop = val;
-        });
-
-        // После анимации проверяем, попал ли элемент в нужную позицию на экране
-        setTimeout(() => {
-          const finalTargetRect = targetElement.getBoundingClientRect();
-
-          // Если элемент выходит за пределы экрана — подкручиваем страницу
-          if (finalTargetRect.top < 0 || finalTargetRect.bottom > window.innerHeight) {
-            const newPageScrollTop = window.scrollY + finalTargetRect.top - 10;
-            this.smoothScrollTo(window, 'scrollY', newPageScrollTop, 300, (val) => {
-              window.scrollTo(0, val);
-            });
-          }
-        }, 310);
-      } else {
-        // Контейнер не скроллится — скроллим страницу к самому элементу (вверх экрана)
-        const targetPageScrollTop = pageScrollTop + targetRect.top - 10; // 10 — небольшой отступ сверху
-        this.smoothScrollTo(window, 'scrollY', targetPageScrollTop, 300, (val) => {
-          window.scrollTo(0, val);
-        });
-      }
-    },
-
-    smoothScrollTo(element, property, target, duration, setValue) {
-      const start = element === window ? window.scrollY : element[property];
-      const change = target - start;
-      let startTime = null;
-
-      const animateScroll = (currentTime) => {
-        if (startTime === null) startTime = currentTime;
-        const timeElapsed = currentTime - startTime;
-        const progress = Math.min(timeElapsed / duration, 1);
-
-        // easeInOutCubic
-        const ease = progress < 0.5
-          ? 4 * progress * progress * progress
-          : (progress - 1) * (2 * progress - 2) * (2 * progress - 2) + 1;
-
-        const val = start + change * ease;
-        setValue(val);
-
-        if (timeElapsed < duration) {
-          requestAnimationFrame(animateScroll);
-        }
-      };
-
-      requestAnimationFrame(animateScroll);
-    },
-
-
-
-/-----------------------deepsek
-scrollToElementSmart(container, targetElement) {
-  // Добавляем небольшую задержку для гарантии обновления layout
-  setTimeout(() => {
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = targetElement.getBoundingClientRect();
-    const pageScrollTop = window.scrollY || window.pageYOffset;
-    const containerScrollTop = container.scrollTop;
-
-    // Вычисляем позицию элемента относительно контейнера
-    const targetTopInContainer = targetRect.top - containerRect.top + containerScrollTop;
-    const targetBottomInContainer = targetTopInContainer + targetRect.height;
-    
-    const containerHeight = container.clientHeight;
-    const maxContainerScroll = container.scrollHeight - containerHeight;
-
-    // Проверяем, есть ли скролл у контейнера
-    const canScrollContainer = container.scrollHeight > containerHeight;
-
-    if (canScrollContainer) {
-      // Вычисляем желаемую позицию скролла контейнера
-      let desiredContainerScroll;
-      
-      // Если элемент выше видимой области
-      if (targetTopInContainer < containerScrollTop) {
-        desiredContainerScroll = targetTopInContainer;
-      } 
-      // Если элемент ниже видимой области
-      else if (targetBottomInContainer > containerScrollTop + containerHeight) {
-        desiredContainerScroll = targetBottomInContainer - containerHeight;
-      } 
-      // Если элемент уже виден
-      else {
+      // Удаляем всё, кроме цифр (сохраняем ВСЕ цифры, включая ведущие нули)
+      let digits = prevValue.replace(/\D/g, '');
+      if (!digits) {
+        this.rawInputValue = '';
+        el.value = '';
         return;
       }
 
-      // Ограничиваем скролл в пределах возможного
-      desiredContainerScroll = Math.max(0, Math.min(desiredContainerScroll, maxContainerScroll));
-
-      // Плавный скролл контейнера
-      this.smoothScrollTo(container, 'scrollTop', desiredContainerScroll, 300, (val) => {
-        container.scrollTop = val;
-      });
-
-      // После скролла контейнера проверяем, нужно ли скроллить страницу
-      setTimeout(() => {
-        const finalTargetRect = targetElement.getBoundingClientRect();
-        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-
-        // Если элемент все еще не в видимой области viewport
-        if (finalTargetRect.top < 0 || finalTargetRect.bottom > viewportHeight) {
-          const targetTop = pageScrollTop + finalTargetRect.top - 20; // 20px отступ сверху
-          this.smoothScrollTo(window, 'scrollY', targetTop, 300, (val) => {
-            window.scrollTo(0, val);
-          });
+      // Проверка максимума - теперь работаем со строкой, а не числом
+      if (digits.length > String(maxValue).length) {
+        digits = String(maxValue);
+      } else {
+        // Сравниваем как строки, если длины равны
+        if (digits.length === String(maxValue).length && digits > String(maxValue)) {
+          digits = String(maxValue);
         }
-      }, 350);
-    } else {
-      // Если контейнер не скроллится - скроллим страницу к элементу
-      const targetTop = pageScrollTop + targetRect.top - 20; // 20px отступ сверху
-      this.smoothScrollTo(window, 'scrollY', targetTop, 300, (val) => {
-        window.scrollTo(0, val);
+      }
+
+      // Форматируем, сохраняя ведущие нули
+      // Разбиваем на группы по 3 цифры с конца
+      let formatted = '';
+      for (let i = digits.length - 1, j = 0; i >= 0; i--, j++) {
+        formatted = digits[i] + (j % 3 === 0 && j !== 0 ? ' ' : '') + formatted;
+      }
+
+      el.value = formatted.trim();
+      this.rawInputValue = digits;
+
+      // Восстанавливаем позицию курсора
+      this.$nextTick(() => {
+        // Считаем, сколько цифр было до курсора
+        const digitsBeforeCursor = prevValue.slice(0, cursorPos).replace(/\D/g, '').length;
+        
+        // Находим новую позицию курсора в отформатированной строке
+        let newCursorPos = 0;
+        let digitCount = 0;
+        
+        for (let i = 0; i < el.value.length && digitCount < digitsBeforeCursor; i++) {
+          if (/\d/.test(el.value[i])) {
+            digitCount++;
+          }
+          newCursorPos = i + 1;
+        }
+        
+        el.setSelectionRange(newCursorPos, newCursorPos);
       });
-    }
-  }, 50); // Небольшая задержка 50ms
-},
-
-
+    },
