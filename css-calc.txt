@@ -1,45 +1,335 @@
-Правка: v-initial-payment.vue — добавить флаг, что инициализация из answers уже прошла
-data() {
-  return {
-    realtySlider: null,
-    dataField: '',
-    dataFieldForCalculation: 0,
-    stepApartment: 1,
-    input_salary: false,
-    start: 6000000,
-    isTyping: false,
-    initializedFromAnswers: false // <-- НОВОЕ
+/* eslint-disable */
+export default function contentNote() {
+  const notes = document.querySelectorAll('.js--content-note');
+
+  const isTouchDevice = () => {
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   };
-},
 
+  const isIOS = () => {
+    return /(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream;
+  };
 
-В mounted():
-mounted() {
-  this.initRealtySlider();
+  const positionTooltip = (element) => {
+    const noteText = element.querySelector('.content-note__text');
+    const computed = getComputedStyle(noteText);
 
-  if (this.answers) {
-    const val = parseInt(this.answers.initialPayment) || this.stgMin;
-    const clampedVal = Math.max(this.stgMin, Math.min(this.stgMax, val)); // Убедимся, что в пределах
+    // === 🔍 Проверяем: если transform, left, top, right, bottom уже заданы — не позиционируем ===
+    const hasTransform = computed.transform && computed.transform !== 'none';
+    const hasLeft = computed.left !== 'auto';
+    const hasRight = computed.right !== 'auto';
+    const hasTop = computed.top !== 'auto';
+    const hasBottom = computed.bottom !== 'auto';
 
-    this.realtySlider.set(clampedVal);
-    Storage.dispatch('ActionInitialPayment', clampedVal);
-    Storage.dispatch('ActionInitialPaymentIsChanged', false);
-
-    this.initializedFromAnswers = true; // <-- Отмечаем, что инициализация прошла
-  } else {
-    this.realtySlider.set(this.initial_payment_from_cost);
-  }
-},
-
-В watch на initial_payment_from_cost:
-
-watch: {
-  initial_payment_from_cost(newVal) {
-    if (!this.isTyping && !this.initializedFromAnswers) {
-      this.realtySlider.set(newVal);
+    if (hasTransform || hasLeft || hasRight || hasTop || hasBottom) {
+      return; // Уже позиционируется вручную — не трогаем
     }
-  },
-  stgMax(newVal) {
-    // ... (остальное без изменений)
+
+    // === ✅ Начинаем автоматическое позиционирование ===
+    const rect = element.getBoundingClientRect();
+    const parent = element.parentElement;
+    const parentPos = parent.getBoundingClientRect();
+    const relativePosLeftElement = rect.left - parentPos.left;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const parentWidth = parent.offsetWidth;
+    const leftOffset = rect.left + rect.width / 2;
+    const topOffset = rect.top + rect.height / 2;
+
+    // Сбросим transform для корректного измерения ширины
+    const originalTransform = noteText.style.transform;
+    noteText.style.transform = 'none';
+    const tooltipWidth = noteText.offsetWidth;
+    noteText.style.transform = originalTransform;
+
+    // Очистка предыдущих стилей
+    noteText.style.left = '';
+    noteText.style.right = '';
+    noteText.style.top = '';
+    noteText.style.bottom = '';
+    noteText.style.inset = '';
+    noteText.style.transform = '';
+
+    // === Горизонтальное позиционирование ===
+    const hasSpecialParent = element.closest('.js--courses-accord-content') ||
+      element.closest('.js--element-overflow');
+
+    if (hasSpecialParent) {
+      if (windowWidth >= 600) {
+        if (parentWidth / 2 < relativePosLeftElement) {
+          noteText.style.left = 'auto';
+          noteText.style.right = '-.25rem';
+        } else {
+          noteText.style.left = '.25rem';
+          noteText.style.right = 'auto';
+        }
+      } else {
+        noteText.style.inset = 'unset';
+        noteText.style.transform = `translateX(${-((rect.left - tooltipWidth / 2 + 7) - (windowWidth / 2 - tooltipWidth / 2))}px)`;
+      }
+    } else {
+      if (windowWidth >= 600) {
+        if (windowWidth / 2 < leftOffset) {
+          noteText.style.left = 'auto';
+          noteText.style.right = '-.25rem';
+        } else {
+          noteText.style.left = '.25rem';
+          noteText.style.right = 'auto';
+        }
+      } else {
+        noteText.style.inset = 'unset';
+        noteText.style.transform = `translateX(${-((rect.left - tooltipWidth / 2 + 7) - (windowWidth / 2 - tooltipWidth / 2))}px)`;
+      }
+    }
+
+    // === Вертикальное позиционирование ===
+    let notesParentBounding = null;
+    const coursesAccord = element.closest('.js--courses-accord-content');
+    if (coursesAccord) {
+      notesParentBounding = coursesAccord.getBoundingClientRect();
+    }
+
+    if (notesParentBounding) {
+      const locationDifference = rect.top - notesParentBounding.top;
+      const heightTooltip = noteText.offsetHeight;
+
+      if (heightTooltip >= locationDifference) {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      } else if (heightTooltip < locationDifference && windowHeight / 2 < topOffset) {
+        noteText.style.top = 'auto';
+        noteText.style.bottom = 'calc(100% + .25rem)';
+      } else {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      }
+    } else {
+      // Обычное позиционирование (не внутри специального контейнера)
+      if (windowHeight / 2 > topOffset) {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      } else {
+        noteText.style.top = 'auto';
+        noteText.style.bottom = 'calc(100% + .25rem)';
+      }
+    }
+  };
+
+  if (isTouchDevice() || isIOS()) {
+    document.addEventListener('touchstart', (e) => {
+      const isNote = e.target.classList.contains('js--content-note')
+      if (isNote) {
+        notes.forEach(item => {
+          item.classList.remove('active');
+          const text = item.querySelector('.content-note__text');
+          text.classList.remove('active');
+          text.classList.remove('up');
+          text.classList.remove('down');
+        });
+
+        const noteText = e.target.querySelector('.content-note__text');
+        const rect = e.target.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        const topOffset = rect.top + rect.height / 2;
+
+        //  Сначала определяем направление (up/down) и добавляем классы ===
+        if (windowHeight / 2 > topOffset) {
+          noteText.classList.add('down');
+          noteText.classList.remove('up');
+        } else {
+          noteText.classList.add('up');
+          noteText.classList.remove('down');
+        }
+
+        //  Скрываем визуально, но делаем измеримым ===
+        noteText.style.visibility = 'hidden';
+        noteText.style.opacity = '0';
+        noteText.style.transition = 'none';
+
+        //  Показываем элемент (но невидимо) ===
+        e.target.classList.add('active');
+        noteText.classList.add('active');
+
+        //  Позиционируем — теперь знает, что класс up/down уже есть ===
+        positionTooltip(e.target);
+
+        //  Показываем с анимацией ===
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            noteText.style.visibility = 'visible';
+            noteText.style.opacity = '1';
+            noteText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+          });
+        });
+      }
+    });
+
+    // Закрытие при клике мимо
+    document.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('js--content-note') &&
+        !e.target.closest('.content-note__text')) {
+        notes.forEach(item => {
+          item.classList.remove('active');
+          item.querySelector('.content-note__text').classList.remove('active');
+        });
+      }
+    });
   }
+
+
+
+
+  document.addEventListener('mouseover', (e) => {
+
+    if (e.target.classList.contains('js--content-note')) {
+      if (e.target.querySelector('.content-note__text')) {
+        e.target.querySelector('.content-note__text').classList.add('active');
+      }
+
+      e.target.classList.add('active');
+      const rect = e.target.getBoundingClientRect();
+      const parent = e.target.parentElement;
+      // eslint-disable-next-line no-unused-vars
+      const tooltip = e.target.querySelector('.content-note__text');
+      const parentPos = parent.getBoundingClientRect();
+      const relativePosLeftElement = rect.left - parentPos.left;
+      const noteText = e.target.querySelector('.content-note__text');
+      // eslint-disable-next-line no-unused-vars
+      const windowWidth = document.body.offsetWidth;
+      // eslint-disable-next-line no-unused-vars
+      const windowHeight = window.innerHeight;
+      const parentWidth = parent.offsetWidth;
+      // координаты от центра элемента
+      // eslint-disable-next-line no-unused-vars
+      const leftOffset = rect.left + rect.width / 2;
+      const rightOffset = rect.right + rect.width / 2;
+      // eslint-disable-next-line no-unused-vars
+      const topOffset = rect.top + rect.height / 2;
+
+      // если элемент ближе к левому краю экрана - выводим подсказку справа от него
+      // иначе слева
+      // eslint-disable-next-line max-len
+      // тут стоит условия по блокам, в котором есть тултип, если у родителя есть ограничение по
+      // eslint-disable-next-line max-len
+      // ширине и оно имеет ovrflow:hidden то родителю нужно порописать класс .js--element-overflow
+      // eslint-disable-next-line camelcase
+      if (e.target.closest('.js--courses-accord-content') || e.target.closest('.js--element-overflow') || e.target.closest('.js--element-overflow-x')) {
+
+
+        // if (windowWidth >= 600) {
+          if (parentWidth / 2 < relativePosLeftElement) {
+            noteText.style.left = 'auto';
+            noteText.style.right = '-.25rem';
+          } else {
+            noteText.style.left = '.25rem';
+            noteText.style.right = 'auto';
+          }
+        // }
+        if (windowWidth < 470) {
+          noteText.style.left = 0
+          noteText.style.transform = `translateX(${(-(leftOffset - 28)) + ((windowWidth / 2) - 40) - ((tooltip.offsetWidth / 2) - 15) }px)`;
+        }
+
+      } else {
+
+
+
+        if (windowWidth / 2 < leftOffset) {
+          // когда иконка ближе к правому краю
+          if (tooltip.offsetWidth > leftOffset) {
+            noteText.style.transform = `translateX(${(tooltip.offsetWidth - ((windowWidth - 40) - leftOffset))}px)`
+          }
+          noteText.style.left = 'auto';
+          noteText.style.right = '-.25rem';
+        } else {
+          // когда иконка ближе к левому краю
+          if (tooltip.offsetWidth > (windowWidth - 40) - leftOffset) {
+            noteText.style.transform = `translateX(${-(tooltip.offsetWidth - ((windowWidth - 40) - leftOffset))}px)`
+          }
+          noteText.style.left = '.25rem';
+          noteText.style.right = 'auto';
+        }
+
+        if (windowWidth < 470) {
+          noteText.style.left = 0
+          noteText.style.transform = `translateX(${(-(leftOffset - 28)) + ((windowWidth / 2) - 40) - ((tooltip.offsetWidth / 2) - 15) }px)`;
+        }
+
+      }
+
+      // если элемент ближе к верхнему краю экрана - выводим подсказу снизу от него
+      // иначе сверху
+      if (e.target.closest('.js--courses-accord-content') || e.target.closest('.js--element-overflow')) {
+        const notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
+        // eslint-disable-next-line no-unused-vars
+        const locationDifference = rect.top - notesParentBounding.top;
+        const heightTooltip = tooltip.offsetHeight;
+        if (heightTooltip >= locationDifference) {
+          noteText.style.top = 'calc(100% + .25rem)';
+          noteText.style.bottom = 'auto';
+        } else if (heightTooltip < locationDifference && windowHeight / 2 < topOffset) {
+          noteText.style.top = 'auto';
+          noteText.style.bottom = 'calc(100% + .25rem)';
+          // eslint-disable-next-line no-empty
+        } else if (heightTooltip < locationDifference && windowHeight / 2 > topOffset) {
+          noteText.style.top = 'calc(100% + .25rem)';
+          noteText.style.bottom = 'auto';
+        }
+      } else {
+
+        // низ
+        // eslint-disable-next-line no-lonely-if
+        if (windowHeight / 2 > topOffset) {
+          noteText.classList.remove('up')
+          noteText.classList.add('down')
+
+          noteText.style.top = 'calc(100% + .25rem)';
+          noteText.style.bottom = 'auto';
+        } else {
+          noteText.classList.remove('down')
+          noteText.classList.add('up')
+          noteText.style.top = 'auto';
+          noteText.style.bottom = 'calc(100% + .25rem)';
+        }
+      }
+    }
+    if (e.target.classList.contains('content-note__text')) {
+      e.target.classList.add('active')
+      if (e.target.closest('.js--content-note')){
+        e.target.closest('.js--content-note').classList.add('active');
+      }
+
+    }
+    if ((e.fromElement && e.toElement) && (e.fromElement.nodeName === 'SPAN' && e.toElement.nodeName === 'A')) {
+      if (e.target.closest('.content-note__text')) {
+        e.target.closest('.content-note__text').classList.add('active');
+      }
+      if (e.target.closest('.js--content-note')) {
+        e.target.closest('.js--content-note').classList.add('active')
+      }
+    }
+
+  });
+
+  document.addEventListener('mouseout', (e) => {
+    if (e.target.classList.contains('content-note__text')) {
+      e.target.classList.remove('active');
+      if (e.target.closest('.js--content-note')){
+        e.target.closest('.js--content-note').classList.remove('active');
+      }
+
+    }
+    if (e.target.matches('.js--content-note')) {
+      e.target.querySelector('.content-note__text').classList.remove('active');
+      e.target.classList.remove('active');
+    }
+    if ((e.fromElement && e.toElement) && (e.fromElement.nodeName === 'A' && e.toElement.hasAttribute('class') && e.toElement.getAttribute('class') !== null)) {
+      if (e.target.closest('.content-note__text')) {
+        e.target.closest('.content-note__text').classList.remove('active');
+      }
+      if (e.target.closest('.js--content-note')) {
+        e.target.closest('.js--content-note').classList.remove('active')
+      }
+    }
+  });
 }
