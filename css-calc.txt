@@ -1,52 +1,44 @@
-document.addEventListener('touchstart', (e) => {
-  const isNote = e.target.classList.contains('js--content-note');
-  const isNoteText = e.target.classList.contains('content-note__text') ||
-                     e.target.closest('.content-note__text');
+if (isNote) {
+  notes.forEach(item => {
+    item.classList.remove('active');
+    const text = item.querySelector('.content-note__text');
+    text.classList.remove('active');
+    text.classList.remove('up');
+    text.classList.remove('down');
+  });
 
-  if (isNoteText && !isNote) return;
+  const noteText = e.target.querySelector('.content-note__text');
+  const rect = e.target.getBoundingClientRect();
+  const windowHeight = window.innerHeight;
+  const topOffset = rect.top + rect.height / 2;
 
-  if (isNote && e.target.classList.contains('active')) {
-    e.target.classList.remove('active');
-    e.target.querySelector('.content-note__text').classList.remove('active');
-    return;
+  // === 🔥 Сначала определяем направление (up/down) и добавляем классы ===
+  if (windowHeight / 2 > topOffset) {
+    noteText.classList.add('down');
+    noteText.classList.remove('up');
+  } else {
+    noteText.classList.add('up');
+    noteText.classList.remove('down');
   }
 
-  if (!isNote) {
-    notes.forEach(item => {
-      item.classList.remove('active');
-      item.querySelector('.content-note__text').classList.remove('active');
-    });
-    return;
-  }
+  // === 🔥 Скрываем визуально, но делаем измеримым ===
+  noteText.style.visibility = 'hidden';
+  noteText.style.opacity = '0';
+  noteText.style.transition = 'none';
 
-  if (isNote) {
-    // Закрываем все
-    notes.forEach(item => {
-      item.classList.remove('active');
-      item.querySelector('.content-note__text').classList.remove('active');
-    });
+  // === 🔥 Показываем элемент (но невидимо) ===
+  e.target.classList.add('active');
+  noteText.classList.add('active');
 
-    const noteText = e.target.querySelector('.content-note__text');
+  // === 🔥 Позиционируем — теперь знает, что класс up/down уже есть ===
+  positionTooltip(e.target);
 
-    // === 🔥 Сначала позиционируем, ПОКА тултип НЕ виден ===
-    // Убедимся, что тултип "невидим", но измеримый
-    noteText.style.visibility = 'hidden';
-    noteText.style.opacity = '0';
-    noteText.style.transition = 'none'; // отключаем анимацию на первый показ
-
-    e.target.classList.add('active');
-    noteText.classList.add('active');
-
-    // Позиционируем ДО отображения
-    positionTooltip(e.target);
-
-    // === Теперь показываем с анимацией ===
+  // === 🔥 Показываем с анимацией ===
+  requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        noteText.style.visibility = 'visible';
-        noteText.style.opacity = '1';
-        noteText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-      });
+      noteText.style.visibility = 'visible';
+      noteText.style.opacity = '1';
+      noteText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
     });
-  }
-});
+  });
+}
