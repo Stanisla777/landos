@@ -1,39 +1,114 @@
-const isTouchDevice = () => {
-    // Стандартная проверка на touch-устройство
-    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    
-    // Проверка на эмуляцию мобильного устройства в DevTools
-    const isDeviceToolbarActive = () => {
-      // Способ 1: Проверка userAgent на наличие эмуляции
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isEmulated = userAgent.includes('mobile') || 
-                         userAgent.includes('android') || 
-                         userAgent.includes('iphone') || 
-                         userAgent.includes('ipad');
-      
-      // Способ 2: Проверка размеров экрана и соотношения сторон
-      const isMobileSize = window.innerWidth <= 1024 && window.innerHeight <= 1024;
-      const isPortrait = window.innerHeight > window.innerWidth;
-      
-      // Способ 3: Проверка на наличие определенных свойств, которые появляются при эмуляции
-      const hasDeviceEmulation = navigator.platform === 'Linux armv8l' || 
-                                navigator.platform === 'Linux armv7l' ||
-                                (navigator.platform === 'Win32' && window.innerWidth <= 768);
-      
-      return (isEmulated && isMobileSize) || hasDeviceEmulation || 
-             (hasTouch && isMobileSize && isPortrait);
-    };
-    
-    return hasTouch || isDeviceToolbarActive();
-  };
+// Функция для позиционирования тултипа
+  const positionTooltip = (element, event) => {
+    const rect = element.getBoundingClientRect();
+    const parent = element.parentElement;
+    const tooltip = element.querySelector('.content-note__text');
+    const parentPos = parent.getBoundingClientRect();
+    const relativePosLeftElement = rect.left - parentPos.left;
+    const noteText = element.querySelector('.content-note__text');
+    const windowWidth = document.body.offsetWidth;
+    const windowHeight = window.innerHeight;
+    const parentWidth = parent.offsetWidth;
+    const leftOffset = rect.left + rect.width / 2;
+    const topOffset = rect.top + rect.height / 2;
 
-  // Функция для определения iOS устройств
-  const isIOS = () => {
-    return (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) || 
-           (navigator.userAgent.includes('Mac') && 'ontouchend' in document) ||
-           ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod']
-             .includes(navigator.platform);
+    // Сначала скрываем тултип, чтобы избежать "дёргания"
+    noteText.style.visibility = 'hidden';
+    noteText.style.opacity = '0';
+
+    // Если элемент ближе к левому краю экрана - выводим подсказку справа от него
+    if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
+      if (windowWidth >= 600) {
+        if (parentWidth / 2 < relativePosLeftElement) {
+          noteText.style.left = 'auto';
+          noteText.style.right = '-.25rem';
+        } else {
+          noteText.style.left = '.25rem';
+          noteText.style.right = 'auto';
+        }
+      }
+      if (windowWidth < 600) {
+        noteText.style.inset = 'unset';
+        noteText.style.transform = `translateX(${-((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))}px)`;
+      }
+    } else {
+      if (windowWidth >= 600) {
+        if (windowWidth / 2 < leftOffset) {
+          noteText.style.left = 'auto';
+          noteText.style.right = '-.25rem';
+        } else {
+          noteText.style.left = '.25rem';
+          noteText.style.right = 'auto';
+        }
+      }
+      if (windowWidth < 600) {
+        noteText.style.inset = 'unset';
+        noteText.style.transform = `translateX(${-((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))}px)`;
+      }
+    }
+
+    // Если элемент ближе к верхнему краю экрана - выводим подсказу снизу от него
+    if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
+      const notesParentBounding = element.closest('.js--courses-accord-content').getBoundingClientRect();
+      const locationDifference = rect.top - notesParentBounding.top;
+      const heightTooltip = tooltip.offsetHeight;
+      if (heightTooltip >= locationDifference) {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      } else if (heightTooltip < locationDifference && windowHeight / 2 < topOffset) {
+        noteText.style.top = 'auto';
+        noteText.style.bottom = 'calc(100% + .25rem)';
+      } else if (heightTooltip < locationDifference && windowHeight / 2 > topOffset) {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      }
+    } else {
+      if (windowHeight / 2 > topOffset) {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      } else {
+        noteText.style.top = 'auto';
+        noteText.style.bottom = 'calc(100% + .25rem)';
+      }
+    }
+
+    // После расчета позиции показываем тултип плавно
+    setTimeout(() => {
+      noteText.style.visibility = 'visible';
+      noteText.style.opacity = '1';
+      noteText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    }, 10);
   };
 
   // Основная проверка - используем touch события для touch устройств ИЛИ при эмуляции
   if (isTouchDevice() || isIOS()) {
+    document.addEventListener('touchstart', (e) => {
+      if(e.target.classList.contains('js--content-note') && e.target.classList.contains('active')){
+        e.target.classList.remove('active');
+        e.target.querySelector('.content-note__text').classList.remove('active');
+        return;
+      }
+      
+      if(!e.target.classList.contains('js--content-note')) {
+        for (let item of notes) {
+          item.classList.remove('active');
+          item.querySelector('.content-note__text').classList.remove('active');
+        }
+        return;
+      }
+      
+      if (e.target.classList.contains('js--content-note')) {
+        for (let item of notes) {
+          item.classList.remove('active');
+          item.querySelector('.content-note__text').classList.remove('active');
+        }
+        
+        e.target.classList.add('active');
+        const noteText = e.target.querySelector('.content-note__text');
+        noteText.classList.add('active');
+        
+        // Позиционируем тултип с предотвращением "дёргания"
+        positionTooltip(e.target, e);
+      }
+    });
+  }
