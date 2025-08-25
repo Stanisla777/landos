@@ -1,141 +1,80 @@
-const isTouchDevice = () => {
-    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  };
+const positionTooltip = (element) => {
+  const noteText = element.querySelector('.content-note__text');
+  const rect = element.getBoundingClientRect();
+  const parent = element.parentElement;
+  const parentPos = parent.getBoundingClientRect();
+  const relativePosLeftElement = rect.left - parentPos.left;
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  const parentWidth = parent.offsetWidth;
+  const leftOffset = rect.left + rect.width / 2;
+  const topOffset = rect.top + rect.height / 2;
 
-  const isIOS = () => {
-    return /(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream;
-  };
+  // Сбросим transform, чтобы корректно измерить ширину
+  const originalTransform = noteText.style.transform;
+  noteText.style.transform = 'none';
+  const tooltipWidth = noteText.offsetWidth;
+  noteText.style.transform = originalTransform; // восстанавливаем
 
-  const positionTooltip = (element) => {
-    const noteText = element.querySelector('.content-note__text');
-    const rect = element.getBoundingClientRect();
-    const parent = element.parentElement;
-    const parentPos = parent.getBoundingClientRect();
-    const relativePosLeftElement = rect.left - parentPos.left;
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    const parentWidth = parent.offsetWidth;
-    const leftOffset = rect.left + rect.width / 2;
-    const topOffset = rect.top + rect.height / 2;
+  // Очистим старые стили
+  noteText.style.left = '';
+  noteText.style.right = '';
+  noteText.style.top = '';
+  noteText.style.bottom = '';
+  noteText.style.inset = '';
+  noteText.style.transform = ''; // очищаем, чтобы не накапливались
 
-    // Временно скрываем визуально, но делаем видимым для измерения
-    const wasHidden = noteText.style.visibility === 'hidden';
-    if (wasHidden) {
-      noteText.style.visibility = 'visible';
-      noteText.style.opacity = '0';
-      noteText.style.transition = 'none';
-    }
-
-    const tooltipWidth = noteText.offsetWidth;
-
-    if (wasHidden) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          noteText.style.opacity = '1';
-          noteText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-        });
-      });
-    }
-
-    // Позиционирование — твой код без изменений
-    if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
-      if (windowWidth >= 600) {
-        if (parentWidth / 2 < relativePosLeftElement) {
-          noteText.style.left = 'auto';
-          noteText.style.right = '-.25rem';
-        } else {
-          noteText.style.left = '.25rem';
-          noteText.style.right = 'auto';
-        }
+  // === Горизонтальное позиционирование ===
+  if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
+    if (windowWidth >= 600) {
+      if (parentWidth / 2 < relativePosLeftElement) {
+        noteText.style.left = 'auto';
+        noteText.style.right = '-.25rem';
       } else {
-        noteText.style.inset = 'unset';
-        noteText.style.transform = `translateX(${-((rect.left - tooltipWidth / 2 + 7) - (windowWidth / 2 - tooltipWidth / 2))}px)`;
+        noteText.style.left = '.25rem';
+        noteText.style.right = 'auto';
       }
     } else {
-      if (windowWidth >= 600) {
-        if (windowWidth / 2 < leftOffset) {
-          noteText.style.left = 'auto';
-          noteText.style.right = '-.25rem';
-        } else {
-          noteText.style.left = '.25rem';
-          noteText.style.right = 'auto';
-        }
-      } else {
-        noteText.style.inset = 'unset';
-        noteText.style.transform = `translateX(${-((rect.left - tooltipWidth / 2 + 7) - (windowWidth / 2 - tooltipWidth / 2))}px)`;
-      }
+      noteText.style.inset = 'unset';
+      noteText.style.transform = `translateX(${-((rect.left - tooltipWidth / 2 + 7) - (windowWidth / 2 - tooltipWidth / 2))}px)`;
     }
-
-    if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
-      const notesParentBounding = element.closest('.js--courses-accord-content').getBoundingClientRect();
-      const locationDifference = rect.top - notesParentBounding.top;
-      const heightTooltip = noteText.offsetHeight;
-      if (heightTooltip >= locationDifference) {
-        noteText.style.top = 'calc(100% + .25rem)';
-        noteText.style.bottom = 'auto';
-      } else if (heightTooltip < locationDifference && windowHeight / 2 < topOffset) {
-        noteText.style.top = 'auto';
-        noteText.style.bottom = 'calc(100% + .25rem)';
+  } else {
+    if (windowWidth >= 600) {
+      if (windowWidth / 2 < leftOffset) {
+        noteText.style.left = 'auto';
+        noteText.style.right = '-.25rem';
       } else {
-        noteText.style.top = 'calc(100% + .25rem)';
-        noteText.style.bottom = 'auto';
+        noteText.style.left = '.25rem';
+        noteText.style.right = 'auto';
       }
     } else {
-      if (windowHeight / 2 > topOffset) {
-        noteText.style.top = 'calc(100% + .25rem)';
-        noteText.style.bottom = 'auto';
-      } else {
-        noteText.style.top = 'auto';
-        noteText.style.bottom = 'calc(100% + .25rem)';
-      }
+      noteText.style.inset = 'unset';
+      noteText.style.transform = `translateX(${-((rect.left - tooltipWidth / 2 + 7) - (windowWidth / 2 - tooltipWidth / 2))}px)`;
     }
-  };
-
-  if (isTouchDevice() || isIOS()) {
-    document.addEventListener('touchstart', (e) => {
-      const isNote = e.target.classList.contains('js--content-note');
-      const isNoteText = e.target.classList.contains('content-note__text') ||
-                         e.target.closest('.content-note__text');
-
-      if (isNoteText && !isNote) {
-        return; // клик по тултипу — не закрываем
-      }
-
-      if (isNote && e.target.classList.contains('active')) {
-        e.target.classList.remove('active');
-        e.target.querySelector('.content-note__text').classList.remove('active');
-        return;
-      }
-
-      if (!isNote) {
-        notes.forEach(item => {
-          item.classList.remove('active');
-          item.querySelector('.content-note__text').classList.remove('active');
-        });
-        return;
-      }
-
-      if (isNote) {
-        notes.forEach(item => {
-          item.classList.remove('active');
-          item.querySelector('.content-note__text').classList.remove('active');
-        });
-
-        e.target.classList.add('active');
-        const noteText = e.target.querySelector('.content-note__text');
-        noteText.classList.add('active');
-        positionTooltip(e.target);
-      }
-    });
-
-    // Закрытие при клике мимо
-    document.addEventListener('click', (e) => {
-      if (!e.target.classList.contains('js--content-note') &&
-          !e.target.closest('.content-note__text')) {
-        notes.forEach(item => {
-          item.classList.remove('active');
-          item.querySelector('.content-note__text').classList.remove('active');
-        });
-      }
-    });
   }
+
+  // === Вертикальное позиционирование ===
+  if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
+    const notesParentBounding = element.closest('.js--courses-accord-content').getBoundingClientRect();
+    const locationDifference = rect.top - notesParentBounding.top;
+    const heightTooltip = noteText.offsetHeight;
+    if (heightTooltip >= locationDifference) {
+      noteText.style.top = 'calc(100% + .25rem)';
+      noteText.style.bottom = 'auto';
+    } else if (heightTooltip < locationDifference && windowHeight / 2 < topOffset) {
+      noteText.style.top = 'auto';
+      noteText.style.bottom = 'calc(100% + .25rem)';
+    } else {
+      noteText.style.top = 'calc(100% + .25rem)';
+      noteText.style.bottom = 'auto';
+    }
+  } else {
+    if (windowHeight / 2 > topOffset) {
+      noteText.style.top = 'calc(100% + .25rem)';
+      noteText.style.bottom = 'auto';
+    } else {
+      noteText.style.top = 'auto';
+      noteText.style.bottom = 'calc(100% + .25rem)';
+    }
+  }
+};
