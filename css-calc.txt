@@ -1,5 +1,21 @@
 const positionTooltip = (element) => {
   const noteText = element.querySelector('.content-note__text');
+  const computed = getComputedStyle(noteText);
+
+  // === 🔍 Проверяем: если transform, left, top, right, bottom уже заданы — не позиционируем ===
+  const hasTransform = computed.transform && computed.transform !== 'none';
+  const hasLeft = computed.left !== 'auto';
+  const hasRight = computed.right !== 'auto';
+  const hasTop = computed.top !== 'auto';
+  const hasBottom = computed.bottom !== 'auto';
+
+  // Если хотя бы одно из позиционирующих свойств задано — не трогаем
+  if (hasTransform || hasLeft || hasRight || hasTop || hasBottom) {
+    // console.log('Позиционирование пропущено: уже задано в CSS/стилях');
+    return; // ❌ Не пересчитываем
+  }
+
+  // === ✅ Если дошли сюда — позиционируем как обычно ===
   const rect = element.getBoundingClientRect();
   const parent = element.parentElement;
   const parentPos = parent.getBoundingClientRect();
@@ -10,11 +26,11 @@ const positionTooltip = (element) => {
   const leftOffset = rect.left + rect.width / 2;
   const topOffset = rect.top + rect.height / 2;
 
-  // Сбросим transform, чтобы корректно измерить ширину
+  // Сбросим transform для измерения (на всякий случай)
   const originalTransform = noteText.style.transform;
   noteText.style.transform = 'none';
   const tooltipWidth = noteText.offsetWidth;
-  noteText.style.transform = originalTransform; // восстанавливаем
+  noteText.style.transform = originalTransform;
 
   // Очистим старые стили
   noteText.style.left = '';
@@ -22,7 +38,7 @@ const positionTooltip = (element) => {
   noteText.style.top = '';
   noteText.style.bottom = '';
   noteText.style.inset = '';
-  noteText.style.transform = ''; // очищаем, чтобы не накапливались
+  noteText.style.transform = '';
 
   // === Горизонтальное позиционирование ===
   if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
@@ -55,18 +71,20 @@ const positionTooltip = (element) => {
 
   // === Вертикальное позиционирование ===
   if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
-    const notesParentBounding = element.closest('.js--courses-accord-content').getBoundingClientRect();
-    const locationDifference = rect.top - notesParentBounding.top;
-    const heightTooltip = noteText.offsetHeight;
-    if (heightTooltip >= locationDifference) {
-      noteText.style.top = 'calc(100% + .25rem)';
-      noteText.style.bottom = 'auto';
-    } else if (heightTooltip < locationDifference && windowHeight / 2 < topOffset) {
-      noteText.style.top = 'auto';
-      noteText.style.bottom = 'calc(100% + .25rem)';
-    } else {
-      noteText.style.top = 'calc(100% + .25rem)';
-      noteText.style.bottom = 'auto';
+    const notesParentBounding = element.closest('.js--courses-accord-content')?.getBoundingClientRect();
+    if (notesParentBounding) {
+      const locationDifference = rect.top - notesParentBounding.top;
+      const heightTooltip = noteText.offsetHeight;
+      if (heightTooltip >= locationDifference) {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      } else if (heightTooltip < locationDifference && windowHeight / 2 < topOffset) {
+        noteText.style.top = 'auto';
+        noteText.style.bottom = 'calc(100% + .25rem)';
+      } else {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      }
     }
   } else {
     if (windowHeight / 2 > topOffset) {
