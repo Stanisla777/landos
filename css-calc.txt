@@ -1,55 +1,39 @@
-numberFormattingThousandths(maxValue, e) {
-      const el = e.currentTarget;
-      const prevValue = el.value;
-      const selectionStart = el.selectionStart;
+const isTouchDevice = () => {
+    // Стандартная проверка на touch-устройство
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    // Проверка на эмуляцию мобильного устройства в DevTools
+    const isDeviceToolbarActive = () => {
+      // Способ 1: Проверка userAgent на наличие эмуляции
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isEmulated = userAgent.includes('mobile') || 
+                         userAgent.includes('android') || 
+                         userAgent.includes('iphone') || 
+                         userAgent.includes('ipad');
+      
+      // Способ 2: Проверка размеров экрана и соотношения сторон
+      const isMobileSize = window.innerWidth <= 1024 && window.innerHeight <= 1024;
+      const isPortrait = window.innerHeight > window.innerWidth;
+      
+      // Способ 3: Проверка на наличие определенных свойств, которые появляются при эмуляции
+      const hasDeviceEmulation = navigator.platform === 'Linux armv8l' || 
+                                navigator.platform === 'Linux armv7l' ||
+                                (navigator.platform === 'Win32' && window.innerWidth <= 768);
+      
+      return (isEmulated && isMobileSize) || hasDeviceEmulation || 
+             (hasTouch && isMobileSize && isPortrait);
+    };
+    
+    return hasTouch || isDeviceToolbarActive();
+  };
 
-      // Сохраняем позицию до форматирования
-      let cursorPos = selectionStart;
+  // Функция для определения iOS устройств
+  const isIOS = () => {
+    return (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) || 
+           (navigator.userAgent.includes('Mac') && 'ontouchend' in document) ||
+           ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod']
+             .includes(navigator.platform);
+  };
 
-      // Удаляем всё, кроме цифр (сохраняем ВСЕ цифры, включая ведущие нули)
-      let digits = prevValue.replace(/\D/g, '');
-      if (!digits) {
-        this.rawInputValue = '';
-        el.value = '';
-        return;
-      }
-
-      // Проверка максимума - теперь работаем со строкой, а не числом
-      if (digits.length > String(maxValue).length) {
-        digits = String(maxValue);
-      } else {
-        // Сравниваем как строки, если длины равны
-        if (digits.length === String(maxValue).length && digits > String(maxValue)) {
-          digits = String(maxValue);
-        }
-      }
-
-      // Форматируем, сохраняя ведущие нули
-      // Разбиваем на группы по 3 цифры с конца
-      let formatted = '';
-      for (let i = digits.length - 1, j = 0; i >= 0; i--, j++) {
-        formatted = digits[i] + (j % 3 === 0 && j !== 0 ? ' ' : '') + formatted;
-      }
-
-      el.value = formatted.trim();
-      this.rawInputValue = digits;
-
-      // Восстанавливаем позицию курсора
-      this.$nextTick(() => {
-        // Считаем, сколько цифр было до курсора
-        const digitsBeforeCursor = prevValue.slice(0, cursorPos).replace(/\D/g, '').length;
-        
-        // Находим новую позицию курсора в отформатированной строке
-        let newCursorPos = 0;
-        let digitCount = 0;
-        
-        for (let i = 0; i < el.value.length && digitCount < digitsBeforeCursor; i++) {
-          if (/\d/.test(el.value[i])) {
-            digitCount++;
-          }
-          newCursorPos = i + 1;
-        }
-        
-        el.setSelectionRange(newCursorPos, newCursorPos);
-      });
-    },
+  // Основная проверка - используем touch события для touch устройств ИЛИ при эмуляции
+  if (isTouchDevice() || isIOS()) {
