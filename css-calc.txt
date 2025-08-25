@@ -1,44 +1,446 @@
-if (isNote) {
-  notes.forEach(item => {
-    item.classList.remove('active');
-    const text = item.querySelector('.content-note__text');
-    text.classList.remove('active');
-    text.classList.remove('up');
-    text.classList.remove('down');
-  });
+/* eslint-disable */
+import contentNote from '../../content-note';
+import catalogNew from "../../catalog-new";
+import eventBus from '../development-tools/eventBus.vue';
+import bodyLockMobileFilter from '../../redesign-site/body-lock-mobile-filter';
+import bodyUnlockMobileFilter from '../../redesign-site/body-unlock-mobile-filter';
+import Storage from '../development-tools/state.vue';
+import axios from 'axios';
 
-  const noteText = e.target.querySelector('.content-note__text');
-  const rect = e.target.getBoundingClientRect();
-  const windowHeight = window.innerHeight;
-  const topOffset = rect.top + rect.height / 2;
+export default {
+  props: {},
+  data() {
+    return {
+      isAnimatingHolidays: false,
 
-  // === 🔥 Сначала определяем направление (up/down) и добавляем классы ===
-  if (windowHeight / 2 > topOffset) {
-    noteText.classList.add('down');
-    noteText.classList.remove('up');
-  } else {
-    noteText.classList.add('up');
-    noteText.classList.remove('down');
-  }
+      flag_send_results: true,
+      captcha_id: null,
+      answer_code: null,
 
-  // === 🔥 Скрываем визуально, но делаем измеримым ===
-  noteText.style.visibility = 'hidden';
-  noteText.style.opacity = '0';
-  noteText.style.transition = 'none';
+      lastSentAnswers: null, // Для хранения последних отправленных данных
+      isSending: false,     // Флаг отправки запроса
 
-  // === 🔥 Показываем элемент (но невидимо) ===
-  e.target.classList.add('active');
-  noteText.classList.add('active');
+      // Дополнительные поля из твоего кода
+      mask_mail: { value: '' },
+      check_agree_advertisement: false,
+      description_after_sand_mail: '',
+    };
+  },
+  watch: {},
+  filters: {
+    format_decimal: (val) => {
+      if (val !== undefined && val !== null) {
+        return new Intl.NumberFormat("ru-RU").format(Math.abs(val.toFixed(2)));
+      }
+      return '';
+    },
+  },
+  created() {},
+  computed: {
+    answerLink() {
+      return Storage.getters.ANSWERSLINK;
+    },
+    can_share() {
+      return Storage.getters.CANSHARE;
+    },
+    calculatorId() {
+      return Storage.getters.CALCULATORID;
+    },
+    answersToSand() {
+      return Storage.getters.ANSWERSTOSEND;
+    },
+    answersId() {
+      return Storage.getters.ANSWERSID;
+    },
+  },
+  methods: {
+    formatMillions(value) {
+      const millions = value / 1000000;
+      const rounded = Math.ceil(millions * 100) / 100;
+      let formatted = rounded.toFixed(2).replace('.', ',');
+      if (formatted.endsWith(',00')) {
+        formatted = formatted.replace(',00', '');
+      }
+      return formatted;
+    },
+    formatMillionsFloor(value) {
+      const millions = value / 1000000;
+      const rounded = Math.floor(millions * 100) / 100;
+      let formatted = rounded.toFixed(2).replace('.', ',');
+      if (formatted.endsWith(',00')) {
+        formatted = formatted.replace(',00', '');
+      }
+      return formatted;
+    },
 
-  // === 🔥 Позиционируем — теперь знает, что класс up/down уже есть ===
-  positionTooltip(e.target);
+    openModal(el) {
+      const element = el.currentTarget;
+      const data = element.getAttribute('data-tooltip');
+      Storage.dispatch('ActionOpenModalStatus', true);
+      Storage.dispatch('ActionOpenModalTooltip', data);
+      this.AddClassBody();
+    },
 
-  // === 🔥 Показываем с анимацией ===
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      noteText.style.visibility = 'visible';
-      noteText.style.opacity = '1';
-      noteText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-    });
-  });
-}
+    closeTooltipMobile(el) {
+      const element = el.currentTarget;
+      const parent = element.closest('.js--tooltip-parent');
+      if (parent) {
+        parent.classList.remove('tooltip-active');
+        bodyUnlockMobileFilter(parent);
+      }
+    },
+
+    inpFocus(el) {
+      const element = el.currentTarget;
+      element.closest('.js--tex-deduc-input').classList.add('input-focus');
+    },
+
+    numberFormattingThousandths(maxValue, e) {
+      const el = e.currentTarget;
+      const prevValue = el.value;
+      const selectionStart = el.selectionStart;
+
+      let digits = prevValue.replace(/\D/g, '');
+      if (!digits) {
+        this.rawInputValue = '';
+        el.value = '';
+        return;
+      }
+
+      if (digits.length > String(maxValue).length) {
+        digits = String(maxValue);
+      } else if (digits.length === String(maxValue).length && digits > String(maxValue)) {
+        digits = String(maxValue);
+      }
+
+      let formatted = '';
+      for (let i = digits.length - 1, j = 0; i >= 0; i--, j++) {
+        formatted = digits[i] + (j % 3 === 0 && j !== 0 ? ' ' : '') + formatted;
+      }
+
+      el.value = formatted.trim();
+      this.rawInputValue = digits;
+
+      this.$nextTick(() => {
+        const digitsBeforeCursor = prevValue.slice(0, selectionStart).replace(/\D/g, '').length;
+        let newCursorPos = 0;
+        let digitCount = 0;
+        for (let i = 0; i < el.value.length && digitCount < digitsBeforeCursor; i++) {
+          if (/\d/.test(el.value[i])) digitCount++;
+          newCursorPos = i + 1;
+        }
+        el.setSelectionRange(newCursorPos, newCursorPos);
+      });
+    },
+
+    simplyNumber(count, e) {
+      const element = e.currentTarget;
+      const target = e.target;
+      const val = parseFloat(element.value.replace(/\s/g, ''));
+
+      if (e.inputType === "deleteContentBackward") {
+        target.selectionEnd = target.selectionStart;
+      }
+      if (element.value === 'не число') {
+        element.value = '';
+      }
+      if (element.value.length > 0 && element.value[0] === '0') {
+        element.value = '1' + element.value.slice(1);
+      }
+      if (element.value.replace(/\s/g, '') > count) {
+        element.value = count;
+      }
+      this.dataField = element.value;
+    },
+
+    AddClassBody() {
+      document.body.classList.add('body-modal');
+      document.body.classList.add('body-additional-class');
+      document.body.style.top = `-${window.scrollY}px`;
+      document.body.style.position = 'fixed';
+      document.ontouchmove = (e) => e.preventDefault();
+    },
+
+    RemoveClassBody() {
+      if (!document.body.classList.contains('body-modal-modals')) {
+        document.body.classList.remove('body-modal');
+        document.body.classList.remove('body-additional-class');
+      }
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    },
+
+    openTooltipMobile(el) {
+      const element = el.currentTarget;
+      const parent = element.closest('.js--tooltip-parent');
+      if (parent) {
+        parent.classList.add('tooltip-active');
+        bodyLockMobileFilter(parent);
+        if (this.can_share === 1 && this.flag_send_results === true) {
+          this.sendingResult('result');
+        }
+      }
+    },
+
+    // --- ОТПРАВКА РЕЗУЛЬТАТОВ ---
+
+    // Открытие модального окна "Отправить на email"
+    async openModalMail() {
+      try {
+        if (this.hasAnswersChanged()) {
+          await this.sendResults();
+        }
+        this.showModal();
+      } catch (error) {
+        console.error('Ошибка при открытии модального окна:', error);
+      }
+    },
+
+    showModal() {
+      Storage.dispatch('ActionOpenModalMailStatus', true);
+      this.AddClassBody();
+    },
+
+    // Обработчик клика на "Скопировать ссылку"
+    async handleCopyClick(event) {
+      const element = event.currentTarget;
+      try {
+        if (this.hasAnswersChanged()) {
+          await this.sendResults();
+        }
+        if (this.answerLink.link) {
+          this.copyLinkManually(this.answerLink.link, element);
+        }
+      } catch (error) {
+        console.error('Ошибка при копировании:', error);
+      }
+    },
+
+    // Обработчик клика на соцсети (VK, TG, WP)
+    async handleLinkClick(type) {
+      try {
+        if (this.hasAnswersChanged()) {
+          await this.sendResults();
+        }
+        const link = this.answerLink[type];
+        if (link) {
+          window.open(link, '_blank');
+        }
+      } catch (error) {
+        console.error('Ошибка при открытии ссылки:', error);
+      }
+    },
+
+    // Проверка, изменились ли данные
+    hasAnswersChanged() {
+      if (!this.lastSentAnswers) return true;
+      return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers);
+    },
+
+    // Отправка результатов
+    async sendResults() {
+      if (this.isSending) return;
+      this.isSending = true;
+
+      try {
+        const initialLink = this.answerLink?.link || null;
+
+        await this.sendingResult('result');
+        this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
+
+        // Ждём, пока ссылка обновится
+        await this.waitForAnswerLinkUpdate(initialLink);
+
+      } catch (error) {
+        console.error('Ошибка при отправке результатов:', error);
+        throw error;
+      } finally {
+        this.isSending = false;
+      }
+    },
+
+    // Ждём, пока answerLink.link изменится (не просто появится)
+    async waitForAnswerLinkUpdate(oldLink, timeout = 5000) {
+      const start = Date.now();
+      const checkInterval = 50;
+
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          const currentLink = this.answerLink?.link;
+          if (currentLink && currentLink !== oldLink) {
+            clearInterval(interval);
+            resolve();
+          } else if (Date.now() - start > timeout) {
+            clearInterval(interval);
+            reject(new Error('Таймаут ожидания обновления answerLink'));
+          }
+        }, checkInterval);
+      });
+    },
+
+    // Копирование ссылки
+    copyLinkManually(link, element) {
+      try {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(link).then(() => {
+            const p = element.querySelector('p');
+            if (p) {
+              p.textContent = 'Скопировано';
+              setTimeout(() => {
+                p.textContent = 'Скопировать ссылку';
+              }, 3000);
+            }
+          }).catch(err => {
+            console.warn('Clipboard write failed:', err);
+            this.fallbackCopy(link, element);
+          });
+        } else {
+          this.fallbackCopy(link, element);
+        }
+      } catch (err) {
+        this.fallbackCopy(link, element);
+      }
+    },
+
+    fallbackCopy(link, element) {
+      const textarea = document.createElement('textarea');
+      textarea.value = link;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      const p = element.querySelector('p');
+      if (p) {
+        p.textContent = 'Скопировано';
+        setTimeout(() => {
+          p.textContent = 'Скопировать ссылку';
+        }, 3000);
+      }
+    },
+
+    // Капча и отправка — БЕЗ ИЗМЕНЕНИЙ
+    sendingResult(flag) {
+      this.captchaInit(flag);
+      const recaptchaKey = typeof conf !== 'undefined' ? conf.smartcaptcha_key : null;
+      if (recaptchaKey) {
+        window.smartCaptcha.execute(this.captcha_id);
+      }
+    },
+
+    captchaInit(flag) {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (flag === 'result') {
+            this.sendingResultToApi(token);
+          } else if (flag === 'mail') {
+            this.sendingMailToApi(token);
+          }
+        },
+      });
+    },
+
+    sendingResultToApi(token) {
+      const data = {
+        calculatorId: this.calculatorId,
+        answers: this.answersToSand,
+        'smart-token': token,
+      };
+
+      return new Promise((resolve, reject) => {
+        axios({
+          method: 'post',
+          url: '/api/local/calculator/answers/',
+          headers: {
+            'Content-type': 'application/json; charset=UTF-8',
+            'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          },
+          data,
+        })
+          .then((res) => {
+            if (res.data.code === 200 && res.data.result) {
+              Storage.dispatch('ActionAnswerLink', res.data.result.answerLink);
+              Storage.dispatch('ActionAnswersId', res.data.result.answersId);
+            }
+            if (res.data.code !== 200 && res.data.description) {
+              Storage.dispatch('ActionDescriptionAfterSand', res.data.description);
+            }
+            if (res.data.code) {
+              this.answer_code = res.data.code;
+            }
+            resolve();
+          })
+          .catch((error) => {
+            if (error.response?.data?.description) {
+              Storage.dispatch('ActionDescriptionAfterSand', error.response.data.description);
+            }
+            console.error('Ошибка API:', error);
+            reject(error);
+          });
+      });
+    },
+
+    sendingMailToApi(token) {
+      const modal_main_content = this.$refs.dataModalMail?.querySelector('.js--modal-main-content');
+      const modal_success_content = this.$refs.dataModalMail?.querySelector('.js--modal-wr-success');
+      const modal_failed_content = this.$refs.dataModalMail?.querySelector('.js--modal-wr-failed');
+
+      const data = {
+        "userEmail": this.mask_mail.value,
+        "smart-token": token,
+        "answersId": this.answersId,
+        "agree": this.check_agree_advertisement
+      };
+
+      axios({
+        method: 'post',
+        url: '/api/local/calculator/answers/sendmail/',
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+        data
+      })
+        .then(() => {
+          modal_main_content?.classList.add('unactive');
+          modal_success_content?.classList.add('active');
+        })
+        .catch((error) => {
+          if (error.response?.data?.description) {
+            this.description_after_sand_mail = error.response.data.description;
+          }
+          console.error('Ошибка отправки письма:', error);
+          modal_main_content?.classList.add('unactive');
+          modal_failed_content?.classList.add('active');
+        });
+    },
+
+    mouseOutShare(el) {
+      // можно оставить пустым или удалить
+    },
+  },
+  mounted() {
+    contentNote();
+    catalogNew();
+  },
+};
+
+
+
+
+display: inline;
+    background-image: linear-gradient(#daff01, #daff01);
+    background-size: 100% 68%;
+    background-position: 0 62%;
+    background-repeat: no-repeat;
+    padding: 0.1em 3px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    background-color: transparent;
