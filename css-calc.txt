@@ -1,91 +1,612 @@
-async sendResults() {
-  if (this.isSending) return;
-  this.isSending = true;
+/* eslint-disable */
+import contentNote from '../../content-note';
+import catalogNew from "../../catalog-new";
+import eventBus from '../development-tools/eventBus.vue';
+import bodyLockMobileFilter from '../../redesign-site/body-lock-mobile-filter';
+import bodyUnlockMobileFilter from '../../redesign-site/body-unlock-mobile-filter';
+import Storage from '../development-tools/state.vue';
+import axios from 'axios';
+let count = 0;
+export default {
+  props: {
+  },
+  data() {
+    return {
+      isAnimatingHolidays:false,
+      //кнопка расчёт отправить
+      // answerLink:{"link":"link.ru","vk":'sss.ru', "tg":'dddd.ru', "wp":"rrr.ru"}, //приходит из ajax
+      // can_share:1, //приходит из ht
 
-  try {
-    // Получаем текущую ссылку (если answerLink или link не существует — null)
-    let initialLink = null;
-    if (this.answerLink && typeof this.answerLink.link !== 'undefined') {
-      initialLink = this.answerLink.link;
-    }
+      flag_send_results:true,
+      captcha_id:null,
+      answer_code:null,
 
-    await this.sendingResult('result');
-    this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
+      lastSentAnswers: null, // Для хранения последних отправленных данных
+      isSending: false,     // Флаг отправки запроса
+      pendingLink: null,      // Ссылка, которую нужно открыть после отправки
+      pendingAction: null, // 'copy' или null
 
-    // Ждём обновления ссылки
-    await this.waitForAnswerLinkUpdate(initialLink);
+      screenWidth : window.innerWidth,
+      screenHeight: window.innerHeight,
 
-  } catch (error) {
-    console.error('Ошибка при отправке результатов:', error);
-    throw error;
-  } finally {
-    this.isSending = false;
-  }
-}
 
-async waitForAnswerLinkUpdate(oldLink, timeout = 5000) {
-  const start = Date.now();
-  const checkInterval = 50;
+    };
+  },
+  watch: {
+    screenWidth() {
+      console.log(this.screenWidth);
+      if (this.screenWidth > 570 && document.body.classList.contains('body-modal')&& !document.body.classList.contains('js--open-modal')) {
+        this.RemoveClassBody()
+        const array_tooltip = document.querySelectorAll('.js--tooltip-parent')
+        for (let item of  array_tooltip) {
+          item.classList.remove('tooltip-active')
 
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      let currentLink = null;
+        }
+      }
+      else if (this.screenWidth <= 570) {
 
-      // Проверяем, существует ли answerLink и его поле link
-      if (this.answerLink && typeof this.answerLink.link !== 'undefined' && this.answerLink.link !== null) {
-        currentLink = this.answerLink.link;
+      }
+    },
+  },
+  updated(){
+
+
+
+  },
+  filters:{
+    format_decimal:(val) => {
+      if (val!==undefined && val!==null){
+        return new Intl.NumberFormat("ru-RU").format(Math.abs(val.toFixed(2)));
       }
 
-      // Если появилась новая ссылка (и она отличается от старой)
-      if (currentLink && currentLink !== oldLink) {
-        clearInterval(interval);
-        resolve();
+    },
+  },
+  created() {
+  },
+  methods:{
+
+    formatMillions(value) {
+      const millions = value / 1000000;
+
+      // Округляем вверх до 2 знаков после запятой
+      const rounded = Math.ceil(millions * 100) / 100;
+
+      // Форматируем с 2 знаками после запятой, заменя точку на запятую
+      let formatted = rounded.toFixed(2).replace('.', ',');
+
+      // Убираем лишние нули после запятой, если они есть
+      if (formatted.endsWith(',00')) {
+        formatted = formatted.replace(',00', '');
       }
 
-      // Таймаут
-      if (Date.now() - start > timeout) {
-        clearInterval(interval);
-        reject(new Error('Таймаут ожидания обновления answerLink'));
+      return formatted;
+    },
+    formatMillionsFloor(value) {
+      const millions = value / 1000000;
+
+      // Округляем вверх до 2 знаков после запятой
+      const rounded = Math.floor(millions * 100) / 100;
+
+      // Форматируем с 2 знаками после запятой, заменя точку на запятую
+      let formatted = rounded.toFixed(2).replace('.', ',');
+
+      // Убираем лишние нули после запятой, если они есть
+      if (formatted.endsWith(',00')) {
+        formatted = formatted.replace(',00', '');
       }
-    }, checkInterval);
-  });
-}
 
-async handleCopyClick(event) {
-  const element = event.currentTarget;
-  try {
-    if (this.hasAnswersChanged()) {
-      await this.sendResults();
-    }
+      return formatted;
+    },
 
-    // Проверяем answerLink.link классическим способом
-    if (this.answerLink && typeof this.answerLink.link !== 'undefined' && this.answerLink.link) {
-      this.copyLinkManually(this.answerLink.link, element);
-    }
-  } catch (error) {
-    console.error('Ошибка при копировании:', error);
-  }
-}
+    openModal(el){
+      const element = el.currentTarget
+      const data = element.getAttribute('data-tooltip')
+      Storage.dispatch('ActionOpenModalStatus',true)
+      Storage.dispatch('ActionOpenModalTooltip',data)
+      this.AddClassBody()
+    },
+    closeTooltipMobile(el){
+      const element = el.currentTarget;
+      const parent = element.closest('.js--tooltip-parent')
+      if (parent) {
+        parent.classList.remove('tooltip-active')
+        bodyUnlockMobileFilter(parent)
+      }
+    },
+    inpFocus(el){
+      const element = el.currentTarget;
+      // element.classList.add('active_inp')
+      element.closest('.js--tex-deduc-input').classList.add('input-focus')
+    },
+    numberFormattingThousandths(maxValue, e) {
+      const el = e.currentTarget;
+      const prevValue = el.value;
+      const selectionStart = el.selectionStart;
+
+      // Сохраняем позицию до форматирования
+      let cursorPos = selectionStart;
+
+      // Удаляем всё, кроме цифр (сохраняем ВСЕ цифры, включая ведущие нули)
+      let digits = prevValue.replace(/\D/g, '');
+      if (!digits) {
+        this.rawInputValue = '';
+        el.value = '';
+        return;
+      }
+
+      // Проверка максимума - теперь работаем со строкой, а не числом
+      if (digits.length > String(maxValue).length) {
+        digits = String(maxValue);
+      } else {
+        // Сравниваем как строки, если длины равны
+        if (digits.length === String(maxValue).length && digits > String(maxValue)) {
+          digits = String(maxValue);
+        }
+      }
+
+      // Форматируем, сохраняя ведущие нули
+      // Разбиваем на группы по 3 цифры с конца
+      let formatted = '';
+      for (let i = digits.length - 1, j = 0; i >= 0; i--, j++) {
+        formatted = digits[i] + (j % 3 === 0 && j !== 0 ? ' ' : '') + formatted;
+      }
+
+      el.value = formatted.trim();
+      this.rawInputValue = digits;
+
+      // Восстанавливаем позицию курсора
+      this.$nextTick(() => {
+        // Считаем, сколько цифр было до курсора
+        const digitsBeforeCursor = prevValue.slice(0, cursorPos).replace(/\D/g, '').length;
+
+        // Находим новую позицию курсора в отформатированной строке
+        let newCursorPos = 0;
+        let digitCount = 0;
+
+        for (let i = 0; i < el.value.length && digitCount < digitsBeforeCursor; i++) {
+          if (/\d/.test(el.value[i])) {
+            digitCount++;
+          }
+          newCursorPos = i + 1;
+        }
+
+        el.setSelectionRange(newCursorPos, newCursorPos);
+      });
+    },
+    simplyNumber(count,e) {
+      const element = e.currentTarget;
+      const target = e.target
+      let position = target.selectionStart;
+      const val = parseFloat(element.value.replace(/\s/g, ''))
+      // element.value = new Intl.NumberFormat("ru-RU").format(val);
+
+      if (e.inputType==="deleteContentBackward"){
+        target.selectionEnd = position;
+      }
+      if (element.value=='не число') {
+        element.value=''
+      }
+      if (element.value.length > 0 && element.value[0] === '0'){
+        element.value = '1' +  element.value.slice(1)
+      }
+
+      if (element.value.replace(/\s/g, '') > count){
+        element.value=count
+      }
+      // if (element.value.replace(/\s/g, '') < this.stgMin){
+      //   element.value=this.stgMin
+      // }
+      this.dataField=element.value
 
 
-async handleLinkClick(type) {
-  try {
-    if (this.hasAnswersChanged()) {
-      await this.sendResults();
-    }
+    },
+    AddClassBody() {
+      document.body.classList.add('body-modal');
+      document.body.classList.add('body-additional-class');
+      document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+      document.ontouchmove = (e) => {
+        e.preventDefault();
+      };
+    },
+    RemoveClassBody() {
+      if (!document.body.classList.contains('body-modal-modals')) {
+        document.body.classList.remove('body-modal');
+        document.body.classList.remove('body-additional-class');
+      }
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    },
 
-    let link = null;
-    if (this.answerLink && typeof this.answerLink[type] !== 'undefined' && this.answerLink[type]) {
-      link = this.answerLink[type];
-    }
 
-    if (link) {
-      window.open(link, '_blank');
-    }
-  } catch (error) {
-    console.error('Ошибка при открытии ссылки:', error);
-  }
-}
+    //поделиться с мобилки
+    openTooltipMobile(el){
+      const element = el.currentTarget;
+      const parent = element.closest('.js--tooltip-parent')
+      if (parent) {
+        parent.classList.add('tooltip-active')
+        bodyLockMobileFilter(parent);
+        //зачем я на клик тултипов и кнопки отправить расчёт повесил обращение к api не понимаю
+        // if (this.can_share===1 && this.flag_send_results===true) {
+        //   this.sendingResult('result');//для финальной отправки нужно это
+        //   // this.sendingResultToApi(888)//это не нужно
+        // }
+      }
+    },
+
+
+
+
+
+    //-------ОТПРАВКА-----------------------
+
+    //открытие модального окна
+    // Открытие модального окна "Отправить на email"
+    async openModalMail() {
+      try {
+        if (this.hasAnswersChanged()) {
+          await this.sendResults();
+        }
+        this.showModal();
+      } catch (error) {
+        console.error('Ошибка при открытии модального окна:', error);
+      }
+    },
+
+    showModal() {
+      Storage.dispatch('ActionOpenModalMailStatus', true);
+      this.AddClassBody();
+      document.body.classList.add('js--open-modal')
+    },
+
+    // Обработчик клика на соцсети (VK, TG, WP)
+    async handleLinkClick(type) {
+      try {
+        if (this.hasAnswersChanged()) {
+          await this.sendResults();
+        }
+
+        let link = null;
+        if (this.answerLink && typeof this.answerLink[type] !== 'undefined' && this.answerLink[type]) {
+          link = this.answerLink[type];
+        }
+
+        if (link) {
+          window.open(link, '_blank');
+        }
+      } catch (error) {
+        console.error('Ошибка при открытии ссылки:', error);
+      }
+    },
+
+    // Обработчик клика на копирование
+    // Обработчик клика на "Скопировать ссылку"
+    async handleCopyClick(event) {
+      const element = event.currentTarget;
+      try {
+        if (this.hasAnswersChanged()) {
+          await this.sendResults();
+        }
+
+        // Проверяем answerLink.link классическим способом
+        if (this.answerLink && typeof this.answerLink.link !== 'undefined' && this.answerLink.link) {
+          this.copyLinkManually(this.answerLink.link, element);
+        }
+      } catch (error) {
+        console.error('Ошибка при копировании:', error);
+      }
+    },
+
+    // Проверка, изменились ли данные
+    hasAnswersChanged() {
+      if (!this.lastSentAnswers) return true;
+      return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers);
+    },
+
+    // Отправка результатов
+    // Отправка результатов
+    async sendResults() {
+      if (this.isSending) return;
+      this.isSending = true;
+
+      try {
+        // Получаем текущую ссылку (если answerLink или link не существует — null)
+        let initialLink = null;
+        if (this.answerLink && typeof this.answerLink.link !== 'undefined') {
+          initialLink = this.answerLink.link;
+        }
+
+        await this.sendingResult('result');
+        this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
+
+        // Ждём обновления ссылки
+        await this.waitForAnswerLinkUpdate(initialLink);
+
+      } catch (error) {
+        console.error('Ошибка при отправке результатов:', error);
+        throw error;
+      } finally {
+        this.isSending = false;
+      }
+    },
+
+    async waitForAnswerLinkUpdate(oldLink, timeout = 5000) {
+      const start = Date.now();
+      const checkInterval = 50;
+
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          let currentLink = null;
+
+          // Проверяем, существует ли answerLink и его поле link
+          if (this.answerLink && typeof this.answerLink.link !== 'undefined' && this.answerLink.link !== null) {
+            currentLink = this.answerLink.link;
+          }
+
+          // Если появилась новая ссылка (и она отличается от старой)
+          if (currentLink && currentLink !== oldLink) {
+            clearInterval(interval);
+            resolve();
+          }
+
+          // Таймаут
+          if (Date.now() - start > timeout) {
+            clearInterval(interval);
+            reject(new Error('Таймаут ожидания обновления answerLink'));
+          }
+        }, checkInterval);
+      });
+    },
+
+    // Ждём, пока answerLink будет обновлён
+    async waitForAnswerLink(timeout = 5000) {
+      const start = Date.now();
+      const checkInterval = 100; // каждые 100мс проверяем
+
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          const link = this.answerLink;
+          if (link && Object.keys(link).length > 0 && link.link) {
+            clearInterval(interval);
+            resolve();
+          } else if (Date.now() - start > timeout) {
+            clearInterval(interval);
+            reject(new Error('Таймаут ожидания answerLink'));
+          }
+        }, checkInterval);
+      });
+    },
+
+    // Унифицированная функция копирования
+    copyLinkManually(link, element) {
+      try {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(link).then(() => {
+            const p = element.querySelector('p');
+            if (p) {
+              p.textContent = 'Скопировано';
+              setTimeout(() => {
+                p.textContent = 'Скопировать ссылку';
+              }, 3000);
+            }
+          }).catch(err => {
+            console.warn('Clipboard write failed:', err);
+            this.fallbackCopy(link, element);
+          });
+        } else {
+          this.fallbackCopy(link, element);
+        }
+      } catch (err) {
+        this.fallbackCopy(link, element);
+      }
+    },
+
+    // Резервный способ копирования
+    fallbackCopy(link, element) {
+      const textarea = document.createElement('textarea');
+      textarea.value = link;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      const p = element.querySelector('p');
+      if (p) {
+        p.textContent = 'Скопировано';
+        setTimeout(() => {
+          p.textContent = 'Скопировать ссылку';
+        }, 3000);
+      }
+    },
+
+    copyLink(event) {
+      const link = event.currentTarget.dataset.link;
+      const element = event.currentTarget;
+
+      try {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(link);
+          element.querySelector('p').textContent='Скопировано';
+          setTimeout(() => {
+            element.querySelector('p').textContent='Скопировать ссылку';
+          }, 3000);
+        } else {
+          throw new Error('not supported');
+        }
+      } catch (err) {
+        const textarea = document.createElement('textarea');
+        textarea.value = link;
+        textarea.style.position = 'fixed';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        console.log('Ошибка копирования:', err);
+      }
+    },
+
+    // Инициализация капчи
+    sendingResult(flag) {
+      this.captchaInit(flag);
+      const recaptchaKey = typeof conf !== 'undefined' ? conf.smartcaptcha_key : null;
+      if (recaptchaKey) {
+        window.smartCaptcha.execute(this.captcha_id);
+      }
+    },
+
+    captchaInit(flag) {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (flag === 'result') {
+            this.sendingResultToApi(token);
+          } else if (flag === 'mail') {
+            this.sendingMailToApi(token);
+          }
+        },
+      });
+    },
+
+    // Отправка данных в API
+    sendingResultToApi(token) {
+      const data = {
+        calculatorId: this.calculatorId,
+        answers: this.answersToSand,
+        'smart-token': token,
+      };
+
+      return new Promise((resolve, reject) => {
+        axios({
+          method: 'post',
+          url: '/api/local/calculator/answers/',
+          headers: {
+            'Content-type': 'application/json; charset=UTF-8',
+            'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          },
+          data,
+        })
+          .then((res) => {
+            if (res.data.code === 200 && res.data.result) {
+              // Сохраняем ссылки в Vuex
+              Storage.dispatch('ActionAnswerLink', res.data.result.answerLink);
+              Storage.dispatch('ActionAnswersId', res.data.result.answersId);
+            }
+            if (res.data.code!==200) {
+              if (res.data.description) {
+                Storage.dispatch('ActionDescriptionAfterSand', res.data.description);
+              }
+            }
+            if (res.data.code) {
+              this.answer_code = res.data.code;
+            }
+            resolve();
+          })
+          .catch((error) => {
+            if (error.response) {
+              if (error.response.data !== undefined) {
+                console.log(error.response);
+                Storage.dispatch('ActionDescriptionAfterSand', error.response.data.description);
+              }
+            }
+            console.log(error);
+            reject(error);
+          });
+      });
+    },
+
+    sendingMailToApi(token) {
+      const modal_main_content = this.$refs.dataModalMail.querySelector('.js--modal-main-content');
+      const modal_success_content = this.$refs.dataModalMail.querySelector('.js--modal-wr-success');
+      const modal_failed_content = this.$refs.dataModalMail.querySelector('.js--modal-wr-failed');
+      let data = {
+        "userEmail": this.mask_mail.value,
+        "smart-token": token,
+        "answersId": this.answersId,
+        "agree": this.check_agree_advertisement
+      };
+
+      axios({
+        method: 'post',
+        url: '/api/local/calculator/answers/sendmail/',
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+        data: data
+      })
+        .then((res) => {
+          if (modal_main_content) {
+            modal_main_content.classList.add('unactive');
+          }
+          if (modal_success_content) {
+            modal_success_content.classList.add('active');
+          }
+        })
+        .catch((error) => {
+          if (error.response.data !== undefined && error.response.data.description !== undefined) {
+            console.log(error.response);
+            this.description_after_sand_mail = error.response.data.description;
+          }
+          console.log(error);
+          if (modal_main_content) {
+            modal_main_content.classList.add('unactive');
+          }
+          if (modal_failed_content) {
+            modal_failed_content.classList.add('active');
+          }
+        });
+    },
+
+    mouseOutShare(el){
+      // const element = el.currentTarget;
+      // this.$refs.TooltipShare.style.display='none'
+    },
+
+    updateScreenWidth() {
+      this.screenWidth = window.innerWidth;
+      this.screenHeight = window.innerHeight;
+    },
+
+
+  },
+  mounted() {
+    contentNote();
+    catalogNew();
+    window.addEventListener('resize', this.updateScreenWidth);
+  },
+  computed:{
+    answerLink(){
+      return Storage.getters.ANSWERSLINK
+    },
+    can_share(){
+      return Storage.getters.CANSHARE
+    },
+    calculatorId(){
+      return Storage.getters.CALCULATORID
+    },
+    answersToSand(){
+      return Storage.getters.ANSWERSTOSEND
+    },
+    answersId(){
+      return Storage.getters.ANSWERSID
+    },
+
+
+
+
+  },
+};
+
+
+
+
+
+
 
 
 
@@ -103,4 +624,5 @@ display: inline;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
     background-color: transparent;
+
 
