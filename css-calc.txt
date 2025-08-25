@@ -1,14 +1,654 @@
-formatMillions(val) {
-  const millions = val / 1000000;
-  const fixed = millions.toFixed(1); // "5.0", "5.2"
-  return parseFloat(fixed).toString(); // убирает .0, если дробная часть 0
-},
+family-mortgage-calculator(
+                                        initial-payment="20",
+                                        max-tax-deduction="260000"
+                                        max-tax-deduction-interest="390000"
+                                        answers='{"loanAmount":"6000000","initialPayment":"5000000","bet":"8.2","loanTerm":"12"}'
 
-formatMillionsFloor(val) {
-  const result = Math.floor(val / 100000) / 10;
-  return parseFloat(result.toFixed(1)).toString();
+
+эмоунт
+
+<template lang="pug">
+  .calc-tax-deduc-new__container-block.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent
+    .calc-tax-deduc-new__row-title-main-container(
+      v-if="hasTooltipInfo && (tooltipSize === '' || tooltipSize === 'small')"
+    )
+      .calc-tax-deduc-new__row-title-container
+        p.calc-tax-deduc-new__row-title Стоимость недвижимости, ₽
+        span.content-note.desctop.content-note__center.js--content-note
+          span.content-note__text {{ tooltipInfo }}
+        span.content-note.mobile(@click="openTooltipMobile" v-if="tooltipInfo")
+      div(v-if="tooltipInfo")
+        .select__background.modal-special-background(@click="closeTooltipMobile")
+        .select-list__selection-window.modal-special-styles.js--openlist-body
+          .select-list__head
+            p Стоимость недвижимости, ₽
+            .select-list__head-close(@click="closeTooltipMobile")
+              svg(width="10" height="10" viewBox="0 0 10 10" fill="none")
+                path(d="M0.209 0.209C0.488 -0.07 0.94 -0.07 1.219 0.209L5 3.989L8.781 0.209C9.06 -0.07 9.512 -0.07 9.791 0.209C10.07 0.488 10.07 0.94 9.791 1.219L6.01 5L9.791 8.781C10.07 9.06 10.07 9.512 9.791 9.791C9.512 10.07 9.06 10.07 8.781 9.791L5 6.01L1.219 9.791C0.94 10.07 0.488 10.07 0.209 9.791C-0.07 9.512 -0.07 9.06 0.209 8.781L3.99 5L0.209 1.219C-0.07 0.94 -0.07 0.488 0.209 0.209Z", fill="#252628")
+          .select-list__wr-search.mor-rep-calculators__wr-search
+            p {{ tooltipInfo }}
+    .calc-tax-deduc-new__row-title-main-container(
+      v-else-if="hasTooltipInfo && tooltipSize === 'big'"
+    )
+      .calc-tax-deduc-new__row-title-container
+        p.calc-tax-deduc-new__row-title Стоимость недвижимости, ₽
+        .content-note(@click="openModal", :data-tooltip="tooltipName || ''")
+    .calc-tax-deduc-new__row-title-main-container(v-else)
+      .calc-tax-deduc-new__row-title-container
+        p.calc-tax-deduc-new__row-title Стоимость недвижимости, ₽
+    .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+      input(
+        type="text"
+        inputmode="numeric"
+        ref="realtyInput"
+        @input="onInput"
+        @blur="onBlur"
+        @paste="onPaste"
+      )
+      .range-input__slider(ref="mortgagePrice")
+    .calc-tax-deduc-new__wr-range
+      p {{ formatMillionsFloor(stgMin) }} млн
+      p {{ formatMillions((stgMin + stgMax) / 2) }} млн
+      p {{ formatMillions(stgMax) }} млн
+</template>
+
+<script>
+import noUiSlider from 'nouislider';
+import Storage from '../development-tools/state.vue';
+import numberFormatting from '../mixin/numberFormatting.js';
+
+export default {
+  name: 'v-credit-amount',
+  mixins: [numberFormatting],
+  data() {
+    return {
+      realtySlider: null,
+      dataField: '',
+      dataFieldForCalculation: 0,
+      stepApartment: 1,
+      stgMin: 625000,
+      stgMax: 60000000,
+      start: 6000000,
+      isTyping: false,
+      rawInputValue: ''
+    };
+  },
+  computed: {
+    transfer_tooltip() {
+      return Storage.getters.TRANSFERTOOLTIP || null;
+    },
+    tooltipData() {
+      return this.transfer_tooltip && this.transfer_tooltip['cost-property']
+        ? this.transfer_tooltip['cost-property']
+        : null;
+    },
+    hasTooltipInfo() {
+      const data = this.tooltipData;
+      return data && data.info && data.info !== '';
+    },
+    tooltipInfo() {
+      return this.tooltipData ? this.tooltipData.info : '';
+    },
+    tooltipSize() {
+      return this.tooltipData ? this.tooltipData.size : '';
+    },
+    tooltipName() {
+      return this.tooltipData ? this.tooltipData.name : '';
+    },
+    answers() {
+      return Storage.getters.ANSWERS || null;
+    }
+  },
+  methods: {
+    onInput(e) {
+      const el = e.target;
+      this.isTyping = true;
+      this.dataField = el.value;
+      this.rawInputValue = el.value.replace(/\D/g, '');
+      this.numberFormattingThousandths(this.stgMax, e);
+    },
+    onBlur(e) {
+      const el = e.target;
+      this.isTyping = false;
+      let value = parseInt(this.rawInputValue || el.value.replace(/\s/g, ''), 10) || this.stgMin;
+
+      if (value < this.stgMin) value = this.stgMin;
+      if (value > this.stgMax) value = this.stgMax;
+
+      el.value = new Intl.NumberFormat('ru-RU').format(value);
+      this.dataField = el.value;
+      this.dataFieldForCalculation = value;
+
+      this.realtySlider.set(value);
+      Storage.dispatch('ActionCostProperty', value);
+    },
+    onPaste(e) {
+      const data = (e.clipboardData || window.clipboardData).getData('text');
+      if (!/^\d+$/.test(data)) {
+        e.preventDefault();
+      }
+    },
+    initRealtySlider() {
+      this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
+        start: [this.start],
+        connect: 'lower',
+        step: this.stepApartment,
+        range: {
+          min: this.stgMin,
+          max: this.stgMax
+        }
+      });
+
+      this.realtySlider.on('update', (values, handle) => {
+        const value = Math.round(values[handle]);
+        this.$refs.realtyInput.value = new Intl.NumberFormat('ru-RU').format(value);
+        this.dataField = this.$refs.realtyInput.value;
+      });
+
+      this.realtySlider.on('set', (values, handle) => {
+        const value = Math.round(values[handle]);
+        this.dataFieldForCalculation = value;
+        Storage.dispatch('ActionCostProperty', value);
+      });
+
+      this.realtySlider.on('start', () => {
+        this.$refs.realtyInput.closest('.js--tex-deduc-input').classList.add('input-focus');
+      });
+
+      this.realtySlider.on('end', () => {
+        this.$refs.realtyInput.closest('.js--tex-deduc-input').classList.remove('input-focus');
+      });
+    },
+    formatMillions(val) {
+      return (val / 1000000).toFixed(0).replace('.',',');
+    },
+    formatMillionsFloor(val) {
+      return (Math.floor(val / 100000) / 10).toString().replace('.',',');
+    }
+  },
+  mounted() {
+    this.initRealtySlider();
+
+    if (this.answers) {
+      const val = parseInt(this.answers.loanAmount) || this.stgMin;
+      this.realtySlider.set(val);
+      Storage.dispatch('ActionCostProperty', val);
+    } else {
+      this.realtySlider.set(this.start);
+    }
+  },
+  watch: {
+    stgMax(newVal) {
+      if (this.realtySlider && this.realtySlider.updateOptions) {
+        this.realtySlider.updateOptions({
+          range: { min: this.stgMin, max: newVal }
+        });
+        const currentValue = parseInt(this.realtySlider.get());
+        if (currentValue > newVal) {
+          this.realtySlider.set(newVal);
+        }
+      }
+    }
+  },
+  beforeDestroy() {
+    if (this.realtySlider && this.realtySlider.destroy) {
+      this.realtySlider.destroy();
+    }
+  }
+};
+</script>
+
+
+инитиал
+
+<template lang="pug">
+  .calc-tax-deduc-new__container-block.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent
+    .calc-tax-deduc-new__row-title-main-container(
+      v-if="hasTooltipInfo && (tooltipSize === '' || tooltipSize === 'small')"
+    )
+      .calc-tax-deduc-new__row-title-container
+        p.calc-tax-deduc-new__row-title Первоначальный взнос, ₽
+        span.content-note.desctop.content-note__center.js--content-note
+          span.content-note__text {{ tooltipInfo }}
+        span.content-note.mobile(@click="openTooltipMobile" v-if="tooltipInfo")
+      div(v-if="tooltipInfo")
+        .select__background.modal-special-background(@click="closeTooltipMobile")
+        .select-list__selection-window.modal-special-styles.js--openlist-body
+          .select-list__head
+            p Первоначальный взнос, ₽
+            .select-list__head-close(@click="closeTooltipMobile")
+              svg(width="10" height="10" viewBox="0 0 10 10" fill="none")
+                path(d="M0.209 0.209C0.488 -0.07 0.94 -0.07 1.219 0.209L5 3.989L8.781 0.209C9.06 -0.07 9.512 -0.07 9.791 0.209C10.07 0.488 10.07 0.94 9.791 1.219L6.01 5L9.791 8.781C10.07 9.06 10.07 9.512 9.791 9.791C9.512 10.07 9.06 10.07 8.781 9.791L5 6.01L1.219 9.791C0.94 10.07 0.488 10.07 0.209 9.791C-0.07 9.512 -0.07 9.06 0.209 8.781L3.99 5L0.209 1.219C-0.07 0.94 -0.07 0.488 0.209 0.209Z", fill="#252628")
+          .select-list__wr-search.mor-rep-calculators__wr-search
+            p {{ tooltipInfo }}
+    .calc-tax-deduc-new__row-title-main-container(
+      v-else-if="hasTooltipInfo && tooltipSize === 'big'"
+    )
+      .calc-tax-deduc-new__row-title-container
+        p.calc-tax-deduc-new__row-title Первоначальный взнос, ₽
+        .content-note(@click="openModal", :data-tooltip="tooltipName || ''")
+    .calc-tax-deduc-new__row-title-main-container(v-else)
+      .calc-tax-deduc-new__row-title-container
+        p.calc-tax-deduc-new__row-title Первоначальный взнос, ₽
+    .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+      input(
+        type="text"
+        inputmode="numeric"
+        ref="realtyInputInitialPayment"
+        @input="onInput"
+        @blur="onBlur"
+        @focus="onFocus"
+        @paste="onPaste"
+      )
+      .range-input__slider(ref="mortgageInitialPayment" @click="onSliderClick")
+    .calc-tax-deduc-new__wr-range
+      p {{ formatMillionsFloor(stgMin) }} млн
+      p {{ formatMillions((stgMin + stgMax) / 2) }} млн
+      p {{ formatMillions(stgMax) }} млн
+</template>
+
+<script>
+import noUiSlider from 'nouislider';
+import Storage from '../development-tools/state.vue';
+import numberFormatting from '../mixin/numberFormatting.js';
+
+export default {
+  name: 'v-initial-payment',
+  mixins: [numberFormatting],
+  data() {
+    return {
+      realtySlider: null,
+      dataField: '',
+      dataFieldForCalculation: 0,
+      stepApartment: 1,
+      input_salary: false,
+      start: 6000000,
+      isTyping: false
+    };
+  },
+  computed: {
+    transfer_parametr() {
+      return Storage.getters.TRANSFERPARAMETR || {};
+    },
+    costProperty() {
+      return Storage.getters.COSTPROPERTY || 6000000;
+    },
+    stgMin() {
+      return Math.floor(this.costProperty * 0.2); // 20% от стоимости
+    },
+    stgMax() {
+      return this.costProperty - 1;
+    },
+    initial_payment_from_cost() {
+      return Storage.getters.INITIALPAYMENTFROMCOST || this.stgMin;
+    },
+    transfer_tooltip() {
+      return Storage.getters.TRANSFERTOOLTIP || null;
+    },
+    tooltipData() {
+      return this.transfer_tooltip && this.transfer_tooltip['initial-payment']
+        ? this.transfer_tooltip['initial-payment']
+        : null;
+    },
+    hasTooltipInfo() {
+      const data = this.tooltipData;
+      return data && data.info && data.info !== '';
+    },
+    tooltipInfo() {
+      return this.tooltipData ? this.tooltipData.info : '';
+    },
+    tooltipSize() {
+      return this.tooltipData ? this.tooltipData.size : '';
+    },
+    tooltipName() {
+      return this.tooltipData ? this.tooltipData.name : '';
+    },
+    answers() {
+      return Storage.getters.ANSWERS || null;
+    }
+  },
+  methods: {
+    onSliderClick() {
+      Storage.dispatch('ActionInitialPaymentIsChanged', false);
+    },
+    onInput(e) {
+      const el = e.target;
+      this.isTyping = true;
+      this.dataField = el.value;
+      this.rawInputValue = el.value.replace(/\D/g, '');
+      this.numberFormattingThousandths(this.stgMax, e);
+
+      // Проверяем, достаточно ли взнос (≥20%)
+      const currentValue = parseInt(this.rawInputValue || '0', 10);
+      const minRequired = this.stgMin; // stgMin уже содержит 20% от стоимости
+
+      if (currentValue >= minRequired) {
+        // Если взнос достаточный - сразу обновляем состояние
+        this.updateValue(currentValue);
+      }
+      // Если взнос недостаточный - ждём blur
+    },
+
+    onBlur(e) {
+      const el = e.target;
+      this.isTyping = false;
+      let value = parseInt(this.rawInputValue || el.value.replace(/\s/g, ''), 10) || this.stgMin;
+
+      if (value < this.stgMin) value = this.stgMin;
+      if (value > this.stgMax) value = this.stgMax;
+
+      el.value = new Intl.NumberFormat('ru-RU').format(value);
+      this.dataField = el.value;
+      this.dataFieldForCalculation = value;
+
+      // Всегда обновляем при blur, даже если значение <20%
+      this.updateValue(value);
+    },
+
+    // Вынес обновление состояния в отдельный метод
+    updateValue(value) {
+      this.realtySlider.set(value);
+      Storage.dispatch('ActionInitialPayment', value);
+      Storage.dispatch('ActionInitialPaymentIsChanged', false);
+    },
+    onFocus(e) {
+
+    },
+    onPaste(e) {
+      const data = (e.clipboardData || window.clipboardData).getData('text');
+      if (!/^\d+$/.test(data)) {
+        e.preventDefault();
+      }
+    },
+    initRealtySlider() {
+      this.realtySlider = noUiSlider.create(this.$refs.mortgageInitialPayment, {
+        start: [this.initial_payment_from_cost],
+        connect: 'lower',
+        step: this.stepApartment,
+        range: {
+          min: this.stgMin,
+          max: this.stgMax
+        }
+      });
+
+      this.realtySlider.on('update', (values, handle) => {
+        const value = Math.round(values[handle]);
+        this.$refs.realtyInputInitialPayment.value = new Intl.NumberFormat('ru-RU').format(value);
+        this.dataField = this.$refs.realtyInputInitialPayment.value;
+      });
+
+      this.realtySlider.on('set', (values, handle) => {
+        const value = Math.round(values[handle]);
+        this.dataFieldForCalculation = value;
+        Storage.dispatch('ActionInitialPayment', value);
+        Storage.dispatch('ActionInitialPaymentIsChanged', false);
+      });
+
+      this.realtySlider.on('start', () => {
+        this.$refs.realtyInputInitialPayment.closest('.js--tex-deduc-input').classList.add('input-focus');
+      });
+
+      this.realtySlider.on('end', () => {
+        this.$refs.realtyInputInitialPayment.closest('.js--tex-deduc-input').classList.remove('input-focus');
+      });
+    },
+    formatMillions(val) {
+      const millions = val / 1000000;
+      const fixed = millions.toFixed(1); // "5.0", "5.2"
+      return parseFloat(fixed).toString(); // убирает .0, если дробная часть 0
+    },
+
+    formatMillionsFloor(val) {
+      const result = Math.floor(val / 100000) / 10;
+      return parseFloat(result.toFixed(1)).toString();
+    }
+  },
+  mounted() {
+    this.initRealtySlider();
+
+    if (this.answers) {
+      const val = parseInt(this.answers.initialPayment) || this.stgMin;
+      this.realtySlider.set(val);
+      Storage.dispatch('ActionInitialPayment', val);
+      Storage.dispatch('ActionInitialPaymentIsChanged', false);
+    } else {
+      this.realtySlider.set(this.initial_payment_from_cost);
+    }
+  },
+  watch: {
+    initial_payment_from_cost(newVal) {
+      if (!this.isTyping) {
+        this.realtySlider.set(newVal);
+      }
+    },
+    stgMax(newVal) {
+      if (this.realtySlider && this.realtySlider.updateOptions) {
+        this.realtySlider.updateOptions({
+          range: { min: this.stgMin, max: newVal }
+        });
+        const currentValue = parseInt(this.realtySlider.get());
+        if (currentValue > newVal) {
+          this.realtySlider.set(newVal);
+        }
+      }
+    }
+  },
+  beforeDestroy() {
+    if (this.realtySlider && this.realtySlider.destroy) {
+      this.realtySlider.destroy();
+    }
+  }
+};
+</script>
+
+
+state
+
+<script>
+import Vue from 'vue';
+import Vuex from 'vuex';
+
+Vue.use(Vuex);
+
+let obj_month =["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь","январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"]
+function calculateAnnuity(P, r ,n){
+  if (r ===  0) return P /n;
+  return (P * r) / (1 - Math.pow(1 + r, -n));
 }
 
+function calculateMortgageSheduleFirst(
+  loanAmount,
+  annualInterestRate,
+  initialTermMonths,
+  startDate,
+  prepayments = []
+) {
+
+  // Добавляем проверки входных параметров
+  if (!loanAmount || loanAmount <= 0 ||
+    !annualInterestRate || annualInterestRate < 0 ||
+    !initialTermMonths || initialTermMonths <= 0 ||
+    !startDate) {
+    return [];
+  }
+
+
+  const montlyRate = annualInterestRate /12 /100;
+  let currentBalance = loanAmount;
+  let currentPayment = calculateAnnuity(loanAmount, montlyRate, initialTermMonths);
+  let remainingTerm = initialTermMonths;
+  const shedule = [];
+
+  const startDateNew = startDate.replace(/-(\d)$/, '-0$1')
+  const [year,month] = startDateNew.split('-').map(Number)
+  const currentDate = new Date(year, month - 1)
+  currentDate.setMonth(currentDate.getMonth() +1);
+
+
+  // const currentDate = new Date(startDate);
+  // currentDate.setMonth(currentDate.getMonth() +1);
+
+  while (currentBalance > 0 && remainingTerm > 0) {
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    const interest = currentBalance * montlyRate;
+    let principal = currentPayment - interest;
+    let totalPayment = principal + interest;
+    if (principal > currentBalance) {
+      principal = currentBalance;
+      totalPayment = principal + interest
+    }
+    const remainingBeforePrepayments = currentBalance - principal;
+    const sheduleEntry = {
+      month: currentMonth,
+      year: currentYear,
+      nameMonth:obj_month[currentMonth - 1],
+      payment: totalPayment,
+      principal: principal,
+      interest: interest,
+      remainingBalance: remainingBeforePrepayments,
+      prepayments: []
+    };
+    currentBalance = remainingBeforePrepayments;
+    shedule.push(sheduleEntry)
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    remainingTerm--
+  }
+  return shedule
+}
+function payAllInterest(shedule) {
+  return shedule.reduce((sum, item) => sum + item.interest,0)
+}
+
+export default new Vuex.Store({
+  state:{
+    //новое
+    transfer_parametr:null, //параметры, которые приходят из атрибутов html
+    transfer_tooltip:null, //все тултипы
+    calculating_initial_payment_cost:true, //если true то первоначальный взнос может меняться, когда меняется стоимость, если false то при изменении стоимости первоначальный взнос меняться не будет
+    initial_payment_from_cost:0, //первоначальный взнос рассчитанный от стоимости недвижимости умноженное на 0,2
+    cost_property:0, //стоимость недвижимости
+    initial_payment:0, //первоначальный взнос непосредственно когда меняется соответствующее поле
+    loanAmount:0, //первоначальная сумма кредита (стоимость недвижимости - первоначальный взнос)
+    recalculation_initial_payment:false, //От флага зависит делать перерасчёт первоначального взноса или нет
+    annualInterestRate:0.1, //процентная ставка ипотеки
+    loanTerm:0, //срок кредита
+    modal_tooltip_attribute_data:null, //значение дата модалки, коорую открываем, чтобы определить, какой контент подставлять
+    modal_tooltip_status:false, //true - модалка с тултипами открывается, false - модалка закрывается
+    modal_mail_send_status:false, //true - модалка с отправкой почты открывается, false - модалка закрывается
+    dateLoanReceipt:[], //дата начала кредита = равно текущая дата в виде массива [7,2025]
+
+    startMonth:null, //месяц взятия кредита
+    startYear:0,//год взятия кредита
+    startMortage:'',
+    startMortageDiff:'',
+    min_date_mobile:`${new Date().getFullYear() - 30}-01-01`, //для календаря дата оформления кредита, коорый находится в графике платежей в мобилке
+    shedule:[], // график платежей, который будет формироваться без досрочек и ипотечных каникул
+    amount_taxes_paid:0, // сумма уплаченных налогов
+    debt_interest:0, // основной долг + проценты
+    tax_deduction_property:0, //имущественный вычет
+    tax_deduction_interest:0, //вычет по процентам
+    total_tax_deduction:0, // налоговый вычет имущественный вычет + вычет по процентам
+    required_income:0, //необходимый налог
+
+    answers:null, //если расчётами делятся другие пользователи
+    answers_to_send: {}, //то, что собираю для поделиться
+    answers_link:{},//ссылки на соцсети и страницу, когда ей делятся
+    can_share:0,//можно ли делиться
+    calculator_id:0,//калькулятор Id
+    answers_id:null,//вопрос Id
+    description_after_sand:null,//описание после отправки
+    answers_expired:0,//истёк или нет срок хранения данных калькулятора
+
+
+
+  },
+  getters:{
+    //новое
+    TRANSFERPARAMETR(state){
+      return state.transfer_parametr
+    },
+    TRANSFERTOOLTIP(state){
+      return state.transfer_tooltip
+    },
+
+    INITIALPAYMENTFROMCOST(state){
+      return state.initial_payment_from_cost
+    },
+
+    INITIALPAYMENT(state){
+      return state.initial_payment
+    },
+
+    CALCULATINGINITIALPAYMENTCOST(state){
+      return state.calculating_initial_payment_cost
+    },
+    RECALCULATIONINITIALPAYMENT(state){
+      return state.recalculation_initial_payment
+    },
+    TIMECREDIT(state){
+      return state.loanTerm
+    },
+    MODALTOOLTIPATTRIBUTEDATA(state){
+      return state.modal_tooltip_attribute_data
+    },
+    MODALTOOLTIPSTATUS(state){
+      return state.modal_tooltip_status
+    },
+    MODALMAILSENDSTATUS(state){
+      return state.modal_mail_send_status
+    },
+
+
+    LOANAMOUNT(state){
+      return state.loanAmount
+    },
+    ANNUALINTERESTRATE(state){
+      return state.annualInterestRate
+    },
+
+    SHEDULE(state){
+      return state.shedule
+    },
+    DEBTINTEREST(state){
+      return state.debt_interest
+    },
+    TOTALTAXDEDUCTION(state){
+      return state.total_tax_deduction
+    },
+    REQUIREDINCOME(state){
+      return state.required_income
+    },
+    MINDATEMOBILE(state){
+      return state.min_date_mobile
+    },
+    ANSWERS(state){
+      return state.answers
+    },
+    ANSWERSTOSEND(state){
+      return state.answers_to_send
+    },
+    ANSWERSLINK(state){
+      return state.answers_link
+    },
+    CANSHARE(state){
+      return state.can_share
+    },
+    CALCULATORID(state){
+      return state.calculator_id
+    },
+    ANSWERSID(state){
+      return state.answers_id
+    },
+    DESCRIPTIONAFTERSAND(state){
+      return state.description_after_sand
+    },
+    COSTPROPERTY(state){
+      return state.cost_property
+    },
+    ANSWERSEXPIRED(state){
+      return state.answers_expired
+    },
 
 
 
@@ -22,15 +662,371 @@ formatMillionsFloor(val) {
 
 
 
-display: inline;
-    background-image: linear-gradient(#daff01, #daff01);
-    background-size: 100% 68%;
-    background-position: 0 62%;
-    background-repeat: no-repeat;
-    padding: 0.1em 3px;
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
-    background-color: transparent;
+
+
+
+
+  },
+
+  mutations:{
+    //новое
+
+    mutationTransferParametr(state,received_perem){
+      state.transfer_parametr = received_perem
+    },
+
+    mutationTransferTooltip(state,received_perem){
+      state.transfer_tooltip = received_perem
+    },
+
+
+
+    mutationCostPropertyForInitialPayment(state,received_perem){
+      state.initial_payment_from_cost = (received_perem * (state.transfer_parametr.initial_payment_perc / 100)).toFixed(0)
+    },
+
+    mutationCostProperty(state, received_perem) {
+      state.cost_property = received_perem;
+
+      // Проверяем, нужно ли пересчитывать первоначальный взнос
+      const shouldRecalculate = parseInt(state.initial_payment) < parseInt(state.initial_payment_from_cost) ||
+        parseInt(state.initial_payment) >= parseInt(state.cost_property);
+
+      state.recalculation_initial_payment = shouldRecalculate;
+
+      // Если пересчёт не нужен, обновляем loanAmount
+      if (!shouldRecalculate) {
+        setTimeout(()=>{
+          state.loanAmount = parseInt(state.cost_property) - parseInt(state.initial_payment);
+        },500)
+
+      }
+    },
+    mutationInitialPayment(state,received_perem){
+      state.initial_payment = received_perem
+      if (parseInt(state.initial_payment) < parseInt(state.initial_payment_from_cost)  || parseInt(state.initial_payment)>=parseInt(state.cost_property)) {
+        state.recalculation_initial_payment = true
+      }
+      else {
+        state.recalculation_initial_payment = false
+      }
+      setTimeout(()=>{
+        state.loanAmount = parseInt(state.cost_property) - parseInt(state.initial_payment) // рассчитал сумму кредита
+      },500)
+
+    },
+
+    mutationInitialPaymentIsChanged(state,received_perem){
+      state.calculating_initial_payment_cost = received_perem
+    },
+
+    mutationInterestRate(state,received_perem){
+      state.annualInterestRate = received_perem
+    },
+    mutationTimeCredit(state,received_perem){
+      state.loanTerm = received_perem
+    },
+    mutationOpenModalStatus(state,received_perem){
+      state.modal_tooltip_status = received_perem
+    },
+    mutationOpenModalMailStatus(state,received_perem){
+      state.modal_mail_send_status = received_perem
+    },
+
+    mutationOpenModalTooltip(state,received_perem){
+      state.modal_tooltip_attribute_data = received_perem
+    },
+    mutationDateBeginCredit(state,received_perem){
+      state.dateLoanReceipt = received_perem
+      state.startMonth=received_perem[0] + 1
+      state.startYear=parseInt(received_perem[1])
+      state.startMortage = `${received_perem[1]}-${received_perem[0]+1}`
+      state.startMortageDiff = {month:state.startMonth +1, year:state.startYear}
+      state.min_date_mobile = `${received_perem[1]}-${received_perem[0]}`
+    },
+    mutationAnswers(state,received_perem){
+      state.answers = received_perem
+    },
+    mutationAnswerLink(state,received_perem){
+      state.answers_link = received_perem
+
+    },
+    mutationCanShare(state,received_perem){
+      state.can_share = received_perem
+    },
+    mutationCalculatorId(state,received_perem){
+      state.calculator_id = received_perem
+    },
+    mutationAnswersId(state,received_perem){
+      state.answers_id = received_perem
+    },
+    mutationDescriptionAfterSand(state,received_perem){
+      state.description_after_sand = received_perem
+    },
+    mutationAnswersExpired(state,received_perem){
+      state.answers_expired = received_perem
+    },
+
+
+
+
+
+
+
+
+    //итоговые расчёты
+    // mutationTotalCalculate(state){
+    //   state.shedule = calculateMortgageSheduleFirst(
+    //     state.loanAmount,state.annualInterestRate,state.loanTerm,state.startMortage,state.array_early_repayment
+    //   )
+    //   //сумма уплаченных налогов
+    //   state.amount_taxes_paid = payAllInterest(state.shedule)
+    //   //считаю основной долг + проценты уплаченные
+    //   state.debt_interest = state.amount_taxes_paid + state.loanAmount
+    //
+    //   //считаю налоговый вычет
+    //   state.tax_deduction_property = state.loanAmount * 0.13
+    //   if (state.tax_deduction_property > state.transfer_parametr.max_tax_deduction_property) {
+    //     state.tax_deduction_property = state.transfer_parametr.max_tax_deduction_property
+    //   }
+    //
+    //   state.tax_deduction_interest = state.amount_taxes_paid * 0.13
+    //   if (state.tax_deduction_interest > state.transfer_parametr.max_tax_deduction_interest) {
+    //     state.tax_deduction_interest =  state.transfer_parametr.max_tax_deduction_interest
+    //   }
+    //
+    //   state.total_tax_deduction = state.tax_deduction_property + state.tax_deduction_interest
+    //
+    //   //считаю необходимый доход
+    //   state.required_income = state.shedule[0].payment / 0.5
+    //
+    // }
+
+
+    mutationTotalCalculate(state) {
+      // Проверяем, что все необходимые параметры валидны
+      if (!state.loanAmount || !state.annualInterestRate || !state.loanTerm || !state.startMortage) {
+        return;
+      }
+      // Проверяем, что loanAmount положительный
+      if (state.loanAmount <= 0) {
+        return;
+      }
+      // Проверяем, что срок кредита положительный
+      if (state.loanTerm <= 0) {
+        return;
+      }
+
+      state.shedule = calculateMortgageSheduleFirst(
+        state.loanAmount,
+        state.annualInterestRate,
+        state.loanTerm,
+        state.startMortage,
+        state.array_early_repayment
+      );
+
+      // Проверяем, что график платежей не пустой
+      if (!state.shedule.length) {
+        return;
+      }
+
+      //сумма уплаченных налогов
+      state.amount_taxes_paid = payAllInterest(state.shedule);
+      //считаю основной долг + проценты уплаченные
+      state.debt_interest = state.amount_taxes_paid + state.loanAmount;
+
+      //считаю налоговый вычет
+      state.tax_deduction_property = state.loanAmount * 0.13;
+      if (state.tax_deduction_property > state.transfer_parametr.max_tax_deduction_property) {
+        state.tax_deduction_property = state.transfer_parametr.max_tax_deduction_property;
+      }
+
+      state.tax_deduction_interest = state.amount_taxes_paid * 0.13;
+      if (state.tax_deduction_interest > state.transfer_parametr.max_tax_deduction_interest) {
+        state.tax_deduction_interest = state.transfer_parametr.max_tax_deduction_interest;
+      }
+
+      state.total_tax_deduction = state.tax_deduction_property + state.tax_deduction_interest;
+
+      //считаю необходимый доход
+      state.required_income = state.shedule[0].payment / 0.5;
+    },
+    mutationCollectAnswer(state) {
+      Vue.set(state.answers_to_send,'loanAmount',state.cost_property)
+      Vue.set(state.answers_to_send,'initialPayment',state.initial_payment)
+      Vue.set(state.answers_to_send,'bet',state.annualInterestRate)
+      Vue.set(state.answers_to_send,'loanTerm',state.loanTerm)
+    }
+
+
+  },
+  actions:{
+    //новое
+
+    //для расчёта первоначального взноса, когда меняется стоимость недвижимости - это первый мутатион, второй - это приходит стоимость недвижимости
+    ActionTransferParametr({commit,state,dispatch},param){
+      commit('mutationTransferParametr',param)
+    },
+    //получаю все тултипы
+    ActionTransferTooltip({commit,state,dispatch},param){
+      commit('mutationTransferTooltip',param)
+    },
+
+
+
+    //для расчёта первоначального взноса, когда меняется стоимость недвижимости - это первый мутатион, второй - это приходит стоимость недвижимости
+    ActionCostProperty({commit,state,dispatch},param){
+      commit('mutationCostPropertyForInitialPayment',param)
+      commit('mutationCostProperty',param)
+    },
+
+    //меняется первоначальный взнос непосредственно в поле
+    ActionInitialPayment({commit,state,dispatch},param){
+      commit('mutationInitialPayment',param)
+    },
+
+    //когда первоначальный взнос меняется пользователем и calculating_initial_payment_cost ставлю флаг false, чтобы он не менялся когда меняется стоимость жилья
+    ActionInitialPaymentIsChanged({commit,state,dispatch},param){
+      commit('mutationInitialPaymentIsChanged',param)
+    },
+
+    //процентная ставка
+    ActionInterestRate({commit,state,dispatch},param){
+      commit('mutationInterestRate',param)
+    },
+
+    //срок кредита в месяцах
+    ActionTimeCredit({commit,state,dispatch},param){
+      commit('mutationTimeCredit',param)
+    },
+
+    //открыть или закрыть модалку с тултипами(true или false)
+    ActionOpenModalStatus({commit,state,dispatch},param){
+      commit('mutationOpenModalStatus',param)
+    },
+    //открыть или закрыть модалку с отправкой почты(true или false)
+    ActionOpenModalMailStatus({commit,state,dispatch},param){
+      commit('mutationOpenModalMailStatus',param)
+    },
+
+    //открытие модального онка для тултипов, где много текста
+    ActionOpenModalTooltip({commit,state,dispatch},param){
+      commit('mutationOpenModalTooltip',param)
+    },
+    //открытие модального онка для тултипов, где много текста
+    ActionDateBeginCredit({commit,state,dispatch},param){
+      commit('mutationDateBeginCredit',param)
+    },
+    //когда расчётами делятся другие пользователи
+    ActionAnswers({commit,state,dispatch},param){
+      commit('mutationAnswers',param)
+    },
+    //ссылки на соцсети и страницу, когда ей делятся
+    ActionAnswerLink({commit,state,dispatch},param){
+      commit('mutationAnswerLink',param)
+    },
+    //можно ли делиться
+    ActionCanShare({commit,state,dispatch},param){
+      commit('mutationCanShare',param)
+    },
+    //калькулятор Id
+    ActionCalculatorId({commit,state,dispatch},param){
+      commit('mutationCalculatorId',param)
+    },
+    //калькулятор Id
+    ActionAnswersId({commit,state,dispatch},param){
+      commit('mutationAnswersId',param)
+    },
+    //описание после отправки
+    ActionDescriptionAfterSand({commit,state,dispatch},param){
+      commit('mutationDescriptionAfterSand',param)
+    },
+    //истёк или нет срок хранения данных калькулятора
+    ActionAnswersExpired({commit,state,dispatch},param){
+      commit('mutationAnswersExpired',param)
+    },
+
+
+
+
+
+
+
+
+
+  },
+  // plugins: [
+  //   store => {
+  //     store.watch(
+  //       state => [state.loanAmount, state.annualInterestRate, state.loanTerm],
+  //       ([loanAmount, annualInterestRate, loanTerm]) => {
+  //         // Вызываем расчет только если все параметры валидны
+  //         if (loanAmount > 0 && annualInterestRate >= 0 && loanTerm > 0) {
+  //           store.commit('mutationTotalCalculate');
+  //           store.commit('mutationCollectAnswer');
+  //         }
+  //       },
+  //       {deep: true,immediate:false}
+  //     )
+  //   }
+  // ],
+
+  plugins: [
+    store => {
+      // Отслеживаем изменения конкретных параметров и обновляем соответствующие поля
+      store.watch(
+        state => state.cost_property,
+        (newValue) => {
+          Vue.set(store.state.answers_to_send, 'loanAmount', newValue);
+        },
+        { deep: true }
+      );
+
+      store.watch(
+        state => state.initial_payment,
+        (newValue) => {
+          Vue.set(store.state.answers_to_send, 'initialPayment', newValue);
+        },
+        { deep: true }
+      );
+
+      store.watch(
+        state => state.annualInterestRate,
+        (newValue) => {
+          Vue.set(store.state.answers_to_send, 'bet', newValue);
+        },
+        { deep: true }
+      );
+
+      store.watch(
+        state => state.loanTerm,
+        (newValue) => {
+          Vue.set(store.state.answers_to_send, 'loanTerm', newValue);
+        },
+        { deep: true }
+      );
+
+      // Также сохраняем общий watch для пересчета графика платежей
+      store.watch(
+        state => [state.loanAmount, state.annualInterestRate, state.loanTerm],
+        ([loanAmount, annualInterestRate, loanTerm]) => {
+          if (loanAmount > 0 && annualInterestRate >= 0 && loanTerm > 0) {
+            store.commit('mutationTotalCalculate');
+          }
+        },
+        { deep: true, immediate: false }
+      );
+    }
+  ],
+
+
+
+
+})
+</script>
+
+
+
 
 
 
