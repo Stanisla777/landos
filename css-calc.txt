@@ -1,167 +1,141 @@
-/* eslint-disable */
-export default function contentNote() {
-  const notes = document.querySelectorAll('.js--content-note');
-  let activeTooltip = null;
-  let isFirstTouch = true;
-
-  // Упрощенная проверка на touch-устройство
-  const isTouchDevice = () => {
-    return 'ontouchstart' in window || 
-           navigator.maxTouchPoints > 0 || 
-           navigator.msMaxTouchPoints > 0;
+const isTouchDevice = () => {
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   };
 
-  // Функция для скрытия всех тултипов
-  const hideAllTooltips = () => {
-    notes.forEach(item => {
-      item.classList.remove('active');
-      const tooltip = item.querySelector('.content-note__text');
-      if (tooltip) {
-        tooltip.classList.remove('active');
-      }
-    });
-    activeTooltip = null;
+  const isIOS = () => {
+    return /(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream;
   };
 
-  // Функция для позиционирования тултипа
   const positionTooltip = (element) => {
+    const noteText = element.querySelector('.content-note__text');
     const rect = element.getBoundingClientRect();
     const parent = element.parentElement;
-    const tooltip = element.querySelector('.content-note__text');
-    const noteText = element.querySelector('.content-note__text');
+    const parentPos = parent.getBoundingClientRect();
+    const relativePosLeftElement = rect.left - parentPos.left;
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
-    
-    if (!tooltip) return;
+    const parentWidth = parent.offsetWidth;
+    const leftOffset = rect.left + rect.width / 2;
+    const topOffset = rect.top + rect.height / 2;
 
-    // Позиционирование по горизонтали
+    // Временно скрываем визуально, но делаем видимым для измерения
+    const wasHidden = noteText.style.visibility === 'hidden';
+    if (wasHidden) {
+      noteText.style.visibility = 'visible';
+      noteText.style.opacity = '0';
+      noteText.style.transition = 'none';
+    }
+
+    const tooltipWidth = noteText.offsetWidth;
+
+    if (wasHidden) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          noteText.style.opacity = '1';
+          noteText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+        });
+      });
+    }
+
+    // Позиционирование — твой код без изменений
     if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
-      const parentPos = parent.getBoundingClientRect();
-      const relativePosLeftElement = rect.left - parentPos.left;
-      const parentWidth = parent.offsetWidth;
-
       if (windowWidth >= 600) {
         if (parentWidth / 2 < relativePosLeftElement) {
           noteText.style.left = 'auto';
-          noteText.style.right = '-0.25rem';
+          noteText.style.right = '-.25rem';
         } else {
-          noteText.style.left = '0.25rem';
+          noteText.style.left = '.25rem';
           noteText.style.right = 'auto';
         }
+      } else {
+        noteText.style.inset = 'unset';
+        noteText.style.transform = `translateX(${-((rect.left - tooltipWidth / 2 + 7) - (windowWidth / 2 - tooltipWidth / 2))}px)`;
       }
     } else {
-      const centerX = rect.left + rect.width / 2;
-      
       if (windowWidth >= 600) {
-        if (windowWidth / 2 < centerX) {
+        if (windowWidth / 2 < leftOffset) {
           noteText.style.left = 'auto';
-          noteText.style.right = '-0.25rem';
+          noteText.style.right = '-.25rem';
         } else {
-          noteText.style.left = '0.25rem';
+          noteText.style.left = '.25rem';
           noteText.style.right = 'auto';
         }
+      } else {
+        noteText.style.inset = 'unset';
+        noteText.style.transform = `translateX(${-((rect.left - tooltipWidth / 2 + 7) - (windowWidth / 2 - tooltipWidth / 2))}px)`;
       }
     }
 
-    // Позиционирование по вертикали
-    const centerY = rect.top + rect.height / 2;
-    
-    if (windowHeight / 2 > centerY) {
-      noteText.style.top = 'calc(100% + 0.25rem)';
-      noteText.style.bottom = 'auto';
+    if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
+      const notesParentBounding = element.closest('.js--courses-accord-content').getBoundingClientRect();
+      const locationDifference = rect.top - notesParentBounding.top;
+      const heightTooltip = noteText.offsetHeight;
+      if (heightTooltip >= locationDifference) {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      } else if (heightTooltip < locationDifference && windowHeight / 2 < topOffset) {
+        noteText.style.top = 'auto';
+        noteText.style.bottom = 'calc(100% + .25rem)';
+      } else {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      }
     } else {
-      noteText.style.top = 'auto';
-      noteText.style.bottom = 'calc(100% + 0.25rem)';
-    }
-
-    // Мобильная адаптация
-    if (windowWidth < 600) {
-      noteText.style.inset = 'unset';
-      const tooltipWidth = tooltip.offsetWidth;
-      const translateX = -((rect.left - tooltipWidth / 2 + 7) - (windowWidth / 2 - tooltipWidth / 2));
-      noteText.style.transform = `translateX(${translateX}px)`;
+      if (windowHeight / 2 > topOffset) {
+        noteText.style.top = 'calc(100% + .25rem)';
+        noteText.style.bottom = 'auto';
+      } else {
+        noteText.style.top = 'auto';
+        noteText.style.bottom = 'calc(100% + .25rem)';
+      }
     }
   };
 
-  // Обработчик для touch устройств
-  if (isTouchDevice()) {
-    // Обработка кликов по документу
+  if (isTouchDevice() || isIOS()) {
     document.addEventListener('touchstart', (e) => {
-      const isTooltip = e.target.closest('.js--content-note');
-      const isTooltipContent = e.target.closest('.content-note__text');
-      
-      // Если клик вне тултипа - скрываем все
-      if (!isTooltip && !isTooltipContent) {
-        hideAllTooltips();
+      const isNote = e.target.classList.contains('js--content-note');
+      const isNoteText = e.target.classList.contains('content-note__text') ||
+                         e.target.closest('.content-note__text');
+
+      if (isNoteText && !isNote) {
+        return; // клик по тултипу — не закрываем
+      }
+
+      if (isNote && e.target.classList.contains('active')) {
+        e.target.classList.remove('active');
+        e.target.querySelector('.content-note__text').classList.remove('active');
         return;
       }
 
-      // Если клик по самому тултипу
-      if (isTooltip && !isTooltipContent) {
-        const tooltipElement = e.target.closest('.js--content-note');
-        
-        // Если это активный тултип - скрываем
-        if (tooltipElement.classList.contains('active')) {
-          hideAllTooltips();
-          return;
-        }
+      if (!isNote) {
+        notes.forEach(item => {
+          item.classList.remove('active');
+          item.querySelector('.content-note__text').classList.remove('active');
+        });
+        return;
+      }
 
-        // Скрываем другие тултипы и показываем текущий
-        hideAllTooltips();
-        
-        setTimeout(() => {
-          tooltipElement.classList.add('active');
-          const tooltipText = tooltipElement.querySelector('.content-note__text');
-          if (tooltipText) {
-            tooltipText.classList.add('active');
-            positionTooltip(tooltipElement);
-          }
-          activeTooltip = tooltipElement;
-        }, 100);
+      if (isNote) {
+        notes.forEach(item => {
+          item.classList.remove('active');
+          item.querySelector('.content-note__text').classList.remove('active');
+        });
+
+        e.target.classList.add('active');
+        const noteText = e.target.querySelector('.content-note__text');
+        noteText.classList.add('active');
+        positionTooltip(e.target);
       }
     });
 
-    // Дополнительная защита от случайных кликов
+    // Закрытие при клике мимо
     document.addEventListener('click', (e) => {
-      const isTooltip = e.target.closest('.js--content-note');
-      const isTooltipContent = e.target.closest('.content-note__text');
-      
-      if (!isTooltip && !isTooltipContent) {
-        hideAllTooltips();
+      if (!e.target.classList.contains('js--content-note') &&
+          !e.target.closest('.content-note__text')) {
+        notes.forEach(item => {
+          item.classList.remove('active');
+          item.querySelector('.content-note__text').classList.remove('active');
+        });
       }
     });
   }
-
-  // Обработчики для desktop
-  document.addEventListener('mouseover', (e) => {
-    if (e.target.classList.contains('js--content-note')) {
-      const tooltipElement = e.target;
-      tooltipElement.classList.add('active');
-      
-      const tooltipText = tooltipElement.querySelector('.content-note__text');
-      if (tooltipText) {
-        tooltipText.classList.add('active');
-        positionTooltip(tooltipElement);
-      }
-    }
-  });
-
-  document.addEventListener('mouseout', (e) => {
-    if (e.target.classList.contains('js--content-note')) {
-      const tooltipElement = e.target;
-      tooltipElement.classList.remove('active');
-      
-      const tooltipText = tooltipElement.querySelector('.content-note__text');
-      if (tooltipText) {
-        tooltipText.classList.remove('active');
-      }
-    }
-  });
-
-  // Закрытие по ESC
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      hideAllTooltips();
-    }
-  });
-}
