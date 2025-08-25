@@ -1,5 +1,4 @@
-// Функция для позиционирования тултипа
-  const positionTooltip = (element, event) => {
+const positionTooltip = (element, isFirstShow = false) => {
     const rect = element.getBoundingClientRect();
     const parent = element.parentElement;
     const tooltip = element.querySelector('.content-note__text');
@@ -12,9 +11,12 @@
     const leftOffset = rect.left + rect.width / 2;
     const topOffset = rect.top + rect.height / 2;
 
-    // Сначала скрываем тултип, чтобы избежать "дёргания"
-    noteText.style.visibility = 'hidden';
-    noteText.style.opacity = '0';
+    // Для первого показа скрываем тултип до завершения позиционирования
+    if (isFirstShow) {
+      noteText.style.visibility = 'hidden';
+      noteText.style.opacity = '0';
+      noteText.style.transition = 'none'; // Отключаем анимацию для первого позиционирования
+    }
 
     // Если элемент ближе к левому краю экрана - выводим подсказку справа от него
     if (element.closest('.js--courses-accord-content') || element.closest('.js--element-overflow')) {
@@ -72,12 +74,18 @@
       }
     }
 
-    // После расчета позиции показываем тултип плавно
-    setTimeout(() => {
-      noteText.style.visibility = 'visible';
-      noteText.style.opacity = '1';
-      noteText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-    }, 10);
+    // Для первого показа показываем тултип после позиционирования
+    if (isFirstShow) {
+      // Используем requestAnimationFrame для гарантированного отображения после позиционирования
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          noteText.style.visibility = 'visible';
+          noteText.style.opacity = '1';
+          noteText.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+          isFirstTouch = false; // Сбрасываем флаг после первого показа
+        });
+      });
+    }
   };
 
   // Основная проверка - используем touch события для touch устройств ИЛИ при эмуляции
@@ -107,8 +115,25 @@
         const noteText = e.target.querySelector('.content-note__text');
         noteText.classList.add('active');
         
-        // Позиционируем тултип с предотвращением "дёргания"
-        positionTooltip(e.target, e);
+        // Позиционируем тултип с учетом первого показа
+        positionTooltip(e.target, isFirstTouch);
+      }
+    });
+
+    // Сбрасываем флаг первого касания при скрытии всех тултипов
+    document.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('js--content-note') && 
+          !e.target.closest('.content-note__text')) {
+        for (let item of notes) {
+          if (item.classList.contains('active')) {
+            isFirstTouch = false; // Если уже был показан тултип, сбрасываем флаг
+          }
+        }
       }
     });
   }
+
+.content-note__text {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  will-change: transform, opacity;
+}
