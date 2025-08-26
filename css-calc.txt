@@ -118,6 +118,19 @@ export default function contentNote() {
   if (isTouchDevice() || isIOS()) {
     document.addEventListener('touchstart', (e) => {
       const isNote = e.target.classList.contains('js--content-note')
+      
+      // МИНИМАЛЬНОЕ ИЗМЕНЕНИЕ: Закрытие при клике на уже открытый элемент
+      if (isNote && e.target.classList.contains('active')) {
+        notes.forEach(item => {
+          item.classList.remove('active');
+          const text = item.querySelector('.content-note__text');
+          text.classList.remove('active');
+          text.classList.remove('up');
+          text.classList.remove('down');
+        });
+        return;
+      }
+
       if (isNote) {
         notes.forEach(item => {
           item.classList.remove('active');
@@ -176,11 +189,7 @@ export default function contentNote() {
     });
   }
 
-
-
-
   document.addEventListener('mouseover', (e) => {
-
     if (e.target.classList.contains('js--content-note')) {
       if (e.target.querySelector('.content-note__text')) {
         e.target.querySelector('.content-note__text').classList.add('active');
@@ -232,8 +241,6 @@ export default function contentNote() {
 
       } else {
 
-
-
         if (windowWidth / 2 < leftOffset) {
           // когда иконка ближе к правому краю
           if (tooltip.offsetWidth > leftOffset) {
@@ -257,7 +264,7 @@ export default function contentNote() {
 
       }
 
-      // если элемент ближе к верхнему краю экрана - выводим подсказу снизу от него
+      // если элемент ближе к верхному краю экрана - выводим подсказу снизу от него
       // иначе сверху
       if (e.target.closest('.js--courses-accord-content') || e.target.closest('.js--element-overflow')) {
         const notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
