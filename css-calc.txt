@@ -1,31 +1,84 @@
-Добавьте мутацию для установки значения извне
-mutationSetAnswersExpired(state, value) {
-    state.answers_expired = value === "1" || value === 1 ? 1 : 0;
-  },
+Шаг 1: Добавьте флаг в state
 
-mutationResetAnswersExpired(state) {
-  state.answers_expired = 0;
+state: {
+  // ... другие поля
+  answers_expired: 1,         // как приходит из атрибута
+  isInitializing: true,       // <-- НОВОЕ: флаг инициализации
 },
 
-В actions, где меняются ключевые поля — добавьте сброс
+Шаг 2: Добавьте геттер
+getters: {
+  IS_INITIALIZING(state) {
+    return state.isInitializing;
+  },
+  // ... остальные
+},
 
+Шаг 3: Обновите мутацию сброса
+mutationResetAnswersExpired(state) {
+  if (!state.isInitializing) {
+    state.answers_expired = 0;
+  }
+}
+
+Шаг 4: В actions добавьте вызов сброса
 ActionCostProperty({ commit, state, dispatch }, param) {
   commit('mutationCostPropertyForInitialPayment', param);
   commit('mutationCostProperty', param);
-  commit('mutationResetAnswersExpired'); // <-- ДОБАВЛЕНО
+  commit('mutationResetAnswersExpired'); // <-- теперь безопасно
 },
 
 ActionInitialPayment({ commit, state, dispatch }, param) {
   commit('mutationInitialPayment', param);
-  commit('mutationResetAnswersExpired'); // <-- ДОБАВЛЕНО
+  commit('mutationResetAnswersExpired');
 },
 
 ActionInterestRate({ commit, state, dispatch }, param) {
   commit('mutationInterestRate', param);
-  commit('mutationResetAnswersExpired'); // <-- ДОБАВЛЕНО
+  commit('mutationResetAnswersExpired');
 },
 
 ActionTimeCredit({ commit, state, dispatch }, param) {
   commit('mutationTimeCredit', param);
-  commit('mutationResetAnswersExpired'); // <-- ДОБАВЛЕНО
+  commit('mutationResetAnswersExpired');
 },
+
+Шаг 5: В главном компоненте (или в mounted калькулятора) — завершите инициализацию
+
+// После того, как все answers загружены
+Storage.commit('mutationSetIsInitializing', false);
+
+Но сначала нужно добавить мутацию:
+
+mutations: {
+  // ... другие мутации
+  mutationSetIsInitializing(state, value) {
+    state.isInitializing = value;
+  },
+}
+
+Шаг 6: Где читать answers-expired из атрибута
+
+mounted() {
+  const el = this.$el;
+  const expiredAttr = el.getAttribute('answers-expired');
+  const expiredValue = expiredAttr === '1' ? 1 : 0;
+
+  // Устанавливаем флаг из атрибута
+  Storage.commit('mutationSetAnswersExpiredFromAttr', expiredValue);
+
+  // Устанавливаем, что начали инициализацию
+  Storage.commit('mutationSetIsInitializing', true);
+
+  // Если есть answers — передаём
+  if (this.answersData) {
+    Storage.dispatch('ActionAnswers', this.answersData);
+  }
+
+  // Через $nextTick или setTimeout — завершаем инициализацию
+  this.$nextTick(() => {
+    setTimeout(() => {
+      Storage.commit('mutationSetIsInitializing', false);
+    }, 100); // даём время компонентам обновиться
+  });
+}
