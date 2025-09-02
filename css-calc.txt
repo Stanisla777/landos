@@ -35,3 +35,32 @@ function waitForVueApps() {
 }
 
 waitForVueApps();
+
+
+---------------------------
+
+function waitForElement(id, callback) {
+    const el = document.getElementById(id);
+    if (el) {
+        callback();
+        return;
+    }
+
+    const observer = new MutationObserver(() => {
+        const element = document.getElementById(id);
+        if (element) {
+            observer.disconnect();
+            callback();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+// В цикле:
+for (let i = 0; i < obj.length; i += 1) {
+    waitForElement(obj[i].id, obj[i].fn);
+}
