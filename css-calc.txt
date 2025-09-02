@@ -103,3 +103,47 @@ mounted(){
 
   },
 
+
+-------------------------------------------------------------
+
+mounted(){
+  //Дополнительно
+  this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  this.$nextTick(() => {
+    // Обработчик закрытия календаря
+    document.addEventListener('click', this.handleDocumentClick);
+    this.initPluginCalendarVanillaData();
+    this.CalendarVanillaClose();
+
+    if(this.answers.length > 0 && this.answers[0]){
+      if(this.answers[0].dateReceipt) {
+        const dateReceipt = JSON.parse(this.answers[0].dateReceipt);
+        
+        // Уничтожаем предыдущий календарь и инициализируем с нужной датой
+        if (this.calendar) {
+          this.calendar.destroy();
+          this.calendar = null;
+        }
+        
+        this.$nextTick(() => {
+          this.initPluginCalendarVanillaData(dateReceipt[0], dateReceipt[1]);
+          
+          // Устанавливаем значение в input
+          this.$refs.inputData.value = `${String(dateReceipt[0] + 1).padStart(2, '0')}.${dateReceipt[1]}`;
+          this.$refs.inputData.setAttribute('data-calendar', `[${dateReceipt[0]},${dateReceipt[1]}]`);
+          
+          if (this.$refs.inputData.classList.contains('js-mor-required')) {
+            this.$refs.inputData.classList.add('js-filled');
+          }
+          
+          this.replaceMonthNew(this.$refs.inputData);
+          this.$emit('sendDateLoanReceipt', [dateReceipt[0], dateReceipt[1]]);
+          this.fieldNotEmpty(this.$refs.inputData);
+        });
+      }
+    }
+  });
+}
+
+
