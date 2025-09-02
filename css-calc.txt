@@ -64,3 +64,32 @@ function waitForElement(id, callback) {
 for (let i = 0; i < obj.length; i += 1) {
     waitForElement(obj[i].id, obj[i].fn);
 }
+
+
+-------------------------------------------------
+
+идеальный гибрид
+function waitForVueApp(id, initFn) {
+    const el = document.getElementById(id);
+    if (el && !el.__vue_initialized) {
+        initFn();
+        el.__vue_initialized = true;
+        return;
+    }
+
+    const observer = new MutationObserver(() => {
+        const element = document.getElementById(id);
+        if (element && !element.__vue_initialized) {
+            observer.disconnect();
+            initFn();
+            element.__vue_initialized = true;
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+// Использование:
+obj.forEach(item => {
+    waitForVueApp(item.id, item.fn);
+});
