@@ -1,5 +1,70 @@
-/* Добавьте эти свойства кнопке .btn_s */
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    transition: all .3s ease-in-out;
-    will-change: border-color, background-color, color;
+5. Проверьте, не уничтожается ли календарь слишком рано
+Вы делаете:
+this.calendar.destroy()
+this.calendar = null
+
+if (this.calendar) {
+  this.calendar.destroy();
+  this.calendar = null;
+}
+
+
+
+------------------------------------------
+
+mounted(){
+  this.$nextTick(() => {
+    this.initPluginCalendarVanillaData();
+    this.CalendarVanillaClose();
+    
+    if(this.answers.length > 0 && this.answers[0] && this.answers[0].dateReceipt) {
+      const dateReceipt = JSON.parse(this.answers[0].dateReceipt);
+      this.$nextTick(() => {
+        this.initPluginCalendarVanillaData(dateReceipt[0], dateReceipt[1]);
+        // остальной код инициализации
+      });
+    }
+  });
+}
+
+3. Улучшенное уничтожение календаря
+
+resetCalendar() {
+  if (this.calendar) {
+    try {
+      this.calendar.destroy();
+    } catch (e) {
+      console.warn('Error destroying calendar:', e);
+    }
+    this.calendar = null;
+  }
+  
+  // Небольшая задержка перед повторной инициализацией
+  setTimeout(() => {
+    this.initPluginCalendarVanillaData();
+  }, 50);
+}
+
+
+4. Обработчик для Safari/Mac
+Добавьте специальную обработку для Safari:
+
+mounted() {
+  // Определяем браузер
+  this.isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  
+  if (this.isSafari) {
+    // Для Safari используем другую стратегию инициализации
+    setTimeout(() => {
+      this.initPluginCalendarVanillaData();
+      this.CalendarVanillaClose();
+    }, 300);
+  } else {
+    this.$nextTick(() => {
+      this.initPluginCalendarVanillaData();
+      this.CalendarVanillaClose();
+    });
+  }
+  
+  // ... остальной код
+}
