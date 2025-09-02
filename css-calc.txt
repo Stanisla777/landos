@@ -147,3 +147,63 @@ mounted(){
 }
 
 
+----------------------------------------------------------------------
+mounted(){
+
+    //Дополнительно
+    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Обработчик закрытия календаря
+    document.addEventListener('click', this.handleDocumentClick);
+
+
+
+    if (this.answers[2]!==undefined && this.answers[2]!==null) {
+      for (let item of this.answers[2]) {
+        const id_block = item.id
+        const parent = document.querySelector('#earlyRepayment')
+        if(parent){
+          const element_eray = parent.querySelector(`.js--container-block-early[data-index="${id_block}"] input.js--calendar-field-early-repayment`);
+          if (element_eray){
+            element_eray.value = `${this.month[item.dateEarly[0]]}, ${item.dateEarly[1]}`;
+            this.time_holiday = parseInt(item.dateEarly[0]) +1
+            this.time_holiday = parseInt(item.dateEarly[1]) * 12 + (parseInt(item.dateEarly[0]) + 1)
+
+            if (element_eray.closest('.js--container-block-required')
+              && element_eray.closest('.js--container-block-required').querySelector('.js--required-error')) {
+              element_eray.closest('.js--container-block-required').querySelector('.js--required-error').classList.add('display-none')
+            }
+            if (element_eray.closest('.js--for-clear-field')) {
+              element_eray.closest('.js--for-clear-field').classList.remove('input_error')
+            }
+            if (element_eray.closest('.js--for-clear-field') && element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax')) {
+              element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax').classList.add('active')
+            }
+
+            if (element_eray.classList.contains('js-early-required')) {
+              element_eray.classList.add('js-filled')
+              element_eray.classList.add('btn-active')
+              element_eray.closest('.js--acc-wr').classList.add('calendar-full')
+            }
+
+          }
+        }
+      }
+
+
+
+    }
+    this.parent = this.$el.closest('.js--container-block')
+    const index_block =parseInt(this.$el.closest('.js--container-block').getAttribute('data-index'));
+    if (this.min_date_holidays=='1995-01-01') {
+      this.initPluginCalendarVanilla()
+    }
+    else{
+      this.initPluginCalendarVanilla(this.formatYearMonthSelected(this.min_date_holidays)[1], this.formatYearMonthSelected(this.min_date_holidays)[0])
+    }
+    this.CalendarVanillaClose()
+    if(this.answers.length>0&&this.answers[2]){
+    }
+  },
+
+
+
