@@ -6,26 +6,46 @@ mounted() {
 
 methods: {
   inputRate() {
-    const el = this.$refs.inputPersent;
-    if (!el) {
-      console.warn('Инпут для ставки не найден');
-      return;
+  // Получаем элемент через ref — это надёжнее, чем querySelector
+  const el = this.$refs.inputPersent;
+
+  // Проверяем, что элемент существует в DOM
+  if (!el) {
+    console.warn('Элемент inputPersent не найден при инициализации маски');
+    return;
+  }
+
+  // Ваши настройки маски — оставляем без изменений
+  const maskOptions = {
+    mask: Number,
+    scale: 2,
+    thousandsSeparator: '',
+    padFractionalZeros: false,
+    normalizeZeros: 'trim',
+    radix: ',',
+    mapToRadix: ['.', ','],
+    min: 0.1,
+    max: 100,
+    autofix: true
+  };
+
+  // Создаём экземпляр IMask
+  this.mask_interest = IMask(el, maskOptions);
+
+  // Подписываемся на событие 'accept'
+  this.mask_interest.on('accept', () => {
+    const parse_element = this.mask_interest.value.replace(',', '.');
+    this.i_calculation = parseFloat(parse_element) || 0;
+
+    // Если поле пустое — обнуляем
+    if (this.mask_interest.value.length === 0) {
+      this.i_calculation = 0;
     }
 
-    this.mask_interest = IMask(el, {
-      mask: Number,
-      scale: 2,
-      radix: ',',
-      thousandsSeparator: '',
-      min: 0.01,
-      max: 99.99,
-      autofix: true
-    });
-
-    this.mask_interest.on('accept', () => {
-      this.i_calculation = parseFloat(this.mask_interest.value.replace(',', '.')) || 0;
-    });
-  }
+    // Можно добавить перерасчёт, если нужно
+    // this.totalCalculation();
+  });
+}
 }
 
 
@@ -3489,5 +3509,6 @@ export default {
   }
 };
 </script>
+
 
 
