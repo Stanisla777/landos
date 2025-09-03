@@ -1,3 +1,36 @@
+mounted() {
+  this.$nextTick(() => {
+    this.inputRate();
+  });
+},
+
+methods: {
+  inputRate() {
+    const el = this.$refs.inputPersent;
+    if (!el) {
+      console.warn('Инпут для ставки не найден');
+      return;
+    }
+
+    this.mask_interest = IMask(el, {
+      mask: Number,
+      scale: 2,
+      radix: ',',
+      thousandsSeparator: '',
+      min: 0.01,
+      max: 99.99,
+      autofix: true
+    });
+
+    this.mask_interest.on('accept', () => {
+      this.i_calculation = parseFloat(this.mask_interest.value.replace(',', '.')) || 0;
+    });
+  }
+}
+
+
+
+
 .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input.js--interest-rate-calc.js--for-clear-field
                   input.js--normal-field.js-mor-required(
                     ref="inputPersent"
@@ -3456,4 +3489,5 @@ export default {
   }
 };
 </script>
+
 
