@@ -1,115 +1,154 @@
-if (document.readyState !== 'loading') {
+function runAfterDomReady() {
   processBtnBookmark();
-  initCheckboxValidation('.js--btn-registration-state'); // ← добавлено
-} else {
-  document.addEventListener('DOMContentLoaded', function () {
-    processBtnBookmark();
-    initCheckboxValidation('.js--btn-registration-state');
-  });
+
+  // --- Отладка: проверяем onclick ДО вызова initCheckboxValidation ---
+  const button = document.querySelector('.js--btn-registration-state');
+  console.log('=== Отладка кнопки после processBtnBookmark ===');
+  console.log('Кнопка найдена:', button);
+  if (button) {
+    console.log('Атрибут onclick:', button.getAttribute('onclick'));
+    console.log('Свойство onclick (функция):', typeof button.onclick, button.onclick);
+  } else {
+    console.warn('Кнопка .js--btn-registration-state не найдена!');
+  }
+  console.log('==============================================');
+
+  // Теперь инициализируем валидацию
+  initCheckboxValidation('.js--btn-registration-state');
 }
 
-/**
- * Инициализирует валидацию чекбоксов перед вызовом onclick на кнопке.
- * Показывает ошибку, если обязательные чекбоксы не отмечены.
- *
- * @param {string} buttonSelector - CSS-селектор кнопки
- */
+// Выполняем в нужный момент
+if (document.readyState !== 'loading') {
+  runAfterDomReady();
+} else {
+  document.addEventListener('DOMContentLoaded', runAfterDomReady);
+}
+
 function initCheckboxValidation(buttonSelector) {
+  console.log('initCheckboxValidation: запуск функции');
+
   const btn = document.querySelector(buttonSelector);
+  console.log('Кнопка найдена по селектору:', buttonSelector, '->', btn);
+
   if (!btn) {
-    console.warn(`Кнопка с селектором "${buttonSelector}" не найдена.`);
+    console.warn('Кнопка с селектором "' + buttonSelector + '" не найдена.');
     return;
   }
 
-  const checkboxWrappers = document.querySelectorAll('.js--checkbox_wrapper');
-  const errorClass = 'js--input__error_required';
+  // Проверка атрибута onclick и свойства btn.onclick
+  const onclickAttr = btn.getAttribute('onclick');
+  console.log('Атрибут onclick (строка):', onclickAttr);
 
-  // --- Надёжное получение оригинального обработчика ---
+  console.log('Свойство btn.onclick (функция):', typeof btn.onclick, '->', btn.onclick);
+
+  // Извлечение обработчика
   let originalHandler = null;
 
   if (typeof btn.onclick === 'function') {
-    // Стандартный случай: браузер создал обработчик
+    console.log('Используем btn.onclick как функцию');
     originalHandler = btn.onclick;
-  } else {
-    // Резерв: читаем строку и создаём функцию
-    const onclickAttr = btn.getAttribute('onclick');
-    if (onclickAttr) {
-      try {
-        // Передаём 'event', если используется внутри onclick
-        originalHandler = new Function('event', onclickAttr);
-      } catch (e) {
-        console.error('Не удалось создать функцию из onclick:', e);
-      }
+  } else if (onclickAttr) {
+    console.log('btn.onclick не функция, пытаемся создать функцию из строки');
+    try {
+      originalHandler = new Function('event', onclickAttr);
+      console.log('Успешно создано new Function из onclick');
+    } catch (e) {
+      console.error('Ошибка парсинга onclick:', e);
     }
+  } else {
+    console.warn('Ни btn.onclick, ни атрибут onclick не найдены');
   }
 
-  // Убираем, чтобы не срабатывал автоматически
+  // Удаляем onclick, чтобы предотвратить автоматическое выполнение
   btn.removeAttribute('onclick');
   btn.onclick = null;
+  console.log('onclick удалён с кнопки (атрибут и свойство)');
 
-  // --- Вспомогательные функции ---
-  function getErrorMessage(checkbox) {
-    return checkbox.getAttribute('data-required-hint') || 'Пожалуйста, подтвердите это условие';
+  // Поиск блоков с чекбоксами
+  const checkboxWrappers = document.querySelectorAll('.js--checkbox_wrapper');
+  console.log('Найдено блоков .js--checkbox_wrapper:', checkboxWrappers.length);
+
+  if (checkboxWrappers.length === 0) {
+    console.warn('Блоки .js--checkbox_wrapper не найдены!');
   }
 
-  function showError(formBlock, message) {
-    if (!formBlock.querySelector('.' + errorClass)) {
-      const error = document.createElement('p');
-      error.className = 'input__error ' + errorClass;
-      error.textContent = message;
-      formBlock.appendChild(error);
+  const errorClass = 'js--input__error_required';
+
+  // Проверка каждого чекбокса
+  checkboxWrappers.forEach(function (wrapper, index) {
+    console.log('Обработка .js--checkbox_wrapper #' + index);
+
+    const checkbox = wrapper.querySelector('input[type="checkbox"]');
+    console.log('  Чекбокс найден:', checkbox);
+
+    if (!checkbox) {
+      console.warn('  Чекбокс не найден внутри wrapper #' + index);
+      return;
     }
-  }
 
-  function removeError(formBlock) {
-    const error = formBlock.querySelector('.' + errorClass);
-    if (error) {
-      error.remove();
+    const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+    console.log('  formBlock найден:', formBlock);
+
+    if (!formBlock) {
+      console.warn('  formBlock (.feed_back__user-form-block) не найден');
     }
-  }
 
-  // --- Обработчик клика ---
+    console.log('  Имеет атрибут required:', checkbox.hasAttribute('required'));
+    console.log('  Значение data-required-hint:', checkbox.getAttribute('data-required-hint'));
+  });
+
+  // Обработчик клика по кнопке
   btn.addEventListener('click', function (e) {
+    console.log('Кнопка нажата — начало валидации');
     e.preventDefault();
 
     let hasError = false;
 
-    checkboxWrappers.forEach(wrapper => {
+    checkboxWrappers.forEach(function (wrapper, index) {
       const checkbox = wrapper.querySelector('input[type="checkbox"]');
       const formBlock = wrapper.querySelector('.feed_back__user-form-block');
 
-      if (!checkbox || !formBlock) return;
+      if (!checkbox || !formBlock) {
+        console.warn('Пропускаем wrapper #' + index + ' — чекбокс или formBlock не найден');
+        return;
+      }
 
-      // Удаляем старую ошибку
-      removeError(formBlock);
+      // Удаляем предыдущую ошибку
+      const oldError = formBlock.querySelector('.' + errorClass);
+      if (oldError) {
+        console.log('Удалена старая ошибка в formBlock #' + index);
+        oldError.remove();
+      }
 
       if (checkbox.hasAttribute('required') && !checkbox.checked) {
-        const message = getErrorMessage(checkbox);
-        showError(formBlock, message);
+        const message = checkbox.getAttribute('data-required-hint') || 'Пожалуйста, подтвердите это условие';
+        console.log('Ошибка: чекбокс #' + index + ' не отмечен -> показываем: "' + message + '"');
+
+        const error = document.createElement('p');
+        error.className = 'input__error ' + errorClass;
+        error.textContent = message;
+        formBlock.appendChild(error);
+
         hasError = true;
       }
     });
 
-    // Если всё ок — вызываем оригинальный обработчик
-    if (!hasError && typeof originalHandler === 'function') {
-      originalHandler.call(btn, e); // передаём event, если нужно
+    if (hasError) {
+      console.log('Валидация не пройдена — выполнение onclick отменено');
+    } else {
+      console.log('Валидация пройдена — выполняем оригинальный onclick');
+      if (typeof originalHandler === 'function') {
+        try {
+          originalHandler.call(btn, e);
+          console.log('Оригинальный обработчик успешно вызван');
+        } catch (err) {
+          console.error('Ошибка при вызове originalHandler:', err);
+        }
+      } else {
+        console.warn('originalHandler не является функцией — ничего не вызвано');
+      }
     }
   });
 
-  // --- Обработка изменений чекбоксов ---
-  checkboxWrappers.forEach(wrapper => {
-    const checkbox = wrapper.querySelector('input[type="checkbox"]');
-    const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-
-    if (!checkbox || !formBlock || !checkbox.hasAttribute('required')) return;
-
-    checkbox.addEventListener('change', function () {
-      if (this.checked) {
-        removeError(formBlock);
-      } else {
-        const message = getErrorMessage(this);
-        showError(formBlock, message);
-      }
-    });
-  });
+  console.log('initCheckboxValidation: инициализация завершена');
 }
