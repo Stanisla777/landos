@@ -1,5 +1,60 @@
-Обработчик клика установлен на фазе перехвата
-2VM11838:11 ✅ Клик перехвачен на фазе CAPTURE
-VM11838:47 ❌ Валидация не пройдена
-VM11838:11 ✅ Клик перехвачен на фазе CAPTURE
-VM11838:47 ❌ Валидация не пройдена
+// Вставьте это целиком в консоль
+document.addEventListener('DOMContentLoaded', function () {
+  setTimeout(() => {
+    document.addEventListener('click', function (e) {
+      const buttonSelector = '.js--btn-registration-state';
+      const btn = document.querySelector(buttonSelector);
+      if (!btn || !e.target.closest(buttonSelector)) return;
+
+      e.preventDefault();
+      console.log('✅ Клик перехвачен на фазе CAPTURE');
+
+      const container = btn.closest('.feed_back__wr-checkbox') || btn.closest('form') || document;
+      const checkboxWrappers = container.querySelectorAll('.js--checkbox_wrapper');
+      const errorClass = 'js--input__error_required';
+
+      let hasError = false;
+
+      checkboxWrappers.forEach(wrapper => {
+        const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+        if (formBlock) {
+          const error = formBlock.querySelector('.' + errorClass);
+          if (error) error.remove();
+        }
+      });
+
+      checkboxWrappers.forEach(wrapper => {
+        const checkbox = wrapper.querySelector('input[type="checkbox"]');
+        const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+
+        if (!checkbox || !formBlock) return;
+
+        if (checkbox.hasAttribute('required') && !checkbox.checked) {
+          const message = checkbox.getAttribute('data-required-hint') || 'Согласитесь с условиями';
+          const error = document.createElement('p');
+          error.className = 'input__error ' + errorClass;
+          error.textContent = message;
+          formBlock.appendChild(error);
+          hasError = true;
+        }
+      });
+
+      if (hasError) {
+        console.log('❌ Валидация не пройдена');
+        return;
+      }
+
+      const onclickAttr = btn.getAttribute('onclick');
+      console.log('✅ Валидация пройдена. Выполняем:', onclickAttr);
+      if (onclickAttr) {
+        try {
+          new Function(onclickAttr)();
+        } catch (err) {
+          console.error('Ошибка выполнения onclick:', err);
+        }
+      }
+    }, true);
+
+    console.log('🔐 Обработчик клика установлен');
+  }, 100);
+});
