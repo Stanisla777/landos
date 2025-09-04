@@ -1,14 +1,126 @@
-Клик перехвачен на фазе CAPTURE
-VM16241:51 ❌ Валидация не пройдена
-VM16358:13 ✅ Клик перехвачен на фазе CAPTURE
-VM16358:51 ❌ Валидация не пройдена
+function runAfterDomReady() {
+  // 1. Сначала — наша валидация (сохраняем onclick ДО изменений)
+  initCheckboxValidation('.js--btn-registration-state');
+
+  // 2. Потом — пусть бэкенд делает свою работу
+  processBtnBookmark();
+}
+
+// Выполняем
+if (document.readyState !== 'loading') {
+  runAfterDomReady();
+} else {
+  document.addEventListener('DOMContentLoaded', runAfterDomReady);
+}
 
 
+/**
+ * Инициализирует валидацию чекбоксов перед вызовом onclick на кнопке.
+ * Показывает ошибку, если обязательные чекбоксы не отмечены.
+ * Добавляет класс input_error к блоку .js--checkbox_wrapper.
+ * Использует делегирование и фазу capture для надёжной работы.
+ *
+ * @param {string} buttonSelector - Селектор кнопки (например, '.js--btn-registration-state')
+ */
+function initCheckboxValidation(buttonSelector) {
+  const btn = document.querySelector(buttonSelector);
+  if (!btn) {
+    console.warn('initCheckboxValidation: кнопка не найдена по селектору', buttonSelector);
+    return;
+  }
 
-Клик перехвачен на фазе CAPTURE
-VM16241:57 🔍 onclick атрибут: null
-VM16241:67 ❌ Атрибут onclick отсутствует
-(anonymous) @ VM16241:67
-VM16358:13 ✅ Клик перехвачен на фазе CAPTURE
-VM16358:57 🔍 onclick атрибут: null
-VM16358:67 ❌ Атрибут onclick отсутствует
+  // Сохраняем onclick до того, как его могут удалить
+  const originalOnclick = btn.getAttribute('onclick');
+  const originalHandler = btn.onclick;
+
+  // Удаляем onclick, чтобы не срабатывал без валидации
+  btn.removeAttribute('onclick');
+  btn.onclick = null;
+
+  // Определяем общий контейнер (модальное окно)
+  const container = btn.closest('.js--modal') || document;
+  const checkboxWrappers = container.querySelectorAll('.js--checkbox_wrapper');
+  const errorClass = 'js--input__error_required';
+
+  // Вспомогательные функции
+  function getErrorMessage(checkbox) {
+    return checkbox.getAttribute('data-required-hint') || 'Согласитесь с условиями';
+  }
+
+  function showError(formBlock, message) {
+    if (!formBlock.querySelector('.' + errorClass)) {
+      const error = document.createElement('p');
+      error.className = 'input__error ' + errorClass;
+      error.textContent = message;
+      formBlock.appendChild(error);
+    }
+  }
+
+  function removeError(formBlock) {
+    const error = formBlock.querySelector('.' + errorClass);
+    if (error) {
+      error.remove();
+    }
+  }
+
+  // Делегированный обработчик клика (фаза capture)
+  document.addEventListener('click', function (e) {
+    const targetBtn = document.querySelector(buttonSelector);
+    if (!targetBtn || !e.target.closest(buttonSelector)) {
+      return;
+    }
+
+    e.preventDefault();
+    console.log('initCheckboxValidation: клик перехвачен на фазе capture');
+
+    let hasError = false;
+
+    // Удаляем старые ошибки и классы
+    checkboxWrappers.forEach(function (wrapper) {
+      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+      if (formBlock) {
+        removeError(formBlock);
+      }
+      wrapper.classList.remove('input_error');
+    });
+
+    // Проверяем чекбоксы
+    checkboxWrappers.forEach(function (wrapper) {
+      const checkbox = wrapper.querySelector('input[type="checkbox"]');
+      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+
+      if (!checkbox || !formBlock) {
+        return;
+      }
+
+      if (checkbox.hasAttribute('required') && !checkbox.checked) {
+        const message = getErrorMessage(checkbox);
+        showError(formBlock, message);
+        wrapper.classList.add('input_error');
+        hasError = true;
+      }
+    });
+
+    if (hasError) {
+      console.log('initCheckboxValidation: валидация не пройдена');
+      return;
+    }
+
+    // Выполняем оригинальный onclick
+    if (originalHandler && typeof originalHandler === 'function') {
+      console.log('initCheckboxValidation: выполняем originalHandler');
+      originalHandler.call(targetBtn, e);
+    } else if (originalOnclick) {
+      console.log('initCheckboxValidation: выполняем originalOnclick как строку');
+      try {
+        new Function(originalOnclick)();
+      } catch (err) {
+        console.error('initCheckboxValidation: ошибка при выполнении onclick:', err);
+      }
+    } else {
+      console.warn('initCheckboxValidation: нечего выполнять — onclick отсутствует');
+    }
+  }, true); // useCapture: true
+
+  console.log('initCheckboxValidation: инициализация завершена');
+}
