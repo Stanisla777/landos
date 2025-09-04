@@ -1,154 +1,55 @@
-function runAfterDomReady() {
-  processBtnBookmark();
-
-  // --- Отладка: проверяем onclick ДО вызова initCheckboxValidation ---
-  const button = document.querySelector('.js--btn-registration-state');
-  console.log('=== Отладка кнопки после processBtnBookmark ===');
-  console.log('Кнопка найдена:', button);
-  if (button) {
-    console.log('Атрибут onclick:', button.getAttribute('onclick'));
-    console.log('Свойство onclick (функция):', typeof button.onclick, button.onclick);
-  } else {
-    console.warn('Кнопка .js--btn-registration-state не найдена!');
-  }
-  console.log('==============================================');
-
-  // Теперь инициализируем валидацию
-  initCheckboxValidation('.js--btn-registration-state');
-}
-
-// Выполняем в нужный момент
-if (document.readyState !== 'loading') {
-  runAfterDomReady();
-} else {
-  document.addEventListener('DOMContentLoaded', runAfterDomReady);
-}
-
-function initCheckboxValidation(buttonSelector) {
-  console.log('initCheckboxValidation: запуск функции');
-
-  const btn = document.querySelector(buttonSelector);
-  console.log('Кнопка найдена по селектору:', buttonSelector, '->', btn);
-
-  if (!btn) {
-    console.warn('Кнопка с селектором "' + buttonSelector + '" не найдена.');
-    return;
-  }
-
-  // Проверка атрибута onclick и свойства btn.onclick
-  const onclickAttr = btn.getAttribute('onclick');
-  console.log('Атрибут onclick (строка):', onclickAttr);
-
-  console.log('Свойство btn.onclick (функция):', typeof btn.onclick, '->', btn.onclick);
-
-  // Извлечение обработчика
-  let originalHandler = null;
-
-  if (typeof btn.onclick === 'function') {
-    console.log('Используем btn.onclick как функцию');
-    originalHandler = btn.onclick;
-  } else if (onclickAttr) {
-    console.log('btn.onclick не функция, пытаемся создать функцию из строки');
-    try {
-      originalHandler = new Function('event', onclickAttr);
-      console.log('Успешно создано new Function из onclick');
-    } catch (e) {
-      console.error('Ошибка парсинга onclick:', e);
-    }
-  } else {
-    console.warn('Ни btn.onclick, ни атрибут onclick не найдены');
-  }
-
-  // Удаляем onclick, чтобы предотвратить автоматическое выполнение
-  btn.removeAttribute('onclick');
-  btn.onclick = null;
-  console.log('onclick удалён с кнопки (атрибут и свойство)');
-
-  // Поиск блоков с чекбоксами
-  const checkboxWrappers = document.querySelectorAll('.js--checkbox_wrapper');
-  console.log('Найдено блоков .js--checkbox_wrapper:', checkboxWrappers.length);
-
-  if (checkboxWrappers.length === 0) {
-    console.warn('Блоки .js--checkbox_wrapper не найдены!');
-  }
-
-  const errorClass = 'js--input__error_required';
-
-  // Проверка каждого чекбокса
-  checkboxWrappers.forEach(function (wrapper, index) {
-    console.log('Обработка .js--checkbox_wrapper #' + index);
-
-    const checkbox = wrapper.querySelector('input[type="checkbox"]');
-    console.log('  Чекбокс найден:', checkbox);
-
-    if (!checkbox) {
-      console.warn('  Чекбокс не найден внутри wrapper #' + index);
-      return;
-    }
-
-    const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-    console.log('  formBlock найден:', formBlock);
-
-    if (!formBlock) {
-      console.warn('  formBlock (.feed_back__user-form-block) не найден');
-    }
-
-    console.log('  Имеет атрибут required:', checkbox.hasAttribute('required'));
-    console.log('  Значение data-required-hint:', checkbox.getAttribute('data-required-hint'));
-  });
-
-  // Обработчик клика по кнопке
-  btn.addEventListener('click', function (e) {
-    console.log('Кнопка нажата — начало валидации');
-    e.preventDefault();
-
-    let hasError = false;
-
-    checkboxWrappers.forEach(function (wrapper, index) {
-      const checkbox = wrapper.querySelector('input[type="checkbox"]');
-      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-
-      if (!checkbox || !formBlock) {
-        console.warn('Пропускаем wrapper #' + index + ' — чекбокс или formBlock не найден');
-        return;
-      }
-
-      // Удаляем предыдущую ошибку
-      const oldError = formBlock.querySelector('.' + errorClass);
-      if (oldError) {
-        console.log('Удалена старая ошибка в formBlock #' + index);
-        oldError.remove();
-      }
-
-      if (checkbox.hasAttribute('required') && !checkbox.checked) {
-        const message = checkbox.getAttribute('data-required-hint') || 'Пожалуйста, подтвердите это условие';
-        console.log('Ошибка: чекбокс #' + index + ' не отмечен -> показываем: "' + message + '"');
-
-        const error = document.createElement('p');
-        error.className = 'input__error ' + errorClass;
-        error.textContent = message;
-        formBlock.appendChild(error);
-
-        hasError = true;
-      }
-    });
-
-    if (hasError) {
-      console.log('Валидация не пройдена — выполнение onclick отменено');
-    } else {
-      console.log('Валидация пройдена — выполняем оригинальный onclick');
-      if (typeof originalHandler === 'function') {
-        try {
-          originalHandler.call(btn, e);
-          console.log('Оригинальный обработчик успешно вызван');
-        } catch (err) {
-          console.error('Ошибка при вызове originalHandler:', err);
-        }
-      } else {
-        console.warn('originalHandler не является функцией — ничего не вызвано');
-      }
-    }
-  });
-
-  console.log('initCheckboxValidation: инициализация завершена');
-}
+=== Отладка кнопки после processBtnBookmark ===
+bookmarks.js?175699430412902:36 Кнопка найдена: <a class=​"btn_s btn-registration-state js--btn-registration-state" href=​"javascript:​void(0)​" title=​"Авторизация через ЕСИА">​…​</a>​flex
+bookmarks.js?175699430412902:38 Атрибут onclick: BX.util.popup('https://idm.apps.k8s.dev.domoy.ru/idm-services/auth/realms/personal-eisgs-idm/protocol/openid-connect/auth?response_type=code&scope=openid&client_id=app-eisgs-sprosi.portal&redirect_uri=https%3A%2F%2Flk.sprosi.dev.ringsites.ahml.ru%2Flocal%2Fmodules%2Flocal.oauthkeycloakesia%2Fhandler.php&state=backurl%253D%252Finstructions%252Fmery-podderzhki-obmanutykh-dolshchikov%252F', 660, 800)
+bookmarks.js?175699430412902:39 Свойство onclick (функция): function ƒ onclick(event) {
+BX.util.popup('https://idm.apps.k8s.dev.domoy.ru/idm-services/auth/realms/personal-eisgs-idm/protocol/openid-connect/auth?response_type=code&scope=openid&client_id=app-eisgs-sprosi.p…
+bookmarks.js?175699430412902:43 ==============================================
+bookmarks.js?175699430412902:57 initCheckboxValidation: запуск функции
+bookmarks.js?175699430412902:60 Кнопка найдена по селектору: .js--btn-registration-state -> <a class=​"btn_s btn-registration-state js--btn-registration-state" href=​"javascript:​void(0)​" title=​"Авторизация через ЕСИА">​…​</a>​flex
+bookmarks.js?175699430412902:69 Атрибут onclick (строка): BX.util.popup('https://idm.apps.k8s.dev.domoy.ru/idm-services/auth/realms/personal-eisgs-idm/protocol/openid-connect/auth?response_type=code&scope=openid&client_id=app-eisgs-sprosi.portal&redirect_uri=https%3A%2F%2Flk.sprosi.dev.ringsites.ahml.ru%2Flocal%2Fmodules%2Flocal.oauthkeycloakesia%2Fhandler.php&state=backurl%253D%252Finstructions%252Fmery-podderzhki-obmanutykh-dolshchikov%252F', 660, 800)
+bookmarks.js?175699430412902:71 Свойство btn.onclick (функция): function -> ƒ onclick(event) {
+BX.util.popup('https://idm.apps.k8s.dev.domoy.ru/idm-services/auth/realms/personal-eisgs-idm/protocol/openid-connect/auth?response_type=code&scope=openid&client_id=app-eisgs-sprosi.p…
+bookmarks.js?175699430412902:77 Используем btn.onclick как функцию
+bookmarks.js?175699430412902:94 onclick удалён с кнопки (атрибут и свойство)
+bookmarks.js?175699430412902:98 Найдено блоков .js--checkbox_wrapper: 8
+bookmarks.js?175699430412902:108 Обработка .js--checkbox_wrapper #0
+bookmarks.js?175699430412902:111   Чекбокс найден: <input class=​"js--feedback-check js--validate-mask js--validate-mask--check" id=​"modal_subscription_state" type=​"checkbox" name required data-required-hint=​"Согласитесь с условиями">​
+bookmarks.js?175699430412902:119   formBlock найден: <div class=​"feed_back__user-form-block">​…​</div>​
+bookmarks.js?175699430412902:125   Имеет атрибут required: true
+bookmarks.js?175699430412902:126   Значение data-required-hint: Согласитесь с условиями
+bookmarks.js?175699430412902:108 Обработка .js--checkbox_wrapper #1
+bookmarks.js?175699430412902:111   Чекбокс найден: <input id=​"modal_receiving_state" type=​"checkbox" name required data-required-hint=​"Согласитесь с условиями">​
+bookmarks.js?175699430412902:119   formBlock найден: <div class=​"feed_back__user-form-block">​…​</div>​
+bookmarks.js?175699430412902:125   Имеет атрибут required: true
+bookmarks.js?175699430412902:126   Значение data-required-hint: Согласитесь с условиями
+bookmarks.js?175699430412902:108 Обработка .js--checkbox_wrapper #2
+bookmarks.js?175699430412902:111   Чекбокс найден: <input class=​"js--feedback-check js--validate-mask js--validate-mask--check" id=​"check_webform_1_base2_agree-personal-data" type=​"checkbox" name required data-required-hint=​"Согласитесь с условиями">​
+bookmarks.js?175699430412902:119   formBlock найден: <div class=​"feed_back__user-form-block">​…​</div>​
+bookmarks.js?175699430412902:125   Имеет атрибут required: true
+bookmarks.js?175699430412902:126   Значение data-required-hint: Согласитесь с условиями
+bookmarks.js?175699430412902:108 Обработка .js--checkbox_wrapper #3
+bookmarks.js?175699430412902:111   Чекбокс найден: <input id=​"check_webform_1_base2_610" type=​"checkbox" name=​"form_checkbox_AGREE_TO_RECEIVE_PROMO[]​" class=​"js--validate-mask js--validate-mask-check" data-required-hint=​"Согласитесь с условиями" value=​"610">​
+bookmarks.js?175699430412902:119   formBlock найден: <div class=​"feed_back__user-form-block">​…​</div>​
+bookmarks.js?175699430412902:125   Имеет атрибут required: false
+bookmarks.js?175699430412902:126   Значение data-required-hint: Согласитесь с условиями
+bookmarks.js?175699430412902:108 Обработка .js--checkbox_wrapper #4
+bookmarks.js?175699430412902:111   Чекбокс найден: <input class=​"js--feedback-check js--validate-mask js--validate-mask--check" id=​"subscription-footer" type=​"checkbox" name required data-required-hint=​"Согласитесь с условиями">​
+bookmarks.js?175699430412902:119   formBlock найден: <div class=​"feed_back__user-form-block">​…​</div>​
+bookmarks.js?175699430412902:125   Имеет атрибут required: true
+bookmarks.js?175699430412902:126   Значение data-required-hint: Согласитесь с условиями
+bookmarks.js?175699430412902:108 Обработка .js--checkbox_wrapper #5
+bookmarks.js?175699430412902:111   Чекбокс найден: <input id=​"check_webform_news_subscribe_607" type=​"checkbox" name=​"form_checkbox_AGREE_TO_RECEIVE_PROMO[]​" class=​"js--feedback-check  js--validate-mask js--validate-mask--check" data-required-hint=​"Согласитесь с условиями" required value=​"607">​
+bookmarks.js?175699430412902:119   formBlock найден: <div class=​"feed_back__user-form-block">​…​</div>​
+bookmarks.js?175699430412902:125   Имеет атрибут required: true
+bookmarks.js?175699430412902:126   Значение data-required-hint: Согласитесь с условиями
+bookmarks.js?175699430412902:108 Обработка .js--checkbox_wrapper #6
+bookmarks.js?175699430412902:111   Чекбокс найден: <input class=​"js--feedback-check js--validate-mask js--validate-mask--check" id=​"check_webform_3_base2_modalcall_agree-personal-data" type=​"checkbox" name required data-required-hint=​"Согласитесь с условиями">​
+bookmarks.js?175699430412902:119   formBlock найден: <div class=​"feed_back__user-form-block">​…​</div>​
+bookmarks.js?175699430412902:125   Имеет атрибут required: true
+bookmarks.js?175699430412902:126   Значение data-required-hint: Согласитесь с условиями
+bookmarks.js?175699430412902:108 Обработка .js--checkbox_wrapper #7
+bookmarks.js?175699430412902:111   Чекбокс найден: <input id=​"check_webform_3_base2_modalcall_661" type=​"checkbox" name=​"form_checkbox_AGREE_TO_RECEIVE_PROMO[]​" class=​"js--validate-mask js--validate-mask-check" data-required-hint=​"Согласитесь с условиями" value=​"661">​
+bookmarks.js?175699430412902:119   formBlock найден: <div class=​"feed_back__user-form-block">​…​</div>​
+bookmarks.js?175699430412902:125   Имеет атрибут required: false
+bookmarks.js?175699430412902:126   Значение data-required-hint: Согласитесь с условиями
+bookmarks.js?175699430412902:182 initCheckboxValidation: инициализация завершена
