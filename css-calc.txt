@@ -1,72 +1,14 @@
-// Вставьте в консоль после перезагрузки страницы
-document.addEventListener('DOMContentLoaded', function () {
-  console.log('✅ DOM загружен, устанавливаем обработчик');
+Клик перехвачен на фазе CAPTURE
+VM16241:51 ❌ Валидация не пройдена
+VM16358:13 ✅ Клик перехвачен на фазе CAPTURE
+VM16358:51 ❌ Валидация не пройдена
 
-  document.addEventListener('click', function (e) {
-    const buttonSelector = '.js--btn-registration-state';
-    const btn = document.querySelector(buttonSelector);
-    if (!btn || !e.target.closest(buttonSelector)) {
-      return;
-    }
 
-    e.preventDefault();
-    console.log('✅ Клик перехвачен на фазе CAPTURE');
 
-    // Используем .js--modal как общий контейнер
-    const container = btn.closest('.js--modal') || document;
-    const checkboxWrappers = container.querySelectorAll('.js--checkbox_wrapper');
-    const errorClass = 'js--input__error_required';
-
-    let hasError = false;
-
-    // Удаляем старые ошибки и классы
-    checkboxWrappers.forEach(wrapper => {
-      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-      if (formBlock) {
-        const error = formBlock.querySelector('.' + errorClass);
-        if (error) error.remove();
-      }
-      wrapper.classList.remove('input_error');
-    });
-
-    // Проверяем только required-чекбоксы
-    checkboxWrappers.forEach(wrapper => {
-      const checkbox = wrapper.querySelector('input[type="checkbox"]');
-      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-
-      if (!checkbox || !formBlock) return;
-
-      if (checkbox.hasAttribute('required') && !checkbox.checked) {
-        const message = checkbox.getAttribute('data-required-hint') || 'Согласитесь с условиями';
-        const error = document.createElement('p');
-        error.className = 'input__error ' + errorClass;
-        error.textContent = message;
-        formBlock.appendChild(error);
-        wrapper.classList.add('input_error'); // добавляем класс-ошибку к обёртке
-        hasError = true;
-      }
-    });
-
-    if (hasError) {
-      console.log('❌ Валидация не пройдена');
-      return;
-    }
-
-    // Выполняем оригинальный onclick
-    const onclickAttr = btn.getAttribute('onclick');
-    console.log('🔍 onclick атрибут:', onclickAttr);
-
-    if (onclickAttr) {
-      try {
-        console.log('✅ Выполняем onclick');
-        new Function(onclickAttr)();
-      } catch (err) {
-        console.error('❌ Ошибка выполнения onclick:', err);
-      }
-    } else {
-      console.warn('❌ Атрибут onclick отсутствует');
-    }
-  }, true); // useCapture: true
-
-  console.log('🔐 Обработчик клика установлен на фазе capture');
-});
+Клик перехвачен на фазе CAPTURE
+VM16241:57 🔍 onclick атрибут: null
+VM16241:67 ❌ Атрибут onclick отсутствует
+(anonymous) @ VM16241:67
+VM16358:13 ✅ Клик перехвачен на фазе CAPTURE
+VM16358:57 🔍 onclick атрибут: null
+VM16358:67 ❌ Атрибут onclick отсутствует
