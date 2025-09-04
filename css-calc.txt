@@ -1,3 +1,18 @@
+f (document.readyState !== 'loading') {
+  processBtnBookmark();
+} else {
+  document.addEventListener('DOMContentLoaded', function () {
+    processBtnBookmark();
+    initCheckboxValidation('.js--btn-registration-state');
+  });
+}
+
+/*
+События по клику на кнопку Войти через Госуслуги, проверка заполненности чекбоксов с атрибутом required
+если не заполнены то я изначально убранный обработчик onclick не подставляю в кнопку
+Автор - Станислав Щёголев
+ */
+
 /**
  * Инициализирует валидацию чекбоксов перед вызовом onclick на кнопке.
  * Показывает ошибку, если обязательные чекбоксы не отмечены.
@@ -5,121 +20,121 @@
  * @param {string} buttonSelector - CSS-селектор кнопки (например, '.js--btn-registration-state')
  */
 function initCheckboxValidation(buttonSelector) {
-    const btn = document.querySelector(buttonSelector);
-    if (!btn) {
-        console.warn(`Кнопка с селектором "${buttonSelector}" не найдена.`);
-        return;
+  const btn = document.querySelector(buttonSelector);
+  if (!btn) {
+    console.warn(`Кнопка с селектором "${buttonSelector}" не найдена.`);
+    return;
+  }
+
+  const checkboxWrappers = document.querySelectorAll('.js--checkbox_wrapper');
+  const errorClass = 'js--input__error_required';
+
+  // Сохраняем оригинальный обработчик onclick и удаляем его с кнопки
+  const originalHandler = btn.onclick;
+  btn.removeAttribute('onclick');
+  btn.onclick = null;
+
+  // --- Вспомогательные функции ---
+
+  /**
+   * Возвращает текст ошибки из data-required-hint или fallback
+   * @param {HTMLInputElement} checkbox
+   * @returns {string}
+   */
+  function getErrorMessage(checkbox) {
+    return checkbox.getAttribute('data-required-hint') || 'Пожалуйста, подтвердите это условие';
+  }
+
+  /**
+   * Показывает сообщение об ошибке в блоке
+   * @param {HTMLElement} formBlock
+   * @param {string} message
+   */
+  function showError(formBlock, message) {
+    if (!formBlock.querySelector('.' + errorClass)) {
+      const error = document.createElement('p');
+      error.className = 'input__error ' + errorClass;
+      error.textContent = message;
+      formBlock.appendChild(error);
     }
+  }
 
-    const checkboxWrappers = document.querySelectorAll('.js--checkbox_wrapper');
-    const errorClass = 'js--input__error_required';
-
-    // Сохраняем оригинальный обработчик onclick и удаляем его с кнопки
-    const originalHandler = btn.onclick;
-    btn.removeAttribute('onclick');
-    btn.onclick = null;
-
-    // --- Вспомогательные функции ---
-
-    /**
-     * Возвращает текст ошибки из data-required-hint или fallback
-     * @param {HTMLInputElement} checkbox
-     * @returns {string}
-     */
-    function getErrorMessage(checkbox) {
-        return checkbox.getAttribute('data-required-hint') || 'Пожалуйста, подтвердите это условие';
+  /**
+   * Удаляет сообщение об ошибке из блока
+   * @param {HTMLElement} formBlock
+   */
+  function removeError(formBlock) {
+    const error = formBlock.querySelector('.' + errorClass);
+    if (error) {
+      error.remove();
     }
+  }
 
-    /**
-     * Показывает сообщение об ошибке в блоке
-     * @param {HTMLElement} formBlock
-     * @param {string} message
-     */
-    function showError(formBlock, message) {
-        if (!formBlock.querySelector('.' + errorClass)) {
-            const error = document.createElement('p');
-            error.className = 'input__error ' + errorClass;
-            error.textContent = message;
-            formBlock.appendChild(error);
-        }
-    }
-
-    /**
-     * Удаляет сообщение об ошибке из блока
-     * @param {HTMLElement} formBlock
-     */
-    function removeError(formBlock) {
-        const error = formBlock.querySelector('.' + errorClass);
-        if (error) {
-            error.remove();
-        }
-    }
-
-    /**
-     * Проверяет, все ли обязательные чекбоксы отмечены
-     * @returns {boolean}
-     */
-    function allRequiredCheckboxesValid() {
-        let valid = true;
-        checkboxWrappers.forEach(wrapper => {
-            const checkbox = wrapper.querySelector('input[type="checkbox"]');
-            if (checkbox && checkbox.hasAttribute('required') && !checkbox.checked) {
-                valid = false;
-            }
-        });
-        return valid;
-    }
-
-    // --- Основной обработчик клика по кнопке ---
-
-    btn.addEventListener('click', function (e) {
-        e.preventDefault();
-
-        // Удаляем все предыдущие ошибки
-        checkboxWrappers.forEach(wrapper => {
-            const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-            if (formBlock) {
-                removeError(formBlock);
-            }
-        });
-
-        let hasError = false;
-
-        // Проверяем только чекбоксы с атрибутом required
-        checkboxWrappers.forEach(wrapper => {
-            const checkbox = wrapper.querySelector('input[type="checkbox"]');
-            const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-
-            if (!checkbox || !formBlock) return;
-
-            if (checkbox.hasAttribute('required') && !checkbox.checked) {
-                const message = getErrorMessage(checkbox);
-                showError(formBlock, message);
-                hasError = true;
-            }
-        });
-
-        // Если всё ок — вызываем оригинальный onclick
-        if (!hasError && typeof originalHandler === 'function') {
-            originalHandler.call(btn);
-        }
-    });
-
-    // --- Обработка изменений чекбоксов ---
-
+  /**
+   * Проверяет, все ли обязательные чекбоксы отмечены
+   * @returns {boolean}
+   */
+  function allRequiredCheckboxesValid() {
+    let valid = true;
     checkboxWrappers.forEach(wrapper => {
-        const checkbox = wrapper.querySelector('input[type="checkbox"]');
-        const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-
-        if (!checkbox || !formBlock || !checkbox.hasAttribute('required')) return;
-
-        checkbox.addEventListener('change', function () {
-            if (this.checked) {
-                removeError(formBlock);
-            } else {
-                const message = getErrorMessage(this);
-                showError(formBlock, message);
-            }
-        });
+      const checkbox = wrapper.querySelector('input[type="checkbox"]');
+      if (checkbox && checkbox.hasAttribute('required') && !checkbox.checked) {
+        valid = false;
+      }
     });
+    return valid;
+  }
+
+  // --- Основной обработчик клика по кнопке ---
+
+  btn.addEventListener('click', function (e) {
+    e.preventDefault();
+
+    // Удаляем все предыдущие ошибки
+    checkboxWrappers.forEach(wrapper => {
+      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+      if (formBlock) {
+        removeError(formBlock);
+      }
+    });
+
+    let hasError = false;
+
+    // Проверяем только чекбоксы с атрибутом required
+    checkboxWrappers.forEach(wrapper => {
+      const checkbox = wrapper.querySelector('input[type="checkbox"]');
+      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+
+      if (!checkbox || !formBlock) return;
+
+      if (checkbox.hasAttribute('required') && !checkbox.checked) {
+        const message = getErrorMessage(checkbox);
+        showError(formBlock, message);
+        hasError = true;
+      }
+    });
+
+    // Если всё ок — вызываем оригинальный onclick
+    if (!hasError && typeof originalHandler === 'function') {
+      originalHandler.call(btn);
+    }
+  });
+
+  // --- Обработка изменений чекбоксов ---
+
+  checkboxWrappers.forEach(wrapper => {
+    const checkbox = wrapper.querySelector('input[type="checkbox"]');
+    const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+
+    if (!checkbox || !formBlock || !checkbox.hasAttribute('required')) return;
+
+    checkbox.addEventListener('change', function () {
+      if (this.checked) {
+        removeError(formBlock);
+      } else {
+        const message = getErrorMessage(this);
+        showError(formBlock, message);
+      }
+    });
+  });
 }
