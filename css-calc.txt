@@ -1,4 +1,1230 @@
-errorMessage() {
+<template lang="pug">
+  div
+    .layer-overlay.js--layer-overlay
+    .block-grid-area-big-small
+      .block-grid-area__col
+        .calc-tax-deduc-new__block.grey
+          h3.calc-tax-deduc-new__block-title.big Доходы
+          .calc-tax-deduc-new__row.wr-round-billet
+            .round-billet
+              .billet.transparent(
+                v-cloak
+                @click="selectedYear"
+                v-for="item in array_year"
+                :for-year="item"
+                :class="item===selected_year?'active':''"
+              ) {{item}}
+            .select-list__wrapper.js--select.js--openlist-container.js--only-mobile-fixed.select-list__tablet
+              .select__background.modal-special-background.js--openlist-background
+              .select__choosen.select__choosen_bordered.js--openlist-btn
+                p.select__substituted-text {{selected_year}}
+                .select__arrow-search
+                  svg(width='12', height='8', viewbox='0 0 12 8', fill='none', xmlns='http://www.w3.org/2000/svg')
+                    path(fill-rule='evenodd', clip-rule='evenodd', d='M11.753 0.868692C11.9987 1.13419 12.0361 1.58803 11.7904 1.85353L6.50907 7.10074C6.22563 7.40708 5.76607 7.40707 5.48263 7.10074L0.210749 1.84152C-0.0349036 1.57603 -0.000290891 1.13927 0.245361 0.873779C0.491014 0.608285 0.974545 0.608131 1.2202 0.873625L6.00253 5.59224L10.7671 0.868661C11.0127 0.603166 11.5074 0.603198 11.753 0.868692Z', fill='#252628')
+              .select-list__selection-window.modal-special-styles.js--openlist-body
+                .select-list__head
+                  p Выберите год
+                  .select-list__head-close.js--select-list-close
+                    svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                      path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+                .select-list__wr-search
+                  .select-list__search-item.js--openlist-item(
+                    @click="selectedYear"
+                    v-for="item in array_year"
+                    :for-year="item"
+                    :class="item===selected_year?'active':''"
+                  )
+                    p {{item}}
+          .calc-tax-deduc-new__row.big-margin.firsrt-margin
+            p.calc-tax-deduc-new__row-title.big Сумма дохода за год, ₽
+            .range-input.js--tex-deduc-input
+              input(
+                inputmode="numeric"
+                v-model="dataField"
+                @keyup="keyUpRange"
+                @paste="inputPast"
+                @keypress="focusInput"
+                @blur="moveAnotherElement"
+                @focus="inpFocus"
+
+              )
+              .range-input__wr-toddler.range-input__wr-toddler
+          .calc-tax-deduc-new__row.big-margin
+            p.calc-tax-deduc-new__row-title.big Сумма дохода за год, ₽ после вычета НДФЛ
+            .range-input.js--tex-deduc-input
+              input(
+                inputmode="numeric"
+                v-model="dataField_2"
+                @keyup="keyUpRange_2"
+                @blur="moveAnotherElement_2"
+                @paste="inputPast"
+                @keypress="focusInput"
+                @focus="inpFocus"
+
+              )
+              .range-input__wr-toddler.range-input__wr-toddler_2
+        .calc-tax-deduc-new__area.margin-top.js-accordion-parent-calc.active
+          .calc-tax-deduc-new__call-to-accordion(@click="dropdownArea")
+            p Социальные вычеты
+
+          .calc-tax-deduc-new__wr-function-block
+            .calc-tax-deduc-new__acc-wr(ref="containerSocialDeductions")
+              .calc-tax-deduc-new__block.big-pd-bot.grey
+                h3.calc-tax-deduc-new__block-title Медицина
+                .calc-tax-deduc-new__row.mobile-margin.js--tax-deduc-row(data-kind="limitat")
+                  p.calc-tax-deduc-new__row-title Обычное лечение, ₽
+                  .calc-tax-deduc-new__row-input.js--calc-row-input
+                    .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                      input(
+                        inputmode="numeric"
+                        placeholder="Введите сумму"
+                        @keyup="fieldCalculation"
+                        @change="incomeSubstitution_2"
+                        data-input="0"
+                        @focus="inpFocus"
+                        @blur="inpBlur"
+                        @input="numberFormatting"
+
+
+                      )
+                      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                        @click="clearInput"
+                      )
+                    .calc-tax-deduc-new__col-input.grey.js--wr-col-input.js-wr-col-input-soc
+                      p.js--result-calc {{placeholder}}
+                      p ₽
+                .calc-tax-deduc-new__row.js--tax-deduc-row
+                  p.calc-tax-deduc-new__row-title Дорогостоящее лечение, ₽
+                  .calc-tax-deduc-new__row-input.js--calc-row-input
+                    .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                      input(
+                        inputmode="numeric"
+                        placeholder="Введите сумму"
+                        @keyup="fieldCalculation"
+                        @focus="inpFocus"
+                        @blur="inpBlur"
+                        @input="numberFormatting"
+                      )
+                      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                        @click="clearInput"
+                      )
+                    .calc-tax-deduc-new__col-input.grey.js--wr-col-input
+                      p.js--result-calc {{placeholder}}
+                      p ₽
+              .calc-tax-deduc-new__block.big-pd-bot.mt-8.grey
+                h3.calc-tax-deduc-new__block-title Образование
+                .calc-tax-deduc-new__row.mobile-margin.js--tax-deduc-row(data-kind="limitat")
+                  p.calc-tax-deduc-new__row-title Собственное, ₽
+                  .calc-tax-deduc-new__row-input.js--calc-row-input
+                    .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                      input(
+                        inputmode="numeric"
+                        placeholder="Введите сумму"
+                        @keyup="fieldCalculation"
+                        @focus="inpFocus"
+                        @blur="inpBlur"
+                        @input="numberFormatting"
+
+                        @change="incomeSubstitution_2"
+                        data-input="1"
+                      )
+                      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                        @click="clearInput"
+                      )
+                    .calc-tax-deduc-new__col-input.grey.js--wr-col-input.js-wr-col-input-soc
+                      p.js--result-calc {{placeholder}}
+                      p ₽
+                .calc-tax-deduc-new__row.js--tax-deduc-row.js--tax-deduc-child-first(
+                  v-for="(item, index) in array_child_first"
+                  :key="item"
+                  data-kind="limitatchild"
+                )
+                  //p.calc-tax-deduc-new__row-title {{item}} ребенок, ₽
+                  p.calc-tax-deduc-new__row-title Ребёнок, ₽
+                  .calc-tax-deduc-new__row-input.js--calc-row-input
+                    .calc-tax-deduc-new__col-input.js--tex-deduc-input(:data-input-index="index")
+                      input(
+                        inputmode="numeric"
+                        placeholder="Введите сумму"
+                        @keyup="fieldCalculation"
+                        @input="numberFormatting"
+                        @focus="inpFocus"
+                        @blur="inpBlur"
+                      )
+                      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                        @click="clearInput"
+                      )
+                    .calc-tax-deduc-new__col-input.grey.js--wr-col-input
+                      p.js--result-calc {{placeholder}}
+                      p ₽
+                  .calc-tax-deduc-new__delete-child(
+                    v-if="array_child_first_delete>1"
+                    @click="removeChild"
+                  )
+                    .calc-tax-deduc-new__delete-child-icon
+                      svg(width='20', height='22', viewbox='0 0 20 22', fill='none', xmlns='http://www.w3.org/2000/svg')
+                        path(fill-rule='evenodd', clip-rule='evenodd', d='M8 2C7.73478 2 7.48043 2.10536 7.29289 2.29289C7.10536 2.48043 7 2.73478 7 3V4H13V3C13 2.73478 12.8946 2.48043 12.7071 2.29289C12.5196 2.10536 12.2652 2 12 2H8ZM15 4V3C15 2.20435 14.6839 1.44129 14.1213 0.87868C13.5587 0.31607 12.7956 0 12 0H8C7.20435 0 6.44129 0.31607 5.87868 0.87868C5.31607 1.44129 5 2.20435 5 3V4H1C0.447715 4 0 4.44772 0 5C0 5.55228 0.447715 6 1 6H2V19C2 19.7957 2.31607 20.5587 2.87868 21.1213C3.44129 21.6839 4.20435 22 5 22H15C15.7957 22 16.5587 21.6839 17.1213 21.1213C17.6839 20.5587 18 19.7957 18 19V6H19C19.5523 6 20 5.55228 20 5C20 4.44772 19.5523 4 19 4H15ZM4 6V19C4 19.2652 4.10536 19.5196 4.29289 19.7071C4.48043 19.8946 4.73478 20 5 20H15C15.2652 20 15.5196 19.8946 15.7071 19.7071C15.8946 19.5196 16 19.2652 16 19V6H4ZM8 9C8.55228 9 9 9.44771 9 10V16C9 16.5523 8.55228 17 8 17C7.44772 17 7 16.5523 7 16V10C7 9.44771 7.44772 9 8 9ZM11 10C11 9.44771 11.4477 9 12 9C12.5523 9 13 9.44771 13 10V16C13 16.5523 12.5523 17 12 17C11.4477 17 11 16.5523 11 16V10Z', fill='#252628')
+                    p Удалить
+                .calc-tax-deduc-new__row
+                  .calc-tax-deduc-new__row-flex
+                    .btn_s.transparent_black_border.btn-icon-plus.calc-tax-deduc-new__btn-plus.js--calc-tax-add(
+                      @click="addField"
+                      ref="BtnChildFirst"
+                    ) Добавить еще ребенка
+              .calc-tax-deduc-new__row-two-column
+                .calc-tax-deduc-new__block.grey
+                  .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitat")
+                    p.calc-tax-deduc-new__row-title Траты на спорт, ₽
+                    .calc-tax-deduc-new__row-input.js--calc-row-input
+                      .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                        input(
+                          inputmode="numeric"
+                          placeholder="Введите сумму"
+                          @keyup="fieldCalculation"
+                          @focus="inpFocus"
+                          @blur="inpBlur"
+                          @input="numberFormatting"
+
+                          data-input="2"
+                        )
+                        .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                          @click="clearInput"
+                        )
+                      .calc-tax-deduc-new__col-input.grey.js--wr-col-input.js-wr-col-input-soc
+                        p.js--result-calc {{placeholder}}
+                        p ₽
+                .calc-tax-deduc-new__block.grey
+                  .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitat")
+                    p.calc-tax-deduc-new__row-title Страхование, ₽
+                    .calc-tax-deduc-new__row-input.js--calc-row-input
+                      .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                        input(
+                          inputmode="numeric"
+                          placeholder="Введите сумму"
+                          @keyup="fieldCalculation"
+                          @focus="inpFocus"
+                          @blur="inpBlur"
+                          @input="numberFormatting"
+                          data-input="3"
+                        )
+                        .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                          @click="clearInput"
+                        )
+                      .calc-tax-deduc-new__col-input.grey.js--wr-col-input.js-wr-col-input-soc
+                        p.js--result-calc {{placeholder}}
+                        p ₽
+                .calc-tax-deduc-new__block.grey
+                  .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitatcharity")
+                    p.calc-tax-deduc-new__row-title Благотворительность, ₽
+                    .calc-tax-deduc-new__row-input.js--calc-row-input
+                      .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                        input(
+                          inputmode="numeric"
+                          placeholder="Введите сумму"
+                          @keyup="fieldCalculation"
+                          @focus="inpFocus"
+                          @blur="inpBlur"
+                          @input="numberFormatting"
+                        )
+                        .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                          @click="clearInput"
+                        )
+                      .calc-tax-deduc-new__col-input.grey.js--wr-col-input
+                        p.js--result-calc {{placeholder}}
+                        p ₽
+                .calc-tax-deduc-new__block.grey
+                  .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitat")
+                    p.calc-tax-deduc-new__row-title Накопительная пенсия, ₽
+                    .calc-tax-deduc-new__row-input.js--calc-row-input
+                      .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                        input(
+                          inputmode="numeric"
+                          placeholder="Введите сумму"
+                          @keyup="fieldCalculation"
+                          @focus="inpFocus"
+                          @blur="inpBlur"
+                          @input="numberFormatting"
+                          data-input="4"
+                        )
+                        .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                          @click="clearInput"
+                        )
+                      .calc-tax-deduc-new__col-input.grey.js--wr-col-input.js-wr-col-input-soc
+                        p.js--result-calc {{placeholder}}
+                        p ₽
+                .calc-tax-deduc-new__block.last-block.grey
+                  .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitat")
+                    p.calc-tax-deduc-new__row-title Независимая оценка квалификации, ₽
+                    .calc-tax-deduc-new__row-input.js--calc-row-input
+                      .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                        input(
+                          inputmode="numeric"
+                          placeholder="Введите сумму"
+                          @keyup="fieldCalculation"
+                          @focus="inpFocus"
+                          @blur="inpBlur"
+                          @input="numberFormatting"
+                          data-input="5"
+                        )
+                        .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                          @click="clearInput"
+                        )
+                      .calc-tax-deduc-new__col-input.grey.js--wr-col-input.js-wr-col-input-soc
+                        p.js--result-calc {{placeholder}}
+                        p ₽
+
+        .calc-tax-deduc-new__area.js-accordion-parent-calc.active
+          .calc-tax-deduc-new__call-to-accordion(@click="dropdownArea")
+            p Имущественные вычеты
+            a(href="/calculators/kalkulyator-nalogovogo-vycheta-pri-pokupke-kvartiri/" target="_blank").btn_s.white_color_black Расширенная версия
+          .calc-tax-deduc-new__wr-function-block
+            .calc-tax-deduc-new__acc-wr
+              .calc-tax-deduc-new__row-two-column
+                .calc-tax-deduc-new__block.grey
+                  .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitathousingcost")
+                    p.calc-tax-deduc-new__row-title Стоимость жилья, ₽
+                    .calc-tax-deduc-new__row-input.js--calc-row-input
+                      .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                        input(
+                          inputmode="numeric"
+                          placeholder="Введите сумму"
+                          @keyup="fieldCalculation"
+                          @focus="inpFocus"
+                          @blur="inpBlur"
+                          @input="numberFormatting"
+                        )
+                        .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                          @click="clearInput"
+                        )
+                      .calc-tax-deduc-new__col-input.grey.js--wr-col-input
+                        p.js--result-calc {{placeholder}}
+                        p ₽
+
+                .calc-tax-deduc-new__block.last-block.grey
+                  .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitathousinginterest")
+                    p.calc-tax-deduc-new__row-title Проценты по ипотеке, ₽
+                    .calc-tax-deduc-new__row-input.js--calc-row-input
+                      .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                        input(
+                          inputmode="numeric"
+                          placeholder="Введите сумму"
+                          @keyup="fieldCalculation"
+                          @focus="inpFocus"
+                          @blur="inpBlur"
+                          @input="numberFormatting"
+                        )
+                        .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                          @click="clearInput"
+                        )
+                      .calc-tax-deduc-new__col-input.grey.js--wr-col-input
+                        p.js--result-calc {{placeholder}}
+                        p ₽
+        .calc-tax-deduc-new__area.js-accordion-parent-calc.active
+          .calc-tax-deduc-new__call-to-accordion(@click="dropdownArea")
+            p Профессиональные вычеты
+          .calc-tax-deduc-new__wr-function-block.js--tax-deduc-cont-prof
+            .calc-tax-deduc-new__acc-wr
+              .calc-tax-deduc-new__block.last-block.grey.js--tax-deduc-container-row
+                .calc-tax-deduc-new__row(data-kind="professionaldeductions")
+                  .select-list__wrapper.js--select.js--openlist-container.js--only-mobile-fixed
+                    .select__background.modal-special-background.js--openlist-background
+                    .select__choosen.select__choosen_bordered.js--openlist-btn
+                      p.select__substituted-text.input-emty Выберите сферу вашей деятельности
+                      .select__arrow-search
+                        svg(width='12', height='8', viewbox='0 0 12 8', fill='none', xmlns='http://www.w3.org/2000/svg')
+                          path(fill-rule='evenodd', clip-rule='evenodd', d='M11.753 0.868692C11.9987 1.13419 12.0361 1.58803 11.7904 1.85353L6.50907 7.10074C6.22563 7.40708 5.76607 7.40707 5.48263 7.10074L0.210749 1.84152C-0.0349036 1.57603 -0.000290891 1.13927 0.245361 0.873779C0.491014 0.608285 0.974545 0.608131 1.2202 0.873625L6.00253 5.59224L10.7671 0.868661C11.0127 0.603166 11.5074 0.603198 11.753 0.868692Z', fill='#252628')
+                    .select-list__selection-window.modal-special-styles.js--openlist-body
+                      .select-list__head
+                        p Сфера деятельности
+                        .select-list__head-close.js--select-list-close
+                          svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                            path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+                      .select-list__wr-search
+                        .select-list__search-item.js--openlist-item(
+                          v-for="item in array_kind_working"
+                          :data-ratio="item.ratio"
+                          @click = "coefficientAreasActivity"
+                        )
+                          p {{item.name}}
+                  .calc-tax-deduc-new__wr-checkbox
+                    .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
+                      .personal-office__user-form-subscription-em
+                      .feed_back__user-form-block
+                        input#modal_subscription(
+                          type="checkbox"
+                          @change="changeCheckboxDocuments"
+                        )
+                        label.feed_back__chek-label(for='modal_subscription')
+                          p Я могу подтвердить свои расходы документами
+                .calc-tax-deduc-new__row-container.js--row-container
+                  .calc-tax-deduc-new__row.js--tax-deduc-row
+                    p.calc-tax-deduc-new__row-title Доходы, ₽
+                    .calc-tax-deduc-new__row-input.js--calc-row-input
+                      .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input.js--tex-deduc-inp-income
+                        input(
+                          inputmode="numeric"
+                          placeholder="Введите сумму"
+                          @keyup="fieldCalculationAreasActivityIncome"
+                          @focus="inpFocus"
+                          @blur="inpBlur"
+                          @input="numberFormatting"
+                          ref="areasActivityIncome"
+                        )
+                        .calc-tax-deduc-new__input-clear.js--clear-calc-tax.js--clear-calc-tax-special(
+                          @click="clearInput"
+                        )
+                  .calc-tax-deduc-new__row.js--tax-deduc-row
+                    p.calc-tax-deduc-new__row-title Расходы, ₽
+                    .calc-tax-deduc-new__row-input.js--calc-row-input.js--calc-row-input-profy
+                      .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                        input(
+                          inputmode="numeric"
+                          placeholder="Введите сумму"
+                          @keyup="fieldCalculationAreasActivityExpenses"
+                          @focus="inpFocus"
+                          @blur="inpBlur"
+                          @input="numberFormatting"
+                          ref="InputAreasActivityExpenses"
+                        )
+                        .calc-tax-deduc-new__input-clear.js--clear-calc-tax.js--clear-calc-tax-expenses(
+                          @click="clearInput"
+                        )
+                      .calc-tax-deduc-new__col-input.grey.js--wr-col-input
+                        p.js--result-calc(ref='finalDeductions') {{placeholder}}
+                        p ₽
+        .calc-tax-deduc-new__area.js-accordion-parent-calc.js-accordion-parent-calc-standard.active.active_2
+          .calc-tax-deduc-new__call-to-accordion(@click="dropdownArea")
+            p Стандартные вычеты
+          .calc-tax-deduc-new__wr-function-block
+            .calc-tax-deduc-new__acc-wr
+              .calc-tax-deduc-new__block.grey
+                .calc-tax-deduc-new__row.js--tax-deduc-row
+                  p.calc-tax-deduc-new__row-title.big.big-margin На себя
+                  .calc-tax-deduc-new__row-input
+                    .select-list__wrapper.js--select.js--openlist-container.js--only-mobile-fixed
+                      .select__background.modal-special-background.js--openlist-background
+                      .select__choosen.select__choosen_bordered.js--openlist-btn
+                        p.select__substituted-text.input-emty Уточните информацию о себе
+                        .select__arrow-search
+                          svg(width='12', height='8', viewbox='0 0 12 8', fill='none', xmlns='http://www.w3.org/2000/svg')
+                            path(fill-rule='evenodd', clip-rule='evenodd', d='M11.753 0.868692C11.9987 1.13419 12.0361 1.58803 11.7904 1.85353L6.50907 7.10074C6.22563 7.40708 5.76607 7.40707 5.48263 7.10074L0.210749 1.84152C-0.0349036 1.57603 -0.000290891 1.13927 0.245361 0.873779C0.491014 0.608285 0.974545 0.608131 1.2202 0.873625L6.00253 5.59224L10.7671 0.868661C11.0127 0.603166 11.5074 0.603198 11.753 0.868692Z', fill='#252628')
+                      .select-list__selection-window.modal-special-styles.js--openlist-body
+                        .select-list__head
+                          p Информация о Вас
+                          .select-list__head-close.js--select-list-close
+                            svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                              path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+                        .select-list__wr-search
+                          .select-list__search-item.js--openlist-item(
+                            v-for="item in array_personal_information_myself"
+                            :data-ratio="item.ratio"
+                            @click = "calculationAmountPayment"
+                          )
+                            p {{item.name}}
+                    .calc-tax-deduc-new__col-input.grey.js--wr-col-input
+                      p.js--result-calc {{placeholder}}
+                      p ₽
+              .calc-tax-deduc-new__block.mt-8.last-block.grey.js--child-parent(ref='ChildParent')
+                .calc-tax-deduc-new__row
+                  p.calc-tax-deduc-new__row-title.big.big-margin На ребенка
+                  .calc-tax-deduc-new__row-input
+                    .select-list__wrapper.js--select.js--openlist-container.js--only-mobile-fixed.js--select-child
+                      .select__background.modal-special-background.js--openlist-background
+                      .select__choosen.select__choosen_bordered.js--openlist-btn
+                        p.select__substituted-text.input-emty Выберите количество детей
+                        //p.select__substituted-text 1
+                        .select__arrow-search
+                          svg(width='12', height='8', viewbox='0 0 12 8', fill='none', xmlns='http://www.w3.org/2000/svg')
+                            path(fill-rule='evenodd', clip-rule='evenodd', d='M11.753 0.868692C11.9987 1.13419 12.0361 1.58803 11.7904 1.85353L6.50907 7.10074C6.22563 7.40708 5.76607 7.40707 5.48263 7.10074L0.210749 1.84152C-0.0349036 1.57603 -0.000290891 1.13927 0.245361 0.873779C0.491014 0.608285 0.974545 0.608131 1.2202 0.873625L6.00253 5.59224L10.7671 0.868661C11.0127 0.603166 11.5074 0.603198 11.753 0.868692Z', fill='#252628')
+                      .select-list__selection-window.modal-special-styles.js--openlist-body
+                        .select-list__head
+                          p Количество детей
+                          .select-list__head-close.js--select-list-close
+                            svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                              path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+                        .select-list__wr-search
+                          .select-list__search-item.js--openlist-item(
+                            v-for="item in 20"
+                            :data-ratio="item"
+                            @click="addChildSelect"
+                            :class="item===1?'active':''"
+                          )
+                            p {{item}}
+                .calc-tax-deduc-new__row.js--calc-row-input.js--tax-deduc-row.js--tax-deduc-child-second(
+                  v-for="(item, index) in array_child_second"
+                  :key="item"
+                  data-kind="childdeductions"
+                  data-yourself="0"
+                  :class="index===0?'js--first-child':''"
+                )
+                  p.calc-tax-deduc-new__row-title Возраст ребенка, лет
+                  .calc-tax-deduc-new__row-input
+                    .calc-tax-deduc-new__col-input.js--number-simply.js--tex-deduc-input(:data-input-index="index")
+                      input(
+                        inputmode="numeric"
+                        placeholder="Введите возраст"
+                        @keyup="fieldCalculation"
+                        @focus="inpFocus"
+                        @blur="inpBlur"
+                        :data-index="index"
+                        @input="inputFieldChild"
+                      )
+                      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                        @click="clearInput"
+                      )
+                    .calc-tax-deduc-new__wr-child-checkbox
+                      .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
+                        .personal-office__user-form-subscription-em
+                        .feed_back__user-form-block
+                          input.js--studies-checkbox(
+                            type="checkbox" :id="[`studies-status-${index}`]"
+                            :data-index="index"
+                            @change="studiesCategory"
+                          )
+                          label.feed_back__chek-label(:for="[`studies-status-${index}`]")
+                            p Студент
+                      .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
+                        .personal-office__user-form-subscription-em
+                        .feed_back__user-form-block
+                          input.js--category-checkbox(
+                            type="checkbox" :id="[`child-status-${index}`]"
+                            @change="childCategory"
+                            :data-index="index"
+                          )
+                          label.feed_back__chek-label(:for="[`child-status-${index}`]")
+                            p Ребенок инвалид
+                  .calc-tax-deduc-new__row-input.calc-tax-deduc-new__row.margin-24
+                    .select-list__wrapper.js--select.js--openlist-container.js--only-mobile-fixed
+                      .select__background.modal-special-background.js--openlist-background
+                      .select__choosen.select__choosen_bordered.js--openlist-btn
+                        p.select__substituted-text.input-emty Уточните информацию о себе
+                        .select__arrow-search
+                          svg(width='12', height='8', viewbox='0 0 12 8', fill='none', xmlns='http://www.w3.org/2000/svg')
+                            path(fill-rule='evenodd', clip-rule='evenodd', d='M11.753 0.868692C11.9987 1.13419 12.0361 1.58803 11.7904 1.85353L6.50907 7.10074C6.22563 7.40708 5.76607 7.40707 5.48263 7.10074L0.210749 1.84152C-0.0349036 1.57603 -0.000290891 1.13927 0.245361 0.873779C0.491014 0.608285 0.974545 0.608131 1.2202 0.873625L6.00253 5.59224L10.7671 0.868661C11.0127 0.603166 11.5074 0.603198 11.753 0.868692Z', fill='#252628')
+                      .select-list__selection-window.modal-special-styles.js--openlist-body
+                        .select-list__head
+                          p Информация о Вас
+                          .select-list__head-close.js--select-list-close
+                            svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                              path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+                        .select-list__wr-search
+                          .select-list__search-item.js--openlist-item(
+                            v-for="item in array_personal_information_child"
+                            :data-ratio="item.ratio"
+                            @click="informationYourselfChild"
+
+                          )
+                            p {{item.name}}
+                    .calc-tax-deduc-new__col-input.grey.js--wr-col-input
+                      p.js--result-calc {{placeholder}}
+                      p ₽
+                  .calc-tax-deduc-new__delete-child(
+                    v-if="array_child_second_delete>1"
+                    @click="removeChild"
+                  )
+                    .calc-tax-deduc-new__delete-child-icon
+                      svg(width='20', height='22', viewbox='0 0 20 22', fill='none', xmlns='http://www.w3.org/2000/svg')
+                        path(fill-rule='evenodd', clip-rule='evenodd', d='M8 2C7.73478 2 7.48043 2.10536 7.29289 2.29289C7.10536 2.48043 7 2.73478 7 3V4H13V3C13 2.73478 12.8946 2.48043 12.7071 2.29289C12.5196 2.10536 12.2652 2 12 2H8ZM15 4V3C15 2.20435 14.6839 1.44129 14.1213 0.87868C13.5587 0.31607 12.7956 0 12 0H8C7.20435 0 6.44129 0.31607 5.87868 0.87868C5.31607 1.44129 5 2.20435 5 3V4H1C0.447715 4 0 4.44772 0 5C0 5.55228 0.447715 6 1 6H2V19C2 19.7957 2.31607 20.5587 2.87868 21.1213C3.44129 21.6839 4.20435 22 5 22H15C15.7957 22 16.5587 21.6839 17.1213 21.1213C17.6839 20.5587 18 19.7957 18 19V6H19C19.5523 6 20 5.55228 20 5C20 4.44772 19.5523 4 19 4H15ZM4 6V19C4 19.2652 4.10536 19.5196 4.29289 19.7071C4.48043 19.8946 4.73478 20 5 20H15C15.2652 20 15.5196 19.8946 15.7071 19.7071C15.8946 19.5196 16 19.2652 16 19V6H4ZM8 9C8.55228 9 9 9.44771 9 10V16C9 16.5523 8.55228 17 8 17C7.44772 17 7 16.5523 7 16V10C7 9.44771 7.44772 9 8 9ZM11 10C11 9.44771 11.4477 9 12 9C12.5523 9 13 9.44771 13 10V16C13 16.5523 12.5523 17 12 17C11.4477 17 11 16.5523 11 16V10Z', fill='#252628')
+                    p Удалить
+
+                .calc-tax-deduc-new__row
+                  .calc-tax-deduc-new__row-flex
+                    .btn_s.transparent_black_border.btn-icon-plus.calc-tax-deduc-new__btn-plus.js--calc-tax-add(
+                      @click="addFieldSecond"
+                    ) Добавить еще ребенка
+
+        .calc-tax-deduc-new__area.js-accordion-parent-calc.active
+          .calc-tax-deduc-new__call-to-accordion(@click="dropdownArea")
+            p Инвестиционные вычеты
+          .calc-tax-deduc-new__wr-function-block.last-wr-function-block
+            .calc-tax-deduc-new__acc-wr
+              .calc-tax-deduc-new__block.grey
+                .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitatinvestmentdeductions")
+                  p.calc-tax-deduc-new__row-title Взносы на ИИС (тип А), ₽
+                  .calc-tax-deduc-new__row-input.js--calc-row-input
+                    .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                      input(
+                        inputmode="numeric"
+                        placeholder="Введите сумму"
+                        @keyup="fieldCalculation"
+                        @focus="inpFocus"
+                        @blur="inpBlur"
+                        @input="numberFormatting"
+                      )
+                      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                        @click="clearInput"
+                      )
+                    .calc-tax-deduc-new__col-input.grey.js--wr-col-input.js--wr-col-input-contributions
+                      p.js--result-calc {{placeholder}}
+                      p ₽
+              .calc-tax-deduc-new__block.mt-8.grey
+                .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitatinvestmentdeductions")
+                  p.calc-tax-deduc-new__row-title Взносы на ИИС-3, ₽
+                  .calc-tax-deduc-new__row-input.js--calc-row-input
+                    .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                      input(
+                        inputmode="numeric"
+                        placeholder="Введите сумму"
+                        @keyup="fieldCalculation"
+                        @focus="inpFocus"
+                        @blur="inpBlur"
+                        @input="numberFormatting"
+
+                      )
+                      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                        @click="clearInput"
+                      )
+                    .calc-tax-deduc-new__col-input.grey.js--wr-col-input.js--wr-col-input-contributions
+                      p.js--result-calc {{placeholder}}
+                      p ₽
+              .calc-tax-deduc-new__block.mt-8.grey
+                .calc-tax-deduc-new__row.js--tax-deduc-row(data-kind="limitatinvestmentdeductions")
+                  p.calc-tax-deduc-new__row-title Взносы на счет ПДС, ₽
+                  .calc-tax-deduc-new__row-input.js--calc-row-input
+                    .calc-tax-deduc-new__col-input.js--number-debt.js--tex-deduc-input
+                      input(
+                        inputmode="numeric"
+                        placeholder="Введите сумму"
+                        @keyup="fieldCalculation"
+                        @focus="inpFocus"
+                        @blur="inpBlur"
+                        @input="numberFormatting"
+                      )
+                      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+                        @click="clearInput"
+                      )
+                    .calc-tax-deduc-new__col-input.grey.js--wr-col-input.js--wr-col-input-contributions
+                      p.js--result-calc {{placeholder}}
+                      p ₽
+
+      .block-grid-area__col
+        .sticky-aside.calc-tax-deduc-new__sticky-aside(ref="heightBlock")
+          .calc-tax-deduc-new__block.calc-tax-deduc-new__block.mobile-padding.grey
+            .calc-tax-deduc-new__final-block-sum
+              p.calc-tax-deduc-new__final-label К&nbsp;возврату согласно расчетам
+              p.calc-tax-deduc-new__final-sum(v-cloak) {{total_calculate}} ₽
+
+            .calc-tax-deduc-new__final-block-max
+              p.calc-tax-deduc-new__final-label Максимально возможная сумма к&nbsp;возврату
+              p.calc-tax-deduc-new__final-return(v-cloak) {{dataField_deduction}} ₽
+            .calc-tax-deduc-new__final-block-footnote
+              p.
+                Результат расчета предварительный, сформирован в&nbsp;ознакомительных целях
+                на&nbsp;основе предоставленных сведений и не&nbsp;является официальным заключением,
+                офертой, индивидуальной оценкой. Для получения подробной информации и&nbsp;индивидуальной
+                оценки рекомендуем обратиться в&nbsp;кредитную организацию
+
+          .calc-tax-deduc-new__block.red(v-if="error_message" v-cloak)
+            .calc-tax-deduc-new__warning-close(@click="closeErrorMessage")
+              svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+            .calc-tax-deduc-new__warning-icon
+              svg(width='56', height='56', viewbox='0 0 56 56', fill='none', xmlns='http://www.w3.org/2000/svg')
+                path(fill-rule='evenodd', clip-rule='evenodd', d='M28 4.66667C15.1134 4.66667 4.66667 15.1134 4.66667 28C4.66667 40.8866 15.1134 51.3333 28 51.3333C40.8866 51.3333 51.3333 40.8866 51.3333 28C51.3333 15.1134 40.8866 4.66667 28 4.66667ZM0 28C0 12.536 12.536 0 28 0C43.464 0 56 12.536 56 28C56 43.464 43.464 56 28 56C12.536 56 0 43.464 0 28Z', fill='#EEA20F')
+                path(fill-rule='evenodd', clip-rule='evenodd', d='M28 11.6667C29.2887 11.6667 30.3333 12.7113 30.3333 14V32.6667C30.3333 33.9553 29.2887 35 28 35C26.7113 35 25.6667 33.9553 25.6667 32.6667V14C25.6667 12.7113 26.7113 11.6667 28 11.6667Z', fill='#EEA20F')
+                path(d='M30.3333 42C30.3333 43.2887 29.2887 44.3333 28 44.3333C26.7113 44.3333 25.6667 43.2887 25.6667 42C25.6667 40.7113 26.7113 39.6667 28 39.6667C29.2887 39.6667 30.3333 40.7113 30.3333 42Z', fill='#EEA20F')
+            p.calc-tax-deduc-new__warning-message.
+              Максимально возможная сумма к&nbsp;возврату за&nbsp;указанный период превышена
+            .btn_s.black.calc-tax-deduc-new__warning-btn(@click="closeErrorMessage") Понятно
+
+</template>
+<script>
+import noUiSlider from 'nouislider';
+import IMask from 'imask';
+import catalogNew from '../catalog-new';
+let count_first_child=1
+let count_second_child=1
+let count = 0;
+let count_price = 0;
+let mask_array = []
+let mask_array_year = []
+let mask_array_child = []
+let maskOptions = {
+  mask: Number,
+  thousandsSeparator: ' ',
+  min:1,
+  max:100000000,
+  scale: 0
+};
+let maskOptions_year = {
+  mask: Number,
+  max:100,
+  min:0,
+  scale: 0
+};
+
+//Надо навести порядок, сократить методы, много повторяющихся функций
+export default {
+  name: 'SingleCalculator',
+  props:['array_kind_working'],
+  data(){
+    return {
+      realtySlider:'',
+      realtySlider_2:'',
+      dataField: 0,
+      dataField_2:0,
+      array_year:[],
+      selected_year:null,
+      placeholder:'Размер выплаты',
+
+      array_child_first:[],
+      array_child_first_delete:0,
+      array_child_second_delete:0,
+      array_child_second:[0],
+      // array_kind_working:[
+      //   {
+      //     "name": "Декоративное искусство",
+      //     "ratio": "0.4"
+      //   },
+      //   {
+      //     "name": "Декорации для кино и театра",
+      //     "ratio": "0.4"
+      //   },
+      //   {
+      //     "name": "Другие музыкальные произведения",
+      //     "ratio": "0.25"
+      //   },
+      //
+      //
+      //   {
+      //     "name": "Изобретения, полезные модели, промышленные образцы (по доходам за первые два года использования)",
+      //     "ratio": "0.3"
+      //   },
+      //   {
+      //     "name": "Исполнение произведений литературы и искусства",
+      //     "ratio": "0.2"
+      //   },
+      //   {
+      //     "name": "Картины, фотографии, произведения архитектуры и дизайна",
+      //     "ratio": "0.3"
+      //   },
+      //   {
+      //     "name": "Литература",
+      //     "ratio": "0.2"
+      //   },
+      //   {
+      //     "name": "Монументально-декоративная живопись",
+      //     "ratio": "0.4"
+      //   },
+      //   {
+      //     "name": "Музыка для фильмов и театра",
+      //     "ratio": "0.4"
+      //   },
+      //   {
+      //     "name": "Научные труды и разработки",
+      //     "ratio": "0.2"
+      //   },
+      //   {
+      //     "name": "Оперы, балеты, музыкальные комедии",
+      //     "ratio": "0.4"
+      //   },
+      //   {
+      //     "name": "Симфонические, хоровые, камерные произведения, произведения для оркестра",
+      //     "ratio": "0.4"
+      //   },
+      //   {
+      //     "name": "Скульптуры",
+      //     "ratio": "0.4"
+      //   },
+      //   {
+      //     "name": "Станковая живопись",
+      //     "ratio": "0.4"
+      //   },
+      //   {
+      //     "name": "Фильмы",
+      //     "ratio": "0.3"
+      //   },
+      //   {
+      //     "name": "Другая сфера деятельности",
+      //     "ratio": "0.2"
+      //   },
+      // ],
+      array_personal_information_myself:[// для селекта уточните информацию о себе (на себя)
+        {
+          name: 'Донор костного мозга',
+          ratio: 500
+        },
+        {
+          name: 'Инвалиды с детства, инвалиды I или II групп',
+          ratio: 500
+        },
+        {
+          name: 'Инвалиды в результате военной службы',
+          ratio: 3000
+        },
+        {
+          name: 'Инвалиды ВОВ',
+          ratio: 3000
+        },
+        {
+          name: 'Участник ВОВ',
+          ratio: 500
+        },
+        {
+          name: 'Участники испытаний ядерного оружия',
+          ratio: 3000
+        },
+        {
+          name: 'Чернобыльцы',
+          ratio: 3000
+        },
+
+      ],
+      array_personal_information_child:[ // // для селекта уточните информацию о себе (на ребёнка)
+        {
+          name: 'Родитель',
+          ratio: 12000
+        },
+        {
+          name: 'Опекун',
+          ratio: 6000
+        }
+      ],
+
+      stgMin: 0, // Минимальное значение поля стоимости
+      stgMinPadding: -2550000, // Минимальное значение поля стоимости
+      stgMinPadding_2: -2200000, // Минимальное значение поля стоимости
+      stgMax: 10000000, // Максимальное значение поля стоимости
+
+
+      stgMinPadding_update:-6000000,
+      stgMinPadding_2_update:-5250000,
+
+      stgMinPadding_update_2:-9000000,
+      stgMinPadding_2_update_2:-7850000,
+
+      stgMinPadding_update_3:-5000000,
+      stgMinPadding_2_update_3:-4350000,
+
+      stgMinPadding_update_4:-11000000,
+      stgMinPadding_2_update_4:-9500000,
+
+
+      stepApartment: 1,
+      start:0,
+
+
+      limit_2023:15600,
+      achieved_limit_2023:false,
+
+
+      unput_1:0,
+      unput_2:0,
+
+      limit_2024:19500,
+      limit_2023_child:6500,
+      limit_2024_child:14300,
+      check_documents_costs:false, //Я могу подтвердить свои расходы документами
+      array_child_category:[], // категория ребёнка инвалид или нет
+      array_studies_category:[], // категория студент или нет
+      ratio_areas_activity:0, // коэффициент сферы деятельности
+      information_yourself_child:null, //уточните информацию о себе На ребёнка
+      total_calculate:0,
+      dataField_deduction:0, //Максимально возможная сумма к возврату
+      error_message:false,
+      screenWidth : window.innerWidth,
+      screenHeight: window.innerHeight
+    }
+  },
+  filters: {
+  },
+  computed: {
+
+  },
+  watch: {
+    array_child_second_delete() {
+      const array_input = document.querySelectorAll('.js--tax-deduc-row[data-kind="childdeductions"]')
+      // if (array_input.length>1) {
+      //   for(let i=0; i<array_input.length;i++) {
+      //     // if (i > 1) {
+      //     // array_input[1].classList.add('js--number-children')
+      //     array_input[i].classList.add('js--number-children')
+      //     // break
+      //     // }
+      //     // if (i<=1) {
+      //     //   array_input[i].classList.remove('js--number-children')
+      //     //   // break
+      //     // }
+      //
+      //   }
+      // }
+      for(let i=0; i<array_input.length;i++) {
+
+        if (i > 1) {
+          // array_input[1].classList.add('js--number-children')
+          array_input[i].classList.add('js--number-children')
+          // break
+        }
+        if (i<=1) {
+          array_input[i].classList.remove('js--number-children')
+          // break
+        }
+
+      }
+      this.calcStandardDeductionsChildZero()
+    },
+    screenWidth() {
+      this.screenWidthSider()
+      if (this.screenWidth > 480 && this.error_message === true) {
+        document.body.classList.remove('body-modal')
+        if (document.querySelector('.js--layer-overlay')) {
+          document.querySelector('.js--layer-overlay').classList.remove('active')
+        }
+      }
+      else if (this.screenWidth <= 480 && this.error_message === true) {
+        document.body.classList.add('body-modal')
+        if (document.querySelector('.js--layer-overlay')) {
+          document.querySelector('.js--layer-overlay').classList.add('active')
+        }
+      }
+    },
+    screenHeight(){
+      this.heightBlockSticky()
+    },
+
+    error_message() {
+      if (this.screenWidth <= 480 && this.error_message === true) {
+        document.body.classList.add('body-modal')
+        if (document.querySelector('.js--layer-overlay')) {
+          document.querySelector('.js--layer-overlay').classList.add('active')
+        }
+      const array_input = document.querySelectorAll('.js--tex-deduc-input input');
+      for(let item of array_input) {
+        if(item.closest('.js--tex-deduc-input').classList.contains('input-focus')){
+          item.closest('.js--tex-deduc-input').classList.add('js--input-focus')
+        }
+        item.blur()
+      }
+
+      }
+      else if (this.screenWidth <= 480 && this.error_message === false) {
+        document.body.classList.remove('body-modal')
+        if (document.querySelector('.js--layer-overlay')) {
+          document.querySelector('.js--layer-overlay').classList.remove('active')
+        }
+        const input_focus = document.querySelector('.js--tex-deduc-input.js--input-focus');
+        if (input_focus && input_focus.querySelector('input')) {
+          input_focus.classList.remove('js--input-focus')
+          input_focus.querySelector('input').focus()
+        }
+      }
+
+    },
+    dataField() {
+
+      const input_charity = document.querySelector('.js--tax-deduc-row[data-kind="limitatcharity"]')
+      if (input_charity) {
+        const input = input_charity.querySelector('input')
+        const input_val = parseInt(input.value.replace(/\s/g, '')) * 0.13;
+        input_charity.querySelector('.js--wr-col-input').classList.remove('active_2')
+
+        if (input.value !== '' && (input_val / 0.13) >= parseInt(this.dataField.replace(/\s/g, '')) * 0.25) {
+          input_charity.querySelector('.js--result-calc').textContent = (parseInt((this.dataField.replace(/\s/g, '')) * 0.25)*0.13).toFixed(0).toString()
+            .replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+          this.totalCalc();
+        }
+        if (input.value !== '' && (input_val / 0.13) < parseInt(this.dataField.replace(/\s/g, '')) * 0.25) {
+          this.incomeSubstitution(input_charity.querySelector('.js--calc-row-input'),input_val)
+        }
+      }
+      const input_investmentdeductions = document.querySelectorAll('.js--tax-deduc-row[data-kind="limitatinvestmentdeductions"]')
+      for (let item of input_investmentdeductions) {
+
+        const input = item.querySelector('input')
+        const input_val = parseInt(input.value.replace(/\s/g, '')) * 0.13;
+        let value_val = parseInt(input.value.replace(/\s/g, ''));
+        item.querySelector('.js--wr-col-input').classList.remove('active_2')
+        if (parseInt(this.dataField.replace(/\s/g, '')) *0.13 < 52000 && value_val*0.13>=parseInt(this.dataField.replace(/\s/g, '')) *0.13) {
+          item.querySelector('.js--result-calc').textContent = (parseInt(this.dataField.replace(/\s/g, '')) *0.13).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+          this.totalCalc();
+        }
+        else if (parseInt(this.dataField.replace(/\s/g, '')) *0.13 < 52000 && value_val * 0.13<parseInt(this.dataField.replace(/\s/g, '')) *0.13) {
+          item.querySelector('.js--result-calc').textContent = (value_val * 0.13).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+          this.totalCalc();
+        }
+        else if (parseInt(this.dataField.replace(/\s/g, '')) *0.13 >= 52000 && value_val *0.13>=52000) {
+          item.querySelector('.js--result-calc').textContent = (52000).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+          this.totalCalc();
+        }
+        else{
+          if(input.value !== ''){
+            this.incomeSubstitution(item.querySelector('.js--calc-row-input'),input_val)
+          }
+        }
+      }
+      if (this.dataField!=='') {
+        this.dataField_deduction = (parseInt(this.dataField.replace(/\s/g, '')) *0.13).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+      }
+      else {
+        this.dataField_deduction=0
+      }
+      this.errorMessage()
+    },
+    ratio_areas_activity() {
+      const element_value = (this.$refs.areasActivityIncome.value).replace(/\s/g, '')
+      this.fieldCalculationAreasActivityIncomeGeneral(element_value)
+    },
+    check_documents_costs(){
+      const parent = document.querySelector('.js--calc-row-input-profy')
+      if (this.check_documents_costs===false) {
+        const element_value = (this.$refs.areasActivityIncome.value).replace(/\s/g, '')
+        this.fieldCalculationAreasActivityIncomeGeneral(element_value)
+      }
+      else {
+        const element = this.$refs.InputAreasActivityExpenses
+        const parent = this.$refs.InputAreasActivityExpenses.closest('.js--calc-row-input')
+
+        this.fieldCalculationAreasActivityExpensesGeneral(element,parent)
+
+      }
+    },
+    array_child_category(){
+      this.methodsWatchCheckChild()
+    },
+    array_studies_category(){
+      this.methodsWatchCheckChild()
+    },
+    information_yourself_child() {
+      const array_input = document.querySelectorAll('.js--tax-deduc-row[data-kind="childdeductions"]')
+      for(let item of array_input) {
+        let element = item.querySelector('input')
+        let data = parseInt(element.getAttribute('data-index'))
+        this.calcStandardDeductionsChild(item,element,data)
+        if (item.querySelector('.js--tex-deduc-input').value!=='' && item.querySelector('.js--category-checkbox') && item.querySelector('.js--category-checkbox').checked) {
+        }
+      }
+      this.calcStandardDeductionsChildZero()
+    },
+    //сдедит изменился ли массив с количеством детей в Стандартные вычеты На детей
+    array_child_second() {
+      const array_input = document.querySelectorAll('.js--tax-deduc-row[data-kind="childdeductions"]')
+      for(let item of array_input) {
+        let element = item.querySelector('input')
+        let data = parseInt(element.getAttribute('data-index'))
+        this.calcStandardDeductionsChild(item,element,data)
+      }
+    },
+    achieved_limit_2023() {
+      if (this.achieved_limit_2023===true){
+        const array_social_deductions_result = this.$refs.containerSocialDeductions.querySelectorAll('.js--tax-deduc-row[data-kind="limitat"] .js--result-calc');
+        let count = 0;
+        for (let item of array_social_deductions_result) {
+          if (item.textContent !== this.placeholder && !item.closest('.js--calc-row-input')
+            .querySelector('.js--tex-deduc-input input').classList.contains('active_inp')) {
+            count += parseInt(item.textContent.replace(/\s/g, ''));
+          }
+        }
+        this.$refs.containerSocialDeductions.querySelector('.js--tax-deduc-row[data-kind="limitat"] .js--tex-deduc-input input.active_inp')
+          .closest('.js--calc-row-input')
+          .querySelector('.js--result-calc').textContent = (this.limit_2023 - count).toFixed(0)
+          .toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+        this.$refs.containerSocialDeductions.querySelector('.js--tax-deduc-row[data-kind="limitat"] .js--tex-deduc-input input.active_inp')
+          .classList.add('full');
+        this.totalCalc();
+      }
+      else{
+        const array_social_deductions = this.$refs.containerSocialDeductions.querySelectorAll('.js--tax-deduc-row[data-kind="limitat"] .js--tex-deduc-input input.active')
+        for (let item of array_social_deductions) {
+          if (!item.classList.contains('active_inp')) {
+            const count = parseInt(item.value.replace(/\s/g, '')) *0.13
+            item.closest('.js--calc-row-input').querySelector('.js--result-calc').textContent=count.toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+          }
+        }
+      }
+    }
+  },
+
+  methods: {
+    numberFormatting(e) {
+      const element = e.currentTarget;
+      const target = e.target
+      let position = target.selectionStart;
+      const val = parseInt(element.value.replace(/\s/g, ''))
+      element.value = new Intl.NumberFormat("ru-RU").format(val);
+
+      if (e.inputType==="deleteContentBackward"){
+        target.selectionEnd = position;
+      }
+      if (element.value=='не число') {
+        element.value=''
+      }
+      if (element.value.replace(/\s/g, '') > 100000000){
+        element.value=(100000000).toFixed(0)
+          .toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+      }
+    },
+    calculateField(data,parent,value,element){
+
+      let value_val = parseInt(value.replace(/\s/g, ''))
+      if (data === 'limitat') {
+
+        if (this.selected_year <= 2023 && value_val >=this.limit_2023) {
+
+          value_val = this.limit_2023
+        }
+
+        if (this.selected_year >= 2024 && value_val >=this.limit_2024) {
+
+          value_val = this.limit_2024
+        }
+        this.incomeSubstitution(parent,value_val,element)
+
+      }
+      else if (data === 'limitatinvestmentdeductions') {
+        if(parseInt(this.dataField.replace(/\s/g, '')) === 0 && parent.querySelector('.js--result-calc')) {
+          parent.querySelector('.js--result-calc').textContent = 'Укажите доход'
+          parent.querySelector('.js--wr-col-input').classList.add('active_2')
+        }
+        else {
+          parent.querySelector('.js--wr-col-input').classList.remove('active_2')
+        }
+
+        if (parseInt(this.dataField.replace(/\s/g, '')) *0.13 < 52000 && value_val>=parseInt(this.dataField.replace(/\s/g, '')) *0.13) {
+          value_val = parseInt(this.dataField.replace(/\s/g, '')) *0.13
+        }
+        else if (parseInt(this.dataField.replace(/\s/g, '')) *0.13 >= 52000 && value_val>=52000) {
+          value_val = 52000
+        }
+        if (parseInt(this.dataField.replace(/\s/g, '')) !== 0) {
+          this.incomeSubstitution(parent,value_val)
+        }
+      }
+      else if (data === 'limitatchild') {
+        if (this.selected_year <= 2023 && value_val >=this.limit_2023_child) {
+          value_val = this.limit_2023_child
+        }
+        if (this.selected_year >= 2024 && value_val >=this.limit_2024_child) {
+          value_val = this.limit_2024_child
+        }
+        this.incomeSubstitution(parent,value_val)
+      }
+      else if (data === 'limitatcharity') {
+
+        if(parseInt(this.dataField.replace(/\s/g, '')) === 0 && parent.querySelector('.js--result-calc')) {
+          parent.querySelector('.js--result-calc').textContent = 'Укажите доход'
+          parent.querySelector('.js--wr-col-input').classList.add('active_2')
+        }
+        else {
+          parent.querySelector('.js--wr-col-input').classList.remove('active_2')
+        }
+
+        if (parseInt(this.dataField.replace(/\s/g, '')) !== 0 &&(value_val / 0.13) >= parseInt(this.dataField.replace(/\s/g, '')) * 0.25) {
+          value_val = (parseInt(this.dataField.replace(/\s/g, '')) * 0.25) * 0.13
+        }
+        if (parseInt(this.dataField.replace(/\s/g, '')) !== 0) {
+          this.incomeSubstitution(parent,value_val)
+        }
+      }
+      else if (data === 'limitathousingcost') {
+        if (value_val >= 260000) {
+          value_val = 260000
+        }
+        this.incomeSubstitution(parent,value_val)
+      }
+      else if (data === 'limitathousinginterest') {
+        if (value_val >= 390000) {
+          value_val = 390000
+        }
+        this.incomeSubstitution(parent,value_val)
+      }
+      else if (!parent.closest('.js--tax-deduc-row').hasAttribute('data-kind')) {
+        parent.querySelector('.js--result-calc').textContent = value
+        this.totalCalc();
+      }
+    },
+    //в поле подставляю результат расчётов
+    incomeSubstitution(parent, value_val, element) {
+      if (parent.querySelector('.js--result-calc')) {
+        parent.querySelector('.js--result-calc').textContent = value_val.toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+        this.totalCalc(parent, value_val);
+      }
+    },
+    totalCalc(parent){
+      const array_input = document.querySelectorAll('.js--wr-col-input.active');
+      let result = 0;
+      let result_soc = 0;
+      let result_contributions = 0;
+      for (let item of array_input) {
+        if (!item.classList.contains('js-wr-col-input-soc')&&item.querySelector('.js--result-calc')&&!item.classList.contains('js--wr-col-input-contributions')) {
+          result += parseInt(item.querySelector('.js--result-calc').textContent.replace(/\s/g, ''))
+          if (!isNaN(result) && !isNaN(result_soc)&&!isNaN(result_contributions)){
+            this.total_calculate = (result + result_soc + result_contributions).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+          }
+        }
+        else if (item.classList.contains('js-wr-col-input-soc')&&item.querySelector('.js--result-calc')) {
+          result_soc += parseInt(item.querySelector('.js--result-calc').textContent.replace(/\s/g, ''))
+          if (!isNaN(result) && !isNaN(result_soc)&&!isNaN(result_contributions)){
+            if (this.selected_year <= 2023 && result_soc >=this.limit_2023) {
+              result_soc = this.limit_2023
+            }
+            if (this.selected_year >= 2024 && result_soc >=this.limit_2024) {
+              result_soc = this.limit_2024
+            }
+            this.total_calculate = (result + result_soc + result_contributions).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+          }
+        }
+        else if (item.classList.contains('js--wr-col-input-contributions')&&item.querySelector('.js--result-calc')) {
+          result_contributions += parseInt(item.querySelector('.js--result-calc').textContent.replace(/\s/g, ''))
+          if (!isNaN(result) && !isNaN(result_soc)&&!isNaN(result_contributions)){
+            if (result_contributions >=52000) {
+              result_contributions = 52000
+            }
+            this.total_calculate = (result + result_soc + result_contributions).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+          }
+        }
+      }
+      if (array_input.length === 0) {
+        this.total_calculate = 0
+      }
+      this.errorMessage()
+
+    },
+    inpFocus(el){
+      const element = el.currentTarget;
+      // element.classList.add('active_inp')
+      element.closest('.js--tex-deduc-input').classList.add('input-focus')
+    },
+    inpBlur(el){
+      const element = el.currentTarget;
+      element.closest('.js--tex-deduc-input').classList.remove('input-focus')
+    },
+    heightBlockSticky(){
+      if(this.$refs.heightBlock.offsetHeight>=this.screenHeight) {
+        this.$refs.heightBlock.classList.add('not-sticky')
+      }
+      else{
+        this.$refs.heightBlock.classList.remove('not-sticky')
+      }
+    },
+    //метод для watch оторый вызывается при смене в Стандартные вычеты На ребенка чекбоксов Ребенок инвалид и Студент
+    methodsWatchCheckChild(){
+      const array_input = document.querySelectorAll('.js--tax-deduc-row[data-kind="childdeductions"]')
+      for(let item of array_input) {
+        let element = item.querySelector('input')
+        let data = parseInt(element.getAttribute('data-index'))
+        this.calcStandardDeductionsChild(item,element,data)
+      }
+      this.calcStandardDeductionsChildZero()
+    },
+    updateScreenWidth() {
+      this.screenWidth = window.innerWidth;
+      this.screenHeight = window.innerHeight;
+    },
+    calcStandardDeductionsChildInput(){
+      const array_input = document.querySelectorAll('.js--tax-deduc-row[data-kind="childdeductions"]')
+      for(let item of array_input) {
+        let element = item.querySelector('input')
+        let data = parseInt(element.getAttribute('data-index'))
+        this.calcStandardDeductionsChild(item,element,data)
+
+      }
+      this.calcStandardDeductionsChildZero()
+
+    },
+    closeErrorMessage() {
+      this.error_message=false
+    },
+    errorMessage() {
       if(parseInt(this.dataField_deduction)!==0&&parseInt(this.total_calculate)!==0){
         if (parseInt(this.total_calculate.replace(/\s/g, ''))>parseInt(this.dataField_deduction.replace(/\s/g, ''))) {
           setTimeout(()=>{
@@ -20,4 +1246,1059 @@ errorMessage() {
         this.error_message=false
       }
 
+    },
+    calcStandardDeductionsChildZero() {
+      const array_input = [...this.$refs.ChildParent.querySelectorAll('.js--tax-deduc-row[data-kind="childdeductions"] .js--wr-col-input.active')]
+      const array_zero = document.querySelectorAll('.js--tax-deduc-row.zero')
+      const array_non_zero = [...document.querySelectorAll('.js--tax-deduc-row.non-zero')]
+
+      if (array_input.length!==0){
+        array_input.sort((a, b) => parseInt(parseInt(b.closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) - a.closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value));
+      }
+      if (array_non_zero.length!==0){
+        array_non_zero.sort((a, b) => parseInt(parseInt(b.querySelector('.js--tex-deduc-input input').value) - a.querySelector('.js--tex-deduc-input input').value));
+      }
+
+      for (let i=0;i<array_input.length;i++) {
+          if (!array_input[i].closest('.js--tax-deduc-row').querySelector('.js--category-checkbox').checked){
+            array_input[i].closest('.js--tax-deduc-row').querySelector('.js--wr-col-input').classList.remove('active_2')
+            if(parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) < 18
+                && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+                array_input[i].closest('.js--tax-deduc-row').querySelector('.js--result-calc').textContent = (1400 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+
+            if ((parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) > 0
+              && parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) <= 24
+              && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--studies-checkbox').checked)
+              && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+              array_input[i].closest('.js--tax-deduc-row').querySelector('.js--result-calc').textContent = (1400 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+            }
+
+          }
+          else if (array_input[i].closest('.js--tax-deduc-row').querySelector('.js--category-checkbox').checked){
+
+            let coefficient = array_input[i].closest('.js--tax-deduc-row').getAttribute('data-yourself')
+            coefficient = parseInt(coefficient)
+            if (coefficient===0
+              && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').classList.contains('active')){
+              array_input[i].closest('.js--tax-deduc-row').querySelector('.js--wr-col-input').classList.add('active_2')
+              array_input[i].closest('.js--tax-deduc-row').querySelector('.js--result-calc').textContent = "Уточните информацию о себе"
+            }
+            if(coefficient!==0) {
+              array_input[i].closest('.js--tax-deduc-row').querySelector('.js--wr-col-input').classList.remove('active_2')
+            }
+            if(parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) < 18
+              && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').classList.contains('active')
+              && coefficient!==0) {
+              array_input[i].closest('.js--tax-deduc-row').querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (1400 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+            }
+
+            if ((parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) > 0
+              && parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) <= 24
+              && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--studies-checkbox').checked)
+              && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').classList.contains('active')
+              && coefficient!==0) {
+              array_input[i].closest('.js--tax-deduc-row').querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (1400 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+            }
+
+
+          }
+        }
+
+      if (array_input.length>2){
+        if(array_zero.length===0){
+
+          for (let i=2;i<array_input.length;i++) {
+            if (!array_input[i].closest('.js--tax-deduc-row').querySelector('.js--category-checkbox').checked){
+
+              if(parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) < 18
+                && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+                array_input[i].closest('.js--tax-deduc-row').querySelector('.js--result-calc').textContent = (3000 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+
+              if ((parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) > 0
+                && parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) <= 24
+                && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--studies-checkbox').checked)
+                && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+                array_input[i].closest('.js--tax-deduc-row').querySelector('.js--result-calc').textContent = (3000 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+            }
+            else if (array_input[i].closest('.js--tax-deduc-row').querySelector('.js--category-checkbox').checked){
+              let coefficient = array_input[i].closest('.js--tax-deduc-row').getAttribute('data-yourself')
+              coefficient = parseInt(coefficient)
+              if(parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) < 18
+                && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').classList.contains('active')
+                && coefficient!==0) {
+                array_input[i].closest('.js--tax-deduc-row').querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (3000 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+
+              if ((parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) > 0
+                && parseInt(array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').value) <= 24
+                && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--studies-checkbox').checked)
+                && array_input[i].closest('.js--tax-deduc-row').querySelector('.js--tex-deduc-input input').classList.contains('active')
+                && coefficient!==0) {
+                array_input[i].closest('.js--tax-deduc-row').querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (3000 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+            }
+          }
+        }
+        if(array_input.length - array_non_zero.length >=2){
+          for (let i=0;i<array_non_zero.length;i++) {
+
+            if (!array_non_zero[i].querySelector('.js--category-checkbox').checked){
+              if(parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) < 18
+                && array_non_zero[i].querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+                array_non_zero[i].querySelector('.js--result-calc').textContent = (3000 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+              if ((parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) > 0
+                && parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) <= 24
+                && array_non_zero[i].querySelector('.js--studies-checkbox').checked)
+                && array_non_zero[i].querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+                array_non_zero[i].querySelector('.js--result-calc').textContent = (3000 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+            }
+            else if (array_non_zero[i].querySelector('.js--category-checkbox').checked){
+              let coefficient = array_non_zero[i].getAttribute('data-yourself')
+              coefficient = parseInt(coefficient)
+              if(parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) < 18
+                && array_non_zero[i].querySelector('.js--tex-deduc-input input').classList.contains('active')
+                && coefficient!==0) {
+                array_non_zero[i].querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (3000 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+
+              if ((parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) > 0
+                && parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) <= 24
+                && array_non_zero[i].querySelector('.js--studies-checkbox').checked)
+                && array_non_zero[i].querySelector('.js--tex-deduc-input input').classList.contains('active')
+                && coefficient!==0) {
+                array_non_zero[i].querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (3000 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+            }
+          }
+        }
+        if(array_input.length - array_non_zero.length <2 && array_input.length===3 && array_zero.length!==0){
+
+          for (let i=0;i<array_non_zero.length;i++) {
+            if (!array_non_zero[1].querySelector('.js--category-checkbox').checked){
+              if(parseInt(array_non_zero[1].querySelector('.js--tex-deduc-input input').value) < 18
+                && array_non_zero[1].querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+                array_non_zero[1].querySelector('.js--result-calc').textContent = (3000 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+
+              if ((parseInt(array_non_zero[1].querySelector('.js--tex-deduc-input input').value) > 0
+                && parseInt(array_non_zero[1].querySelector('.js--tex-deduc-input input').value) <= 24
+                && array_non_zero[1].querySelector('.js--studies-checkbox').checked)
+                && array_non_zero[1].querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+                array_non_zero[1].querySelector('.js--result-calc').textContent = (3000 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+
+            }
+            else if (array_non_zero[1].querySelector('.js--category-checkbox').checked){
+              let coefficient = array_non_zero[1].getAttribute('data-yourself')
+              coefficient = parseInt(coefficient)
+              if(parseInt(array_non_zero[1].querySelector('.js--tex-deduc-input input').value) < 18
+                && array_non_zero[1].querySelector('.js--tex-deduc-input input').classList.contains('active')
+                && coefficient!==0) {
+                array_non_zero[1].querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (3000 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+
+              if ((parseInt(array_non_zero[1].querySelector('.js--tex-deduc-input input').value) > 0
+                && parseInt(array_non_zero[1].querySelector('.js--tex-deduc-input input').value) <= 24
+                && array_non_zero[1].querySelector('.js--studies-checkbox').checked)
+                && array_non_zero[1].querySelector('.js--tex-deduc-input input').classList.contains('active')
+                && coefficient!==0) {
+                array_non_zero[1].querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (3000 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+            }
+          }
+        }
+        if(array_input.length - array_non_zero.length <2 && array_input.length!==3 && array_zero.length!==0){
+
+          for (let i=1;i<array_non_zero.length;i++) {
+            if (!array_non_zero[i].querySelector('.js--category-checkbox').checked){
+              if(parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) < 18
+                && array_non_zero[i].querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+                array_non_zero[i].querySelector('.js--result-calc').textContent = (3000 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+              if ((parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) > 0
+                && parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) <= 24
+                && array_non_zero[i].querySelector('.js--studies-checkbox').checked)
+                && array_non_zero[i].querySelector('.js--tex-deduc-input input').classList.contains('active')) {
+                array_non_zero[i].querySelector('.js--result-calc').textContent = (3000 * 0.13 * 12).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+            }
+            else if (array_non_zero[i].querySelector('.js--category-checkbox').checked){
+              let coefficient = array_non_zero[i].getAttribute('data-yourself')
+              coefficient = parseInt(coefficient)
+              if(parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) < 18
+                && array_non_zero[i].querySelector('.js--tex-deduc-input input').classList.contains('active')
+                && coefficient!==0) {
+                array_non_zero[i].querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (3000 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+
+              if ((parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) > 0
+                && parseInt(array_non_zero[i].querySelector('.js--tex-deduc-input input').value) <= 24
+                && array_non_zero[i].querySelector('.js--studies-checkbox').checked)
+                && array_non_zero[i].querySelector('.js--tex-deduc-input input').classList.contains('active')
+                && coefficient!==0) {
+                array_non_zero[i].querySelector('.js--result-calc').textContent = ((coefficient * 0.13 * 12) + (3000 * 0.13 * 12)).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+              }
+            }
+          }
+        }
+      }
+    },
+    //метод для расчёта в блоке Стандартные вычеты На ребенка
+    calcStandardDeductionsChild(parent,element) {
+      const array_input_unactive = document.querySelectorAll('.js--tax-deduc-row[data-kind="childdeductions"]')
+      let coefficient = parent.getAttribute('data-yourself')
+      coefficient = parseInt(coefficient)
+      const checkbox_el = parent.querySelector('.js--studies-checkbox')
+      const checkbox_el_category = parent.querySelector('.js--category-checkbox')
+      const array_input = this.$refs.ChildParent.querySelectorAll('.js--tax-deduc-row[data-kind="childdeductions"] .js--tex-deduc-input input.active')
+      const array_number_children = this.$refs.ChildParent.querySelectorAll('.js--number-children')
+
+      if (!checkbox_el_category.checked&& parseInt(element.value) >= 18 && !checkbox_el.checked) {
+        parent.querySelector('.js--result-calc').textContent = 0
+        parent.classList.add('zero')
+        parent.classList.remove('non-zero')
+      }
+      if (!checkbox_el_category.checked&& parseInt(element.value) < 18 ) {
+        parent.classList.remove('zero')
+        parent.classList.add('non-zero')
+      }
+      if (!checkbox_el_category.checked&& parseInt(element.value) >= 25 ) {
+        parent.classList.add('zero')
+        parent.classList.remove('non-zero')
+      }
+      if (!checkbox_el_category.checked&& parseInt(element.value) < 18 ) {
+        parent.classList.remove('zero')
+        parent.classList.add('non-zero')
+      }
+      if (!checkbox_el_category.checked&& (parseInt(element.value) > 0
+        && parseInt(element.value) <= 24 && checkbox_el.checked) ) {
+        parent.classList.remove('zero')
+        parent.classList.add('non-zero')
+      }
+
+
+
+
+      if (checkbox_el_category.checked&& parseInt(element.value) >= 18 && !checkbox_el.checked) {
+
+
+        parent.querySelector('.js--result-calc').textContent = 0
+        parent.classList.add('zero')
+      }
+      if (checkbox_el_category.checked&& parseInt(element.value) < 18 ) {
+
+        parent.classList.remove('zero')
+      }
+      if (checkbox_el_category.checked&& parseInt(element.value) >= 25 ) {
+
+        parent.querySelector('.js--result-calc').textContent = 0
+        parent.classList.add('zero')
+      }
+      if (checkbox_el_category.checked&& parseInt(element.value) < 18 ) {
+
+        parent.classList.remove('zero')
+      }
+      if (checkbox_el_category.checked&& (parseInt(element.value) > 0
+        && parseInt(element.value) <= 24 && checkbox_el.checked) ) {
+
+        parent.classList.remove('zero')
+      }
+     let count_zero=0
+     let count_not_zero=0
+
+      // if (parent.querySelector('.js--wr-col-input') && !parent.querySelector('.js--wr-col-input').classList.contains('active_2')){
+      if (parent.querySelector('.js--wr-col-input')){
+        console.log('active_2');
+        setTimeout(()=>{
+          this.totalCalc();
+        },200)
+      }
+    },
+    //Профессиональные вычеты Расходы
+    fieldCalculationAreasActivityExpensesGeneral(element,parent){
+      if (element.value.length > 0) {
+        if (parent.querySelector('.js--wr-col-input')) {
+          parent.querySelector('.js--wr-col-input').classList.add('active')
+        }
+        parent.querySelector('.js--result-calc').textContent = (parseInt(element.value.replace(/\s/g, '')) * 0.13).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+      }
+      else {
+        if (parent.querySelector('.js--wr-col-input')) {
+          parent.querySelector('.js--wr-col-input').classList.remove('active')
+        }
+        parent.querySelector('.js--result-calc').textContent = this.placeholder
+      }
+      this.totalCalc()
+    },
+    fieldCalculationAreasActivityExpenses(e){
+      const element = e.currentTarget;
+      const parent = element.closest('.js--calc-row-input')
+      if (parent) {
+        if (element.value.length > 0) {
+          parent.querySelector('.js--clear-calc-tax').classList.add('active')
+        }
+        else {
+          parent.querySelector('.js--clear-calc-tax').classList.remove('active')
+        }
+        if (this.check_documents_costs === true) {
+          this.fieldCalculationAreasActivityExpensesGeneral(element,parent)
+
+        }
+      }
+    },
+    //Профессиональные вычеты Доходы
+    fieldCalculationAreasActivityIncomeGeneral(value_inp) {
+      const parent = document.querySelector('.js--tax-deduc-container-row');
+      if (parent) {
+        if (this.check_documents_costs === false) {
+          if (value_inp !== '' && this.ratio_areas_activity!==0) {
+            if (parent.querySelector('.js--wr-col-input')) {
+              parent.querySelector('.js--wr-col-input').classList.add('active')
+            }
+            parent.querySelector('.js--result-calc').textContent = (value_inp * 0.13 * this.ratio_areas_activity).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+            this.totalCalc()
+          }
+          else {
+            if (parent.querySelector('.js--wr-col-input')) {
+              parent.querySelector('.js--wr-col-input').classList.remove('active')
+            }
+            parent.querySelector('.js--result-calc').textContent = this.placeholder
+            this.totalCalc()
+          }
+        }
+      }
+    },
+    fieldCalculationAreasActivityIncome(e) {
+      const element = e.currentTarget;
+      const element_value = (this.$refs.areasActivityIncome.value).replace(/\s/g, '')
+
+      const parent = element.closest('.js--calc-row-input')
+      if (parent) {
+        if (element.value.length > 0) {
+          parent.querySelector('.js--clear-calc-tax').classList.add('active')
+        }
+        else {
+          parent.querySelector('.js--clear-calc-tax').classList.remove('active')
+        }
+        if (this.check_documents_costs === false) {
+          this.fieldCalculationAreasActivityIncomeGeneral(element_value)
+
+        }
+      }
+    },
+    fieldCalculation(e){
+      const element = e.currentTarget;
+      const main_container = element.closest('.js--tax-deduc-cont-prof')
+      const container = element.closest('.js--tax-deduc-row')
+      const parent = element.closest('.js--calc-row-input')
+
+      if (element.value.length > 0) {
+        element.classList.add('active')
+        parent.querySelector('.js--clear-calc-tax').classList.add('active')
+      } else {
+        element.classList.remove('active')
+        parent.querySelector('.js--clear-calc-tax').classList.remove('active')
+      }
+
+
+      if (parent && parent.querySelector('.js--result-calc')) {
+        let value = parseInt(element.value.replace(/\s/g, '')) * 0.13;
+        let clear_value = parseInt(element.value.replace(/\s/g, ''));
+        value = value.toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+
+        if (element.value.length > 0) {
+          if (parent.querySelector('.js--wr-col-input')) {
+            parent.querySelector('.js--wr-col-input').classList.add('active')
+          }
+
+          if (container && container.hasAttribute('data-kind') && container.getAttribute('data-kind')!=='professionaldeductions') {
+            const data = container.getAttribute('data-kind');
+            this.calculateField(data,parent,value,element);
+          }
+          if (container && container.hasAttribute('data-kind') && container.getAttribute('data-kind')!=='professionaldeductions') {
+            const data = container.getAttribute('data-kind');
+            this.calculateField(data,parent,value,element);
+          }
+
+
+          if(container && !container.hasAttribute('data-kind')) {
+            const data = 'none';
+            this.calculateField(data,parent,value);
+          }
+        }
+        else {
+          parent.querySelector('.js--result-calc').textContent = this.placeholder
+          if (parent.querySelector('.js--wr-col-input')) {
+            parent.querySelector('.js--wr-col-input').classList.remove('active')
+          }
+        }
+        //подсчёт для поля Стандартные вычеты На ребенка
+        if (container && container.hasAttribute('data-kind') && container.getAttribute('data-kind') === 'childdeductions') {
+          const data = parseInt(element.getAttribute('data-index'));
+          this.calcStandardDeductionsChildInput(parent,element,data)
+        }
+      }
+      if (element.closest('.js--tax-deduc-row')
+        && element.closest('.js--tax-deduc-row').classList.contains('js--first-child')
+        && element.closest('.js--child-parent')) {
+        this.firstChild(element)
+      }
+    },
+    //изменение селекта Выберите количество детей в Стандартные вычеты На ребенка когда в блоке с первым ребёнком меняем какую-либо инфрмацию
+    firstChild(element){
+      if (element.closest('.js--child-parent').querySelector('.js--select-child .select__substituted-text')&&this.array_child_second.length===1) {
+        element.closest('.js--child-parent').querySelector('.js--select-child .select__substituted-text').classList.remove('input-emty')
+        element.closest('.js--child-parent').querySelector('.js--select-child .select__substituted-text').textContent='1'
+      }
+
+    },
+    screenWidthSider() {
+      if (this.screenWidth <= 1360) {
+        this.realtySlider.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding_update_3,
+              max: this.stgMax
+            },
+            padding:[Math.abs(this.stgMinPadding_update_3),0]
+          }
+        );
+        this.realtySlider_2.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding_2_update_3,
+              max: this.stgMax * 0.87
+            },
+            padding:[Math.abs(this.stgMinPadding_2_update_3),0]
+          }
+        );
+      }
+      if (this.screenWidth <= 960) {
+        this.realtySlider.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding_update_4,
+              max: this.stgMax
+            },
+            padding:[Math.abs(this.stgMinPadding_update_4),0]
+          }
+        );
+        this.realtySlider_2.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding_2_update_4,
+              max: this.stgMax * 0.87
+            },
+            padding:[Math.abs(this.stgMinPadding_2_update_4),0]
+          }
+        );
+      }
+      if (this.screenWidth <= 768) {
+        this.realtySlider.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding_update,
+              max: this.stgMax
+            },
+            padding:[Math.abs(this.stgMinPadding_update),0]
+          }
+        );
+        this.realtySlider_2.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding_2_update,
+              max: this.stgMax * 0.87
+            },
+            padding:[Math.abs(this.stgMinPadding_2_update),0]
+          }
+        );
+      }
+      if (this.screenWidth <= 540) {
+        this.realtySlider.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding_update_2,
+              max: this.stgMax
+            },
+            padding:[Math.abs(this.stgMinPadding_update_2),0]
+          }
+        );
+        this.realtySlider_2.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding_2_update_2,
+              max: this.stgMax * 0.87
+            },
+            padding:[Math.abs(this.stgMinPadding_2_update_2),0]
+          }
+        );
+      }
+      if(this.screenWidth > 1360){
+        this.realtySlider.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding,
+              max: this.stgMax
+            },
+            padding:[Math.abs(this.stgMinPadding),0]
+          }
+        );
+        this.realtySlider_2.updateOptions(
+          {
+            range: {
+              min: this.stgMinPadding_2,
+              max: this.stgMax * 0.87
+            },
+            padding:[Math.abs(this.stgMinPadding_2),0]
+          }
+        );
+      }
+    },
+    initRealtySlider() {
+      const hoverSlider = document.querySelector('.range-input__wr-toddler');
+      this.realtySlider = noUiSlider.create(hoverSlider, {
+        start: [this.start],
+        connect: 'lower',
+        step: this.stepApartment,
+        range: {
+          min: this.stgMinPadding,
+          max: this.stgMax
+        },
+        padding:[Math.abs(this.stgMinPadding),0]
+      });
+      this.realtySlider.on('update', (val,handle) => {
+        this.dataField = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+      });
+      this.realtySlider.on('change', (val,handle) => {
+        this.calculationNDFL(parseInt(val[handle]).toFixed(0));
+      });
+    },
+    initRealtySlider_2() {
+      const hoverSlider = document.querySelector('.range-input__wr-toddler_2');
+      this.realtySlider_2 = noUiSlider.create(hoverSlider, {
+        start: [this.start],
+        connect: 'lower',
+        step: this.stepApartment,
+        // initial: this.stgMin,
+        range: {
+          min: this.stgMinPadding_2,
+          max: this.stgMax * 0.87
+        },
+        padding:[Math.abs(this.stgMinPadding_2),0]
+      });
+      this.realtySlider_2.on('update', (val,handle) => {
+        this.dataField_2 = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+      });
+
+      this.realtySlider_2.on('change', (val,handle) => {
+        this.amountIncome(parseInt(val[handle]).toFixed(0));
+      });
+    },
+    //смена чекбокса категория ребёнка(инвалид или нет)
+    childCategory(e){
+      const element = e.currentTarget
+      if (element.checked) {
+        this.array_child_category.push(parseInt(element.getAttribute('data-index')))
+      }
+      else {
+        this.array_child_category = this.array_child_category.filter((number) => number !== parseInt(element.getAttribute('data-index')));
+      }
+      if (element.closest('.js--tax-deduc-row')
+        && element.closest('.js--tax-deduc-row').classList.contains('js--first-child')
+        && element.closest('.js--child-parent')) {
+        this.firstChild(element)
+      }
+    },
+    //смена чекбокса категория ребёнка(инвалид или нет)
+    studiesCategory(e){
+      const element = e.currentTarget
+      const parent = element.closest('.js--tax-deduc-row')
+      if (element.checked) {
+        this.array_studies_category.push(parseInt(element.getAttribute('data-index')))
+      }
+      else {
+        this.array_studies_category = this.array_studies_category.filter((number) => number !== parseInt(element.getAttribute('data-index')));
+      }
+
+      if (parent && parent.querySelector('.js--tex-deduc-input input')
+        && element.checked && parseInt(parent.querySelector('.js--tex-deduc-input input').value) >=18 && parseInt(parent.querySelector('.js--tex-deduc-input input').value) <25) {
+        parent.querySelector('.js--tex-deduc-input input').classList.add('active')
+      }
+      if (parent && parent.querySelector('.js--tex-deduc-input input')
+        && !element.checked && parseInt(parent.querySelector('.js--tex-deduc-input input').value) >=18) {
+        parent.querySelector('.js--tex-deduc-input input').classList.remove('active')
+      }
+      if (element.closest('.js--tax-deduc-row')
+        && element.closest('.js--tax-deduc-row').classList.contains('js--first-child')
+        && element.closest('.js--child-parent')) {
+        this.firstChild(element)
+      }
+    },
+    //что выбрал пользователь в поле селект Уточните информация о себе На ребёнка
+    informationYourselfChild(e){
+      const element = e.currentTarget
+      if (element.closest('.js--tax-deduc-row[data-kind="childdeductions"]') &&  element.closest('.js--tax-deduc-row[data-kind="childdeductions"]').hasAttribute('data-yourself')){
+        element.closest('.js--tax-deduc-row[data-kind="childdeductions"]').setAttribute('data-yourself',parseInt(element.getAttribute('data-ratio')))
+      }
+      if (this.information_yourself_child === 0) {
+        this.information_yourself_child = 1
+      }
+      else {
+        this.information_yourself_child = 0
+      }
+      console.log(this.information_yourself_child);
+
+      if (element.closest('.js--tax-deduc-row')
+        && element.closest('.js--tax-deduc-row').classList.contains('js--first-child')
+        && element.closest('.js--child-parent')) {
+        this.firstChild(element)
+      }
+
+    },
+    //добавить детей при клике в секте Уточните информация о себе На ребёнка
+    addChildSelect(e) {
+      const element = e.currentTarget
+      const data = parseInt(element.getAttribute('data-ratio'))
+
+      const array_block = document.querySelectorAll('.js--tax-deduc-child-second')
+      for (let i=0;i<array_block.length;i++){
+        if (i>=data && data<array_block.length){
+          array_block[i].remove()
+        }
+      }
+      if (data>array_block.length) {
+        for (let i=0;i<(data - array_block.length);i++){
+          this.array_child_second.push(count_second_child)
+          count_second_child+=1
+        }
+      }
+      this.counSecondChild()
+      setTimeout(()=>{
+        this.recalculationNumberChildren()
+      },100)
+    },
+    //расчёт стандартных вычетов на себя при выборе селекта Стандартные вычеты На ребенка
+    calculationAmountPayment(e) {
+      const element = e.currentTarget
+      const ratio = parseFloat(element.getAttribute('data-ratio'))
+      const parent = element.closest('.js--tax-deduc-row')
+      if (parent) {
+        const final_field = parent.querySelector('.js--result-calc')
+        if (final_field && final_field.closest('.js--wr-col-input')) {
+          final_field.textContent = (ratio * 12 * 0.13).toFixed(0).toString()
+            .replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+          final_field.closest('.js--wr-col-input').classList.add('active')
+        }
+      }
+      this.totalCalc();
+    },
+    coefficientAreasActivity(e) {
+      const element = e.currentTarget
+      this.ratio_areas_activity = parseFloat(element.getAttribute('data-ratio'))
+    },
+    changeCheckboxDocuments(e){
+      const element = e.currentTarget
+      if (element.checked) {
+        this.check_documents_costs=true
+      } else {this.check_documents_costs=false}
+    },
+    selectedYear(e){
+      const element = e.currentTarget
+      this.selected_year=parseInt(element.getAttribute('for-year'))
+      this.recalculationFields();
+      this.totalCalc();
+      const parent = element.closest('.js--select')
+      if (parent && parent.classList.contains('open') && parent.querySelector('.js--openlist-background')) {
+        element.closest('.js--select').classList.remove('open')
+        parent.querySelector('.js--openlist-background').style.display='none'
+      }
+
+    },
+    recalculationFields() {
+      const array_field = document.querySelectorAll('.js--tax-deduc-row[data-kind="limitat"]')
+      for (let item of array_field){
+        const input = item.querySelector('input')
+        const input_val = parseInt(input.value.replace(/\s/g, '')) * 0.13;
+        if (input.value !== '' && this.selected_year <= 2023 && input_val >= this.limit_2023) {
+          item.querySelector('.js--result-calc').textContent = parseInt(this.limit_2023)
+            .toFixed(0).toString()
+            .replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+        }
+        else if (input.value !== '' && this.selected_year <= 2023 && input_val < this.limit_2023) {
+          item.querySelector('.js--result-calc').textContent = input_val
+            .toFixed(0).toString()
+            .replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+        }
+        if (input.value !== '' && this.selected_year >= 2024 && input_val >= this.limit_2024) {
+          item.querySelector('.js--result-calc').textContent = parseInt(this.limit_2024)
+            .toFixed(0).toString()
+            .replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+        }
+        else if (input.value !== '' && this.selected_year >= 2024 && input_val < this.limit_2024) {
+          item.querySelector('.js--result-calc').textContent = input_val
+            .toFixed(0).toString()
+            .replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+        }
+      }
+      const array_field_child = document.querySelectorAll('.js--tax-deduc-row[data-kind="limitatchild"]')
+      for (let item of array_field_child){
+        const input = item.querySelector('input')
+        const input_val = parseInt(input.value.replace(/\s/g, '')) * 0.13;
+        if (input.value !== '' && this.selected_year <= 2023 && input_val >= this.limit_2023_child) {
+          item.querySelector('.js--result-calc').textContent = parseInt(this.limit_2023_child)
+            .toFixed(0).toString()
+            .replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+        }
+        if (input.value !== '' && this.selected_year >= 2024 && input_val >= this.limit_2024_child) {
+          item.querySelector('.js--result-calc').textContent = parseInt(this.limit_2024_child)
+            .toFixed(0).toString()
+            .replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+        }
+      }
+    },
+    amountIncome(val){
+      this.dataField = parseInt(val / 0.87).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+      this.realtySlider.set(val / 0.87);
+    },
+    calculationNDFL(val){
+      this.dataField_2 = parseInt(val * 0.87).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+      this.realtySlider_2.set(val * 0.87);
+    },
+    inputBlur(el){
+      const element = el.currentTarget
+      const parent = element.closest('.js--calc-row-input')
+      const data = element.closest('.js--tax-deduc-row').getAttribute('data-kind')
+      if (element.value!==''){
+        let value = parseInt(element.value.replace(/\s/g, '')) * 0.13;
+        value = value.toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+        const array_social_deductions = this.$refs.containerSocialDeductions.querySelectorAll('.js--tax-deduc-row[data-kind="limitat"] .js--tex-deduc-input input.active')
+        let count=0
+        for(let item of array_social_deductions){
+          count+=parseInt(item.value.replace(/\s/g, '')) *0.13;
+        }
+        this.calculateField(data,parent,value,element)
+        this.limit_2023 = this.limit_2023_const - count
+      }
+
+    },
+    inputFocus(el) {
+      const element = el.currentTarget
+      const array_social_deductions_result = this.$refs.containerSocialDeductions.querySelectorAll('.js--tax-deduc-row[data-kind="limitat"] .js--result-calc')
+      let count = 0
+      for(let item of array_social_deductions_result){
+        if (item.textContent!==this.placeholder){
+
+          // this.limit_2023 = this.limit_2023 - (parseInt(item.textContent.replace(/\s/g, '')))
+          count+=parseInt(item.textContent.replace(/\s/g, ''));
+        }
+      }
+      this.limit_2023 = this.limit_2023_const - count
+    },
+    //в поле подставляю результат расчётов
+    incomeSubstitution_2 (e) {
+      const element = e.currentTarget
+      // if(element.value!=='') {
+      //   element.closest('.js--calc-row-input').querySelector('.js--result-calc').classList.add('filled')
+      // }
+      // const array_social_deductions = this.$refs.containerSocialDeductions.querySelectorAll('.js--tax-deduc-row[data-kind="limitat"] .js--tex-deduc-input input.active');
+      // const array_social_deductions_result = this.$refs.containerSocialDeductions.querySelectorAll('.js--tax-deduc-row[data-kind="limitat"] .js--result-calc')
+      // for(let item of array_social_deductions_result){
+      //   if (item.textContent!==this.placeholder){
+      //
+      //     this.limit_2023 = this.limit_2023 - (parseInt(item.textContent.replace(/\s/g, '')))
+      //   }
+      // }
+      //
+      // this.limit_2023 = this.limit_2023 - (parseInt(element.value.replace(/\s/g, '')) * 0.13)
+      // this.limit_2023 = parseInt(this.limit_2023)
+      // if (this.limit_2023<=0){
+      //   this.limit_2023=0
+      // }
+    },
+    fieldInput(e){
+    },
+    // inputCost(){
+    //   mask_array=[]
+    //   const input_status = document.querySelectorAll('.js--number-debt input');
+    //   for (let i=0; i<input_status.length;i++) {
+    //     mask_array.push(IMask(input_status[i], maskOptions));
+    //   }
+    // },
+    // inputCostChild(){
+    //   mask_array_child=[]
+    //   const input_status = document.querySelectorAll('.js--number-child input');
+    //   for (let i=0; i<input_status.length;i++) {
+    //     mask_array_child.push(IMask(input_status[i], maskOptions));
+    //   }
+    // },
+    inputCostNumber(){
+      // mask_array_year=[]
+      // const input_status = document.querySelectorAll('.js--number-simply input');
+      // for (let i=0; i<input_status.length;i++) {
+      //   mask_array_year.push(IMask(input_status[i], maskOptions_year));
+      // }
+    },
+    inputFieldChild(e){
+      const element = e.currentTarget
+      element.value = element.value.replace(/[^\d]/g, '');
+      if (element.closest('.js--child-parent') && parseInt(element.value)>100){
+        element.value=100
+      }
+    },
+    keyUpRange(e) {
+      const element = e.currentTarget
+      if(element.value!==''&&(parseInt(element.value.replace(/\s/g, ''))>=this.stgMin)&&parseInt(element.value.replace(/\s/g, ''))<=this.stgMax){
+        this.realtySlider.set(parseInt(element.value.replace(/\s/g, '')));
+      }
+      else if(parseInt(element.value.replace(/\s/g, ''))>this.stgMax)  {
+        this.realtySlider.set(this.stgMax);
+      }
+      if(parseInt(element.value.replace(/\s/g, ''))>=this.stgMax){
+        this.dataField = this.stgMax.toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+      }
+      if(parseInt(element.value.replace(/\s/g, ''))!==NaN || element.value!=='') {
+        this.calculationNDFL(parseInt(element.value.replace(/\s/g, '')))
+      }
+
+    },
+    keyUpRange_2(e) {
+      const element = e.currentTarget
+      if(element.value!==''&&(parseInt(element.value.replace(/\s/g, ''))>=this.stgMin)&&parseInt(element.value.replace(/\s/g, ''))<=this.stgMax  * 0.87){
+        this.realtySlider_2.set(parseInt(element.value.replace(/\s/g, '')));
+      }
+      else if(parseInt(element.value.replace(/\s/g, ''))>this.stgMax * 0.87)  {
+        this.realtySlider_2.set(this.stgMax * 0.87);
+      }
+      if(parseInt(element.value.replace(/\s/g, ''))>=this.stgMax * 0.87){
+        this.dataField_2 = (this.stgMax * 0.87).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+      }
+      this.amountIncome(parseInt(element.value.replace(/\s/g, '')))
+    },
+    inputPast(el){
+      const element = el.currentTarget;
+      let element_val = (el.clipboardData || window.clipboardData).getData('text');
+      if ( element_val.search(/[^0-9]/g) != -1 ) {
+        el.preventDefault();
+      }
+    },
+    moveAnotherElement(el) {
+      const element = el.currentTarget;
+      if (element.value==='') {
+        element.value = this.stgMin;
+        this.realtySlider.set(this.stgMin);
+      }
+      element.closest('.js--tex-deduc-input').classList.remove('input-focus')
+    },
+    moveAnotherElement_2(el) {
+      const element = el.currentTarget;
+      if (element.value==='') {
+        element.value = this.stgMin;
+        this.realtySlider_2.set(this.stgMin);
+        this.realtySlider.set(this.stgMin);
+      }
+      element.closest('.js--tex-deduc-input').classList.remove('input-focus')
+    },
+    focusInput(evt){
+      const element = evt.currentTarget;
+      var theEvent = evt || window.event
+      // Handle key press
+      var key = theEvent.keyCode || theEvent.which;
+      key = String.fromCharCode(key);
+      var regex = /[0-9]/;
+      if( !regex.test(key) ) {
+        theEvent.returnValue = false;
+        if(theEvent.preventDefault) theEvent.preventDefault();
+      }
+    },
+    clearInput(e){
+      const element = e.currentTarget;
+      const parent = element.closest('.js--tex-deduc-input');
+      const container = element.closest('.js--calc-row-input');
+      const wr_container = element.closest('.js--tax-deduc-container-row');
+      if(element.closest('.js--tax-deduc-row')
+        && element.closest('.js--tax-deduc-row').classList.contains('zero')){
+        element.closest('.js--tax-deduc-row').classList.remove('zero')
+      }
+      if (parent) {
+        let data = parent.getAttribute('data-input-index');
+        data=parseInt(data)
+
+        if (container && container.querySelector('.js--result-calc') && container.querySelector('.js--wr-col-input')
+          && !element.classList.contains('js--clear-calc-tax-special')
+          && !element.classList.contains('js--clear-calc-tax-expenses') ){
+          container.querySelector('.js--wr-col-input').classList.remove('active')
+          container.querySelector('.js--result-calc').textContent = this.placeholder
+
+        }
+        if (element.classList.contains('js--clear-calc-tax-special')
+          && element.closest('.js--row-container')
+          && wr_container && !wr_container.querySelector('.js--checkbox_wrapper input[type="checkbox"]').checked){
+          element.closest('.js--row-container').querySelector('.js--wr-col-input').classList.remove('active')
+          element.closest('.js--row-container').querySelector('.js--result-calc').textContent = this.placeholder
+        }
+        if (element.classList.contains('js--clear-calc-tax-expenses')
+          && element.closest('.js--row-container')
+          && wr_container && wr_container.querySelector('.js--checkbox_wrapper input[type="checkbox"]').checked){
+
+          element.closest('.js--row-container').querySelector('.js--wr-col-input').classList.remove('active')
+          element.closest('.js--row-container').querySelector('.js--result-calc').textContent = this.placeholder
+        }
+        // if (!element.classList.contains('js--clear-calc-tax-special')) {
+          parent.querySelector('input').value='';
+        // }
+
+        parent.querySelector('input').classList.remove('active')
+        element.classList.remove('active')
+      }
+      this.calcStandardDeductionsChildInput()
+      this.totalCalc();
+    },
+    addField() {
+      if(this.array_child_first_delete < 20) {
+        this.array_child_first.push(count_first_child)
+        count_first_child+=1
+      }
+    },
+    removeChild(e){
+      const element = e.currentTarget;
+      const parent = element.closest('.js--tax-deduc-child-first')
+      const parent_second = element.closest('.js--tax-deduc-child-second')
+      const parent_child = element.closest('.js--child-parent')
+      if (parent){
+        parent.remove()
+
+        this.counFirstChild()
+      }
+      if (parent_second){
+        parent_second.remove()
+        this.counSecondChild()
+
+        if (parent_child){
+          parent_child.querySelector('.js--select-child .js--openlist-btn p').textContent = this.array_child_second_delete
+          parent_child.querySelector('.js--select-child .js--openlist-btn p').classList.remove('input-emty')
+          const array_select = parent_child.querySelectorAll('.js--select-child .js--openlist-item')
+          for (let item of array_select) {
+            item.classList.remove('active')
+            if (parseInt(item.getAttribute('data-ratio')) === this.array_child_second_delete) {
+              item.classList.add('active')
+            }
+          }
+        }
+        setTimeout(()=>{
+          this.recalculationNumberChildren()
+        },100)
+
+      }
+      this.totalCalc();
+    },
+    recalculationNumberChildren() {
+      const array_input = document.querySelectorAll('.js--tax-deduc-row[data-kind="childdeductions"]')
+      for(let item of array_input) {
+        let element = item.querySelector('input')
+        let data = parseInt(element.getAttribute('data-index'))
+        this.calcStandardDeductionsChild(item,element,data)
+      }
+    },
+    // добавление детей стандартные вычеты
+    addFieldSecond(e) {
+      const element = e.currentTarget;
+      const parent = element.closest('.js--child-parent')
+      if(this.array_child_second_delete < 20) {
+        this.array_child_second.push(count_second_child)
+        count_second_child+=1
+      }
+      if (parent) {
+        this.addCountSelect(parent)
+      }
+
+    },
+    //в селекте подставляю количество детей
+    addCountSelect(parent){
+      if (this.array_child_second_delete+1 <=20){
+        parent.querySelector('.js--select-child .js--openlist-btn p').textContent = this.array_child_second_delete+1
+        parent.querySelector('.js--select-child .js--openlist-btn p').classList.remove('input-emty')
+        const array_select = parent.querySelectorAll('.js--select-child .js--openlist-item')
+        for (let item of array_select) {
+          item.classList.remove('active')
+          if (parseInt(item.getAttribute('data-ratio')) === this.array_child_second_delete+1) {
+            item.classList.add('active')
+          }
+        }
+      }
+
+    },
+    dropdownArea(e){
+      const element = e.currentTarget;
+      const target = e.target
+      if(!target.classList.contains('btn_s')){
+        const parent = element.closest('.js-accordion-parent-calc');
+        if (parent){
+          parent.classList.toggle('active')
+          if (parent.classList.contains('js-accordion-parent-calc-standard')){
+            if(!parent.classList.contains('active_2')) {
+              setTimeout(()=>{
+                parent.classList.add('active_2')
+              },700)
+            }
+            else{
+              parent.classList.remove('active_2')
+            }
+          }
+
+        }
+      }
+    },
+    //задаю блокам с .js--number-debt data-input-index
+    dataInputIndex(){
+      const array_input=document.querySelectorAll('.js--number-debt')
+      for (let i=0;i<array_input.length;i++){
+        array_input[i].setAttribute('data-input-index',i)
+      }
+    },
+    counSecondChild() {
+      this.array_child_second_delete = document.querySelectorAll('.js--tax-deduc-child-second').length;
+    },
+    counFirstChild() {
+      this.array_child_first_delete = document.querySelectorAll('.js--tax-deduc-child-first').length;
     }
+  },
+  updated(){
+    if(this.array_child_second.length>count){
+      catalogNew();
+      count+=1
+    }
+
+    this.counSecondChild()
+    this.counFirstChild()
+  },
+  mounted() {
+    this.initRealtySlider()
+    this.initRealtySlider_2()
+    setTimeout(()=>{
+      this.screenWidthSider()
+      this.heightBlockSticky()
+    },500)
+    catalogNew();
+    window.addEventListener('resize', this.updateScreenWidth);
+    const this_year = new Date().getFullYear()
+    this.selected_year = this_year - 1
+    let year = this_year
+    this.array_year.push(year)
+    for (let i = 0;i <= 2;i++) {
+      year-=1
+      this.array_year.push(year)
+    }
+    this.dataInputIndex()
+    setTimeout(()=>{
+      this.$refs.BtnChildFirst.click()
+    },500)
+  },
+};
+</script>
+<style scoped>
+</style>
