@@ -1,26 +1,26 @@
 errorMessage() {
-  // Сначала мы просто устанавливаем флаг error_message в логическое значение,
-  // основываясь на текущих значениях total_calculate и dataField_deduction.
-  // НЕ используем setTimeout здесь для установки этого флага!
+  const total = parseInt(this.total_calculate.replace(/\s/g, '')) || 0;
+  const max = parseInt(this.dataField_deduction.replace(/\s/g, '')) || 0;
+
   let shouldShowError = false;
 
-  if (parseInt(this.dataField_deduction) !== 0 && parseInt(this.total_calculate) !== 0) {
-    if (parseInt(this.total_calculate.replace(/\s/g, '')) > parseInt(this.dataField_deduction.replace(/\s/g, ''))) {
-      shouldShowError = true;
-    } else {
-      shouldShowError = false;
-    }
-  } else if (parseInt(this.dataField_deduction) === 0 && parseInt(this.total_calculate) !== 0) {
+  if (total > 0 && (max === 0 || total > max)) {
     shouldShowError = true;
-  } else if (parseInt(this.dataField_deduction) === 0 && parseInt(this.total_calculate) === 0) {
-    shouldShowError = false;
   }
 
-  // Теперь мы говорим Vue: "После того, как ты сделаешь всю свою работу по обновлению DOM,
-  // выполни эту функцию."
   this.$nextTick(() => {
-    // Здесь DOM уже обновлён. Мы можем быть уверены, что значения в шаблоне
-    // отражают последнюю реальность, и мы можем безопасно показать/скрыть сообщение.
     this.error_message = shouldShowError;
   });
-}
+},
+
+this.updateDataFieldDeduction(); // ← ЭТО ОБЯЗАТЕЛЬНО!
+
+updateDataFieldDeduction() {
+  const income = parseInt(this.dataField.replace(/\s/g, '')) || 0;
+  if (income === 0) {
+    this.dataField_deduction = 0;
+  } else {
+    const maxDeduction = (income * 0.13).toFixed(0);
+    this.dataField_deduction = maxDeduction.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+  }
+},
