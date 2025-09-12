@@ -1,58 +1,63 @@
+Социальные вычеты
+
+Общий лимит по сумме для:
+
+Обычное лечение
+Собственное
+Траты на спорт
+Страхование
+Накопительная пенсия
+Независимая оценка квалификации
+Если выбран год до 2023 включительно: максимум 15 600 рублей
+
+Если выбран год 2024 и позднее: максимум 19 500 рублей
+
+Образование ребенка
+Если выбран год до 2023 включительно: максимум 6 500 рублей за каждого
+Если выбран год 2024 и позднее: максимум 14 300 рублей за каждого
+
+Например за троих детей лимит будет: 6 500 + 6 500 + 6 500 (эта цифра добавляется к общему лимиту на социальные вычеты в размере 15 600 / 19 500)
+
+Благотворительность
+Максимум = (Сумма дохода за год) * 0,25
+
 totalCalc(parent){
-  const array_input = document.querySelectorAll('.js--wr-col-input.active');
-  let result = 0; // Остальные вычеты (не соц., не инвестиционные)
-  let result_soc = 0; // Сумма всех социальных вычетов (до применения лимита!)
-  let result_contributions = 0; // Сумма всех инвестиционных вычетов (до применения лимита!)
+      const array_input = document.querySelectorAll('.js--wr-col-input.active');
+      let result = 0;
+      let result_soc = 0;
+      let result_contributions = 0;
+      for (let item of array_input) {
+        if (!item.classList.contains('js-wr-col-input-soc')&&item.querySelector('.js--result-calc')&&!item.classList.contains('js--wr-col-input-contributions')) {
+          result += parseInt(item.querySelector('.js--result-calc').textContent.replace(/\s/g, ''))
+          if (!isNaN(result) && !isNaN(result_soc)&&!isNaN(result_contributions)){
+            this.total_calculate = (result + result_soc + result_contributions).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+          }
+        }
+        else if (item.classList.contains('js-wr-col-input-soc')&&item.querySelector('.js--result-calc')) {
+          result_soc += parseInt(item.querySelector('.js--result-calc').textContent.replace(/\s/g, ''))
+          if (!isNaN(result) && !isNaN(result_soc)&&!isNaN(result_contributions)){
+            if (this.selected_year <= 2023 && result_soc >=this.limit_2023) {
+              result_soc = this.limit_2023
+            }
+            if (this.selected_year >= 2024 && result_soc >=this.limit_2024) {
+              result_soc = this.limit_2024
+            }
+            this.total_calculate = (result + result_soc + result_contributions).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+          }
+        }
+        else if (item.classList.contains('js--wr-col-input-contributions')&&item.querySelector('.js--result-calc')) {
+          result_contributions += parseInt(item.querySelector('.js--result-calc').textContent.replace(/\s/g, ''))
+          if (!isNaN(result) && !isNaN(result_soc)&&!isNaN(result_contributions)){
+            if (result_contributions >=52000) {
+              result_contributions = 52000
+            }
+            this.total_calculate = (result + result_soc + result_contributions).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+          }
+        }
+      }
+      if (array_input.length === 0) {
+        this.total_calculate = 0
+      }
+      this.errorMessage()
 
-  // ШАГ 1: Пройти по всем активным полям и собрать сырые значения (без лимитов!)
-  for (let item of array_input) {
-    if (!item.classList.contains('js-wr-col-input-soc') && item.querySelector('.js--result-calc') && !item.classList.contains('js--wr-col-input-contributions')) {
-      // Собираем сумму для обычных вычетов
-      const val = parseInt(item.querySelector('.js--result-calc').textContent.replace(/\s/g, ''));
-      result += isNaN(val) ? 0 : val;
-    }
-    else if (item.classList.contains('js-wr-col-input-soc') && item.querySelector('.js--result-calc')) {
-      // Собираем сумму для всех социальных вычетов (включая дорогостоящее лечение)
-      const val = parseInt(item.querySelector('.js--result-calc').textContent.replace(/\s/g, ''));
-      result_soc += isNaN(val) ? 0 : val;
-    }
-    else if (item.classList.contains('js--wr-col-input-contributions') && item.querySelector('.js--result-calc')) {
-      // Собираем сумму для инвестиционных вычетов
-      const val = parseInt(item.querySelector('.js--result-calc').textContent.replace(/\s/g, ''));
-      result_contributions += isNaN(val) ? 0 : val;
-    }
-  }
-
-  // ШАГ 2: ПРИМЕНЯЕМ ЛИМИТЫ ТОЛЬКО К ИТОГОВЫМ СУММАМ (ЗДЕСЬ ИСПРАВЛЕНИЕ!)
-  // Социальные вычеты
-  if (this.selected_year <= 2023 && result_soc > this.limit_2023) {
-    result_soc = this.limit_2023;
-  }
-  if (this.selected_year >= 2024 && result_soc > this.limit_2024) {
-    result_soc = this.limit_2024;
-  }
-
-  // Инвестиционные вычеты
-  if (result_contributions > 52000) {
-    result_contributions = 52000;
-  }
-
-  // ШАГ 3: ПРОВЕРКА НА NaN И ОБНОВЛЕНИЕ ИТОГОВОЙ СУММЫ (СОХРАНЯЕМ ОРИГИНАЛЬНУЮ ЛОГИКУ!)
-  // Теперь мы знаем, что result, result_soc, result_contributions - это числа (или 0),
-  // поэтому проверка isNaN уже не нужна внутри цикла, но мы сохраняем её структуру,
-  // чтобы не сломать возможные зависимости в других местах.
-  if (!isNaN(result) && !isNaN(result_soc) && !isNaN(result_contributions)) {
-    this.total_calculate = (result + result_soc + result_contributions).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
-  } else {
-    // На всякий случай, если вдруг где-то всё же остался NaN (хотя теоретически быть не должно),
-    // можно установить 0, но обычно этого не происходит благодаря шагу 1.
-    this.total_calculate = 0;
-  }
-
-  // Обработка случая, когда нет ни одного активного поля
-  if (array_input.length === 0) {
-    this.total_calculate = 0;
-  }
-
-  this.errorMessage();
-},
+    },
