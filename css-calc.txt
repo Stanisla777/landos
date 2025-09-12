@@ -1,31 +1,32 @@
 errorMessage() {
-  // Получаем числовые значения без пробелов
-  const totalNum = parseInt(this.total_calculate.replace(/\s/g, '')) || 0;
-  const deductionNum = parseInt(this.dataField_deduction.replace(/\s/g, '')) || 0;
+  // Приводим значения к строке, если они не строка, и убираем пробелы
+  const totalStr = String(this.total_calculate); // -> гарантированно строка
+  const deductionStr = String(this.dataField_deduction); // -> гарантированно строка
+
+  // Убираем все пробелы
+  const totalNum = parseInt(totalStr.replace(/\s/g, ''), 10) || 0;
+  const deductionNum = parseInt(deductionStr.replace(/\s/g, ''), 10) || 0;
 
   let shouldShowError = false;
 
-  // Правило 1: Если вычеты есть, но превышают максимально возможный лимит
+  // Правило 1: Вычеты > максимально возможного лимита
   if (totalNum > 0 && deductionNum > 0 && totalNum > deductionNum) {
     shouldShowError = true;
   }
-  // Правило 2: Если есть вычеты, но доходы не указаны (лимит = 0)
+  // Правило 2: Есть вычеты, но доходы не указаны (лимит = 0)
   else if (totalNum > 0 && deductionNum === 0) {
     shouldShowError = true;
   }
-  // ✅ ПРАВИЛО 3: КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ!
-  // Если ВСЕ вычеты очищены (total == 0), но доходы были указаны (deduction > 0)
-  // → это НЕ ошибка! Это означает, что человек решил не использовать лимит.
-  // Предупреждение должно исчезнуть!
+  // Правило 3: КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ — очистили вычеты, но доходы были
+  // Это НЕ ошибка! Предупреждение должно исчезнуть.
   else if (totalNum === 0 && deductionNum > 0) {
-    shouldShowError = false; // <-- Явно указываем: ошибки нет!
+    shouldShowError = false;
   }
-  // Все остальные случаи (оба нули, или total <= deduction) — ошибки нет
+  // Все остальные случаи — ошибки нет
   else {
     shouldShowError = false;
   }
 
-  // Используем $nextTick для надежности
   this.$nextTick(() => {
     this.error_message = shouldShowError;
   });
