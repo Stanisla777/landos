@@ -1,13 +1,53 @@
+.schedule-block
+  .calendar-column
+    .calendar-header
+      button(@click="prevMonth" :disabled="!canGoPrev") ←
+      h3 {{ currentMonthName }} {{ currentYear }}
+      button(@click="nextMonth" :disabled="!canGoNext") →
+    .calendar-grid
+      .day-header(v-for="day in weekdays" :key="day") {{ day }}
+      .calendar-day(
+        v-for="day in daysInMonth"
+        :key="day.date || day.number"
+        :class="{
+          'disabled': !day.hasEvents,
+          'selected': isSelected(day.date)
+        }"
+        @click="selectDay(day)"
+      )
+        .day-number {{ day.number }}
+        .event-icons(v-if="day.hasEvents")
+          span.event-icon(
+            v-for="eventType in getEventTypesForDay(day)"
+            :key="eventType"
+            :class="'icon-type-' + eventType"
+            :title="getEventTitleByType(eventType)"
+          )
+            // Сюда вставь свои иконки, например:
+            // i(:class="getIconClass(eventType)")
+            // или
+            // img(:src="getIconSrc(eventType)" :alt="getEventTitleByType(eventType)")
+
+  .events-column(v-if="selectedDate")
+    h4 События на {{ formatDate(selectedDate) }}
+    .event-item(
+      v-for="(event, index) in eventsForSelectedDay"
+      :key="index"
+    )
+      strong {{ getEventTitle(event) }}
+      p {{ getEventDescription(event) }}
+
+
 export default {
   name: 'EventCalendar',
   data() {
     return {
-      currentMonth: null, // будет вычислено
-      currentYear: null,  // будет вычислено
+      currentMonth: null,
+      currentYear: null,
       selectedDate: null,
       events: [],
-      minDate: null, // { year, month }
-      maxDate: null, // { year, month }
+      minDate: null,
+      maxDate: null,
     };
   },
   computed: {
@@ -28,18 +68,18 @@ export default {
 
       // Пустые ячейки до первого дня месяца
       for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) {
-        days.push({ number: '', date: null, hasEvents: false });
+        days.push({ number: '', date: null, hasEvents: false, events: [] });
       }
 
       // Ячейки с днями месяца
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = this.formatDateForData(new Date(this.currentYear, this.currentMonth, day));
-        const normalizedDateStr = this.normalizeDate(dateStr); // для сравнения
-        const dayEvents = this.events.find(e => this.normalizeDate(e.date) === normalizedDateStr);
+        const dayData = this.events.find(e => this.normalizeDate(e.date) === this.normalizeDate(dateStr));
         days.push({
           number: day,
-          date: dateStr, // сохраняем в формате DD.MM.YYYY для отображения
-          hasEvents: !!dayEvents
+          date: dateStr,
+          hasEvents: !!dayData,
+          events: dayData ? dayData.events : []
         });
       }
 
@@ -47,9 +87,9 @@ export default {
     },
     eventsForSelectedDay() {
       if (!this.selectedDate) return [];
-      const normalizedSelected = this.normalizeDate(this.selectedDate);
-      const dayData = this.events.find(e => this.normalizeDate(e.date) === normalizedSelected);
-      return dayData ? dayData.type : [];
+      const normalized = this.normalizeDate(this.selectedDate);
+      const dayData = this.events.find(e => this.normalizeDate(e.date) === normalized);
+      return dayData ? dayData.events : [];
     },
     canGoPrev() {
       if (!this.minDate) return false;
@@ -66,22 +106,36 @@ export default {
   },
   mounted() {
     this.parseEvents();
-    this.calculateDateBounds(); // 1. Определяем границы
-    this.setDefaultMonth();     // 2. Устанавливаем стартовый месяц
-    this.setDefaultSelection(); // 3. Выбираем день
+    this.calculateDateBounds();
+    this.setDefaultMonth();
+    this.setDefaultSelection();
   },
   methods: {
     parseEvents() {
       const eventAttr = this.$el.parentElement.getAttribute('data-event');
       if (!eventAttr) return;
+
       try {
-        this.events = JSON.parse(eventAttr);
+        let rawData = JSON.parse(eventAttr);
+
+        this.events = rawData.map(item => ({
+          date: this.normalizeBackendDate(item.date), // "2023-09-13" → "13.09.2023"
+          events: Array.isArray(item.events) ? item.events : []
+        }));
+
       } catch (e) {
         console.error('Ошибка парсинга data-event', e);
       }
     },
 
-    // Нормализация даты: "5.10.2025" → "05.10.2025"
+    // Преобразует "2023-09-13" → "13.09.2023" — БЕЗ создания Date, только строка
+    normalizeBackendDate(backendDateStr) {
+      if (!backendDateStr) return '';
+      const [y, m, d] = backendDateStr.split('-');
+      return `${d}.${m}.${y}`;
+    },
+
+    // Нормализует "5.9.2023" → "05.09.2023" для сравнения
     normalizeDate(dateStr) {
       if (!dateStr) return '';
       const [d, m, y] = dateStr.split('.');
@@ -90,6 +144,7 @@ export default {
       return `${dd}.${mm}.${y}`;
     },
 
+    // Форматирует JS Date → "DD.MM.YYYY"
     formatDateForData(date) {
       const d = String(date.getDate()).padStart(2, '0');
       const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -97,30 +152,29 @@ export default {
       return `${d}.${m}.${y}`;
     },
 
-    formatDate(dateStr) {
-      return dateStr;
+    // Возвращает массив типов событий для отображения иконок
+    getEventTypesForDay(day) {
+      return day.events.map(event => event.type);
     },
 
-    getEventTypes(dateStr) {
-      const normalized = this.normalizeDate(dateStr);
-      const day = this.events.find(e => this.normalizeDate(e.date) === normalized);
-      if (!day) return [];
-      return day.type.map(item => Object.keys(item)[0]);
-    },
-
-    getEventTitle(eventObj) {
-      const key = Object.keys(eventObj)[0];
+    // Возвращает название по типу (для title/тултипа)
+    getEventTitleByType(type) {
       const map = {
-        kefir: 'Эфир',
-        rozigrish: 'Розыгрыш',
-        test: 'Тестирование'
+        1: 'Эфир',
+        2: 'Розыгрыш',
+        3: 'Тестирование'
       };
-      return map[key] || key;
+      return map[type] || 'Событие';
     },
 
+    // Возвращает заголовок события (из данных)
+    getEventTitle(eventObj) {
+      return eventObj.title || 'Событие';
+    },
+
+    // Пока пусто, можно расширить
     getEventDescription(eventObj) {
-      const key = Object.keys(eventObj)[0];
-      return eventObj[key];
+      return '';
     },
 
     selectDay(day) {
@@ -133,13 +187,21 @@ export default {
       return this.normalizeDate(this.selectedDate) === this.normalizeDate(dateStr);
     },
 
+    // 🍏 КРОССБРАУЗЕРНЫЙ парсинг — разбиваем строку вручную → new Date(y, m-1, d)
     parseDate(dateStr) {
       const normalized = this.normalizeDate(dateStr);
       const [d, m, y] = normalized.split('.').map(Number);
-      return new Date(y, m - 1, d);
+      const date = new Date(y, m - 1, d);
+
+      // Дополнительная проверка на Invalid Date (страховка)
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date parsed:', dateStr);
+        return new Date(0); // fallback на Unix Epoch
+      }
+
+      return date;
     },
 
-    // 1. Вычисляем границы — первый и последний месяц с событиями
     calculateDateBounds() {
       if (this.events.length === 0) {
         const now = new Date();
@@ -155,11 +217,9 @@ export default {
       this.maxDate = { year: maxDate.getFullYear(), month: maxDate.getMonth() };
     },
 
-    // 2. Устанавливаем начальный месяц — ближайший месяц с будущим событием
     setDefaultMonth() {
       const now = new Date();
 
-      // Ищем ближайшее будущее событие (включая сегодня)
       const futureEvents = this.events
         .map(e => ({ ...e, dateObj: this.parseDate(e.date) }))
         .filter(e => e.dateObj >= now)
@@ -172,7 +232,6 @@ export default {
         return;
       }
 
-      // Если будущих нет — последнее событие
       const pastEvents = this.events
         .map(e => ({ ...e, dateObj: this.parseDate(e.date) }))
         .sort((a, b) => b.dateObj - a.dateObj);
@@ -184,16 +243,13 @@ export default {
         return;
       }
 
-      // fallback
       this.currentYear = now.getFullYear();
       this.currentMonth = now.getMonth();
     },
 
-    // 3. Устанавливаем выбранный день — ТОЛЬКО ближайший будущий (не прошедший!)
     setDefaultSelection() {
       const now = new Date();
 
-      // Только будущие события (>= сегодня)
       const futureEvents = this.events
         .filter(e => this.parseDate(e.date) >= now)
         .sort((a, b) => this.parseDate(a.date) - this.parseDate(b.date));
@@ -203,7 +259,6 @@ export default {
         return;
       }
 
-      // Если будущих нет — последнее прошедшее
       const pastEvents = this.events
         .filter(e => this.parseDate(e.date) < now)
         .sort((a, b) => this.parseDate(b.date) - this.parseDate(a.date));
@@ -216,7 +271,6 @@ export default {
       this.selectedDate = null;
     },
 
-    // 4. Переключение месяцев — с ограничениями
     prevMonth() {
       if (!this.canGoPrev) return;
 
@@ -226,9 +280,6 @@ export default {
       } else {
         this.currentMonth--;
       }
-
-      // НЕ вызываем setDefaultSelection — пользователь сам выбирает день
-      // this.setDefaultSelection(); ← УБРАЛИ!
     },
 
     nextMonth() {
@@ -240,32 +291,32 @@ export default {
       } else {
         this.currentMonth++;
       }
-
-      // НЕ вызываем setDefaultSelection — пользователь сам выбирает день
-      // this.setDefaultSelection(); ← УБРАЛИ!
     }
   }
 };
 
 
+--------------------------------------------
 
-<button @click="prevMonth" :disabled="!canGoPrev">←</button>
-<button @click="nextMonth" :disabled="!canGoNext">→</button>
-
-
-Что если хочешь запретить выбор прошлых дат?
-
-Тогда нужно добавить проверку:
-
-selectDay(day) {
-  if (!day.hasEvents) return;
-
-  const eventDate = this.parseDate(day.date);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0); // обнуляем время для корректного сравнения
-
-  // Если хочешь запретить выбор прошлых дат — раскомментируй:
-  // if (eventDate < now) return;
-
-  this.selectedDate = day.date;
+.event-icons {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  justify-content: center;
 }
+
+.event-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 10px;
+  color: white;
+  font-weight: bold;
+}
+
+.icon-type-1 { background: #ff5722; } /* Эфир */
+.icon-type-2 { background: #4caf50; } /* Розыгрыш */
+.icon-type-3 { background: #2196f3; } /* Тестирование */
