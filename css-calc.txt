@@ -1,51 +1,338 @@
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  border-top: 1px solid #ddd;
-  border-left: 1px solid #ddd;
-  overflow: hidden;
-  width: 100%;
-}
+.marathon-2025__events-column.marathon-2025__border-radius(v-if="selectedDate")
+                                        h4 События на {{ selectedDate }}
+                                        .marathon-2025__event-container
+                                            .marathon-2025__event-item(
+                                              v-for="(event, index) in eventsForSelectedDay"
+                                              :key="index"
+                                            )
+                                                .marathon-2025__shedule-legend-item
+                                                    .marathon-2025__shedule-legend-icon.icon-type-1
+                                                    p {{ getEventTitle(event) }}
+                                                
+                                                p {{ getEventDescription(event) }}
 
-.calendar-day {
-  padding: 12px 8px;
-  text-align: center;
-  position: relative;
-  cursor: pointer;
 
-  /* Постоянные границы */
-  border-right: 1px solid #ddd;
-  border-bottom: 1px solid #ddd;
 
-  /* Outline для hover и selected */
-  outline: 2px solid transparent;
-  outline-offset: -1px;
-  transition: outline-color 0.2s ease;
-}
+/* eslint-disable */
+import Vue from 'vue';
+import axios from 'axios';
+// import Storage from './development-tools-rating/state.vue';
 
-.calendar-day:hover {
-  outline-color: #2196f3;
-}
 
-.calendar-day.selected {
-  background: #e3f2fd;
-  outline-color: #2196f3;
-  outline-style: solid;
-}
+export default function marathon2025Shedule() {
+  const app = new Vue({
+    el: '#marathon-2025-shedule',
+    data: {
+      currentMonth: null,
+      currentYear: null,
+      selectedDate: null,
+      events: [],
+      minDate: null,
+      maxDate: null,
+    },
+    computed: {
+      weekdays() {
+        return ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+      },
+      currentMonthName() {
+        const months = [
+          'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+          'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ];
+        return months[this.currentMonth];
+      },
 
-.calendar-day.disabled {
-  color: #ccc;
-  cursor: not-allowed;
-  background: #f9f9f9;
-}
+      // 🆕 Основной метод — возвращает 42 дня (6 строк × 7 дней)
+      getDaysInGrid() {
+        const days = [];
+        const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay(); // 0 = вс
+        const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
 
-.calendar-day.prev-month,
-.calendar-day.next-month {
-  color: #aaa;
-  font-size: 0.9em;
-}
+        // ——— Дни предыдущего месяца ———
+        const prevMonth = this.currentMonth === 0 ? 11 : this.currentMonth - 1;
+        const prevYear = this.currentMonth === 0 ? this.currentYear - 1 : this.currentYear;
+        const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
 
-.calendar-day.prev-month.disabled,
-.calendar-day.next-month.disabled {
-  background: #fafafa;
+        // Сколько дней предыдущего месяца нужно добавить
+        const prevDaysCount = firstDay === 0 ? 6 : firstDay - 1;
+
+        for (let i = 0; i < prevDaysCount; i++) {
+          const dayNumber = daysInPrevMonth - (prevDaysCount - 1 - i);
+          const date = new Date(prevYear, prevMonth, dayNumber);
+          const dateStr = this.formatDateForData(date);
+          const normalizedDate = this.normalizeDate(dateStr);
+          const eventItem = this.events.find(e => this.normalizeDate(e.date) === normalizedDate);
+
+          days.push({
+            number: dayNumber,
+            date: dateStr,
+            isPrevMonth: true,
+            isNextMonth: false,
+            hasEvents: !!eventItem,
+            events: eventItem ? eventItem.events : []
+          });
+        }
+
+        // ——— Дни текущего месяца ———
+        for (let day = 1; day <= daysInMonth; day++) {
+          const date = new Date(this.currentYear, this.currentMonth, day);
+          const dateStr = this.formatDateForData(date);
+          const normalizedDate = this.normalizeDate(dateStr);
+          const eventItem = this.events.find(e => this.normalizeDate(e.date) === normalizedDate);
+
+          days.push({
+            number: day,
+            date: dateStr,
+            isPrevMonth: false,
+            isNextMonth: false,
+            hasEvents: !!eventItem,
+            events: eventItem ? eventItem.events : []
+          });
+        }
+
+        // ——— Дни следующего месяца ———
+        const nextMonth = this.currentMonth === 11 ? 0 : this.currentMonth + 1;
+        const nextYear = this.currentMonth === 11 ? this.currentYear + 1 : this.currentYear;
+
+        // Дозаполняем до 42 ячеек
+        while (days.length < 42) {
+          const dayNumber = days.length - daysInMonth - prevDaysCount + 1;
+          const date = new Date(nextYear, nextMonth, dayNumber);
+          const dateStr = this.formatDateForData(date);
+          const normalizedDate = this.normalizeDate(dateStr);
+          const eventItem = this.events.find(e => this.normalizeDate(e.date) === normalizedDate);
+
+          days.push({
+            number: dayNumber,
+            date: dateStr,
+            isPrevMonth: false,
+            isNextMonth: true,
+            hasEvents: !!eventItem,
+            events: eventItem ? eventItem.events : []
+          });
+        }
+
+        return days;
+      },
+
+      eventsForSelectedDay() {
+        if (!this.selectedDate) return [];
+        const normalized = this.normalizeDate(this.selectedDate);
+        const dayData = this.events.find(e => this.normalizeDate(e.date) === normalized);
+        return dayData ? dayData.events : [];
+      },
+
+      canGoPrev() {
+        if (!this.minDate) return false;
+        const current = this.currentYear * 12 + this.currentMonth;
+        const min = this.minDate.year * 12 + this.minDate.month;
+        return current > min;
+      },
+
+      canGoNext() {
+        if (!this.maxDate) return false;
+        const current = this.currentYear * 12 + this.currentMonth;
+        const max = this.maxDate.year * 12 + this.maxDate.month;
+        return current < max;
+      }
+    },
+
+    methods: {
+      parseEvents() {
+        const eventAttr = this.$el.getAttribute('data-event');
+        if (!eventAttr) return;
+
+        try {
+          let rawData = JSON.parse(eventAttr);
+
+          this.events = rawData.map(item => ({
+            date: this.normalizeBackendDate(item.date),
+            events: Array.isArray(item.events) ? item.events : []
+          }));
+
+        } catch (e) {
+          console.error('Ошибка парсинга data-event', e);
+        }
+      },
+
+      normalizeBackendDate(backendDateStr) {
+        if (!backendDateStr) return '';
+        const [y, m, d] = backendDateStr.split('-');
+        return `${d}.${m}.${y}`;
+      },
+
+      normalizeDate(dateStr) {
+        if (!dateStr) return '';
+        const [d, m, y] = dateStr.split('.');
+        const dd = String(parseInt(d, 10)).padStart(2, '0');
+        const mm = String(parseInt(m, 10)).padStart(2, '0');
+        return `${dd}.${mm}.${y}`;
+      },
+
+      formatDateForData(date) {
+        console.log('date');
+        console.log(date);
+        const d = String(date.getDate()).padStart(2, '0');
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const y = date.getFullYear();
+        return `${d}.${m}.${y}`;
+      },
+
+      // ➤ Для шаблона — красивый формат
+      formatDate(dateStr) {
+        console.log('dateStr');
+        console.log(dateStr);
+        if (!dateStr) return '';
+        const normalized = this.normalizeDate(dateStr);
+        const [d, m, y] = normalized.split('.').map(Number);
+        const months = [
+          'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+          'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+        ];
+        return `${d} ${months[m - 1]} ${y}`;
+      },
+
+      getEventTypesForDay(day) {
+        return day.events.map(event => event.type);
+      },
+
+      getEventTitleByType(type) {
+        const map = {
+          1: 'Эфир',
+          2: 'Розыгрыш',
+          3: 'Тестирование'
+        };
+        return map[type] || 'Событие';
+      },
+
+      getEventTitle(eventObj) {
+        return eventObj.title || 'Событие';
+      },
+
+      getEventDescription(eventObj) {
+        return '';
+      },
+
+      selectDay(day) {
+        if (!day.hasEvents) return;
+        this.selectedDate = day.date;
+      },
+
+      isSelected(dateStr) {
+        if (!this.selectedDate || !dateStr) return false;
+        return this.normalizeDate(this.selectedDate) === this.normalizeDate(dateStr);
+      },
+
+      parseDate(dateStr) {
+        const normalized = this.normalizeDate(dateStr);
+        const [d, m, y] = normalized.split('.').map(Number);
+        const date = new Date(y, m - 1, d);
+
+        if (isNaN(date.getTime())) {
+          console.warn('Invalid date parsed:', dateStr);
+          return new Date(0);
+        }
+
+        return date;
+      },
+
+      calculateDateBounds() {
+        if (this.events.length === 0) {
+          const now = new Date();
+          this.minDate = this.maxDate = { year: now.getFullYear(), month: now.getMonth() };
+          return;
+        }
+
+        const dates = this.events.map(e => this.parseDate(e.date));
+        const minDate = new Date(Math.min(...dates));
+        const maxDate = new Date(Math.max(...dates));
+
+        this.minDate = { year: minDate.getFullYear(), month: minDate.getMonth() };
+        this.maxDate = { year: maxDate.getFullYear(), month: maxDate.getMonth() };
+      },
+
+      setDefaultMonth() {
+        const now = new Date();
+
+        const futureEvents = this.events
+          .map(e => ({ ...e, dateObj: this.parseDate(e.date) }))
+          .filter(e => e.dateObj >= now)
+          .sort((a, b) => a.dateObj - b.dateObj);
+
+        if (futureEvents.length > 0) {
+          const targetDate = futureEvents[0].dateObj;
+          this.currentYear = targetDate.getFullYear();
+          this.currentMonth = targetDate.getMonth();
+          return;
+        }
+
+        const pastEvents = this.events
+          .map(e => ({ ...e, dateObj: this.parseDate(e.date) }))
+          .sort((a, b) => b.dateObj - a.dateObj);
+
+        if (pastEvents.length > 0) {
+          const targetDate = pastEvents[0].dateObj;
+          this.currentYear = targetDate.getFullYear();
+          this.currentMonth = targetDate.getMonth();
+          return;
+        }
+
+        this.currentYear = now.getFullYear();
+        this.currentMonth = now.getMonth();
+      },
+
+      setDefaultSelection() {
+        const now = new Date();
+
+        const futureEvents = this.events
+          .filter(e => this.parseDate(e.date) >= now)
+          .sort((a, b) => this.parseDate(a.date) - this.parseDate(b.date));
+
+        if (futureEvents.length > 0) {
+          this.selectedDate = futureEvents[0].date;
+          return;
+        }
+
+        const pastEvents = this.events
+          .filter(e => this.parseDate(e.date) < now)
+          .sort((a, b) => this.parseDate(b.date) - this.parseDate(a.date));
+
+        if (pastEvents.length > 0) {
+          this.selectedDate = pastEvents[0].date;
+          return;
+        }
+
+        this.selectedDate = null;
+      },
+
+      prevMonth() {
+        if (!this.canGoPrev) return;
+
+        if (this.currentMonth === 0) {
+          this.currentMonth = 11;
+          this.currentYear--;
+        } else {
+          this.currentMonth--;
+        }
+      },
+
+      nextMonth() {
+        if (!this.canGoNext) return;
+
+        if (this.currentMonth === 11) {
+          this.currentMonth = 0;
+          this.currentYear++;
+        } else {
+          this.currentMonth++;
+        }
+      }
+    },
+
+    mounted() {
+      this.parseEvents();
+      this.calculateDateBounds();
+      this.setDefaultMonth();
+      this.setDefaultSelection();
+    }
+  });
 }
