@@ -1,18 +1,408 @@
-selectDay(day) {
-  if (!day.hasEvents) return;
+.marathon-2025__shedule#marathon-2025-shedule(
+                                    v-cloak
+                                    ref="Shedule2025"
+                                    data-event='[{"date":"2025-10-01", "events":[{"type":2, "title":"Розыгрыш подарков - тут мы будем разыгрывать подарки"},{"type":3, "title":"Настоящее тестрование ждёт тебя"}]}, {"date":"2025-10-02", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]}, {"date":"2025-10-30", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]}, {"date":"2025-10-24", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]}, {"date":"2025-10-29", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]}, {"date":"2025-10-31", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]}, {"date":"2025-10-30", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]}, {"date":"2025-10-31", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]}, {"date":"2025-11-02", "events":[{"type":2, "title":"Розыгрыш подарков - тут мы будем разыгрывать подарки"},{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"},{"type":3, "title":"Настоящее тестрование ждёт тебя"}]},{"date":"2025-11-10", "events":[{"type":2, "title":"Розыгрыш подарков - тут мы будем разыгрывать подарки"},{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"},{"type":3, "title":"Настоящее тестрование ждёт тебя"}]}]'
+                                )
+                                    .marathon-2025__shedule-legend
+                                        .marathon-2025__shedule-legend-item
+                                            .marathon-2025__shedule-legend-icon.icon-type-1
+                                            p Эфир
+                                        .marathon-2025__shedule-legend-item
+                                            .marathon-2025__shedule-legend-icon.icon-type-2
+                                            p Розыгрыш
+                                        .marathon-2025__shedule-legend-item
+                                            .marathon-2025__shedule-legend-icon.icon-type-3
+                                            p Тестирование
 
-  // Устанавливаем выбранный день
-  this.selectedDate = day.date;
 
-  // Проверяем, относится ли день к другому месяцу
-  const selectedDateObj = this.parseDate(day.date);
-  const selectedMonth = selectedDateObj.getMonth();
-  const selectedYear = selectedDateObj.getFullYear();
+                                    template
+                                      .marathon-2025__schedule-block
+                                          .marathon-2025__calendar-column.border-radius-16
+                                            .marathon-2025__calendar-header
+                                              .marathon-2025__calendar-header-arrow(@click="prevMonth" :class="!canGoPrev?'disabled':''")
+                                                svg(width='18' height='14' viewbox='0 0 18 14' fill='none' xmlns='http://www.w3.org/2000/svg')
+                                                  path(fill-rule='evenodd' clip-rule='evenodd' d='M0.792893 7.6724C0.402369 7.30118 0.402369 6.69931 0.792893 6.32809L7.15685 0.278661C7.54738 -0.0925616 8.18054 -0.0925616 8.57107 0.278661C8.96159 0.649884 8.96159 1.25176 8.57107 1.62298L3.91421 6.04967H16.5C17.0523 6.04967 17.5 6.47526 17.5 7.00024C17.5 7.52523 17.0523 7.95082 16.5 7.95082H3.91421L8.57107 12.3775C8.96159 12.7487 8.96159 13.3506 8.57107 13.7218C8.18054 14.093 7.54738 14.093 7.15685 13.7218L0.792893 7.6724Z' fill='#252628')
+                                              h4 {{ currentMonthName }} {{ currentYear }}
+                                              .marathon-2025__calendar-header-arrow(@click="nextMonth" :class="!canGoNext?'disabled':''")
+                                                svg(width='18' height='14' viewbox='0 0 18 14' fill='none' xmlns='http://www.w3.org/2000/svg')
+                                                  path(fill-rule='evenodd' clip-rule='evenodd' d='M17.2071 7.6724C17.5976 7.30118 17.5976 6.69931 17.2071 6.32809L10.8431 0.278661C10.4526 -0.0925616 9.81946 -0.0925616 9.42893 0.278661C9.03841 0.649884 9.03841 1.25176 9.42893 1.62298L14.0858 6.04967H1.5C0.947716 6.04967 0.5 6.47526 0.5 7.00024C0.5 7.52523 0.947716 7.95082 1.5 7.95082H14.0858L9.42893 12.3775C9.03841 12.7487 9.03841 13.3506 9.42893 13.7218C9.81946 14.093 10.4526 14.093 10.8431 13.7218L17.2071 7.6724Z' fill='#252628')
 
-  // Если месяц или год не совпадают с текущим — переключаем
-  if (selectedMonth !== this.currentMonth || selectedYear !== this.currentYear) {
-    this.currentMonth = selectedMonth;
-    this.currentYear = selectedYear;
-    // selectedDate уже установлен — не трогаем
+                                            .marathon-2025__calendar-grid-container
+                                                .marathon-2025__calendar-grid
+                                                    //.marathon-2025__day-header-container
+                                                    .marathon-2025__day-header(v-for="day in weekdays" :key="day") {{ day }}
+                                                .marathon-2025__calendar-grid
+                                                    .marathon-2025__calendar-day(
+                                                        v-for="day in getDaysInGrid"
+                                                        :key="day.date"
+                                                        :class="{'disabled': !day.hasEvents,'selected': isSelected(day.date),'prev-month': day.isPrevMonth,'next-month': day.isNextMonth}"
+                                                        @click="selectDay(day)"
+                                                    )
+
+                                                        .marathon-2025__event-icons(v-if="day.hasEvents")
+                                                          span.marathon-2025__shedule-legend-icon(
+                                                            v-for="eventType in getEventTypesForDay(day)"
+                                                            :key="eventType"
+                                                            :class="'icon-type-' + eventType"
+                                                            :title="getEventTitleByType(eventType)"
+                                                          )
+                                                            // Сюда вставь свои иконки, например:
+                                                            // i(:class="getIconClass(eventType)")
+                                                            // или
+                                                            // img(:src="getIconSrc(eventType)" :alt="getEventTitleByType(eventType)")
+                                                        p {{ day.number }}
+
+                                          .marathon-2025__events-column.border-radius-16(v-if="selectedDate")
+                                            h4 События на {{ selectedDate }}
+                                            .marathon-2025__event-container
+                                              .marathon-2025__event-item(
+                                                v-for="(event, index) in eventsForSelectedDay"
+                                                :key="index"
+                                              )
+                                                .marathon-2025__shedule-legend-item
+                                                  .marathon-2025__shedule-legend-icon(:class="'icon-type-' + event.type")
+                                                  p {{ getEventTitleByType(event.type) }}
+                                                p.marathon-2025__event-description {{ event.title }}
+
+
+.marathon-2025{
+&__shedule-legend{
+    display: flex;
+    gap:16px;
+    padding-top: 24px;
+    padding-bottom: 24px;
+    border-top:1px solid #E6E6E6;
+    overflow-x:auto;
+    @include respondTo(mobile) {
+      padding-top: 16px;
+    }
   }
+  &__shedule-legend-item{
+    display: flex;
+    gap:8px;
+    p{
+      font-size: 20px;
+      line-height: 120%;
+      color: #252628;
+      font-family: $ff-semi-bold;
+      @media screen and (max-width: 590px) {
+        font-size: 16px;
+        line-height: 125%;
+      }
+    }
+  }
+  &__shedule-legend-icon{
+    width: 20px;
+    height: 24px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    @media screen and (max-width: 590px) {
+      width: 16px;
+      height: 20px;
+    }
+    &.icon-type-1{
+      //тут вставить иконку мероприятия если она будет в svg
+      background: #ff5722;
+    }
+    &.icon-type-2{
+      //тут вставить иконку мероприятия если она будет в svg
+      background: #4caf50;
+    }
+    &.icon-type-3{
+      //тут вставить иконку мероприятия если она будет в svg
+      background: #2196f3;
+    }
+
+
+  }
+  &__schedule-block {
+    display: flex;
+    gap: 16px;
+    @media screen and (max-width: 990px) {
+      flex-direction: column;
+    }
+  }
+  &__calendar-column {
+    //flex: 1;
+    width: 100%;
+    max-width: 1007px;
+    border:1px solid #dedede;
+    .marathon-2025__shedule-legend-icon{
+      @media screen and (max-width: 1390px) {
+        width: 17px;
+        height: 17px;
+      }
+      @media screen and (max-width: 590px) {
+        width: 13px;
+        height: 13px;
+      }
+    }
+  }
+  &__calendar-header{
+    display: flex;
+    column-gap: 15px;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 16px 24px;
+    max-width: 845px;
+    margin: 0 auto;
+
+    @media screen and (max-width: 590px) {
+      padding: 8px 16px;
+    }
+    h4{
+      font-size: 24px;
+      line-height: 117%;
+      text-align: center;
+      color: #252628;
+      font-family: $ff-semi-bold;
+      @include respondTo(mobile) {
+        font-size: 20px;
+        line-height: 120%;
+      }
+      @media screen and (max-width: 590px) {
+        font-size: 16px;
+        line-height: 125%;
+      }
+    }
+  }
+  &__calendar-header-arrow{
+    cursor:pointer;
+    width: 64px;
+    height: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    @media screen and (max-width: 590px) {
+      width: 90px;
+    }
+    &.disabled{
+      pointer-events: none;
+      svg{
+        path{
+          fill: #999999;
+        }
+      }
+    }
+  }
+
+  &__calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-top: 1px solid #dedede;
+
+    overflow: hidden;
+    width: 100%;
+    //gap: 4px;
+  }
+  &__calendar-day,&__day-header{
+    font-size: 20px;
+    line-height: 120%;
+    font-family: $ff-semi-bold;
+    display: flex;
+    gap: 8px;
+    column-gap:8px;
+    row-gap:4px;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 143px;
+    @media screen and (max-width: 1390px) {
+      font-size: 16px;
+      line-height: 150%;
+      min-width: 75px;
+      column-gap:4px;
+    }
+    @media screen and (max-width: 590px) {
+      font-size: 14px;
+      line-height: 143%;
+      text-align: center;
+      min-width: 46px;
+    }
+    @media screen and (max-width: 355px) {
+      font-size: 12px;
+      line-height: 143%;
+      text-align: center;
+      min-width: 41px;
+    }
+
+
+
+  }
+  &__day-header{
+    padding: 8px 20px 8px 10px;
+    background-color: #f4f4f4;
+    text-align: right;
+    color: #6d6d6d;
+    &:not(:last-child){
+      border-right:1px solid #dedede;
+    }
+    @media screen and (max-width: 590px) {
+      padding: 8px;
+      text-align: center;
+      flex-direction: column;
+    }
+  }
+  &__calendar-day {
+    padding: 20px 20px 20px 10px;
+    cursor: pointer;
+    text-align: center;
+    position: relative;
+    color:$color-text-new;
+    border-right: 1px solid #dedede;
+    border-bottom: 1px solid #dedede;
+    height: 65px;
+
+
+    &:nth-child(7n){
+      border-right: none;
+    }
+    &:nth-last-child(-n+7){
+      border-bottom: none;
+    }
+    /* Outline для hover и selected */
+    outline: 2px solid transparent;
+    outline-offset: -1px;
+    transition: outline-color 0.2s ease;
+    &:hover{
+      outline-color: #82bf00;
+    }
+
+
+    @media screen and (max-width: 1390px) {
+      padding: 12px;
+      flex-direction: column;
+      justify-content: flex-start;
+      height: 77px;
+    }
+    @media screen and (max-width: 990px) {
+      padding: 16px;
+      flex-direction: row;
+      justify-content: flex-end;
+      height: 65px;
+    }
+    @media screen and (max-width: 740px) {
+      flex-direction: column;
+      justify-content: flex-start;
+      height: 77px;
+    }
+    @media screen and (max-width: 590px) {
+      padding: 8px;
+      height: 52px;
+    }
+
+
+    p{
+      color:inherit;
+      font-size: inherit;
+      line-height: inherit;
+      font-family: inherit;
+      @media (min-width: 991px) and (max-width: 1390px) {
+        order:-1;
+      }
+      @media screen and (max-width: 740px) {
+        order:-1;
+      }
+    }
+
+
+    &.disabled {
+      color: #999;
+      pointer-events: none;
+    }
+    &.selected {
+      background: #d9f0ab;
+    }
+    &.prev-month, &.next-month {
+      color: #999;
+    }
+    &.prev-month.disabled, &.next-month.disabled {
+      //background: #fafafa;
+    }
+  }
+  &__day-number{
+
+  }
+  &__event-icons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    @media screen and (max-width: 1390px) {
+      gap:4px;
+    }
+    @media screen and (max-width: 590px) {
+      gap:1px;
+    }
+
+  }
+  &__event-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    font-size: 10px;
+    color: white;
+    font-weight: bold;
+  }
+  &__events-column {
+    padding: 32px;
+    background-color: #f4f4f4;
+    flex: 1;
+    min-width: 318px;
+    @include respondTo(small) {
+      padding: 24px;
+    }
+    h4{
+      font-size: 24px;
+      line-height: 117%;
+      color: #252628;
+      font-family: $ff-semi-bold;
+      @include respondTo(mobile) {
+        font-size: 20px;
+        line-height: 120%;
+      }
+      @include respondTo(small) {
+        font-size: 16px;
+        line-height: 125%;
+      }
+    }
+    .marathon-2025__shedule-legend-item{
+      p{
+        @include respondTo(small) {
+          font-size: 14px;
+          line-height: 143%;
+        }
+      }
+    }
+  }
+  &__event-container{
+    margin-top: 20px;
+  }
+  &__event-item{
+    &:not(:first-child){
+      margin-top: 24px;
+    }
+
+  }
+  &__event-description{
+    margin-top: 8px;
+    font-family: $ff-semi-bold;
+    font-size: 24px;
+    line-height: 117%;
+    color: #252628;
+    @include respondTo(mobile) {
+      font-size: 20px;
+      line-height: 120%;
+    }
+    @include respondTo(small) {
+      font-size: 14px;
+      line-height: 143%;
+    }
+  }
+
 }
+
