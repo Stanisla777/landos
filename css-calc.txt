@@ -6,55 +6,61 @@
   z-index: 1;
   color: $color-text-new;
   height: 65px;
-  overflow: visible; /* ← Важно! */
+  /* Убрали overflow: hidden */
 
-  /* Убрали border-right и border-bottom */
+  /* Базовые границы */
+  border-right: 1px solid #dedede;
+  border-bottom: 1px solid #dedede;
+  border-top: 1px solid #dedede;
 
+  /* Убираем верхнюю границу у первой строки */
+  &:nth-child(-n+7) {
+    border-top: none;
+  }
+
+  /* Убираем правую границу у последнего столбца */
   &:nth-child(7n) {
-    /* border-right: none; ← УДАЛИ */
-  }
-  &:nth-last-child(-n+7) {
-    /* border-bottom: none; ← УДАЛИ */
+    border-right: none;
   }
 
+  /* Убираем нижнюю границу у последней строки */
+  &:nth-last-child(-n+7) {
+    border-bottom: none;
+  }
+
+  /* ::before только для hover/selected */
   &::before {
     content: "";
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    box-sizing: border-box;
-    border: 1px solid #dedede;
-    border-radius: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid transparent;
     pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
     z-index: -1;
-    transition: border-color 0.2s ease;
+    border-radius: 0;
   }
 
   &:hover::before {
+    opacity: 1;
     border-color: #82bf00;
   }
 
   &.selected::before {
+    opacity: 1;
     border-color: #82bf00;
   }
 
-  /* Скругления для угловых ячеек */
+  /* Скругляем ТОЛЬКО нижние углы у последней строки */
   &:nth-child(7n):nth-last-child(-n+7)::before {
     border-bottom-right-radius: 16px;
   }
 
   &:nth-child(7n+1):nth-last-child(-n+7)::before {
     border-bottom-left-radius: 16px;
-  }
-
-  &:first-child::before {
-    border-top-left-radius: 16px;
-  }
-
-  &:nth-child(7)::before {
-    border-top-right-radius: 16px;
   }
 
   &.disabled {
