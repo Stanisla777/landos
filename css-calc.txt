@@ -6,22 +6,21 @@
   z-index: 1;
   color: $color-text-new;
   height: 65px;
+  box-sizing: border-box; /* ← Оставляем как есть */
 
   /* Базовые границы */
   border-right: 1px solid #dedede;
   border-bottom: 1px solid #dedede;
-  box-sizing: content-box; /* ← Важно! Границы снаружи */
-  width: calc(100% + 1px); /* ← Компенсируем border-right */
+
+  /* Компенсируем border-right для последнего столбца */
+  &:nth-child(7n) {
+    border-right: none;
+    padding-right: 1px; /* ← чтобы контент не "прыгал" */
+  }
 
   /* Убираем верхнюю границу у первой строки */
   &:nth-child(-n+7) {
     border-top: 1px solid #dedede;
-  }
-
-  /* Убираем правую границу у последнего столбца */
-  &:nth-child(7n) {
-    border-right: none;
-    width: 100%; /* ← без border-right — не нужно компенсировать */
   }
 
   /* Убираем нижнюю границу у последней строки */
@@ -32,19 +31,18 @@
   /* При наведении — полная зелёная рамка */
   &:hover {
     border: 1px solid #82bf00;
-    width: calc(100% + 2px); /* ← компенсируем все границы */
-    margin: -1px; /* ← сдвигаем, чтобы перекрыть соседей */
+    margin: -1px; /* ← перекрываем соседей */
     z-index: 2;
   }
 
-  /* Для последнего столбца при наведении */
+  /* Для последнего столбца при наведении — сдвигаем вправо */
   &:nth-child(7n):hover {
     border-right: 1px solid #82bf00;
-    width: calc(100% + 1px); /* ← только справа граница */
-    margin-right: -1px; /* ← сдвигаем вправо */
+    margin-right: -1px; /* ← совмещаем с общей границей */
+    padding-right: 0; /* ← убираем компенсацию */
   }
 
-  /* Для последней строки при наведении */
+  /* Для последней строки при наведении — сдвигаем вниз */
   &:nth-last-child(-n+7):hover {
     border-bottom: 1px solid #82bf00;
     margin-bottom: -1px;
