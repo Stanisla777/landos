@@ -10,6 +10,8 @@
   /* Базовые границы */
   border-right: 1px solid #dedede;
   border-bottom: 1px solid #dedede;
+  box-sizing: content-box; /* ← Важно! Границы снаружи */
+  width: calc(100% + 1px); /* ← Компенсируем border-right */
 
   /* Убираем верхнюю границу у первой строки */
   &:nth-child(-n+7) {
@@ -19,6 +21,7 @@
   /* Убираем правую границу у последнего столбца */
   &:nth-child(7n) {
     border-right: none;
+    width: 100%; /* ← без border-right — не нужно компенсировать */
   }
 
   /* Убираем нижнюю границу у последней строки */
@@ -29,15 +32,25 @@
   /* При наведении — полная зелёная рамка */
   &:hover {
     border: 1px solid #82bf00;
-  }
-
-  /* Для последней строки — сдвигаем вниз и скругляем */
-  &:nth-last-child(-n+7):hover {
-    margin-bottom: -1px;
+    width: calc(100% + 2px); /* ← компенсируем все границы */
+    margin: -1px; /* ← сдвигаем, чтобы перекрыть соседей */
     z-index: 2;
   }
 
-  /* Скругляем углы у последней строки */
+  /* Для последнего столбца при наведении */
+  &:nth-child(7n):hover {
+    border-right: 1px solid #82bf00;
+    width: calc(100% + 1px); /* ← только справа граница */
+    margin-right: -1px; /* ← сдвигаем вправо */
+  }
+
+  /* Для последней строки при наведении */
+  &:nth-last-child(-n+7):hover {
+    border-bottom: 1px solid #82bf00;
+    margin-bottom: -1px;
+  }
+
+  /* Скругления для угловых ячеек */
   &:nth-child(7n):nth-last-child(-n+7):hover {
     border-bottom-right-radius: 16px;
   }
