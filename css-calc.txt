@@ -1,4 +1,68 @@
-data-event='[{"date":"2025-10-06", "events":[{"type":2, "title":"Розыгрыш подарков - тут мы будем разыгрывать подарки"},{"type":3, "title":"Настоящее тестрование ждёт тебя"}]}, {"date":"2025-10-10", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]},{"date":"2025-11-04", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]}, {"date":"2025-11-05", "events":[{"type":2, "title":"Розыгрыш подарков - тут мы будем разыгрывать подарки"},{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"},{"type":3, "title":"Настоящее тестрование ждёт тебя"}]}]'
+.marathon-2025__shedule#marathon-2025-shedule(
+                                    v-cloak
+                                    ref="Shedule2025"
+                                    data-event='[{"date":"2025-10-01", "events":[{"type":2, "title":"Розыгрыш подарков - тут мы будем разыгрывать подарки"},{"type":3, "title":"Настоящее тестрование ждёт тебя"}]}, {"date":"2025-10-02", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]},{"date":"2025-11-04", "events":[{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"}]}, {"date":"2025-11-05", "events":[{"type":2, "title":"Розыгрыш подарков - тут мы будем разыгрывать подарки"},{"type":1, "title":"Эфир со спикерами - самый крутой эфир на земле, где мы разберем насущные вопросы"},{"type":3, "title":"Настоящее тестрование ждёт тебя"}]}]'
+                                )
+                                    .marathon-2025__shedule-legend
+                                        .marathon-2025__shedule-legend-item
+                                            .marathon-2025__shedule-legend-icon.icon-type-1
+                                            p Эфир
+                                        .marathon-2025__shedule-legend-item
+                                            .marathon-2025__shedule-legend-icon.icon-type-2
+                                            p Розыгрыш
+                                        .marathon-2025__shedule-legend-item
+                                            .marathon-2025__shedule-legend-icon.icon-type-3
+                                            p Тестирование
+
+
+                                    template
+                                      .marathon-2025__schedule-block
+                                          .marathon-2025__calendar-column.border-radius-16
+                                            .marathon-2025__calendar-header
+                                              .marathon-2025__calendar-header-arrow(@click="prevMonth" :class="!canGoPrev?'disabled':''")
+                                                svg(width='18' height='14' viewbox='0 0 18 14' fill='none' xmlns='http://www.w3.org/2000/svg')
+                                                  path(fill-rule='evenodd' clip-rule='evenodd' d='M0.792893 7.6724C0.402369 7.30118 0.402369 6.69931 0.792893 6.32809L7.15685 0.278661C7.54738 -0.0925616 8.18054 -0.0925616 8.57107 0.278661C8.96159 0.649884 8.96159 1.25176 8.57107 1.62298L3.91421 6.04967H16.5C17.0523 6.04967 17.5 6.47526 17.5 7.00024C17.5 7.52523 17.0523 7.95082 16.5 7.95082H3.91421L8.57107 12.3775C8.96159 12.7487 8.96159 13.3506 8.57107 13.7218C8.18054 14.093 7.54738 14.093 7.15685 13.7218L0.792893 7.6724Z' fill='#252628')
+                                              h4 {{ currentMonthName }} {{ currentYear }}
+                                              .marathon-2025__calendar-header-arrow(@click="nextMonth" :class="!canGoNext?'disabled':''")
+                                                svg(width='18' height='14' viewbox='0 0 18 14' fill='none' xmlns='http://www.w3.org/2000/svg')
+                                                  path(fill-rule='evenodd' clip-rule='evenodd' d='M17.2071 7.6724C17.5976 7.30118 17.5976 6.69931 17.2071 6.32809L10.8431 0.278661C10.4526 -0.0925616 9.81946 -0.0925616 9.42893 0.278661C9.03841 0.649884 9.03841 1.25176 9.42893 1.62298L14.0858 6.04967H1.5C0.947716 6.04967 0.5 6.47526 0.5 7.00024C0.5 7.52523 0.947716 7.95082 1.5 7.95082H14.0858L9.42893 12.3775C9.03841 12.7487 9.03841 13.3506 9.42893 13.7218C9.81946 14.093 10.4526 14.093 10.8431 13.7218L17.2071 7.6724Z' fill='#252628')
+
+                                            .marathon-2025__calendar-grid-container
+                                                .marathon-2025__calendar-grid
+                                                    //.marathon-2025__day-header-container
+                                                    .marathon-2025__day-header(v-for="day in weekdays" :key="day") {{ day }}
+                                                .marathon-2025__calendar-grid
+                                                    .marathon-2025__calendar-day(
+                                                        v-for="day in getDaysInGrid"
+                                                        :key="day.date"
+                                                        :class="{'disabled': !day.hasEvents,'selected': isSelected(day.date),'prev-month': day.isPrevMonth,'next-month': day.isNextMonth}"
+                                                        @click="selectDay(day)"
+                                                    )
+
+                                                        .marathon-2025__event-icons(v-if="day.hasEvents")
+                                                          span.marathon-2025__shedule-legend-icon(
+                                                            v-for="eventType in getEventTypesForDay(day)"
+                                                            :key="eventType"
+                                                            :class="'icon-type-' + eventType"
+                                                            :title="getEventTitleByType(eventType)"
+                                                          )
+                                                            // Сюда вставь свои иконки, например:
+                                                            // i(:class="getIconClass(eventType)")
+                                                            // или
+                                                            // img(:src="getIconSrc(eventType)" :alt="getEventTitleByType(eventType)")
+                                                        p {{ day.number }}
+
+                                          .marathon-2025__events-column.border-radius-16(v-if="selectedDate")
+                                            h4 События на {{ selectedDate }}
+                                            .marathon-2025__event-container
+                                              .marathon-2025__event-item(
+                                                v-for="(event, index) in eventsForSelectedDay"
+                                                :key="index"
+                                              )
+                                                .marathon-2025__shedule-legend-item
+                                                  .marathon-2025__shedule-legend-icon(:class="'icon-type-' + event.type")
+                                                  p {{ getEventTitleByType(event.type) }}
+                                                p.marathon-2025__event-description {{ event.title }}
 
 
 
@@ -340,3 +404,4 @@ export default function marathon2025Shedule() {
     }
   });
 }
+
