@@ -14,6 +14,7 @@ export default function marathon2025Shedule() {
       maxDate: null,
       screenWidth: window.innerWidth,
       screenHeight: window.innerHeight,
+      contentObserver: null,
     },
     computed: {
       weekdays() {
@@ -142,35 +143,50 @@ export default function marathon2025Shedule() {
         this.screenWidth = window.innerWidth;
         this.screenHeight = window.innerHeight;
 
-        if ((oldWidth < 990 && this.screenWidth >= 990) || 
-            (oldWidth >= 990 && this.screenWidth < 990) ||
-            this.screenWidth >= 990) {
-          this.syncCalendarHeight();
+        // Всегда синхронизируем при изменении ширины на десктопе
+        if (this.screenWidth >= 990) {
+          // Небольшая задержка чтобы дать браузеру перерисовать контент
+          setTimeout(() => {
+            this.syncCalendarHeight();
+          }, 50);
+        } else if (oldWidth >= 990 && this.screenWidth < 990) {
+          // При переходе на мобильный - сбрасываем высоты
+          this.resetCalendarHeights();
         }
       },
 
       syncCalendarHeight() {
+        if (this.screenWidth < 990) {
+          this.resetCalendarHeights();
+          return;
+        }
+        
         this.$nextTick(() => {
-          if (this.screenWidth < 990) {
-            this.resetCalendarHeights();
-            return;
-          }
-          
           const calendarColumn = this.$el.querySelector('.marathon-2025__calendar-column');
           const eventsColumn = this.$el.querySelector('.marathon-2025__events-column');
           
           if (!calendarColumn || !eventsColumn) return;
           
-          const eventsHeight = eventsColumn.offsetHeight;
-          const baseCalendarHeight = this.calculateBaseCalendarHeight();
+          // Сначала сбрасываем высоты чтобы получить естественную высоту контента
+          this.resetCalendarHeights();
           
-          if (eventsHeight <= baseCalendarHeight) {
-            this.resetCalendarHeights();
-            return;
-          }
-          
-          calendarColumn.style.minHeight = eventsHeight + 'px';
-          this.calculateCellHeights(eventsHeight);
+          // Даем браузеру время на перерисовку
+          setTimeout(() => {
+            const eventsHeight = eventsColumn.offsetHeight;
+            const baseCalendarHeight = this.calculateBaseCalendarHeight();
+            
+            console.log('Events height:', eventsHeight, 'Base calendar height:', baseCalendarHeight);
+            
+            // Если контент в правой колонке ВМЕЩАЕТСЯ в базовую высоту - не растягиваем
+            if (eventsHeight <= baseCalendarHeight) {
+              this.resetCalendarHeights();
+              return;
+            }
+            
+            // Если контент НЕ ВМЕЩАЕТСЯ - растягиваем
+            calendarColumn.style.minHeight = eventsHeight + 'px';
+            this.calculateCellHeights(eventsHeight);
+          }, 10);
         });
       },
 
@@ -226,7 +242,7 @@ export default function marathon2025Shedule() {
         
         if (rowCount === 0) return;
         
-        const rowHeight = availableHeight / rowCount;
+        const rowHeight = Math.max(availableHeight / rowCount, 65); // Минимум 65px
         
         const dateGrids = this.$el.querySelectorAll('.marathon-2025__calendar-grid:not(:first-child)');
         dateGrids.forEach(grid => {
@@ -235,6 +251,25 @@ export default function marathon2025Shedule() {
             cell.style.height = rowHeight + 'px';
             cell.style.minHeight = rowHeight + 'px';
           });
+        });
+      },
+
+      setupContentObserver() {
+        const eventsColumn = this.$el.querySelector('.marathon-2025__events-column');
+        if (!eventsColumn) return;
+        
+        // Отслеживаем изменения содержимого правой колонки
+        this.contentObserver = new MutationObserver(() => {
+          if (this.screenWidth >= 990) {
+            this.syncCalendarHeight();
+          }
+        });
+        
+        this.contentObserver.observe(eventsColumn, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+          attributes: true
         });
       },
 
@@ -442,7 +477,10 @@ export default function marathon2025Shedule() {
         handler() {
           this.$nextTick(() => {
             if (this.screenWidth >= 990) {
-              this.syncCalendarHeight();
+              // Небольшая задержка для стабильности
+              setTimeout(() => {
+                this.syncCalendarHeight();
+              }, 50);
             }
           });
         },
@@ -452,7 +490,9 @@ export default function marathon2025Shedule() {
       currentMonth() {
         this.$nextTick(() => {
           if (this.screenWidth >= 990) {
-            this.syncCalendarHeight();
+            setTimeout(() => {
+              this.syncCalendarHeight();
+            }, 50);
           }
         });
       }
@@ -464,14 +504,21 @@ export default function marathon2025Shedule() {
       this.setDefaultMonth();
       this.setDefaultSelection();
       window.addEventListener('resize', this.updateScreenWidth);
+      this.setupContentObserver();
       
       this.$nextTick(() => {
-        this.syncCalendarHeight();
+        // Инициализация с задержкой для стабильности
+        setTimeout(() => {
+          this.syncCalendarHeight();
+        }, 100);
       });
     },
 
     beforeDestroy() {
       window.removeEventListener('resize', this.updateScreenWidth);
+      if (this.contentObserver) {
+        this.contentObserver.disconnect();
+      }
     }
   });
 }
