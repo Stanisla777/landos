@@ -1,8 +1,6 @@
 /* eslint-disable */
 import Vue from 'vue';
 import axios from 'axios';
-// import Storage from './development-tools-rating/state.vue';
-
 
 export default function marathon2025Shedule() {
   const app = new Vue({
@@ -14,7 +12,7 @@ export default function marathon2025Shedule() {
       events: [],
       minDate: null,
       maxDate: null,
-      screenWidth : window.innerWidth,
+      screenWidth: window.innerWidth,
       screenHeight: window.innerHeight,
     },
     computed: {
@@ -29,85 +27,11 @@ export default function marathon2025Shedule() {
         return months[this.currentMonth];
       },
 
-      // Основной метод — возвращает 42 дня (6 строк × 7 дней)
-      // getDaysInGrid() {
-      //   const days = [];
-      //   const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay(); // 0 = вс
-      //   const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
-      //
-      //   // ——— Дни предыдущего месяца ———
-      //   const prevMonth = this.currentMonth === 0 ? 11 : this.currentMonth - 1;
-      //   const prevYear = this.currentMonth === 0 ? this.currentYear - 1 : this.currentYear;
-      //   const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
-      //
-      //   // Сколько дней предыдущего месяца нужно добавить
-      //   const prevDaysCount = firstDay === 0 ? 6 : firstDay - 1;
-      //
-      //   for (let i = 0; i < prevDaysCount; i++) {
-      //     const dayNumber = daysInPrevMonth - (prevDaysCount - 1 - i);
-      //     const date = new Date(prevYear, prevMonth, dayNumber);
-      //     const dateStr = this.formatDateForData(date);
-      //     const normalizedDate = this.normalizeDate(dateStr);
-      //     const eventItem = this.events.find(e => this.normalizeDate(e.date) === normalizedDate);
-      //
-      //     days.push({
-      //       number: dayNumber,
-      //       date: dateStr,
-      //       isPrevMonth: true,
-      //       isNextMonth: false,
-      //       hasEvents: !!eventItem,
-      //       events: eventItem ? eventItem.events : []
-      //     });
-      //   }
-      //
-      //   // ——— Дни текущего месяца ———
-      //   for (let day = 1; day <= daysInMonth; day++) {
-      //     const date = new Date(this.currentYear, this.currentMonth, day);
-      //     const dateStr = this.formatDateForData(date);
-      //     const normalizedDate = this.normalizeDate(dateStr);
-      //     const eventItem = this.events.find(e => this.normalizeDate(e.date) === normalizedDate);
-      //
-      //     days.push({
-      //       number: day,
-      //       date: dateStr,
-      //       isPrevMonth: false,
-      //       isNextMonth: false,
-      //       hasEvents: !!eventItem,
-      //       events: eventItem ? eventItem.events : []
-      //     });
-      //   }
-      //
-      //   // ——— Дни следующего месяца ———
-      //   const nextMonth = this.currentMonth === 11 ? 0 : this.currentMonth + 1;
-      //   const nextYear = this.currentMonth === 11 ? this.currentYear + 1 : this.currentYear;
-      //
-      //   // Дозаполняем до 42 ячеек
-      //   while (days.length < 42) {
-      //     const dayNumber = days.length - daysInMonth - prevDaysCount + 1;
-      //     const date = new Date(nextYear, nextMonth, dayNumber);
-      //     const dateStr = this.formatDateForData(date);
-      //     const normalizedDate = this.normalizeDate(dateStr);
-      //     const eventItem = this.events.find(e => this.normalizeDate(e.date) === normalizedDate);
-      //
-      //     days.push({
-      //       number: dayNumber,
-      //       date: dateStr,
-      //       isPrevMonth: false,
-      //       isNextMonth: true,
-      //       hasEvents: !!eventItem,
-      //       events: eventItem ? eventItem.events : []
-      //     });
-      //   }
-      //
-      //   return days;
-      // },
-
       getDaysInGrid() {
         const days = [];
-        const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay(); // 0 = вс
+        const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay();
         const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
 
-        // ——— Дни предыдущего месяца ———
         const prevMonth = this.currentMonth === 0 ? 11 : this.currentMonth - 1;
         const prevYear = this.currentMonth === 0 ? this.currentYear - 1 : this.currentYear;
         const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
@@ -128,12 +52,11 @@ export default function marathon2025Shedule() {
             isNextMonth: false,
             hasEvents: !!eventItem,
             events: eventItem ? eventItem.events : [],
-            month: prevMonth, // ← добавляем месяц
-            year: prevYear     // ← и год
+            month: prevMonth,
+            year: prevYear
           });
         }
 
-        // ——— Дни текущего месяца ———
         for (let day = 1; day <= daysInMonth; day++) {
           const date = new Date(this.currentYear, this.currentMonth, day);
           const dateStr = this.formatDateForData(date);
@@ -147,12 +70,11 @@ export default function marathon2025Shedule() {
             isNextMonth: false,
             hasEvents: !!eventItem,
             events: eventItem ? eventItem.events : [],
-            month: this.currentMonth, // ← текущий месяц
-            year: this.currentYear     // ← текущий год
+            month: this.currentMonth,
+            year: this.currentYear
           });
         }
 
-        // ——— Дни следующего месяца ———
         const nextMonth = this.currentMonth === 11 ? 0 : this.currentMonth + 1;
         const nextYear = this.currentMonth === 11 ? this.currentYear + 1 : this.currentYear;
 
@@ -170,23 +92,20 @@ export default function marathon2025Shedule() {
             isNextMonth: true,
             hasEvents: !!eventItem,
             events: eventItem ? eventItem.events : [],
-            month: nextMonth, // ← следующий месяц
-            year: nextYear     // ← следующий год
+            month: nextMonth,
+            year: nextYear
           });
         }
 
-        // Разбиваем на недели
         const weeks = [];
         for (let i = 0; i < days.length; i += 7) {
           weeks.push(days.slice(i, i + 7));
         }
 
-        // Фильтруем недели — оставляем только те, где есть хотя бы один день текущего месяца
         const filteredWeeks = weeks.filter(week => {
           return week.some(day => day.month === this.currentMonth && day.year === this.currentYear);
         });
 
-        // Возвращаем плоский массив
         return filteredWeeks.flat();
       },
 
@@ -196,14 +115,11 @@ export default function marathon2025Shedule() {
         const dayData = this.events.find(e => this.normalizeDate(e.date) === normalized);
         if (!dayData) return [];
 
-        // Сортируем по кастомному порядку: 3 → 1 → 2
         return [...dayData.events].sort((a, b) => {
-          const order = [3, 1, 2]; // Тестирование → Эфир → Розыгрыш
+          const order = [3, 1, 2];
           return order.indexOf(a.type) - order.indexOf(b.type);
         });
       },
-
-
 
       canGoPrev() {
         if (!this.minDate) return false;
@@ -218,17 +134,110 @@ export default function marathon2025Shedule() {
         const max = this.maxDate.year * 12 + this.maxDate.month;
         return current < max;
       },
-
     },
 
     methods: {
       updateScreenWidth() {
+        const oldWidth = this.screenWidth;
         this.screenWidth = window.innerWidth;
         this.screenHeight = window.innerHeight;
 
-        // Синхронизируем ВЫСОТУ ЯЧЕЕК (не контейнера!)
-        this.syncCalendarHeight();
+        if ((oldWidth < 990 && this.screenWidth >= 990) || 
+            (oldWidth >= 990 && this.screenWidth < 990) ||
+            this.screenWidth >= 990) {
+          this.syncCalendarHeight();
+        }
       },
+
+      syncCalendarHeight() {
+        this.$nextTick(() => {
+          if (this.screenWidth < 990) {
+            this.resetCalendarHeights();
+            return;
+          }
+          
+          const calendarColumn = this.$el.querySelector('.marathon-2025__calendar-column');
+          const eventsColumn = this.$el.querySelector('.marathon-2025__events-column');
+          
+          if (!calendarColumn || !eventsColumn) return;
+          
+          const eventsHeight = eventsColumn.offsetHeight;
+          const baseCalendarHeight = this.calculateBaseCalendarHeight();
+          
+          if (eventsHeight <= baseCalendarHeight) {
+            this.resetCalendarHeights();
+            return;
+          }
+          
+          calendarColumn.style.minHeight = eventsHeight + 'px';
+          this.calculateCellHeights(eventsHeight);
+        });
+      },
+
+      calculateBaseCalendarHeight() {
+        const calendarHeader = this.$el.querySelector('.marathon-2025__calendar-header');
+        const dayHeaders = this.$el.querySelector('.marathon-2025__calendar-grid:first-child');
+        
+        const headerHeight = calendarHeader ? calendarHeader.offsetHeight : 0;
+        const dayHeaderHeight = dayHeaders ? dayHeaders.offsetHeight : 0;
+        
+        const rowCount = Math.ceil(this.getDaysInGrid.length / 7);
+        
+        let cellHeight;
+        if (this.screenWidth < 590) {
+          cellHeight = 52;
+        } else if (this.screenWidth < 740) {
+          cellHeight = 77;
+        } else if (this.screenWidth < 990) {
+          cellHeight = 65;
+        } else if (this.screenWidth < 1390) {
+          cellHeight = 77;
+        } else {
+          cellHeight = 65;
+        }
+        
+        return headerHeight + dayHeaderHeight + (cellHeight * rowCount);
+      },
+
+      resetCalendarHeights() {
+        const calendarColumn = this.$el.querySelector('.marathon-2025__calendar-column');
+        const cells = this.$el.querySelectorAll('.marathon-2025__calendar-day');
+        
+        if (calendarColumn) {
+          calendarColumn.style.minHeight = '';
+        }
+        
+        cells.forEach(cell => {
+          cell.style.height = '';
+          cell.style.minHeight = '';
+        });
+      },
+
+      calculateCellHeights(totalHeight) {
+        const calendarHeader = this.$el.querySelector('.marathon-2025__calendar-header');
+        const dayHeaders = this.$el.querySelectorAll('.marathon-2025__day-header');
+        
+        if (!calendarHeader || dayHeaders.length === 0) return;
+        
+        const headerHeight = calendarHeader.offsetHeight;
+        const dayHeaderHeight = dayHeaders[0].offsetHeight;
+        const availableHeight = totalHeight - headerHeight - dayHeaderHeight;
+        const rowCount = Math.ceil(this.getDaysInGrid.length / 7);
+        
+        if (rowCount === 0) return;
+        
+        const rowHeight = availableHeight / rowCount;
+        
+        const dateGrids = this.$el.querySelectorAll('.marathon-2025__calendar-grid:not(:first-child)');
+        dateGrids.forEach(grid => {
+          const cells = grid.querySelectorAll('.marathon-2025__calendar-day');
+          cells.forEach(cell => {
+            cell.style.height = rowHeight + 'px';
+            cell.style.minHeight = rowHeight + 'px';
+          });
+        });
+      },
+
       parseEvents() {
         const eventAttr = this.$el.getAttribute('data-event');
         if (!eventAttr) return;
@@ -261,18 +270,13 @@ export default function marathon2025Shedule() {
       },
 
       formatDateForData(date) {
-        console.log('date');
-        console.log(date);
         const d = String(date.getDate()).padStart(2, '0');
         const m = String(date.getMonth() + 1).padStart(2, '0');
         const y = date.getFullYear();
         return `${d}.${m}.${y}`;
       },
 
-      // Для шаблона — красивый формат
       formatDate(dateStr) {
-        console.log('dateStr');
-        console.log(dateStr);
         if (!dateStr) return '';
         const normalized = this.normalizeDate(dateStr);
         const [d, m, y] = normalized.split('.').map(Number);
@@ -284,9 +288,8 @@ export default function marathon2025Shedule() {
       },
 
       getEventTypesForDay(day) {
-        // Сортируем события по кастомному порядку: 3 → 1 → 2
         const sortedEvents = [...day.events].sort((a, b) => {
-          const order = [3, 1, 2]; // Тестирование → Эфир → Розыгрыш
+          const order = [3, 1, 2];
           return order.indexOf(a.type) - order.indexOf(b.type);
         });
         return sortedEvents.map(event => event.type);
@@ -309,27 +312,18 @@ export default function marathon2025Shedule() {
         return '';
       },
 
-      // selectDay(day) {
-      //   if (!day.hasEvents) return;
-      //   this.selectedDate = day.date;
-      // },
-
       selectDay(day) {
         if (!day.hasEvents) return;
 
-        // Устанавливаем выбранный день
         this.selectedDate = day.date;
 
-        // Проверяем, относится ли день к другому месяцу
         const selectedDateObj = this.parseDate(day.date);
         const selectedMonth = selectedDateObj.getMonth();
         const selectedYear = selectedDateObj.getFullYear();
 
-        // Если месяц или год не совпадают с текущим — переключаем
         if (selectedMonth !== this.currentMonth || selectedYear !== this.currentYear) {
           this.currentMonth = selectedMonth;
           this.currentYear = selectedYear;
-          // selectedDate уже установлен — не трогаем
         }
       },
 
@@ -442,9 +436,25 @@ export default function marathon2025Shedule() {
         }
       }
     },
-    watch:{
-      screenWidth() {
-        
+
+    watch: {
+      eventsForSelectedDay: {
+        handler() {
+          this.$nextTick(() => {
+            if (this.screenWidth >= 990) {
+              this.syncCalendarHeight();
+            }
+          });
+        },
+        deep: true
+      },
+      
+      currentMonth() {
+        this.$nextTick(() => {
+          if (this.screenWidth >= 990) {
+            this.syncCalendarHeight();
+          }
+        });
       }
     },
 
@@ -454,6 +464,14 @@ export default function marathon2025Shedule() {
       this.setDefaultMonth();
       this.setDefaultSelection();
       window.addEventListener('resize', this.updateScreenWidth);
+      
+      this.$nextTick(() => {
+        this.syncCalendarHeight();
+      });
+    },
+
+    beforeDestroy() {
+      window.removeEventListener('resize', this.updateScreenWidth);
     }
   });
 }
