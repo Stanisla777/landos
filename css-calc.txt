@@ -1,21 +1,58 @@
-data: {
-      .....
-      screenWidth : window.innerWidth,
-      screenHeight: window.innerHeight,
-    },
-
-methods: {
 updateScreenWidth() {
-      this.screenWidth = window.innerWidth;
-      this.screenHeight = window.innerHeight;
-    },
-}
-watch: {
-screenWidth() {
+  this.screenWidth = window.innerWidth;
+  this.screenHeight = window.innerHeight;
 
+  // Синхронизируем высоту ТОЛЬКО если экран > 990px
+  if (this.screenWidth > 990) {
+    this.syncCalendarHeight();
+  } else {
+    // На мобильных — сбрасываем высоту, чтобы не мешало
+    if (this.$refs.calendarColumn) {
+      this.$refs.calendarColumn.style.height = 'auto';
+    }
+  }
 }
+
+syncCalendarHeight() {
+  this.$nextTick(() => {
+    // Проверяем ширину экрана
+    if (this.screenWidth <= 990) return;
+
+    if (this.$refs.eventsColumn && this.$refs.calendarColumn) {
+      const eventsHeight = this.$refs.eventsColumn.offsetHeight;
+      this.$refs.calendarColumn.style.height = `${eventsHeight}px`;
+    }
+  });
 }
+
+watch: {
+  selectedDate() {
+    if (this.screenWidth > 990) {
+      this.syncCalendarHeight();
+    }
+  },
+  screenWidth() {
+    // Уже обрабатывается в updateScreenWidth, но можно добавить для надёжности
+    if (this.screenWidth > 990) {
+      this.syncCalendarHeight();
+    } else {
+      if (this.$refs.calendarColumn) {
+        this.$refs.calendarColumn.style.height = 'auto';
+      }
+    }
+  }
+}
+
 mounted() {
-window.addEventListener('resize', this.updateScreenWidth);
-}
+  this.parseEvents();
+  this.calculateDateBounds();
+  this.setDefaultMonth();
+  this.setDefaultSelection();
+  
+  // Инициализируем размеры экрана
+  this.updateScreenWidth();
+  
+  // Подписываемся на resize
+  window.addEventListener('resize', this.updateScreenWidth);
+},
 
