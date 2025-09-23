@@ -1,13 +1,63 @@
+syncCalendarHeight() {
+  this.$nextTick(() => {
+    // Работаем только на экранах > 990px
+    if (this.screenWidth <= 990) {
+      this.resetCellHeights();
+      return;
+    }
+
+    // Проверяем наличие рефов
+    if (!this.$refs.calendarColumn || !this.$refs.eventsColumn) return;
+
+    const calendarColumn = this.$refs.calendarColumn;
+    const eventsColumn = this.$refs.eventsColumn;
+
+    // Получаем ячейки
+    const cells = calendarColumn.querySelectorAll('.marathon-2025__calendar-day');
+    if (cells.length === 0) return;
+
+    // Получаем гриды
+    const headersGrid = calendarColumn.querySelectorAll('.marathon-2025__calendar-grid')[0];
+    const cellsGrid = calendarColumn.querySelectorAll('.marathon-2025__calendar-grid')[1];
+    if (!headersGrid || !cellsGrid) return;
+
+    // Получаем высоту заголовка календаря
+    const calendarHeader = calendarColumn.querySelector('.marathon-2025__calendar-header');
+    const calendarHeaderHeight = calendarHeader ? calendarHeader.offsetHeight : 0;
+
+    // Высота заголовков дней
+    const headersHeight = headersGrid.offsetHeight;
+
+    // Текущая высота левого блока (календаря)
+    const currentCalendarHeight = calendarColumn.offsetHeight;
+
+    // Высота правого блока (событий)
+    const eventsHeight = eventsColumn.offsetHeight;
+
+    // Если правый блок НЕ выше левого — ничего не делаем
+    if (eventsHeight <= currentCalendarHeight) {
+      this.resetCellHeights();
+      return;
+    }
+
+    // Иначе — вычисляем новую высоту для ячеек
+    const availableHeightForCells = eventsHeight - calendarHeaderHeight - headersHeight;
+    const rows = Math.ceil(cells.length / 7);
+    const cellHeight = availableHeightForCells / rows;
+
+    // Применяем высоту ко всем ячейкам
+    cells.forEach(cell => {
+      cell.style.height = `${cellHeight}px`;
+    });
+  });
+},
+
 resetCellHeights() {
-  // Проверяем, существует ли this.$refs.calendarColumn
   if (this.$refs.calendarColumn) {
-    // Получаем все ячейки
     const cells = this.$refs.calendarColumn.querySelectorAll('.marathon-2025__calendar-day');
-    
-    // Проверяем, что cells существует и это NodeList с элементами
     if (cells && cells.length > 0) {
       cells.forEach(cell => {
-        cell.style.height = ''; // Сбрасываем inline-style
+        cell.style.height = ''; // Сбрасываем inline-style → используются стили из CSS
       });
     }
   }
