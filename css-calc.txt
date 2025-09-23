@@ -1,1 +1,408 @@
-Атласова Екатерина Владимировна вы можете нужные размеры посмотреть в макете, так будет просто проще и нагляднее для вас. Макет -> Вкладка Development. Кликаете на блок и сразу видны размеры. Вам нагляднее будет понимать, какое изображение лучше подготовить, сразу будут видны риски, например того, что элемент изображения может находить на текст в блоке и текст может теряться. Опять же, будет понимание того, что при уменьшении экрана блок, в котором изображение, будет уменьшаться по ширине. Если в блоке есть текст, при уменьшении ширины экрана , текст может переноситься и блок будет не только уменьшаться по высоте, но и увеличиваться по высоте. Будет большее понимание, какие версии изображений подготовить для десктопа, планшета и мобилки 
+.marathon-2025__schedule-block
+                                          .marathon-2025__calendar-column.border-radius-16
+                                            .marathon-2025__calendar-header
+                                              .marathon-2025__calendar-header-arrow(@click="prevMonth" :class="!canGoPrev?'disabled':''")
+                                               
+                                              h4 {{ currentMonthName }} {{ currentYear }}
+                                              .marathon-2025__calendar-header-arrow(@click="nextMonth" :class="!canGoNext?'disabled':''")
+                                                
+                                            .marathon-2025__calendar-grid-container
+                                                .marathon-2025__calendar-grid
+                                                    //.marathon-2025__day-header-container
+                                                    .marathon-2025__day-header(v-for="day in weekdays" :key="day") {{ day }}
+                                                .marathon-2025__calendar-grid
+                                                    .marathon-2025__calendar-day(
+                                                        v-for="day in getDaysInGrid"
+                                                        :key="day.date"
+                                                        :class="{'disabled': !day.hasEvents,'selected': isSelected(day.date),'prev-month': day.isPrevMonth,'next-month': day.isNextMonth}"
+                                                        @click="selectDay(day)"
+                                                    )
+
+                                                        .marathon-2025__event-icons(v-if="day.hasEvents")
+                                                          span.marathon-2025__shedule-legend-icon(
+                                                            v-for="eventType in getEventTypesForDay(day)"
+                                                            :key="eventType"
+                                                            :class="'icon-type-' + eventType"
+                                                            :title="getEventTitleByType(eventType)"
+                                                          )
+                                                            // Сюда вставь свои иконки, например:
+                                                            // i(:class="getIconClass(eventType)")
+                                                            // или
+                                                            // img(:src="getIconSrc(eventType)" :alt="getEventTitleByType(eventType)")
+                                                        p {{ day.number }}
+
+                                          .marathon-2025__events-column.border-radius-16(v-if="selectedDate")
+                                            h4 События на {{ selectedDate }}
+                                            .marathon-2025__event-container
+                                              .marathon-2025__event-item(
+                                                v-for="(event, index) in eventsForSelectedDay"
+                                                :key="index"
+                                              )
+                                                .marathon-2025__shedule-legend-item
+                                                  .marathon-2025__shedule-legend-icon(:class="'icon-type-' + event.type")
+                                                  p {{ getEventTitleByType(event.type) }}
+                                                p.marathon-2025__event-description {{ event.title }}
+
+
+
+.marathon-2025{
+&__calendar-grid-container{
+    .marathon-2025__calendar-grid{
+      &:first-child{
+        background-color: #f4f4f4;
+      }
+    }
+
+  }
+  &__shedule-legend{
+    display: flex;
+    gap:16px;
+    padding-top: 24px;
+    padding-bottom: 24px;
+    border-top:1px solid #E6E6E6;
+    overflow-x:auto;
+    @include respondTo(mobile) {
+      padding-top: 16px;
+    }
+  }
+  &__shedule-legend-item{
+    display: flex;
+    gap:8px;
+    p{
+      font-size: 20px;
+      line-height: 120%;
+      color: #252628;
+      font-family: $ff-semi-bold;
+      @media screen and (max-width: 590px) {
+        font-size: 16px;
+        line-height: 125%;
+      }
+    }
+  }
+  &__shedule-legend-icon{
+    width: 20px;
+    height: 24px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    @media screen and (max-width: 590px) {
+      width: 16px;
+      height: 20px;
+    }
+    &.icon-type-1{
+      //тут вставить иконку мероприятия если она будет в svg
+      background-image: url("../img/marathon-2025-icon-broadcast.png");
+    }
+    &.icon-type-2{
+      //тут вставить иконку мероприятия если она будет в svg
+      background-image: url("../img/marathon-2025-icon-raffle.png");
+    }
+    &.icon-type-3{
+      //тут вставить иконку мероприятия если она будет в svg
+      background-image: url("../img/marathon-2025-icon-test.png");
+    }
+
+
+  }
+  &__schedule-block {
+    display: flex;
+    gap: 16px;
+    //align-items: flex-start;
+    @media screen and (max-width: 990px) {
+      flex-direction: column;
+      align-items: unset;
+    }
+  }
+  &__calendar-column {
+    //flex: 1;
+    width: 100%;
+    max-width: 1007px;
+    border:1px solid #dedede;
+    clip-path: inset(0 round 16px);
+    .marathon-2025__shedule-legend-icon{
+      @media screen and (max-width: 1390px) {
+        width: 17px;
+        height: 17px;
+      }
+      @media screen and (max-width: 590px) {
+        width: 13px;
+        height: 13px;
+      }
+    }
+  }
+  &__calendar-header{
+    display: flex;
+    column-gap: 15px;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 16px 24px;
+    max-width: 845px;
+    margin: 0 auto;
+
+    @media screen and (max-width: 590px) {
+      padding: 8px 16px;
+    }
+    h4{
+      font-size: 24px;
+      line-height: 117%;
+      text-align: center;
+      color: #252628;
+      font-family: $ff-semi-bold;
+      @include respondTo(mobile) {
+        font-size: 20px;
+        line-height: 120%;
+      }
+      @media screen and (max-width: 590px) {
+        font-size: 16px;
+        line-height: 125%;
+      }
+    }
+  }
+  &__calendar-header-arrow{
+    cursor:pointer;
+    width: 64px;
+    height: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    @media screen and (max-width: 590px) {
+      width: 90px;
+    }
+    &.disabled{
+      pointer-events: none;
+      svg{
+        path{
+          fill: #999999;
+        }
+      }
+    }
+  }
+
+  &__calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    &:first-child{
+      border-top: 1px solid #dedede;
+    }
+
+
+    //overflow: hidden;
+    width: 100%;
+    //gap: 4px;
+  }
+  &__calendar-day,&__day-header{
+    font-size: 20px;
+    line-height: 120%;
+    font-family: $ff-semi-bold;
+    display: flex;
+    gap: 8px;
+    column-gap:8px;
+    row-gap:4px;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 143px;
+    @media screen and (max-width: 1390px) {
+      font-size: 16px;
+      line-height: 150%;
+      min-width: 75px;
+      column-gap:4px;
+    }
+    @media screen and (max-width: 590px) {
+      font-size: 14px;
+      line-height: 143%;
+      text-align: center;
+      min-width: 46px;
+    }
+    @media screen and (max-width: 355px) {
+      font-size: 12px;
+      line-height: 143%;
+      text-align: center;
+      min-width: 41px;
+    }
+
+
+
+  }
+  &__day-header{
+    padding: 8px 20px 8px 10px;
+    //background-color: #f4f4f4;
+    text-align: right;
+    color: #6d6d6d;
+    &:not(:last-child){
+      border-right:1px solid #dedede;
+    }
+    @media screen and (max-width: 590px) {
+      padding: 8px;
+      text-align: center;
+      flex-direction: column;
+    }
+  }
+  &__calendar-day {
+    padding: 20px 20px 20px 10px;
+    cursor: pointer;
+    text-align: center;
+    position: relative;
+    color:$color-text-new;
+    border-right: 1px solid #dedede;
+    border-bottom: 1px solid #dedede;
+    height: 65px;
+
+
+    &:last-child{
+      border-bottom-right-radius: 16px;
+    }
+    &:nth-child(7n){
+      border-right: none;
+      grid-column-end: span 1;
+      width: calc(100% + 1px);
+      margin-right: -1px;
+    }
+    &:nth-last-child(-n+7){
+      border-bottom: none;
+    }
+    /* Outline для hover и selected */
+    outline: 1px solid transparent;
+    outline-offset: -1px;
+    transition: outline-color 0.2s ease;
+    &:hover{
+      outline-color: #82bf00;
+    }
+
+
+    @media screen and (max-width: 1390px) {
+      padding: 12px;
+      flex-direction: column;
+      justify-content: flex-start;
+      height: 77px;
+    }
+    @media screen and (max-width: 990px) {
+      padding: 16px;
+      flex-direction: row;
+      justify-content: flex-end;
+      height: 65px;
+    }
+    @media screen and (max-width: 740px) {
+      flex-direction: column;
+      justify-content: flex-start;
+      height: 77px;
+    }
+    @media screen and (max-width: 590px) {
+      padding: 8px;
+      height: 52px;
+    }
+
+
+    p{
+      color:inherit;
+      font-size: inherit;
+      line-height: inherit;
+      font-family: inherit;
+      @media (min-width: 991px) and (max-width: 1390px) {
+        order:-1;
+      }
+      @media screen and (max-width: 740px) {
+        order:-1;
+      }
+    }
+
+
+    &.disabled {
+      color: #999;
+      pointer-events: none;
+    }
+    &.selected {
+      background: #d9f0ab;
+    }
+    &.prev-month, &.next-month {
+      color: #999;
+    }
+    &.prev-month.disabled, &.next-month.disabled {
+      //background: #fafafa;
+    }
+  }
+  &__day-number{
+
+  }
+  &__event-icons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    @media screen and (max-width: 1390px) {
+      gap:4px;
+    }
+    @media screen and (max-width: 590px) {
+      gap:1px;
+    }
+
+  }
+  &__event-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    font-size: 10px;
+    color: white;
+    font-weight: bold;
+  }
+  &__events-column {
+    padding: 32px;
+    background-color: #f4f4f4;
+    flex: 1;
+    min-width: 324px;
+    @include respondTo(small) {
+      padding: 24px;
+    }
+    h4{
+      font-size: 24px;
+      line-height: 117%;
+      color: #252628;
+      font-family: $ff-semi-bold;
+      @include respondTo(mobile) {
+        font-size: 20px;
+        line-height: 120%;
+      }
+      @include respondTo(small) {
+        font-size: 16px;
+        line-height: 125%;
+      }
+    }
+    .marathon-2025__shedule-legend-item{
+      p{
+        @include respondTo(small) {
+          font-size: 14px;
+          line-height: 143%;
+        }
+      }
+    }
+  }
+  &__event-container{
+    margin-top: 20px;
+  }
+  &__event-item{
+    &:not(:first-child){
+      margin-top: 24px;
+    }
+
+  }
+  &__event-description{
+    margin-top: 8px;
+    font-family: $ff-semi-bold;
+    font-size: 24px;
+    line-height: 117%;
+    color: #252628;
+    @include respondTo(mobile) {
+      font-size: 20px;
+      line-height: 120%;
+    }
+    @include respondTo(small) {
+      font-size: 14px;
+      line-height: 143%;
+    }
+  }
+
+
+}
