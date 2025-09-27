@@ -1,47 +1,31 @@
+copyLink(event){
+      const element = event.currentTarget;
+      let perem = ''
+      element.addEventListener('click', async () => {
+        if (element.classList.contains('js--instead-copyable')) {
+          try {
+            perem = element.textContent;
+            await navigator.clipboard.writeText(element.textContent);
+            // eslint-disable-next-line no-param-reassign
+            element.textContent = 'Текст скопирован!';
+            setTimeout(()=>{
+              element.textContent = perem;
+              perem=''
+            },3000)
+          }
+          
 
 
 
-closeModal(e) {
-  const element = e.currentTarget;
-  const block_rating = document.querySelector('.marathon-new-last__container-rating');
+          catch (err) {
+            if (element.closest('.js--wrapper-inserting-copied')) {
+              element.closest('.js--wrapper-inserting-copied')
+                .classList
+                .add('active');
+            }
+          }
+        }
 
-  if (element.closest('.modal')) {
-    element.closest('.modal').classList.remove('open');
-    document.body.classList.remove('modal-opened');
-    document.body.classList.remove('body-modal');
-  }
+      });
 
-  if (block_rating && this.state_window === 2 && element.classList.contains('btn_s')) {
-    const elementPosition = block_rating.getBoundingClientRect().top;
-    window.scrollBy({
-      top: elementPosition - 20,
-      behavior: 'smooth'
-    });
-  }
-
-  setTimeout(() => {
-    this.state_window = 1;
-    this.field_error = false;
-    this.checbox_error = false;
-  }, 1000);
-
-  // === ЛОГИКА ПЕРЕХОДА ===
-  const referrer = document.referrer;
-  const currentHost = window.location.host; // будет 'спроси.дом.рф'
-
-  if (referrer) {
-    try {
-      const referrerUrl = new URL(referrer);
-      if (referrerUrl.host === currentHost) {
-        // Внутренний переход — возвращаемся на источник
-        window.location.href = referrer;
-        return;
-      }
-    } catch (err) {
-      // Игнорируем ошибки (например, некорректный URL)
     }
-  }
-
-  // Внешний переход или referrer недоступен — на главную марафона 2025
-  window.location.href = '/education/marathons/2025/';
-}
