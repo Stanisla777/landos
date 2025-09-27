@@ -1,31 +1,24 @@
-copyLink(event){
-      const element = event.currentTarget;
-      let perem = ''
-      element.addEventListener('click', async () => {
-        if (element.classList.contains('js--instead-copyable')) {
-          try {
-            perem = element.textContent;
-            await navigator.clipboard.writeText(element.textContent);
-            // eslint-disable-next-line no-param-reassign
-            element.textContent = 'Текст скопирован!';
-            setTimeout(()=>{
-              element.textContent = perem;
-              perem=''
-            },3000)
-          }
-          
+async copyLink(event) {
+  const element = event.currentTarget;
 
+  // Проверка на наличие нужного класса
+  if (!element.classList.contains('js--instead-copyable')) {
+    return;
+  }
 
+  const originalText = element.textContent;
 
-          catch (err) {
-            if (element.closest('.js--wrapper-inserting-copied')) {
-              element.closest('.js--wrapper-inserting-copied')
-                .classList
-                .add('active');
-            }
-          }
-        }
+  try {
+    await navigator.clipboard.writeText(originalText);
+    element.textContent = 'Текст скопирован!';
 
-      });
-
+    setTimeout(() => {
+      element.textContent = originalText;
+    }, 3000);
+  } catch (err) {
+    console.error('Не удалось скопировать текст:', err);
+    if (element.closest('.js--wrapper-inserting-copied')) {
+      element.closest('.js--wrapper-inserting-copied').classList.add('active');
     }
+  }
+}
