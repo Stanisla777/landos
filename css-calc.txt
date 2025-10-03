@@ -1,54 +1,64 @@
- div
-                                        .advanced-editor
-                                            h2 Заголовок в отдельном advanced-editor
-
-                                        .advanced-editor
-                                            h2 Заголовок в отдельном advanced-editor
-                                            .common-content
-                                                p.
-                                                    Можно воспользоваться
-
-.advanced-editor>h2, .advanced-editor>h3, .advanced-editor>h4, .advanced-editor>h5 {
-    margin-top: 56px;
+export default function scrollMenu() {
+  const array_menu = document.querySelectorAll('.js--at-header-menu-2025')
+  array_menu.forEach(link => {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (this.hasAttribute('data-link') && !this.classList.contains('js--usual-menu')) {
+        let href = this.getAttribute('data-link');
+        const scrollTarget = document.getElementById(href);
+        scrollTo(scrollTarget,0)
+      }
+      if (this.hasAttribute('data-link') && this.classList.contains('js--usual-block')) {
+        let href = this.getAttribute('data-link');
+        const scrollTarget = document.getElementById(href);
+        scrollTo(scrollTarget,1)
+      }
+    })
+  })
 }
 
 
-.advanced-editor:first-child{
-    &>h2,&>h3,&>h4,&>h5{
-      margin-top: 0;
+function scrollTo(scrollTarget, flag) {
+  const targetElement = scrollTarget
+  if (targetElement) {
+    const startPosition = window.pageYOffset;
+    const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+
+    let distance;
+    if (flag===0) {
+      distance = targetPosition - startPosition - 118;
     }
-  }
- 
- div
-                                        .advanced-editor
-                                            h2 Заголовок в отдельном advanced-editor
-                                            .common-content
-                                                p.
-                                                    Можно воспользоваться <a href="#">услугами риэлтора</a> Можно воспользоваться услугами риэлтора
-                                                    Можно воспользоваться
-
-                                            h2 Заголовок в отдельном advanced-editor
-                                            .common-content
-                                                p.
-                                                    Можно воспользоваться
-
-------------------------------------------------------------------------------------------------
-.advanced-editor {
-  > h2,
-  > h3,
-  > h4,
-  > h5 {
-    margin-top: 56px;
-  }
-
-  &:first-child {
-    > h2:first-child,
-    > h3:first-child,
-    > h4:first-child,
-    > h5:first-child {
-      margin-top: 0;
+    else if (flag===1) {
+      distance = targetPosition - startPosition
     }
+
+    const duration = 800;
+    let startTime = null;
+
+    function animation(currentTime) {
+      if (startTime === null) startTime = currentTime;
+      const timeElapsed = currentTime - startTime;
+
+      const progress = Math.min(timeElapsed / duration, 1);
+      const ease = easeInOutQuad(progress);
+
+      window.scrollTo(0, startPosition + distance * ease);
+      if (timeElapsed < duration) {
+        requestAnimationFrame(animation);
+      }
+    }
+
+    function easeInOutQuad(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    requestAnimationFrame(animation);
   }
 }
 
+data-event='[{"date":"2025-10-01", "events":[{"type":2, "title":"Розыгрыш подарков - тут мы будем разыгрывать подарки", "link":"#4"}]}]
 
+.marathon-2025__shedule-legend-item
+                                                  .marathon-2025__shedule-legend-icon(:class="'icon-type-' + event.type")
+                                                  p {{ getEventTitleByType(event.type) }}
+                                                a(:href="event.link || '#'").marathon-2025__event-description {{ event.title }}
