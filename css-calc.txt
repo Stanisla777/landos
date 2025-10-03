@@ -1,62 +1,375 @@
-a(
-  :href="event.link || '#'"
-  @click="handleEventLinkClick($event, event.link)"
-  class="marathon-2025__event-description"
-) {{ event.title }}
+.marathon-2025__events-column.border-radius-16(v-if="selectedDate" ref="eventsColumn")
+                                            h4 События на {{ selectedDate }}
+                                            .marathon-2025__event-container
+                                              .marathon-2025__event-item(
+                                                v-for="(event, index) in eventsForSelectedDay"
+                                                :key="index"
+                                              )
+                                                .marathon-2025__shedule-legend-item
+                                                  .marathon-2025__shedule-legend-icon(:class="'icon-type-' + event.type")
+                                                  p {{ getEventTitleByType(event.type) }}
+                                                a(
+                                                    :href="event.link || '#'"
+                                                    @click="handleEventLinkClick($event, event.link)"
+                                                    class="marathon-2025__event-description www"
+                                                ) {{ event.title }}
 
-methods: {
-  // ... остальные методы
 
-  handleEventLinkClick(event, link) {
-    // Проверяем, является ли ссылка якорной (#id)
-    if (link && link.startsWith('#')) {
-      event.preventDefault(); // Отменяем нативный скролл
-      
-      const targetId = link.substring(1); // Убираем '#'
-      const scrollTarget = document.getElementById(targetId);
-      
-      if (scrollTarget) {
-        // Используем твою существующую функцию scrollTo
-        this.scrollToElement(scrollTarget, 1);
-      }
-    }
-    // Если это внешняя ссылка — оставляем нативное поведение
-  },
+/* eslint-disable */
+import Vue from 'vue';
+import axios from 'axios';
+import state from '../marathon-2024-test/development-tools/state.vue'
+import stateBtn from './development-tools/state.vue'
 
-  // Копия твоей функции scrollTo с адаптацией под Vue
-  scrollToElement(targetElement, flag) {
-    if (targetElement) {
-      const startPosition = window.pageYOffset;
-      const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+export default function marathon2024TestInn() {
+  const appInn = new Vue({
+    el: '#modal-marathon-test-inn',
+    data: {
+      state_window:1,
+      window_display:0,
+      url_mane_page:'',
+      error_text_under_button:'',
+      server_response_error:0,
+      readiness_test:false,
+      field_filling:false,
+      checkbox_selected:false,
 
-      let distance;
-      if (flag === 0) {
-        distance = targetPosition - startPosition - 118;
-      } else if (flag === 1) {
-        distance = targetPosition - startPosition;
-      }
+      field_error:false,
+      checbox_error:false,
 
-      const duration = 800;
-      let startTime = null;
+      error_sand_form:false,
+      error_sand_form_text:'Ошибка отправки'
 
-      const animation = (currentTime) => {
-        if (startTime === null) startTime = currentTime;
-        const timeElapsed = currentTime - startTime;
+    },
+    methods: {
+      // sendRequest(token = '') {
+      sendRequest() {
+        axios({
+          method: 'post',
+          url: '/api/local/marathon/register/',
+          headers: {
+            'Content-type': 'application/json; charset=UTF-8',
+            'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          },
 
-        const progress = Math.min(timeElapsed / duration, 1);
-        const ease = this.easeInOutQuad(progress);
+          data: {
+            // grecaptcharesponse: token,
+            inn: parseInt(this.$refs.InputInn.value)
+          },
+        })
+          // Если запрос успешен
+          .then((res) => {
+            this.error_sand_form = false;
 
-        window.scrollTo(0, startPosition + distance * ease);
-        if (timeElapsed < duration) {
-          requestAnimationFrame(animation);
+            //Либо ошибка с ИНН, либо был не заполненн ФОС
+            if (res.data.result.state === 1) {
+              this.server_response_error = 1;
+              this.error_text_under_button = 'Кажется, вы уже проходили тест';
+              this.field_error = true;
+            }
+
+            //Повторная попытка в рейтинге есть
+            if (res.data.result.state === 2) {
+              this.server_response_error = 0;
+              this.error_text_under_button = '';
+              this.field_error = false;
+              this.state_window = 2;
+            }
+            //Если было слишком много попыток
+            if (res.data.result.state === 3) {
+              this.server_response_error = 0;
+              this.error_text_under_button = '';
+              this.field_error = false;
+              this.state_window = 3;
+            }
+            //Если приложение с водом ИНН выводить не нужно
+            // тут нужно так же запускать приложение с вопросом и делать в этом приложении гут запрос
+            if (res.data.result.state === 4) {
+              this.server_response_error = 0;
+              this.error_text_under_button = '';
+              this.field_error = false;
+              this.state_window = 0;
+              state.state.data_open = 1;
+              stateBtn.state.state_bunner = false;
+              document.body.classList.remove('modal-opened');
+              document.body.classList.remove('body-modal');
+
+              //здесь я должен вызывать тест
+            }
+
+          })
+          // Если запрос с ошибкой
+          .catch((error) => {
+
+            state.loader = false;
+            if (error.response) {
+              if (error.response.data.description != undefined) {
+                this.error_sand_form = true;
+                this.error_sand_form_text = error.response.data.description;
+              }
+            }
+            console.log(error);
+          });
+      },
+      // closeModal(e) {
+      //   const element = e.currentTarget;
+      //   const block_rating = document.querySelector('.marathon-new-last__container-rating')
+      //   if (element.closest('.modal')) {
+      //     element.closest('.modal').classList.remove('open')
+      //     document.body.classList.remove('modal-opened')
+      //     document.body.classList.remove('body-modal')
+      //   }
+      //   if (block_rating && this.state_window===2 && element.classList.contains('btn_s')) {
+      //     const elementPosition = block_rating.getBoundingClientRect().top;
+      //     window.scrollBy({
+      //       top: elementPosition - 20,
+      //       behavior: 'smooth'
+      //     });
+      //   }
+      //   setTimeout(()=>{
+      //     this.state_window=1
+      //     this.field_error = false;
+      //     this.checbox_error=false
+      //   },1000)
+      //
+      // },
+      closeModal(e) {
+        const element = e.currentTarget;
+        const block_rating = document.querySelector('.marathon-new-last__container-rating');
+
+        if (element.closest('.modal')) {
+          element.closest('.modal').classList.remove('open');
+          document.body.classList.remove('modal-opened');
+          document.body.classList.remove('body-modal');
         }
-      };
 
-      const easeInOutQuad = (t) => {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-      };
+        if (block_rating && this.state_window === 2 && element.classList.contains('btn_s')) {
+          const elementPosition = block_rating.getBoundingClientRect().top;
+          window.scrollBy({
+            top: elementPosition - 20,
+            behavior: 'smooth'
+          });
+        }
 
-      requestAnimationFrame(animation);
-    }
-  }
+        setTimeout(() => {
+          this.state_window = 1;
+          this.field_error = false;
+          this.checbox_error = false;
+        }, 1000);
+
+        // === ЛОГИКА ПЕРЕХОДА ===
+        const referrer = document.referrer;
+        const currentHost = window.location.host; // будет 'спроси.дом.рф'
+
+        if (referrer) {
+          try {
+            const referrerUrl = new URL(referrer);
+            if (referrerUrl.host === currentHost) {
+              // Внутренний переход — возвращаемся от куда пришли
+              window.location.href = referrer;
+              return;
+            }
+          } catch (err) {
+            // Игнорируем ошибки (например, некорректный URL)
+          }
+        }
+
+        // Внешний переход или referrer недоступен — на главную марафона 2025
+        // window.location.href = '/education/marathons/2025/';
+        window.location.href = this.url_mane_page;
+      },
+      fieldCalculation(e){
+        const element = e.currentTarget;
+        const parent = element.closest('.js--test-input')
+        if (element.value.length > 0) {
+          element.classList.add('active')
+          parent.querySelector('.js--clear-calc-tax').classList.add('active')
+        } else {
+          element.classList.remove('active')
+          parent.querySelector('.js--clear-calc-tax').classList.remove('active')
+        }
+      },
+      inpFocus(el){
+        const element = el.currentTarget;
+        element.closest('.js--test-input').classList.add('input-focus')
+      },
+      inpBlur(el){
+        const element = el.currentTarget;
+        element.closest('.js--test-input').classList.remove('input-focus')
+      },
+      inputFieldChild(e){
+        const element = e.currentTarget
+        element.value = element.value.replace(/[^\d]/g, '');
+        element.value = element.value.substring(0, 12)
+        if(element.value.length===12) {
+          this.field_filling=true
+          this.field_error=false
+        }
+        else if (element.value.length<12){
+          this.field_filling=false
+        }
+      },
+      clearInput(e){
+        const element = e.currentTarget;
+        const parent = element.closest('.js--test-input')
+        parent.querySelector('input').value='';
+        element.classList.remove('active')
+        this.field_filling=false
+        this.field_error=false
+      },
+      changeCheckboxTest(e) {
+        const element = e.currentTarget;
+        if (element.checked) {
+          this.checkbox_selected=true
+          this.checbox_error=false
+        }
+        else {
+          this.checkbox_selected=false
+        }
+
+      },
+      clickInactiveButton(e){
+        const element = e.currentTarget;
+        if(this.$refs.InputInn.value.length<12) {
+          this.field_error=true
+          this.error_text_under_button='Заполните корректно ИНН'
+        }
+        if (!this.$refs.checkboxInn.checked) {
+          this.checbox_error=true
+        }
+      },
+
+      sendingData() {
+        //разработка
+
+        // axios({
+        //   method:'post',
+        //   url:'https://httpbin.org/post',
+        //   headers: {
+        //     "Content-type": "application/json; charset=UTF-8",
+        //     // 'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        //   },
+        //
+        //   data:{
+        //     // grecaptcharesponse: token,
+        //     inn:parseInt(this.$refs.InputInn.value)
+        //   },
+        // })
+        //   // Если запрос успешен
+        //   .then((res)=>{
+        //     this.error_sand_form=false
+        //     if (res.data.json.inn===111111111111) {
+        //       this.server_response_error=0
+        //       this.error_text_under_button=''
+        //       this.field_error=false
+        //       this.state_window=0
+        //       document.body.classList.remove('modal-opened')
+        //       document.body.classList.remove('body-modal')
+        //       state.state.data_open=1
+        //       stateBtn.state.state_bunner=false
+        //     }
+        //
+        //
+        //     //Либо ошибка с ИНН, либо был не заполненн ФОС
+        //     if (res.data.state===1) {
+        //       this.server_response_error=1
+        //       this.error_text_under_button='Кажется, вы уже проходили тест'
+        //       this.field_error=true
+        //     }
+        //
+        //     //Повторная попытка в рейтинге есть
+        //     if (res.data.state===2) {
+        //       this.server_response_error=0
+        //       this.error_text_under_button=''
+        //       this.field_error=false
+        //       this.state_window=2
+        //     }
+        //     //Если было слишком много попыток
+        //     if (res.data.state===3) {
+        //       this.server_response_error=0
+        //       this.error_text_under_button=''
+        //       this.field_error=false
+        //       this.state_window=3
+        //     }
+        //     //Если приложение с водом ИНН выводить не нужно
+        //     // тут нужно так же запускать приложение с вопросом и делать в этом приложении гут запрос
+        //     if (res.data.state===4) {
+        //       this.server_response_error=0
+        //       this.error_text_under_button=''
+        //       this.field_error=false
+        //       this.state_window=0
+        //       document.body.classList.remove('modal-opened')
+        //       document.body.classList.remove('body-modal')
+        //
+        //       //здесь я должен вызывать тест
+        //       state.state.data_open=1
+        //       stateBtn.state.state_bunner=false
+        //     }
+        //
+        //   })
+        //   // Если запрос с ошибкой
+        //   .catch((error)=> {
+        //
+        //     state.loader=false
+        //     if(error.response){
+        //       if (error.response.data.description!=undefined){
+        //         this.error_sand_form=true
+        //         this.error_sand_form_text=error.response.data.description
+        //       }
+        //     }
+        //     console.log(error);
+        //   });
+
+        //бой
+        this.sendRequest()
+
+        //Вместо гугл рекаптчи теперь используется яндекс рекаптча
+        //Если в марафоне 2025 будет использоваться этот код переписать для яндексрекаптчи
+        // let key = conf.reCAPTCHA_site_key
+        // if (key && typeof window.grecaptcha !== 'undefined') {
+        //   window.grecaptcha.ready(() => {
+        //     window.grecaptcha.execute(key)
+        //       .then((token) => {
+        //         this.sendRequest(token)
+        //         }
+        //       )
+        //   })
+        // } else {
+        //   this.sendRequest()
+        // }
+
+      },
+    },
+    filters: {
+
+    },
+    computed: {
+
+    },
+    watch: {
+
+    },
+    mounted() {
+      if (this.$refs.ModalWindow!==undefined){
+        if (this.$refs.ModalWindow.hasAttribute('data-state')) {
+          this.state_window = parseInt(this.$refs.ModalWindow.getAttribute('data-state'));
+        }
+        if (this.$refs.ModalWindow.hasAttribute('data-open')) {
+          this.window_display = parseInt(this.$refs.ModalWindow.getAttribute('data-open'));
+        }
+        if (this.$refs.ModalWindow.hasAttribute('data-marathonpageurl')) {
+          this.url_mane_page = this.$refs.ModalWindow.getAttribute('data-marathonpageurl')
+        }
+        if(this.window_display===1) {
+          this.$refs.ModalWindow.classList.add('open')
+          document.body.classList.add('modal-opened')
+          document.body.classList.add('body-modal')
+        }
+      }
+
+    },
+
+
+  });
 }
+
