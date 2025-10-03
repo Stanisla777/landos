@@ -1,64 +1,62 @@
-export default function scrollMenu() {
-  const array_menu = document.querySelectorAll('.js--at-header-menu-2025')
-  array_menu.forEach(link => {
-    link.addEventListener('click', function (e) {
-      e.preventDefault();
-      if (this.hasAttribute('data-link') && !this.classList.contains('js--usual-menu')) {
-        let href = this.getAttribute('data-link');
-        const scrollTarget = document.getElementById(href);
-        scrollTo(scrollTarget,0)
-      }
-      if (this.hasAttribute('data-link') && this.classList.contains('js--usual-block')) {
-        let href = this.getAttribute('data-link');
-        const scrollTarget = document.getElementById(href);
-        scrollTo(scrollTarget,1)
-      }
-    })
-  })
-}
+a(
+  :href="event.link || '#'"
+  @click="handleEventLinkClick($event, event.link)"
+  class="marathon-2025__event-description"
+) {{ event.title }}
 
+methods: {
+  // ... остальные методы
 
-function scrollTo(scrollTarget, flag) {
-  const targetElement = scrollTarget
-  if (targetElement) {
-    const startPosition = window.pageYOffset;
-    const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
-
-    let distance;
-    if (flag===0) {
-      distance = targetPosition - startPosition - 118;
-    }
-    else if (flag===1) {
-      distance = targetPosition - startPosition
-    }
-
-    const duration = 800;
-    let startTime = null;
-
-    function animation(currentTime) {
-      if (startTime === null) startTime = currentTime;
-      const timeElapsed = currentTime - startTime;
-
-      const progress = Math.min(timeElapsed / duration, 1);
-      const ease = easeInOutQuad(progress);
-
-      window.scrollTo(0, startPosition + distance * ease);
-      if (timeElapsed < duration) {
-        requestAnimationFrame(animation);
+  handleEventLinkClick(event, link) {
+    // Проверяем, является ли ссылка якорной (#id)
+    if (link && link.startsWith('#')) {
+      event.preventDefault(); // Отменяем нативный скролл
+      
+      const targetId = link.substring(1); // Убираем '#'
+      const scrollTarget = document.getElementById(targetId);
+      
+      if (scrollTarget) {
+        // Используем твою существующую функцию scrollTo
+        this.scrollToElement(scrollTarget, 1);
       }
     }
+    // Если это внешняя ссылка — оставляем нативное поведение
+  },
 
-    function easeInOutQuad(t) {
-      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  // Копия твоей функции scrollTo с адаптацией под Vue
+  scrollToElement(targetElement, flag) {
+    if (targetElement) {
+      const startPosition = window.pageYOffset;
+      const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+
+      let distance;
+      if (flag === 0) {
+        distance = targetPosition - startPosition - 118;
+      } else if (flag === 1) {
+        distance = targetPosition - startPosition;
+      }
+
+      const duration = 800;
+      let startTime = null;
+
+      const animation = (currentTime) => {
+        if (startTime === null) startTime = currentTime;
+        const timeElapsed = currentTime - startTime;
+
+        const progress = Math.min(timeElapsed / duration, 1);
+        const ease = this.easeInOutQuad(progress);
+
+        window.scrollTo(0, startPosition + distance * ease);
+        if (timeElapsed < duration) {
+          requestAnimationFrame(animation);
+        }
+      };
+
+      const easeInOutQuad = (t) => {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      };
+
+      requestAnimationFrame(animation);
     }
-
-    requestAnimationFrame(animation);
   }
 }
-
-data-event='[{"date":"2025-10-01", "events":[{"type":2, "title":"Розыгрыш подарков - тут мы будем разыгрывать подарки", "link":"#4"}]}]
-
-.marathon-2025__shedule-legend-item
-                                                  .marathon-2025__shedule-legend-icon(:class="'icon-type-' + event.type")
-                                                  p {{ getEventTitleByType(event.type) }}
-                                                a(:href="event.link || '#'").marathon-2025__event-description {{ event.title }}
