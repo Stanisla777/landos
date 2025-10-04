@@ -1,20 +1,3 @@
-.marathon-2025__events-column.border-radius-16(v-if="selectedDate" ref="eventsColumn")
-                                            h4 События на {{ selectedDate }}
-                                            .marathon-2025__event-container
-                                              .marathon-2025__event-item(
-                                                v-for="(event, index) in eventsForSelectedDay"
-                                                :key="index"
-                                              )
-                                                .marathon-2025__shedule-legend-item
-                                                  .marathon-2025__shedule-legend-icon(:class="'icon-type-' + event.type")
-                                                  p {{ getEventTitleByType(event.type) }}
-                                                a(
-                                                    :href="event.link || '#'"
-                                                    @click="handleEventLinkClick($event, event.link)"
-                                                    class="marathon-2025__event-description www"
-                                                ) {{ event.title }}
-
-
 /* eslint-disable */
 import Vue from 'vue';
 import axios from 'axios';
@@ -44,61 +27,6 @@ export default function marathon2025Shedule() {
           'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
         ];
         return months[this.currentMonth];
-      },
-      //плавный скролл
-      handleEventLinkClick(event, link) {
-        console.log('link');
-        console.log(link);
-        // Проверяем, является ли ссылка якорной (#id)
-        if (link && link.startsWith('#')) {
-          event.preventDefault(); // Отменяем нативный скролл
-
-          const targetId = link.substring(1); // Убираем '#'
-          const scrollTarget = document.getElementById(targetId);
-
-          if (scrollTarget) {
-            // Используем твою существующую функцию scrollTo
-            this.scrollToElement(scrollTarget, 1);
-          }
-        }
-        // Если это внешняя ссылка — оставляем нативное поведение
-      },
-
-      // Копия твоей функции scrollTo с адаптацией под Vue
-      scrollToElement(targetElement, flag) {
-        if (targetElement) {
-          const startPosition = window.pageYOffset;
-          const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
-
-          let distance;
-          if (flag === 0) {
-            distance = targetPosition - startPosition - 118;
-          } else if (flag === 1) {
-            distance = targetPosition - startPosition;
-          }
-
-          const duration = 800;
-          let startTime = null;
-
-          const animation = (currentTime) => {
-            if (startTime === null) startTime = currentTime;
-            const timeElapsed = currentTime - startTime;
-
-            const progress = Math.min(timeElapsed / duration, 1);
-            const ease = this.easeInOutQuad(progress);
-
-            window.scrollTo(0, startPosition + distance * ease);
-            if (timeElapsed < duration) {
-              requestAnimationFrame(animation);
-            }
-          };
-
-          const easeInOutQuad = (t) => {
-            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-          };
-
-          requestAnimationFrame(animation);
-        }
       },
 
       getDaysInGrid() {
@@ -211,6 +139,54 @@ export default function marathon2025Shedule() {
     },
 
     methods: {
+      // Плавный скролл
+      handleEventLinkClick(event, link) {
+        console.log('link');
+        console.log(link);
+        if (link && link.startsWith('#')) {
+          event.preventDefault();
+          const targetId = link.substring(1);
+          const scrollTarget = document.getElementById(targetId);
+          if (scrollTarget) {
+            this.scrollToElement(scrollTarget, 1);
+          }
+        }
+      },
+
+      scrollToElement(targetElement, flag) {
+        if (targetElement) {
+          const startPosition = window.pageYOffset;
+          const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+
+          let distance;
+          if (flag === 0) {
+            distance = targetPosition - startPosition - 118;
+          } else if (flag === 1) {
+            distance = targetPosition - startPosition;
+          }
+
+          const duration = 800;
+          let startTime = null;
+
+          const animation = (currentTime) => {
+            if (startTime === null) startTime = currentTime;
+            const timeElapsed = currentTime - startTime;
+            const progress = Math.min(timeElapsed / duration, 1);
+            const ease = easeInOutQuad(progress);
+            window.scrollTo(0, startPosition + distance * ease);
+            if (timeElapsed < duration) {
+              requestAnimationFrame(animation);
+            }
+          };
+
+          function easeInOutQuad(t) {
+            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+          }
+
+          requestAnimationFrame(animation);
+        }
+      },
+
       updateScreenWidth() {
         const oldWidth = this.screenWidth;
         this.screenWidth = window.innerWidth;
@@ -222,17 +198,12 @@ export default function marathon2025Shedule() {
             this.calculateCellHeightsForFixedHeight();
           });
         } else if (this.screenWidth < 991 && oldWidth >= 991) {
-          // Переход на мобильный — сбрасываем
-          const cells = calendarColumn.querySelectorAll('.marathon-2025__calendar-day');
-          if (!cells || cells.length === 0) return;
-          if (cells) {
-            cells.forEach(cell => {
-              cell.style.height = '';
-            });
-          }
+          // Переход на мобильный — сбрасываем inline-стили
+          this.resetCellHeightsForMobile();
         }
       },
 
+      // Рассчитываем высоту ячеек для фиксированной высоты календаря (510px)
       calculateCellHeightsForFixedHeight() {
         const calendarColumn = this.$refs.calendarColumn;
         if (!calendarColumn) return;
@@ -254,6 +225,19 @@ export default function marathon2025Shedule() {
         cells.forEach(cell => {
           cell.style.height = `${cellHeight}px`;
         });
+      },
+
+      // Сбрасываем inline-стили высоты → используем CSS
+      resetCellHeightsForMobile() {
+        // Явная проверка вместо ?.
+        if (this.$refs.calendarColumn) {
+          const cells = this.$refs.calendarColumn.querySelectorAll('.marathon-2025__calendar-day');
+          if (cells) {
+            cells.forEach(cell => {
+              cell.style.height = ''; // Удаляем inline-style
+            });
+          }
+        }
       },
 
       setupContentObserver() {
@@ -474,6 +458,8 @@ export default function marathon2025Shedule() {
         this.$nextTick(() => {
           if (this.screenWidth >= 991) {
             this.calculateCellHeightsForFixedHeight();
+          } else {
+            this.resetCellHeightsForMobile();
           }
         });
       }
@@ -488,6 +474,8 @@ export default function marathon2025Shedule() {
       this.$nextTick(() => {
         if (this.screenWidth >= 991) {
           this.calculateCellHeightsForFixedHeight();
+        } else {
+          this.resetCellHeightsForMobile();
         }
       });
 
@@ -503,5 +491,3 @@ export default function marathon2025Shedule() {
     }
   });
 }
-
-
