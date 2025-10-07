@@ -1,140 +1,53 @@
-.marathon-new-last__title{
-  span.highlighting{
-    position: unset;
-    background-color:unset;
-    display: unset;
-    width: unset;
-
-
-    padding: 0 3px;
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-
-    &.yellow{
-      background: linear-gradient(
-                      to bottom,
-                      transparent 15%,
-                      #FFDA75 15%,
-                      #FFDA75 93%,
-                      transparent 93%
-      );
-    }
-    &.pink{
-      background: linear-gradient(
-                      to bottom,
-                      transparent 15%,
-                      #E3AACA 15%,
-                      #E3AACA 93%,
-                      transparent 93%
-      );
-    }
-    &.white{
-      background: linear-gradient(
-                      to bottom,
-                      transparent 15%,
-                      #fff 15%,
-                      #fff 93%,
-                      transparent 93%
-      );
-    }
-    &.light-green{
-      background: linear-gradient(
-                      to bottom,
-                      transparent 15%,
-                      #daff01 15%,
-                      #daff01 93%,
-                      transparent 93%
-      );
-    }
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-.swiper-slide-one-height {
-  position: relative;
-  // Убираем height: auto с .swiper-slide — это мешает stretch
-
-  .swiper-wrapper {
-    display: flex;
-    align-items: stretch; // ← для 1 слайда
-  }
-
-  .swiper-slide {
-     height: auto;
-    display: flex;
-    //flex-direction: column;
-
-    & > * {
-      flex-grow: 1;
-      width: 100%;
-      //min-height: 0; // ← критически важно
-    }
-  }
-
-
-}
-
-
 /* eslint-disable */
 import Swiper, {
   Navigation, Pagination, Autoplay, Thumbs, EffectFade
 } from 'swiper';
 import paginationSlider_s from './redesign-site/paginationSlider';
-import arrowSlider from './redesign-site/arrowSlider';
 // eslint-disable-next-line no-unused-vars
 import setEqualHeight from './TemplateScript/updateBlockHeights';
 import RemoveClassBody from './redesign-site/allow-body-scrolling';
 
 Swiper.use([Navigation, Pagination, Autoplay, Thumbs, EffectFade]);
 
-// === ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: ожидание загрузки всех изображений ===
-function waitForImages(element) {
-  const images = Array.from(element.querySelectorAll('img'));
-  if (images.length === 0) {
-    return Promise.resolve();
-  }
+// === УЛУЧШЕННАЯ ФУНКЦИЯ: ожидание загрузки ВСЕХ изображений, включая внутри <picture> ===
+function waitForImages(container) {
+  const images = [];
 
-  const promises = images.map(img => {
-    if (img.complete && img.naturalHeight !== 0) {
-      return Promise.resolve();
+  // Находим все <img>, включая вложенные в <picture>
+  container.querySelectorAll('img').forEach(img => {
+    // Если изображение уже загружено и имеет высоту — пропускаем
+    if (img.complete && img.naturalHeight > 0) {
+      return;
     }
-    return img.decode().catch(() => Promise.resolve());
+
+    // Создаём промис для загрузки
+    const promise = new Promise((resolve) => {
+      const onLoad = () => {
+        img.removeEventListener('load', onLoad);
+        img.removeEventListener('error', onError);
+        resolve();
+      };
+      const onError = () => {
+        img.removeEventListener('load', onLoad);
+        img.removeEventListener('error', onError);
+        resolve(); // даже при ошибке — продолжаем
+      };
+
+      img.addEventListener('load', onLoad, { once: true });
+      img.addEventListener('error', onError, { once: true });
+
+      // Принудительно запускаем декодирование, если lazy
+      if (img.loading === 'lazy') {
+        // Попытка "разленивить" — но это не всегда работает
+        img.setAttribute('loading', 'eager');
+        // Или просто ждём, когда браузер сам загрузит
+      }
+    });
+
+    images.push(promise);
   });
 
-  return Promise.all(promises);
-}
-
-// === ФУНКЦИЯ ОБНОВЛЕНИЯ ВЫСОТЫ ВСЕХ СЛАЙДОВ ОДИНАКОВО ===
-function updateSwiperHeight(swiperInstance) {
-  if (!swiperInstance || !swiperInstance.wrapperEl) return;
-
-  swiperInstance.wrapperEl.style.height = '';
-  swiperInstance.slides.forEach(slide => {
-    slide.style.height = 'auto';
-  });
-
-  let maxHeight = 0;
-  swiperInstance.slides.forEach(slide => {
-    if (slide.offsetHeight > maxHeight) {
-      maxHeight = slide.offsetHeight;
-    }
-  });
-
-  swiperInstance.wrapperEl.style.height = `${maxHeight}px`;
-  swiperInstance.slides.forEach(slide => {
-    slide.style.height = `${maxHeight}px`;
-  });
-
-  swiperInstance.update();
+  return images.length ? Promise.all(images) : Promise.resolve();
 }
 
 // === ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ СЛАЙДЕРОВ ===
@@ -150,7 +63,6 @@ function appraisalSlider() {
     let data_arrows = { arrow_left: '', arrow_right: '' };
     let data_pagination = { pagination: '' };
     let auto_height = false;
-    let same_height_slides = false;
 
     // Чтение атрибутов
     if (item.hasAttribute('data-space-between')) {
@@ -172,14 +84,12 @@ function appraisalSlider() {
       data_pagination = JSON.parse(item.getAttribute('data-pagination'));
     }
     if (item.hasAttribute('auto-height')) {
-      auto_height = JSON.parse(item.getAttribute('auto-height'));
-    }
-    if (item.hasAttribute('same-height-slides')) {
-      same_height_slides = JSON.parse(item.getAttribute('same-height-slides'));
+      auto_height = item.getAttribute('auto-height') === 'true';
     }
 
+    // Создаём Swiper
     const swiper = new Swiper(item, {
-      init: true,
+      init: false, // ⚠️ НЕ инициализируем сразу!
       observer: true,
       observeParents: true,
       observeSlideChildren: true,
@@ -244,26 +154,8 @@ function appraisalSlider() {
       },
 
       on: {
-        beforeInit: (el) => {
-          if (window.innerWidth > 768) {
-            const container = el.$el[0].closest('.js--marathon-new__schedule-swiper');
-            let stories = null;
-            if (container) {
-              stories = container.querySelector('.marathon-new-last__schedule-stories');
-            }
-            if (container && stories) {
-              const arrows = container.querySelectorAll('.swiper-slide-arrow__left');
-              const width = stories.offsetWidth;
-              arrows.forEach(arrow => {
-                arrow.style.left = `-${width + 50}px`;
-              });
-            }
-          }
-        },
-
         afterInit: (el) => {
-          console.log(el.$el[0]);
-          const wrapper = el.$el[0].closest('.js--general-style-slider.before-init');
+          const wrapper = el.el.closest('.js--general-style-slider.before-init');
           if (wrapper) {
             wrapper.classList.remove('before-init');
           }
@@ -275,51 +167,34 @@ function appraisalSlider() {
             el.update();
             if (auto_height) el.updateAutoHeight();
           }, 100);
-
           paginationSlider_s(el);
-
-          if (window.innerWidth > 768) {
-            const container = el.$el[0].closest('.js--marathon-new__schedule-swiper');
-            let stories = null;
-            if (container) {
-              stories = container.querySelector('.marathon-new-last__schedule-stories');
-            }
-            if (container && stories) {
-              const arrows = container.querySelectorAll('.swiper-slide-arrow__left');
-              const width = stories.offsetWidth;
-              arrows.forEach(arrow => {
-                arrow.style.left = `-${width + 50}px`;
-              });
-            }
-          }
         },
       },
     });
 
-    // === ОБНОВЛЕНИЕ ВЫСОТЫ ПОСЛЕ ЗАГРУЗКИ КАРТИНОК ===
-    swiper.on('init', () => {
-      waitForImages(item).then(() => {
-        if (auto_height) {
-          swiper.updateAutoHeight(300);
-        } else if (same_height_slides) {
-          updateSwiperHeight(swiper);
-        } else {
-          swiper.update();
-        }
-        paginationSlider_s(swiper);
-      });
-    });
+    // === КЛЮЧЕВОЙ МОМЕНТ: ждём загрузки изображений → инициализируем Swiper ===
+    waitForImages(item).then(() => {
+      swiper.init(); // Теперь инициализируем
 
-    // Отключаем свайп, если слайдов мало
-    if (swiper.slides.length <= swiper.params.slidesPerView) {
-      swiper.allowTouchMove = false;
-    } else {
-      swiper.allowTouchMove = true;
-    }
+      // После инициализации — обновляем высоту, если нужно
+      if (auto_height) {
+        // Swiper сам обновит высоту, но иногда нужно подождать рендер
+        setTimeout(() => {
+          swiper.updateAutoHeight(300);
+        }, 50);
+      }
+
+      // Отключаем свайп, если слайдов мало
+      if (swiper.slides && swiper.slides.length <= swiper.params.slidesPerView) {
+        swiper.allowTouchMove = false;
+      }
+
+      // Обновляем пагинацию
+      paginationSlider_s(swiper);
+    });
   }
 }
 
 export default function slideConstructor() {
   appraisalSlider();
 }
-
