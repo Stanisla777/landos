@@ -1,12 +1,107 @@
-@media only screen and (max-width: 480px) {
-  .marathon-new-last__test-btn-start {
-    margin-top: auto;
-    flex-direction: column;
-    margin-bottom: max(5px, env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
+.form-rating__wr-form.js--form-rating-universal.js--validate-required.js--validate-radio-group(
+                                                    data-count-stars="10"
+                                                    v-cloak
+                                                    data-required-hint="Пожалуйста, поделитесь своими достижениями"
+                                                )
+                                                    .form-rating__wr-grade(
+                                                        ref="formRating"
+
+                                                    )
+                                                        .form-rating__grade-item-universal(v-for="(item,index) in array_star")
+                                                            input.js--grade-item(type="radio" :for-raiting="array_star.length-index" :id="item" @click="changeGrade($event,index)")
+                                                            label(:for="item")
+                                                    input.js--form-rating-hidden-input(
+                                                        type="hidden"
+                                                        ref="ratingInputHidden")
+
+
+
+/* eslint-disable */
+import Vue from 'vue';
+
+export default function formRating() {
+  const formRate=document.querySelectorAll('.js--form-rating-universal');
+  const cookie_key = `was_useful_rating_${window.location.pathname}`;
+  for(let item=0;item<formRate.length;item++){
+    formRate[item].id = `js--form-rating-universal${item}`;
+    const app = new Vue({
+      el: `#js--form-rating-universal${item}`,
+      data: {
+        array_star:[`form-rating-input-${item}-1`,`form-rating-input-${item}-2`,`form-rating-input-${item}-3`,`form-rating-input-${item}-4`,`form-rating-input-${item}-5`],
+        rate:0,
+        count: 0,
+        count_stars:0
+      },
+      methods: {
+        changeGrade(el,index){
+          const element = el.currentTarget
+          const parent = this.$refs.formRating;
+          this.rate = this.array_star.length - index
+          //действие над звёздочками оценки
+          const array_star = parent.querySelectorAll('.js--grade-item')
+          for(let i=0;i<array_star.length-this.rate;i++){
+            array_star[i].checked=false
+          }
+          for(let i=0;i<this.rate;i++){
+            array_star[(array_star.length-1)-i].checked=true
+          }
+          this.$refs.ratingInputHidden.value=element.getAttribute('for-raiting')
+          if(element.closest('.js--form-rating-universal') && element.closest('.js--form-rating-universal').querySelector('.js--input__error_radio-group')) {
+            element.closest('.js--form-rating-universal').querySelector('.js--input__error_radio-group').remove()
+            element.closest('.js--form-rating-universal').classList.remove('input_error')
+          }
+
+        },
+
+        handleExternalClick() {
+          let count =0;
+          let count_check =0;
+          const array_radio = this.$refs.formRating.querySelectorAll('.js--grade-item')
+          count = array_radio.length
+          for (let item of array_radio) {
+            if (item.checked) {
+              count_check+=1
+            }
+          }
+
+        }
+
+      },
+      computed: {
+      },
+      watch: {
+      },
+      mounted() {
+        let conunt_stars = this.$el.getAttribute('data-count-stars')
+        if (conunt_stars){
+          try{
+            this.count_stars = parseInt(conunt_stars)
+          } catch (error) {
+            console.log('Ошибка при парсинге');
+          }
+        }
+        console.log('this.count_stars');
+        console.log(this.array_star);
+
+        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form')
+        if (externalButton) {
+
+          this.externalClickHandler = () => this.handleExternalClick();
+          externalButton.addEventListener('click', this.externalClickHandler);
+
+        }
+
+      },
+      components: {
+
+      },
+      beforeDestroy() {
+        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form')
+        if (externalButton) {
+          externalButton.removeEventListener('click',this.externalClickHandler)
+        }
+      }
+    })
   }
-  
-  .modal__wrapper.new {
-    padding: 25px 16px calc(24px + env(safe-area-inset-bottom));
-  }
+
 }
