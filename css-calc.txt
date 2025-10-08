@@ -1,19 +1,86 @@
-// Получаем значение из data-атрибута
-  const countAttr = this.$el.getAttribute('data-count-stars');
-  let count = 5; // значение по умолчанию
+/* eslint-disable */
+import Vue from 'vue';
 
-  if (countAttr !== null && countAttr.trim() !== '') {
-    const parsed = parseInt(countAttr, 10);
-    // Принимаем только целые числа от 1 до 10
-    if (!isNaN(parsed) && parsed >= 1) {
-      count = Math.min(parsed, 10);
-    }
-    // Если parsed === 0 или отрицательное — остаётся 5
+export default function formRating() {
+  const formRate = document.querySelectorAll('.js--form-rating-universal');
+  for (let item = 0; item < formRate.length; item++) {
+    formRate[item].id = `js--form-rating-universal${item}`;
+    const app = new Vue({
+      el: `#js--form-rating-universal${item}`,
+      data: {
+        array_star: [], // будет заполнен в mounted
+        rate: 0,
+        count: 0,
+        count_stars: 5
+      },
+      methods: {
+        changeGrade(el, index) {
+          const element = el.currentTarget;
+          const parent = this.$refs.formRating;
+          this.rate = this.array_star.length - index;
+
+          // Действие над звёздочками оценки
+          const array_star = parent.querySelectorAll('.js--grade-item');
+          for (let i = 0; i < array_star.length - this.rate; i++) {
+            array_star[i].checked = false;
+          }
+          for (let i = 0; i < this.rate; i++) {
+            array_star[array_star.length - 1 - i].checked = true;
+          }
+
+          this.$refs.ratingInputHidden.value = element.getAttribute('for-raiting');
+
+          const container = element.closest('.js--form-rating-universal');
+          if (container && container.querySelector('.js--input__error_radio-group')) {
+            container.querySelector('.js--input__error_radio-group').remove();
+            container.classList.remove('input_error');
+          }
+        },
+
+        handleExternalClick() {
+          let count_check = 0;
+          const array_radio = this.$refs.formRating.querySelectorAll('.js--grade-item');
+          for (let radio of array_radio) {
+            if (radio.checked) {
+              count_check += 1;
+            }
+          }
+          // Здесь можно добавить логику, если нужно
+          // Например: если count_check === 0 — показать ошибку и т.д.
+        }
+      },
+      mounted() {
+        // Получаем значение из data-атрибута
+        const countAttr = this.$el.getAttribute('data-count-stars');
+        let count = 5; // значение по умолчанию
+
+        if (countAttr !== null && countAttr.trim() !== '') {
+          const parsed = parseInt(countAttr, 10);
+          if (!isNaN(parsed) && parsed >= 1) {
+            count = Math.min(parsed, 10); // не больше 10
+          }
+        }
+
+        this.count_stars = count;
+
+        // Генерируем array_star с учётом индекса item из внешнего цикла
+        this.array_star = Array.from({ length: count }, (_, i) =>
+          `form-rating-input-${item}-${i + 1}`
+        );
+
+        // Подключаем обработчик внешней кнопки, если она есть
+        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
+        if (externalButton) {
+          this.externalClickHandler = () => this.handleExternalClick();
+          externalButton.addEventListener('click', this.externalClickHandler);
+        }
+      },
+      beforeDestroy() {
+        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
+        if (externalButton) {
+          externalButton.removeEventListener('click', this.externalClickHandler);
+        }
+      }
+    });
   }
-
-  this.count_stars = count;
-
-  // Формируем array_star динамически
-  this.array_star = Array.from({ length: count }, (_, i) =>
-    `form-rating-input-${item}-${i + 1}`
-  );
+}
