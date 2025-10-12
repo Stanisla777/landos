@@ -1,54 +1,62 @@
-<div class="header__call-personal-account-wr user-registered js--parent-block-for-logging"><div class="header__call-personal-account js--open-block-for-logging"><p>С</p></div><div class="header__block-for-logging js--body-block-for-logging active"><div class="header__block-for-logging-header"><p>Константин</p><div class="header__block-for-logging-close js--header-block-logging-close"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.41431 3.41455L12.5856 12.5858" stroke="#252628" stroke-width="2" stroke-linecap="round"></path><path d="M3.41431 12.5862L12.5856 3.41493" stroke="#252628" stroke-width="2" stroke-linecap="round"></path></svg></div></div><div class="header__block-for-logging-body"><ul><li>Перейти в личный кабинет</li><li>Выйти</li></ul></div></div></div>
+div.js--overlay-for-logging.overlay-for-logging
 
-.header__call-personal-account-wr {
-    position: relative;
-    display: none;
-}
-.header__call-personal-account-wr.user-registered .header__call-personal-account {
-    width: 24px;
-    height: 24px;
-    -webkit-border-radius: 50%;
-    -moz-border-radius: 50%;
-    border-radius: 50%;
-    background-color: #f4f4f4;
-    display: flex
-;
-    align-items: center;
-    justify-content: center;
+.overlay-for-logging {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3); // полупрозрачный фон
+  z-index: 999; // должен быть выше всего, кроме самого попапа
+  display: none; // по умолчанию скрыт
 }
 
+// Когда активен — показываем
+.overlay-for-logging.active {
+  display: block;
+}
+
+// Убедитесь, что само окно выше оверлея
 .header__block-for-logging {
-    display: none;
-    position: absolute;
-    min-width: 244px;
-    right: 0;
-    transform: translateY(8px);
-    border-radius: 16px;
-    padding: 16px 16px 20px;
-    box-shadow: 0 4px 12px 0 rgba(139, 153, 169, .24);
-    background-color: #fff;
+  z-index: 1000;
 }
 
-/* eslint-disable */
 function openHeaderBlockLogging() {
-  const array_btn = document.querySelectorAll('.js--open-block-for-logging')
+  const array_btn = document.querySelectorAll('.js--open-block-for-logging');
+  const overlay = document.querySelector('.js--overlay-for-logging');
+
   for (let item of array_btn) {
     item.onclick = () => {
-      const parent = item.closest('.js--parent-block-for-logging')
-      parent.querySelector('.js--body-block-for-logging').classList.add('active')
-    }
-  }
-}
-function closeHeaderBlockLogging() {
-  const array_close = document.querySelectorAll('.js--header-block-logging-close')
-  for (let item of array_close) {
-    item.onclick = () => {
-      const parent = item.closest('.js--body-block-for-logging')
-      parent.classList.remove('active')
-    }
+      const parent = item.closest('.js--parent-block-for-logging');
+      const bodyBlock = parent.querySelector('.js--body-block-for-logging');
+
+      bodyBlock.classList.add('active');
+      if (overlay) overlay.classList.add('active');
+    };
   }
 }
 
+function closeHeaderBlockLogging() {
+  const array_close = document.querySelectorAll('.js--header-block-logging-close');
+  const overlay = document.querySelector('.js--overlay-for-logging');
+
+  const closePopup = () => {
+    document.querySelectorAll('.js--body-block-for-logging').forEach(block => {
+      block.classList.remove('active');
+    });
+    if (overlay) overlay.classList.remove('active');
+  };
+
+  // Закрытие по крестику
+  for (let item of array_close) {
+    item.onclick = closePopup;
+  }
+
+  // Закрытие по клику на оверлей
+  if (overlay) {
+    overlay.onclick = closePopup;
+  }
+}
 
 export default function personalAccount() {
   openHeaderBlockLogging();
