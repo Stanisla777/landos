@@ -2,25 +2,51 @@ function fullnessFieldToActiveButton() {
   const forms = document.querySelectorAll('.js--fullness-field');
 
   forms.forEach(form => {
-    const requiredCheckboxes = form.querySelectorAll('input[required].js--validate-mask--check');
+    // Все обязательные поля (включая hidden от селектов)
+    const requiredFields = form.querySelectorAll('[required]');
     const submitButton = form.querySelector('.js--button-status-form');
 
-    // Функция для проверки, все ли чекбоксы отмечены
+    if (requiredFields.length === 0) {
+      // Форма без обязательных полей — считаем ошибкой, кнопка неактивна
+      submitButton.classList.add('disabled');
+      console.warn('Форма без обязательных полей:', form);
+      return;
+    }
+
+    const isFieldFilled = (field) => {
+      if (field.type === 'checkbox' || field.type === 'radio') {
+        return field.checked;
+      }
+      // Для всех остальных: input (включая hidden), textarea и т.п.
+      return field.value.trim() !== '';
+    };
+
     const updateButtonState = () => {
-      const allChecked = Array.from(requiredCheckboxes).every(cb => cb.checked);
-      if (allChecked) {
+      const allFilled = Array.from(requiredFields).every(isFieldFilled);
+      if (allFilled) {
         submitButton.classList.remove('disabled');
       } else {
         submitButton.classList.add('disabled');
       }
     };
 
-    // Назначаем обработчик каждому чекбоксу в текущей форме
-    requiredCheckboxes.forEach(cb => {
-      cb.addEventListener('change', updateButtonState);
+    // Навешиваем обработчики на все обязательные поля
+    requiredFields.forEach(field => {
+      // Для чекбоксов и радио — событие 'change'
+      // Для текстовых полей и hidden — тоже 'change', потому что кастомный селект
+      // должен программно вызывать .dispatchEvent(new Event('change')) при выборе
+      field.addEventListener('change', updateButtonState);
+
+      // Дополнительно для текстовых полей можно слушать 'input', но для hidden это не нужно
+      if (field.tagName === 'INPUT' && !['checkbox', 'radio', 'hidden'].includes(field.type)) {
+        field.addEventListener('input', updateButtonState);
+      }
+      if (field.tagName === 'TEXTAREA') {
+        field.addEventListener('input', updateButtonState);
+      }
     });
 
-    // Инициализация состояния кнопки при загрузке
+    // Инициализация состояния кнопки
     updateButtonState();
   });
 }
