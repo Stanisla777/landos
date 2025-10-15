@@ -1,64 +1,55 @@
-div.js--overlay-for-logging.overlay-for-logging
+form(action="" novalidate).feedback.js--universal-form.js--fullness-field
+                    .modal__title Войдите или зарегистрируйтесь
+                    .modal__desc Перейдите на портал Госуслуг и выполните авторизацию
 
-.overlay-for-logging {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.3); // полупрозрачный фон
-  z-index: 999; // должен быть выше всего, кроме самого попапа
-  display: none; // по умолчанию скрыт
-}
 
-// Когда активен — показываем
-.overlay-for-logging.active {
-  display: block;
-}
 
-// Убедитесь, что само окно выше оверлея
-.header__block-for-logging {
-  z-index: 1000;
-}
+                    .feed_back__wr-checkbox.modal__bottom-form
+                        .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
+                            .personal-office__user-form-subscription-em
+                            .feed_back__user-form-block
+                                input#modal_subscription_state-1.js--feedback-check.js--validate-mask.js--validate-mask--check(type="checkbox" name="", required data-required-hint="Согласитесь с условиями")
+                                label.feed_back__chek-label(for='modal_subscription_state-1')
+                                    p Согласен (-на) на обработку
+                                    a(href='/user-agreement/#user-agreement-zhsk', target='_blank') персональных данных
+                        .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
+                            .personal-office__user-form-subscription-em
+                            .feed_back__user-form-block
+                                input#modal_receiving_state-1.js--feedback-check.js--validate-mask.js--validate-mask--check(type="checkbox" name="", required data-required-hint="Согласитесь с условиями")
+                                label.feed_back__chek-label(for='modal_receiving_state-1')
+                                    p Согласен (-на) на получение
+                                    a(href='#', target='_blank') рекламных материалов
+                    .js--feedback-bottom.feed_back__bottom-error
 
-function openHeaderBlockLogging() {
-  const array_btn = document.querySelectorAll('.js--open-block-for-logging');
-  const overlay = document.querySelector('.js--overlay-for-logging');
+                    .modal__bottom-sand
+                        button(type="submit").btn_s.btn-registration-state.js--btn-registration-state.js--button-status-form Войти через Госуслуги
 
-  for (let item of array_btn) {
-    item.onclick = () => {
-      const parent = item.closest('.js--parent-block-for-logging');
-      const bodyBlock = parent.querySelector('.js--body-block-for-logging');
 
-      bodyBlock.classList.add('active');
-      if (overlay) overlay.classList.add('active');
-    };
+//Проверка на заполненность полей, чтобы сделать кнопку отправки активной
+function fullnessFieldToActiveButton() {
+  let count_required = 0;
+  const array_form = document.querySelectorAll('.js--fullness-field');
+  for (let item of array_form) {
+    const count_required_field = item.querySelectorAll('input[required]');
+    for (let element of count_required_field) {
+      element.addEventListener('change', (e) => {
+        if (element.hasAttribute('required') && element.classList.contains('js--validate-mask--check')) {
+          if (e.target.checked) {
+            count_required+=1
+          }
+          if (!e.target.checked && count_required!==0) {
+            count_required-=1
+          }
+
+        }
+        if(count_required===count_required_field.length) {
+          element.closest('.js--fullness-field').querySelector('.js--button-status-form').classList.remove('disabled')
+        }
+        else {
+          element.closest('.js--fullness-field').querySelector('.js--button-status-form').classList.add('disabled')
+        }
+      });
+    }
   }
-}
 
-function closeHeaderBlockLogging() {
-  const array_close = document.querySelectorAll('.js--header-block-logging-close');
-  const overlay = document.querySelector('.js--overlay-for-logging');
-
-  const closePopup = () => {
-    document.querySelectorAll('.js--body-block-for-logging').forEach(block => {
-      block.classList.remove('active');
-    });
-    if (overlay) overlay.classList.remove('active');
-  };
-
-  // Закрытие по крестику
-  for (let item of array_close) {
-    item.onclick = closePopup;
-  }
-
-  // Закрытие по клику на оверлей
-  if (overlay) {
-    overlay.onclick = closePopup;
-  }
-}
-
-export default function personalAccount() {
-  openHeaderBlockLogging();
-  closeHeaderBlockLogging();
 }
