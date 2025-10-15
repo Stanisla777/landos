@@ -2,48 +2,51 @@ function fullnessFieldToActiveButton() {
   const forms = document.querySelectorAll('.js--fullness-field');
 
   forms.forEach(form => {
-    // Все обязательные поля (включая hidden от селектов)
     const requiredFields = form.querySelectorAll('[required]');
     const submitButton = form.querySelector('.js--button-status-form');
 
-    if (requiredFields.length === 0) {
-      // Форма без обязательных полей — считаем ошибкой, кнопка неактивна
-      submitButton.classList.add('disabled');
-      console.warn('Форма без обязательных полей:', form);
-      return;
-    }
-
-    const isFieldFilled = (field) => {
+    // Функция проверки заполненности/валидности одного поля
+    const isFieldValid = (field) => {
+      // Чекбоксы и радио
       if (field.type === 'checkbox' || field.type === 'radio') {
         return field.checked;
       }
-      // Для всех остальных: input (включая hidden), textarea и т.п.
-      return field.value.trim() !== '';
+
+      const value = field.value.trim();
+
+      // Пустое поле — невалидно
+      if (value === '') {
+        return false;
+      }
+
+      // Email: проверка по регулярке
+      if (field.classList.contains('js--validate-mask-email')) {
+        const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
+        return emailRegex.test(value);
+      }
+
+      // Телефон: минимум 16 символов (как в "+7 000 000 00 00")
+      if (field.classList.contains('js--validate-mask-tel')) {
+        return field.value.length >= 16; // именно field.value, без trim(), т.к. пробелы важны
+      }
+
+      // Все остальные поля (включая hidden, textarea, обычные input)
+      return value !== '';
     };
 
     const updateButtonState = () => {
-      const allFilled = Array.from(requiredFields).every(isFieldFilled);
-      if (allFilled) {
+      const allValid = Array.from(requiredFields).every(isFieldValid);
+      if (allValid) {
         submitButton.classList.remove('disabled');
       } else {
         submitButton.classList.add('disabled');
       }
     };
 
-    // Навешиваем обработчики на все обязательные поля
+    // Навешиваем обработчики
     requiredFields.forEach(field => {
-      // Для чекбоксов и радио — событие 'change'
-      // Для текстовых полей и hidden — тоже 'change', потому что кастомный селект
-      // должен программно вызывать .dispatchEvent(new Event('change')) при выборе
-      field.addEventListener('change', updateButtonState);
-
-      // Дополнительно для текстовых полей можно слушать 'input', но для hidden это не нужно
-      if (field.tagName === 'INPUT' && !['checkbox', 'radio', 'hidden'].includes(field.type)) {
-        field.addEventListener('input', updateButtonState);
-      }
-      if (field.tagName === 'TEXTAREA') {
-        field.addEventListener('input', updateButtonState);
-      }
+      field.addEventListener('input', updateButtonState);
+      field.addEventListener('change', updateButtonState); // на случай селектов или чекбоксов
     });
 
     // Инициализация состояния кнопки
