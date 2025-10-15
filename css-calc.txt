@@ -1,55 +1,26 @@
-form(action="" novalidate).feedback.js--universal-form.js--fullness-field
-                    .modal__title Войдите или зарегистрируйтесь
-                    .modal__desc Перейдите на портал Госуслуг и выполните авторизацию
-
-
-
-                    .feed_back__wr-checkbox.modal__bottom-form
-                        .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
-                            .personal-office__user-form-subscription-em
-                            .feed_back__user-form-block
-                                input#modal_subscription_state-1.js--feedback-check.js--validate-mask.js--validate-mask--check(type="checkbox" name="", required data-required-hint="Согласитесь с условиями")
-                                label.feed_back__chek-label(for='modal_subscription_state-1')
-                                    p Согласен (-на) на обработку
-                                    a(href='/user-agreement/#user-agreement-zhsk', target='_blank') персональных данных
-                        .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
-                            .personal-office__user-form-subscription-em
-                            .feed_back__user-form-block
-                                input#modal_receiving_state-1.js--feedback-check.js--validate-mask.js--validate-mask--check(type="checkbox" name="", required data-required-hint="Согласитесь с условиями")
-                                label.feed_back__chek-label(for='modal_receiving_state-1')
-                                    p Согласен (-на) на получение
-                                    a(href='#', target='_blank') рекламных материалов
-                    .js--feedback-bottom.feed_back__bottom-error
-
-                    .modal__bottom-sand
-                        button(type="submit").btn_s.btn-registration-state.js--btn-registration-state.js--button-status-form Войти через Госуслуги
-
-
-//Проверка на заполненность полей, чтобы сделать кнопку отправки активной
 function fullnessFieldToActiveButton() {
-  let count_required = 0;
-  const array_form = document.querySelectorAll('.js--fullness-field');
-  for (let item of array_form) {
-    const count_required_field = item.querySelectorAll('input[required]');
-    for (let element of count_required_field) {
-      element.addEventListener('change', (e) => {
-        if (element.hasAttribute('required') && element.classList.contains('js--validate-mask--check')) {
-          if (e.target.checked) {
-            count_required+=1
-          }
-          if (!e.target.checked && count_required!==0) {
-            count_required-=1
-          }
+  const forms = document.querySelectorAll('.js--fullness-field');
 
-        }
-        if(count_required===count_required_field.length) {
-          element.closest('.js--fullness-field').querySelector('.js--button-status-form').classList.remove('disabled')
-        }
-        else {
-          element.closest('.js--fullness-field').querySelector('.js--button-status-form').classList.add('disabled')
-        }
-      });
-    }
-  }
+  forms.forEach(form => {
+    const requiredCheckboxes = form.querySelectorAll('input[required].js--validate-mask--check');
+    const submitButton = form.querySelector('.js--button-status-form');
 
+    // Функция для проверки, все ли чекбоксы отмечены
+    const updateButtonState = () => {
+      const allChecked = Array.from(requiredCheckboxes).every(cb => cb.checked);
+      if (allChecked) {
+        submitButton.classList.remove('disabled');
+      } else {
+        submitButton.classList.add('disabled');
+      }
+    };
+
+    // Назначаем обработчик каждому чекбоксу в текущей форме
+    requiredCheckboxes.forEach(cb => {
+      cb.addEventListener('change', updateButtonState);
+    });
+
+    // Инициализация состояния кнопки при загрузке
+    updateButtonState();
+  });
 }
