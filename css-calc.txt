@@ -3,6 +3,9 @@
 import bodyLockMobileFilter from './redesign-site/body-lock-mobile-filter';
 import bodyUnlockMobileFilter from './redesign-site/body-unlock-mobile-filter';
 
+// 👇 Импортируем напрямую функцию разблокировки body
+import { RemoveClassBody } from './allow-body-scrolling'; // ← укажите правильный путь
+
 function openTooltipMobile() {
   const array_mobile_tooltip = document.querySelectorAll('.js--open-mobile-tooltip');
   for (let item of array_mobile_tooltip) {
@@ -29,16 +32,22 @@ function closeTooltipMobile() {
   }
 }
 
-// 🔥 НОВАЯ ФУНКЦИЯ: закрыть все мобильные тултипы
+// 🔥 Новая функция: закрыть всё и гарантированно разблокировать body
 function closeAllMobileTooltips() {
   const activeParents = document.querySelectorAll('.js--tooltip-parent.active');
-  activeParents.forEach(parent => {
-    parent.classList.remove('active');
-    bodyUnlockMobileFilter(parent);
-  });
+  if (activeParents.length > 0) {
+    // Сначала убираем active у всех
+    activeParents.forEach(parent => {
+      parent.classList.remove('active');
+    });
+
+    // Затем — принудительно разблокируем body
+    // (даже если bodyUnlockMobileFilter этого не сделает)
+    RemoveClassBody();
+  }
 }
 
-// 🔥 НОВАЯ ФУНКЦИЯ: обработчик ресайза
+// Обработчик ресайза
 function handleResize() {
   // Порог из ваших медиазапросов: 480px
   if (window.innerWidth > 480) {
@@ -46,15 +55,15 @@ function handleResize() {
   }
 }
 
-// Экспорт и инициализация
+// Экспорт
 export default function tooltipMobile() {
   openTooltipMobile();
   closeTooltipMobile();
 
-  // Добавляем слушатель ресайза
+  // Слушаем ресайз
   window.addEventListener('resize', handleResize);
 
-  // Опционально: сразу проверить при загрузке (на случай, если страница открыта на десктопе)
+  // На всякий случай: проверяем при инициализации
   if (window.innerWidth > 480) {
     closeAllMobileTooltips();
   }
