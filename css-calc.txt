@@ -1,43 +1,16 @@
-function initTooltipLastWord() {
+function moveTooltipIconIntoParagraph() {
   document.querySelectorAll('.row-title-container-with-tooltip').forEach(container => {
-    const p = container.querySelector('.calc-tax-deduc-new__row-title.big');
-    if (!p) return;
-
-    // 1. Перемещаем иконки внутрь <p> (если они ещё снаружи)
-    const desktopIcon = container.querySelector('.content-note.desctop');
+    const paragraph = container.querySelector('.calc-tax-deduc-new__row-title.big');
+    const tooltipIcon = container.querySelector('.content-note:not(.mobile)');
     const mobileIcon = container.querySelector('.content-note.mobile');
 
-    if (desktopIcon && !p.contains(desktopIcon)) {
-      p.appendChild(desktopIcon);
+    if (paragraph && tooltipIcon) {
+      paragraph.appendChild(tooltipIcon);
+      tooltipIcon.classList.add('js--tooltip-ready');
     }
-    if (mobileIcon && !p.contains(mobileIcon)) {
-      p.appendChild(mobileIcon);
+    if (paragraph && mobileIcon) {
+      paragraph.appendChild(mobileIcon);
+      mobileIcon.classList.add('js--tooltip-ready');
     }
-
-    // 2. Теперь обрабатываем текст и оборачиваем последнее слово
-    if (p.querySelector('.tooltip-last-word')) return; // уже обработано
-
-    const fullText = p.textContent.trim();
-    const words = fullText.split(' ');
-    if (words.length < 2) return;
-
-    const lastWord = words.pop();
-    const restText = words.join(' ');
-
-    // Создаём обёртку
-    const wrapper = document.createElement('span');
-    wrapper.className = 'tooltip-last-word';
-    wrapper.innerHTML = `${lastWord}&nbsp;`; // неразрывный пробел
-
-    // Перемещаем иконки ВНУТРЬ обёртки
-    const iconDesctop = p.querySelector('.content-note.desctop');
-    const iconMobile = p.querySelector('.content-note.mobile');
-
-    if (iconDesctop) wrapper.appendChild(iconDesctop);
-    if (iconMobile) wrapper.appendChild(iconMobile);
-
-    // Собираем всё обратно
-    p.innerHTML = restText + ' ';
-    p.appendChild(wrapper);
   });
 }
