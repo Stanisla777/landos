@@ -1,55 +1,207 @@
-function fullnessFieldToActiveButton() {
-  const forms = document.querySelectorAll('.js--fullness-field');
+.row-title-container-with-tooltip.js--tooltip-parent
+                                            p.calc-tax-deduc-new__row-title.big Оставьте отзыв в свободной форме
+                                            span.content-note.desctop.content-note__center.js--content-note.active
+                                                div.content-note__text.up.active
+                                                    p.
+                                                        Здесь вы можете рассказать, о том, как для вас прошла игра.
+                                                        В этом вам могут <a>помочь</a> следующие вопросы:
 
-  forms.forEach(form => {
-    const requiredFields = form.querySelectorAll('[required]');
-    const submitButton = form.querySelector('.js--button-status-form');
+.row-title-container-with-tooltip {
+    display: flex;
+    align-items: center;
+    column-gap: 4px;
+    margin-bottom: 20px;
+}
+.row-title-container-with-tooltip .content-note {
+    flex-shrink: 0;
+    align-items: center;
+    background-color: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    height: 16px;
+    justify-content: center;
+    margin: 0;
+    min-width: unset;
+    position: relative;
+    width: 16px;
+    background-position: 50%;
+    background-repeat: no-repeat;
+    background-size: contain;
+    
+}
+.content-note.active {
+    z-index: 20;
+}
 
-    // Функция проверки заполненности/валидности одного поля
-    const isFieldValid = (field) => {
-      // Чекбоксы и радио
-      if (field.type === 'checkbox' || field.type === 'radio') {
-        return field.checked;
+.row-title-container-with-tooltip .content-note__text.active {
+    z-index: 20;
+    opacity: 1;
+    visibility: visible;
+    display: block;
+    width: 23.5rem;
+    padding: 12px 24px 12px 12px;
+}
+.row-title-container-with-tooltip .content-note__center .content-note__text {
+    transform: translate(-47%, -8px) !important;
+    left: 0 !important;
+}
+.row-title-container-with-tooltip .content-note__text {
+    max-width: 256px;
+    background-color: #252628;
+    border-radius: 4px;
+    bottom: calc(100% + .25rem);
+    box-shadow: none;
+    cursor: default;
+    font-family: Gilroy-Medium, sans-serif;
+    font-size: 12px;
+    left: -.25rem;
+    line-height: 16px;
+    color: #fff;
+    opacity: 0;
+    position: absolute;
+    transition: opacity .3s, visibility .3s;
+    visibility: hidden;
+    display: none;
+    width: 0;
+    padding: 0;
+    overflow: unset;
+}
+
+@media only screen and (max-width: 480px) {
+    .content-note.mobile {
+        display: block;
+    }
+}
+@media only screen and (max-width: 979px) {
+    .row-title-container-with-tooltip .content-note {
+        transform: translateY(0px);
+    }
+}
+
+.row-title-container-with-tooltip .select__background {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+.select__background {
+    bottom: 0px;
+    display: none;
+    left: 0px;
+    position: fixed;
+    right: 0px;
+    top: 0px;
+    z-index: 10;
+}
+.row-title-container-with-tooltip.active .select__background {
+    display: block;
+}
+.row-title-container-with-tooltip.active .select-list__selection-window.modal-special-styles {
+    transform: translateY(0px);
+}
+@media only screen and (max-width: 480px) {
+    .select-list__selection-window.modal-special-styles {
+        display: block;
+        position: fixed;
+        bottom: 0px;
+        transform: translateY(102%);
+        transition-duration: 0.3s;
+        transition-timing-function: linear;
+        border-bottom-right-radius: 0px;
+        border-bottom-left-radius: 0px;
+    }
+}
+.select-list__selection-window {
+    display: none;
+    position: absolute;
+    bottom: 0px;
+    transform: translateY(105%);
+    width: 100%;
+    left: 0px;
+    background-color: rgb(255, 255, 255);
+    box-shadow: rgba(202, 204, 223, 0.5) 0px 10px 30px;
+    z-index: 11;
+    border-radius: 16px;
+    padding: 16px 5px 16px 0px;
+}
+
+/* eslint-disable */
+import bodyLockMobileFilter from './redesign-site/body-lock-mobile-filter';
+import bodyUnlockMobileFilter from './redesign-site/body-unlock-mobile-filter';
+
+function openTooltipMobile() {
+  const array_mobile_tooltip = document.querySelectorAll('.js--open-mobile-tooltip')
+  for (let item of array_mobile_tooltip) {
+    item.onclick = () => {
+      const parent = item.closest('.js--tooltip-parent')
+      if (parent) {
+        parent.classList.add('active')
+        bodyLockMobileFilter(parent);
       }
+    }
 
-      const value = field.value.trim();
-
-      // Пустое поле — невалидно
-      if (value === '') {
-        return false;
+  }
+}
+function closeTooltipMobile(){
+  const array_mobile_tooltip_close = document.querySelectorAll('.js--close-mobile-tooltip')
+  for (let item of array_mobile_tooltip_close) {
+    item.onclick = () => {
+      const parent = item.closest('.js--tooltip-parent')
+      if (parent) {
+        parent.classList.remove('active')
+        bodyUnlockMobileFilter(parent)
       }
+    }
 
-      // Email: проверка по регулярке
-      if (field.classList.contains('js--validate-mask-email')) {
-        const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
-        return emailRegex.test(value);
-      }
+  }
 
-      // Телефон: минимум 16 символов (как в "+7 000 000 00 00")
-      if (field.classList.contains('js--validate-mask-tel')) {
-        return field.value.length >= 16; // именно field.value, без trim(), т.к. пробелы важны
-      }
+}
 
-      // Все остальные поля (включая hidden, textarea, обычные input)
-      return value !== '';
-    };
 
-    const updateButtonState = () => {
-      const allValid = Array.from(requiredFields).every(isFieldValid);
-      if (allValid) {
-        submitButton.classList.remove('disabled');
-      } else {
-        submitButton.classList.add('disabled');
-      }
-    };
+export default function tooltipMobile() {
+  openTooltipMobile();
+  closeTooltipMobile();
+}
 
-    // Навешиваем обработчики
-    requiredFields.forEach(field => {
-      field.addEventListener('input', updateButtonState);
-      field.addEventListener('change', updateButtonState); // на случай селектов или чекбоксов
-    });
+/* eslint-disable */
+import AddClassBody from './disallow-body-scrolling';
 
-    // Инициализация состояния кнопки
-    updateButtonState();
-  });
+export default function bodyLockMobileFilter(el) {
+  const dropDownList = el.querySelector('.js--openlist-body');
+  if (dropDownList) {
+    const styles = window.getComputedStyle(dropDownList);
+    if (styles.position === 'fixed') {
+      AddClassBody();
+    }
+  }
+}
+/* eslint-disable */
+export default function AddClassBody() {
+  document.body.classList.add('body-modal');
+  document.body.classList.add('body-additional-class');
+  document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+  document.ontouchmove = (e) => {
+    e.preventDefault();
+  };
+}
+
+/* eslint-disable */
+import RemoveClassBody from './allow-body-scrolling';
+
+export default function bodyUnlockMobileFilter(el) {
+  const dropDownList = el.querySelector('.js--openlist-body');
+  if (dropDownList) {
+    const styles = window.getComputedStyle(dropDownList);
+    if (styles.position === 'fixed') {
+      RemoveClassBody();
+    }
+  }
+}
+/* eslint-disable */
+export default function RemoveClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal');
+    document.body.classList.remove('body-additional-class');
+  }
+  const scrollY = document.body.style.top;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  window.scrollTo(0, parseInt(scrollY || '0') * -1);
 }
