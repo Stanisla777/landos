@@ -6,47 +6,43 @@ function moveTooltipIconIntoParagraph() {
 
     if (!p) return;
 
-    // 1. Перемещаем иконки внутрь <p> (как раньше)
+    // === 1. Перемещаем иконки внутрь <p> и добавляем класс ===
     if (desktopIcon && !p.contains(desktopIcon)) {
       p.appendChild(desktopIcon);
+      desktopIcon.classList.add('js--tooltip-ready');
     }
     if (mobileIcon && !p.contains(mobileIcon)) {
       p.appendChild(mobileIcon);
+      mobileIcon.classList.add('js--tooltip-ready');
     }
 
-    // 2. Оборачиваем ПОСЛЕДНЕЕ СЛОВО + ИКОНКИ в span с nowrap
-    //    — но только если ещё не обёрнуто
-    if (p.querySelector('.tooltip-last-wrap')) return;
-
-    // Получаем текст ДО иконок
-    let textBeforeIcons = '';
-    const nodes = Array.from(p.childNodes);
-    for (let node of nodes) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        textBeforeIcons += node.textContent;
-      } else if (node.classList.contains('content-note')) {
-        break; // дальше идут иконки — останавливаемся
+    // === 2. Добавляем неразрывный пробел в конец последнего текстового узла ===
+    let lastTextNode = null;
+    const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while (node = walker.nextNode()) {
+      // Проверяем, что текстовый узел находится ДО иконок
+      let isAfterAnyIcon = false;
+      let sibling = node;
+      while (sibling) {
+        if (
+          sibling.nodeType === Node.ELEMENT_NODE &&
+          sibling.classList.contains('content-note')
+        ) {
+          isAfterAnyIcon = true;
+          break;
+        }
+        sibling = sibling.nextSibling;
+      }
+      if (!isAfterAnyIcon) {
+        lastTextNode = node;
       }
     }
 
-    const words = textBeforeIcons.trim().split(' ');
-    if (words.length < 1) return;
-
-    const lastWord = words.pop();
-    const restText = words.join(' ');
-
-    // Создаём обёртку
-    const wrap = document.createElement('span');
-    wrap.className = 'tooltip-last-wrap';
-    wrap.style.whiteSpace = 'nowrap';
-    wrap.textContent = lastWord + '\u00A0'; // слово + неразрывный пробел
-
-    // Перемещаем иконки ВНУТРЬ обёртки
-    const icons = p.querySelectorAll('.content-note');
-    icons.forEach(icon => wrap.appendChild(icon));
-
-    // Собираем всё обратно
-    p.innerHTML = restText + ' ';
-    p.appendChild(wrap);
+    // Добавляем &nbsp; в конец последнего слова
+    if (lastTextNode) {
+      // Убираем концевые пробелы и добавляем неразрывный
+      lastTextNode.textContent = lastTextNode.textContent.replace(/\s*$/, '\u00A0');
+    }
   });
 }
