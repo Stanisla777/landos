@@ -1,48 +1,16 @@
 function moveTooltipIconIntoParagraph() {
   document.querySelectorAll('.row-title-container-with-tooltip').forEach(container => {
-    const p = container.querySelector('.calc-tax-deduc-new__row-title.big');
-    const desktopIcon = container.querySelector('.content-note.desctop');
+    const paragraph = container.querySelector('.calc-tax-deduc-new__row-title.big');
+    const tooltipIcon = container.querySelector('.content-note:not(.mobile)');
     const mobileIcon = container.querySelector('.content-note.mobile');
 
-    if (!p) return;
-
-    // === 1. Перемещаем иконки внутрь <p> и добавляем класс ===
-    if (desktopIcon && !p.contains(desktopIcon)) {
-      p.appendChild(desktopIcon);
-      desktopIcon.classList.add('js--tooltip-ready');
+    if (paragraph && tooltipIcon) {
+      paragraph.appendChild(tooltipIcon);
+      tooltipIcon.classList.add('js--tooltip-ready');
     }
-    if (mobileIcon && !p.contains(mobileIcon)) {
-      p.appendChild(mobileIcon);
+    if (paragraph && mobileIcon) {
+      paragraph.appendChild(mobileIcon);
       mobileIcon.classList.add('js--tooltip-ready');
-    }
-
-    // === 2. Добавляем неразрывный пробел в конец последнего текстового узла ===
-    let lastTextNode = null;
-    const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null);
-    let node;
-    while (node = walker.nextNode()) {
-      // Проверяем, что текстовый узел находится ДО иконок
-      let isAfterAnyIcon = false;
-      let sibling = node;
-      while (sibling) {
-        if (
-          sibling.nodeType === Node.ELEMENT_NODE &&
-          sibling.classList.contains('content-note')
-        ) {
-          isAfterAnyIcon = true;
-          break;
-        }
-        sibling = sibling.nextSibling;
-      }
-      if (!isAfterAnyIcon) {
-        lastTextNode = node;
-      }
-    }
-
-    // Добавляем &nbsp; в конец последнего слова
-    if (lastTextNode) {
-      // Убираем концевые пробелы и добавляем неразрывный
-      lastTextNode.textContent = lastTextNode.textContent.replace(/\s*$/, '\u00A0');
     }
   });
 }
