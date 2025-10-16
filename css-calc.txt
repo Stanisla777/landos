@@ -4,31 +4,49 @@ function moveTooltipIconIntoParagraph() {
     const desktopIcon = container.querySelector('.content-note.desctop');
     const mobileIcon = container.querySelector('.content-note.mobile');
 
-    if (!p || (!desktopIcon && !mobileIcon)) return;
+    if (!p) return;
 
-    // Перемещаем иконки внутрь <p>
-    if (desktopIcon) p.appendChild(desktopIcon);
-    if (mobileIcon) p.appendChild(mobileIcon);
+    // 1. Перемещаем иконки внутрь <p> (как раньше)
+    if (desktopIcon && !p.contains(desktopIcon)) {
+      p.appendChild(desktopIcon);
+    }
+    if (mobileIcon && !p.contains(mobileIcon)) {
+      p.appendChild(mobileIcon);
+    }
 
-    // Оборачиваем последнее слово + иконки в span с nowrap
-    const words = p.textContent.trim().split(' ');
-    if (words.length < 2) return;
+    // 2. Оборачиваем ПОСЛЕДНЕЕ СЛОВО + ИКОНКИ в span с nowrap
+    //    — но только если ещё не обёрнуто
+    if (p.querySelector('.tooltip-last-wrap')) return;
+
+    // Получаем текст ДО иконок
+    let textBeforeIcons = '';
+    const nodes = Array.from(p.childNodes);
+    for (let node of nodes) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        textBeforeIcons += node.textContent;
+      } else if (node.classList.contains('content-note')) {
+        break; // дальше идут иконки — останавливаемся
+      }
+    }
+
+    const words = textBeforeIcons.trim().split(' ');
+    if (words.length < 1) return;
 
     const lastWord = words.pop();
-    const rest = words.join(' ');
+    const restText = words.join(' ');
 
     // Создаём обёртку
-    const wrapper = document.createElement('span');
-    wrapper.className = 'tooltip-last';
-    wrapper.style.whiteSpace = 'nowrap';
-    wrapper.innerHTML = `${lastWord}&nbsp;`;
+    const wrap = document.createElement('span');
+    wrap.className = 'tooltip-last-wrap';
+    wrap.style.whiteSpace = 'nowrap';
+    wrap.textContent = lastWord + '\u00A0'; // слово + неразрывный пробел
 
     // Перемещаем иконки ВНУТРЬ обёртки
-    if (desktopIcon) wrapper.appendChild(desktopIcon);
-    if (mobileIcon) wrapper.appendChild(mobileIcon);
+    const icons = p.querySelectorAll('.content-note');
+    icons.forEach(icon => wrap.appendChild(icon));
 
     // Собираем всё обратно
-    p.innerHTML = rest + ' ';
-    p.appendChild(wrapper);
+    p.innerHTML = restText + ' ';
+    p.appendChild(wrap);
   });
 }
