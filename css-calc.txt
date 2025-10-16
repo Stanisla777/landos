@@ -1,15 +1,30 @@
-function moveTooltipIconIntoParagraph() {
-  document.querySelectorAll('.row-title-container-with-tooltip').forEach(container => {
-    const paragraph = container.querySelector('.calc-tax-deduc-new__row-title.big');
-    const tooltipIcon = container.querySelector('.content-note:not(.mobile)'); // десктопная иконка
-    const mobileIcon = container.querySelector('.content-note.mobile');
+function wrapLastWordWithTooltip() {
+  document.querySelectorAll('.calc-tax-deduc-new__row-title.big').forEach(p => {
+    // Пропускаем, если уже обработано
+    if (p.querySelector('.tooltip-last-word')) return;
 
-    // Перемещаем обе иконки внутрь <p>
-    if (paragraph && tooltipIcon) {
-      paragraph.appendChild(tooltipIcon);
-    }
-    if (paragraph && mobileIcon) {
-      paragraph.appendChild(mobileIcon);
-    }
+    const text = p.textContent.trim();
+    const words = text.split(' ');
+
+    if (words.length < 2) return; // если одно слово — не трогаем
+
+    const lastWord = words.pop();
+    const restText = words.join(' ');
+
+    // Создаём wrapper
+    const wrapper = document.createElement('span');
+    wrapper.className = 'tooltip-last-word';
+    wrapper.innerHTML = `${lastWord}&nbsp;`; // неразрывный пробел
+
+    // Перемещаем иконки внутрь wrapper'а
+    const desktopIcon = p.querySelector('.content-note.desctop');
+    const mobileIcon = p.querySelector('.content-note.mobile');
+
+    if (desktopIcon) wrapper.appendChild(desktopIcon);
+    if (mobileIcon) wrapper.appendChild(mobileIcon);
+
+    // Собираем новый HTML
+    p.innerHTML = restText + ' ';
+    p.appendChild(wrapper);
   });
 }
