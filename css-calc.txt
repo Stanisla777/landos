@@ -1,29 +1,42 @@
-function wrapLastWordWithTooltip() {
-  document.querySelectorAll('.calc-tax-deduc-new__row-title.big').forEach(p => {
-    // Пропускаем, если уже обработано
-    if (p.querySelector('.tooltip-last-word')) return;
+function initTooltipLastWord() {
+  document.querySelectorAll('.row-title-container-with-tooltip').forEach(container => {
+    const p = container.querySelector('.calc-tax-deduc-new__row-title.big');
+    if (!p) return;
 
-    const text = p.textContent.trim();
-    const words = text.split(' ');
+    // 1. Перемещаем иконки внутрь <p> (если они ещё снаружи)
+    const desktopIcon = container.querySelector('.content-note.desctop');
+    const mobileIcon = container.querySelector('.content-note.mobile');
 
-    if (words.length < 2) return; // если одно слово — не трогаем
+    if (desktopIcon && !p.contains(desktopIcon)) {
+      p.appendChild(desktopIcon);
+    }
+    if (mobileIcon && !p.contains(mobileIcon)) {
+      p.appendChild(mobileIcon);
+    }
+
+    // 2. Теперь обрабатываем текст и оборачиваем последнее слово
+    if (p.querySelector('.tooltip-last-word')) return; // уже обработано
+
+    const fullText = p.textContent.trim();
+    const words = fullText.split(' ');
+    if (words.length < 2) return;
 
     const lastWord = words.pop();
     const restText = words.join(' ');
 
-    // Создаём wrapper
+    // Создаём обёртку
     const wrapper = document.createElement('span');
     wrapper.className = 'tooltip-last-word';
     wrapper.innerHTML = `${lastWord}&nbsp;`; // неразрывный пробел
 
-    // Перемещаем иконки внутрь wrapper'а
-    const desktopIcon = p.querySelector('.content-note.desctop');
-    const mobileIcon = p.querySelector('.content-note.mobile');
+    // Перемещаем иконки ВНУТРЬ обёртки
+    const iconDesctop = p.querySelector('.content-note.desctop');
+    const iconMobile = p.querySelector('.content-note.mobile');
 
-    if (desktopIcon) wrapper.appendChild(desktopIcon);
-    if (mobileIcon) wrapper.appendChild(mobileIcon);
+    if (iconDesctop) wrapper.appendChild(iconDesctop);
+    if (iconMobile) wrapper.appendChild(iconMobile);
 
-    // Собираем новый HTML
+    // Собираем всё обратно
     p.innerHTML = restText + ' ';
     p.appendChild(wrapper);
   });
