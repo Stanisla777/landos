@@ -2,57 +2,58 @@
 export default function contentNote() {
   const notes = document.querySelectorAll('.js--content-note');
 
-  // === iOS / touch handling (оставляем как есть) ===
+  // === iOS / touch handling ===
   const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
                 (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
 
   if (isIOS) {
-    document.addEventListener('touchstart', function(e) {
+    document.addEventListener('touchstart', (e) => {
       if (e.target.classList.contains('js--content-note') && e.target.classList.contains('active')) {
         e.target.classList.remove('active');
-        var textEl = e.target.querySelector('.content-note__text');
+        const textEl = e.target.querySelector('.content-note__text');
         if (textEl) textEl.classList.remove('active');
       }
 
       if (!e.target.classList.contains('js--content-note')) {
-        for (var i = 0; i < notes.length; i++) {
-          notes[i].classList.remove('active');
-          var textEl = notes[i].querySelector('.content-note__text');
+        for (const note of notes) {
+          note.classList.remove('active');
+          const textEl = note.querySelector('.content-note__text');
           if (textEl) textEl.classList.remove('active');
         }
       }
 
       if (e.target.classList.contains('js--content-note')) {
-        for (var i = 0; i < notes.length; i++) {
-          notes[i].classList.remove('active');
-          var textEl = notes[i].querySelector('.content-note__text');
+        for (const note of notes) {
+          note.classList.remove('active');
+          const textEl = note.querySelector('.content-note__text');
           if (textEl) textEl.classList.remove('active');
         }
 
         e.target.classList.add('active');
-        var textEl = e.target.querySelector('.content-note__text');
+        const textEl = e.target.querySelector('.content-note__text');
         if (textEl) textEl.classList.add('active');
 
-        // Позиционирование (оставляем вашу логику без изменений)
-        var rect = e.target.getBoundingClientRect();
-        var parent = e.target.parentElement;
-        var tooltip = e.target.querySelector('.content-note__text');
+        // Позиционирование
+        const rect = e.target.getBoundingClientRect();
+        const parent = e.target.parentElement;
+        const tooltip = e.target.querySelector('.content-note__text');
         if (!tooltip) return;
 
-        var parentPos = parent.getBoundingClientRect();
-        var relativePosLeftElement = rect.left - parentPos.left;
-        var noteText = tooltip;
-        var windowWidth = document.body.offsetWidth;
-        var windowHeight = window.innerHeight;
-        var parentWidth = parent.offsetWidth;
-        var leftOffset = rect.left + rect.width / 2;
-        var topOffset = rect.top + rect.height / 2;
+        const parentPos = parent.getBoundingClientRect();
+        const relativePosLeftElement = rect.left - parentPos.left;
+        const noteText = tooltip;
+        const windowWidth = document.body.offsetWidth;
+        const windowHeight = window.innerHeight;
+        const parentWidth = parent.offsetWidth;
+        const leftOffset = rect.left + rect.width / 2;
+        const topOffset = rect.top + rect.height / 2;
 
-        // Позиционирование по горизонтали
-        if (e.target.closest('.js--courses-accord-content') ||
-            e.target.closest('.js--element-overflow') ||
-            e.target.closest('.js--element-overflow-x')) {
-
+        // Горизонталь
+        if (
+          e.target.closest('.js--courses-accord-content') ||
+          e.target.closest('.js--element-overflow') ||
+          e.target.closest('.js--element-overflow-x')
+        ) {
           if (parentWidth / 2 < relativePosLeftElement) {
             noteText.style.left = 'auto';
             noteText.style.right = '-.25rem';
@@ -63,7 +64,9 @@ export default function contentNote() {
 
           if (windowWidth < 600) {
             noteText.style.inset = 'unset';
-            noteText.style.transform = 'translateX(' + (-(rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2)) + 'px)';
+            noteText.style.transform = `translateX(${
+              -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
+            }px)`;
           }
         } else {
           if (windowWidth / 2 < leftOffset) {
@@ -76,15 +79,20 @@ export default function contentNote() {
 
           if (windowWidth < 600) {
             noteText.style.inset = 'unset';
-            noteText.style.transform = 'translateX(' + (-(rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2)) + 'px)';
+            noteText.style.transform = `translateX(${
+              -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
+            }px)`;
           }
         }
 
-        // Позиционирование по вертикали
-        if (e.target.closest('.js--courses-accord-content') || e.target.closest('.js--element-overflow')) {
-          var notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
-          var locationDifference = rect.top - notesParentBounding.top;
-          var heightTooltip = tooltip.offsetHeight;
+        // Вертикаль
+        if (
+          e.target.closest('.js--courses-accord-content') ||
+          e.target.closest('.js--element-overflow')
+        ) {
+          const notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
+          const locationDifference = rect.top - notesParentBounding.top;
+          const heightTooltip = tooltip.offsetHeight;
           if (heightTooltip >= locationDifference) {
             noteText.style.top = 'calc(100% + .25rem)';
             noteText.style.bottom = 'auto';
@@ -113,32 +121,32 @@ export default function contentNote() {
   }
 
   // === Desktop: mouseover ===
-  document.addEventListener('mouseover', function(e) {
+  document.addEventListener('mouseover', (e) => {
     if (e.target.classList.contains('js--content-note')) {
       e.target.classList.add('active');
-      var textEl = e.target.querySelector('.content-note__text');
+      const textEl = e.target.querySelector('.content-note__text');
       if (textEl) textEl.classList.add('active');
 
-      // Позиционирование (аналогично touch, но без проверки ширины <600 отдельно)
-      var rect = e.target.getBoundingClientRect();
-      var parent = e.target.parentElement;
-      var tooltip = e.target.querySelector('.content-note__text');
+      const rect = e.target.getBoundingClientRect();
+      const parent = e.target.parentElement;
+      const tooltip = e.target.querySelector('.content-note__text');
       if (!tooltip) return;
 
-      var parentPos = parent.getBoundingClientRect();
-      var relativePosLeftElement = rect.left - parentPos.left;
-      var noteText = tooltip;
-      var windowWidth = document.body.offsetWidth;
-      var windowHeight = window.innerHeight;
-      var parentWidth = parent.offsetWidth;
-      var leftOffset = rect.left + rect.width / 2;
-      var topOffset = rect.top + rect.height / 2;
+      const parentPos = parent.getBoundingClientRect();
+      const relativePosLeftElement = rect.left - parentPos.left;
+      const noteText = tooltip;
+      const windowWidth = document.body.offsetWidth;
+      const windowHeight = window.innerHeight;
+      const parentWidth = parent.offsetWidth;
+      const leftOffset = rect.left + rect.width / 2;
+      const topOffset = rect.top + rect.height / 2;
 
       // Горизонталь
-      if (e.target.closest('.js--courses-accord-content') ||
-          e.target.closest('.js--element-overflow') ||
-          e.target.closest('.js--element-overflow-x')) {
-
+      if (
+        e.target.closest('.js--courses-accord-content') ||
+        e.target.closest('.js--element-overflow') ||
+        e.target.closest('.js--element-overflow-x')
+      ) {
         if (parentWidth / 2 < relativePosLeftElement) {
           noteText.style.left = 'auto';
           noteText.style.right = '-.25rem';
@@ -149,7 +157,9 @@ export default function contentNote() {
 
         if (windowWidth < 470) {
           noteText.style.left = '0';
-          noteText.style.transform = 'translateX(' + (-(leftOffset - 28) + ((windowWidth / 2) - 40) - ((tooltip.offsetWidth / 2) - 15)) + 'px)';
+          noteText.style.transform = `translateX(${
+            -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
+          }px)`;
         }
       } else {
         if (windowWidth / 2 < leftOffset) {
@@ -162,15 +172,20 @@ export default function contentNote() {
 
         if (windowWidth < 470) {
           noteText.style.left = '0';
-          noteText.style.transform = 'translateX(' + (-(leftOffset - 28) + ((windowWidth / 2) - 40) - ((tooltip.offsetWidth / 2) - 15)) + 'px)';
+          noteText.style.transform = `translateX(${
+            -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
+          }px)`;
         }
       }
 
       // Вертикаль
-      if (e.target.closest('.js--courses-accord-content') || e.target.closest('.js--element-overflow')) {
-        var notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
-        var locationDifference = rect.top - notesParentBounding.top;
-        var heightTooltip = tooltip.offsetHeight;
+      if (
+        e.target.closest('.js--courses-accord-content') ||
+        e.target.closest('.js--element-overflow')
+      ) {
+        const notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
+        const locationDifference = rect.top - notesParentBounding.top;
+        const heightTooltip = tooltip.offsetHeight;
         if (heightTooltip >= locationDifference) {
           noteText.style.top = 'calc(100% + .25rem)';
           noteText.style.bottom = 'auto';
@@ -196,28 +211,26 @@ export default function contentNote() {
       }
     }
 
-    // Активируем тултип, если навели на его содержимое
+    // Активация при наведении на содержимое тултипа
     if (e.target.closest && e.target.closest('.content-note__text')) {
-      var root = e.target.closest('.js--content-note');
+      const root = e.target.closest('.js--content-note');
       if (root) {
         root.classList.add('active');
-        var textEl = root.querySelector('.content-note__text');
+        const textEl = root.querySelector('.content-note__text');
         if (textEl) textEl.classList.add('active');
       }
     }
   });
 
-  // === Desktop: mouseout (главный обработчик) ===
-  document.addEventListener('mouseout', function(e) {
-    var from = e.relatedTarget || e.toElement;
+  // === Desktop: mouseout ===
+  document.addEventListener('mouseout', (e) => {
+    const from = e.relatedTarget || e.toElement;
+    const currentTooltip = e.target.closest && e.target.closest('.js--content-note');
+    const fromInsideSameTooltip = from && from.closest && from.closest('.js--content-note');
 
-    // Проверяем, ушёл ли курсор ВНЕ всего тултипа
-    var currentTooltip = e.target.closest && e.target.closest('.js--content-note');
-    var fromInsideSameTooltip = from && from.closest && from.closest('.js--content-note');
-
-    if (currentTooltip && (!fromInsideSameTooltip)) {
+    if (currentTooltip && !fromInsideSameTooltip) {
       currentTooltip.classList.remove('active');
-      var textEl = currentTooltip.querySelector('.content-note__text');
+      const textEl = currentTooltip.querySelector('.content-note__text');
       if (textEl) textEl.classList.remove('active');
     }
   });
