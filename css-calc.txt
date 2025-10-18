@@ -1,57 +1,18 @@
+.row-title-container-with-tooltip.js--tooltip-parent
+                                            .calc-tax-deduc-new__row-title.big  в
+                                                div.content-note.desctop.content-note__center.js--content-note
+                                                    div.content-note__text.up
+                                                        p.
+                                                            Здесь
+
+
 /* eslint-disable */
 export default function contentNote() {
   const notes = document.querySelectorAll('.js--content-note');
 
-  // === Вспомогательная функция: позиционирование адаптивного тултипа ===
-  function positionSpecialTooltip(icon) {
-    const tooltip = icon.querySelector('.content-note__text');
-    if (!tooltip) return;
-
-    // Сброс стилей
-    tooltip.style.left = '';
-    tooltip.style.right = '';
-    tooltip.style.transform = '';
-    tooltip.style.setProperty('--arrow-offset', '-50%');
-
-    const rect = icon.getBoundingClientRect();
-    const windowWidth = window.innerWidth;
-
-    // Измеряем ширину тултипа
-    const tooltipTemp = tooltip.cloneNode(true);
-    tooltipTemp.style.cssText = 'visibility:hidden;position:absolute;top:0;left:0;';
-    document.body.appendChild(tooltipTemp);
-    const tooltipWidth = tooltipTemp.getBoundingClientRect().width;
-    document.body.removeChild(tooltipTemp);
-
-    // Центрирование относительно иконки
-    let translateX = -tooltipWidth / 2 + rect.width / 2;
-
-    // Левая граница (8px отступ)
-    if (rect.left + translateX < 8) {
-      translateX = 8 - rect.left;
-    }
-
-    // Правая граница
-    if (rect.left + translateX + tooltipWidth > windowWidth - 8) {
-      translateX = windowWidth - 8 - rect.left - tooltipWidth;
-    }
-
-    tooltip.style.transform = `translateX(${translateX}px)`;
-
-    // Стрелка под иконкой
-    const arrowOffset = rect.width / 2 - translateX;
-    tooltip.style.setProperty('--arrow-offset', `${arrowOffset}px`);
-
-    // Всегда сверху
-    tooltip.classList.remove('down');
-    tooltip.classList.add('up');
-    tooltip.style.top = 'auto';
-    tooltip.style.bottom = 'calc(100% + .25rem)';
-  }
-
   // === iOS / touch handling ===
   const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
-                (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
 
   if (isIOS) {
     document.addEventListener('touchstart', (e) => {
@@ -80,100 +41,7 @@ export default function contentNote() {
         const textEl = e.target.querySelector('.content-note__text');
         if (textEl) textEl.classList.add('active');
 
-        // === НОВОЕ: адаптивное позиционирование для .js--tooltip-parent на iPad+ ===
-        const windowWidth = window.innerWidth;
-        const isSpecialTooltip = e.target.closest('.js--tooltip-parent');
-
-        if (windowWidth > 480 && isSpecialTooltip) {
-          positionSpecialTooltip(e.target);
-        } else {
-          // === Старая логика для остальных случаев ===
-          const rect = e.target.getBoundingClientRect();
-          const parent = e.target.parentElement;
-          const tooltip = e.target.querySelector('.content-note__text');
-          if (!tooltip) return;
-
-          const parentPos = parent.getBoundingClientRect();
-          const relativePosLeftElement = rect.left - parentPos.left;
-          const noteText = tooltip;
-          const parentWidth = parent.offsetWidth;
-          const leftOffset = rect.left + rect.width / 2;
-          const topOffset = rect.top + rect.height / 2;
-          const windowHeight = window.innerHeight;
-
-          // Горизонталь
-          if (
-            e.target.closest('.js--courses-accord-content') ||
-            e.target.closest('.js--element-overflow') ||
-            e.target.closest('.js--element-overflow-x')
-          ) {
-            if (parentWidth / 2 < relativePosLeftElement) {
-              noteText.style.left = 'auto';
-              noteText.style.right = '-.25rem';
-            } else {
-              noteText.style.left = '.25rem';
-              noteText.style.right = 'auto';
-            }
-          } else {
-            if (windowWidth / 2 < leftOffset) {
-              noteText.style.left = 'auto';
-              noteText.style.right = '-.25rem';
-            } else {
-              noteText.style.left = '.25rem';
-              noteText.style.right = 'auto';
-            }
-          }
-
-          // Вертикаль
-          if (
-            e.target.closest('.js--courses-accord-content') ||
-            e.target.closest('.js--element-overflow')
-          ) {
-            const notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
-            const locationDifference = rect.top - notesParentBounding.top;
-            const heightTooltip = tooltip.offsetHeight;
-            if (heightTooltip >= locationDifference) {
-              noteText.style.top = 'calc(100% + .25rem)';
-              noteText.style.bottom = 'auto';
-            } else if (windowHeight / 2 < topOffset) {
-              noteText.style.top = 'auto';
-              noteText.style.bottom = 'calc(100% + .25rem)';
-            } else {
-              noteText.style.top = 'calc(100% + .25rem)';
-              noteText.style.bottom = 'auto';
-            }
-          } else {
-            if (windowHeight / 2 > topOffset) {
-              noteText.classList.remove('up');
-              noteText.classList.add('down');
-              noteText.style.top = 'calc(100% + .25rem)';
-              noteText.style.bottom = 'auto';
-            } else {
-              noteText.classList.remove('down');
-              noteText.classList.add('up');
-              noteText.style.top = 'auto';
-              noteText.style.bottom = 'calc(100% + .25rem)';
-            }
-          }
-        }
-      }
-    });
-  }
-
-  // === Desktop: mouseover ===
-  document.addEventListener('mouseover', (e) => {
-    if (e.target.classList.contains('js--content-note')) {
-      e.target.classList.add('active');
-      const textEl = e.target.querySelector('.content-note__text');
-      if (textEl) textEl.classList.add('active');
-
-      const windowWidth = window.innerWidth;
-      const isSpecialTooltip = e.target.closest('.js--tooltip-parent');
-
-      if (windowWidth > 480 && isSpecialTooltip) {
-        positionSpecialTooltip(e.target);
-      } else {
-        // === Старая логика для остальных тултипов ===
+        // Позиционирование
         const rect = e.target.getBoundingClientRect();
         const parent = e.target.parentElement;
         const tooltip = e.target.querySelector('.content-note__text');
@@ -182,10 +50,11 @@ export default function contentNote() {
         const parentPos = parent.getBoundingClientRect();
         const relativePosLeftElement = rect.left - parentPos.left;
         const noteText = tooltip;
+        const windowWidth = document.body.offsetWidth;
+        const windowHeight = window.innerHeight;
         const parentWidth = parent.offsetWidth;
         const leftOffset = rect.left + rect.width / 2;
         const topOffset = rect.top + rect.height / 2;
-        const windowHeight = window.innerHeight;
 
         // Горизонталь
         if (
@@ -200,6 +69,13 @@ export default function contentNote() {
             noteText.style.left = '.25rem';
             noteText.style.right = 'auto';
           }
+
+          if (windowWidth < 600) {
+            noteText.style.inset = 'unset';
+            noteText.style.transform = `translateX(${
+              -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
+            }px)`;
+          }
         } else {
           if (windowWidth / 2 < leftOffset) {
             noteText.style.left = 'auto';
@@ -207,6 +83,13 @@ export default function contentNote() {
           } else {
             noteText.style.left = '.25rem';
             noteText.style.right = 'auto';
+          }
+
+          if (windowWidth < 600) {
+            noteText.style.inset = 'unset';
+            noteText.style.transform = `translateX(${
+              -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
+            }px)`;
           }
         }
 
@@ -242,8 +125,101 @@ export default function contentNote() {
           }
         }
       }
+    });
+  }
+
+  // === Desktop: mouseover ===
+  document.addEventListener('mouseover', (e) => {
+    if (e.target.classList.contains('js--content-note')) {
+      e.target.classList.add('active');
+      const textEl = e.target.querySelector('.content-note__text');
+      if (textEl) textEl.classList.add('active');
+
+      const rect = e.target.getBoundingClientRect();
+      const parent = e.target.parentElement;
+      const tooltip = e.target.querySelector('.content-note__text');
+      if (!tooltip) return;
+
+      const parentPos = parent.getBoundingClientRect();
+      const relativePosLeftElement = rect.left - parentPos.left;
+      const noteText = tooltip;
+      const windowWidth = document.body.offsetWidth;
+      const windowHeight = window.innerHeight;
+      const parentWidth = parent.offsetWidth;
+      const leftOffset = rect.left + rect.width / 2;
+      const topOffset = rect.top + rect.height / 2;
+
+      // Горизонталь
+      if (
+        e.target.closest('.js--courses-accord-content') ||
+        e.target.closest('.js--element-overflow') ||
+        e.target.closest('.js--element-overflow-x')
+      ) {
+        if (parentWidth / 2 < relativePosLeftElement) {
+          noteText.style.left = 'auto';
+          noteText.style.right = '-.25rem';
+        } else {
+          noteText.style.left = '.25rem';
+          noteText.style.right = 'auto';
+        }
+
+        if (windowWidth < 470) {
+          noteText.style.left = '0';
+          noteText.style.transform = `translateX(${
+            -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
+          }px)`;
+        }
+      } else {
+        if (windowWidth / 2 < leftOffset) {
+          noteText.style.left = 'auto';
+          noteText.style.right = '-.25rem';
+        } else {
+          noteText.style.left = '.25rem';
+          noteText.style.right = 'auto';
+        }
+
+        if (windowWidth < 470) {
+          noteText.style.left = '0';
+          noteText.style.transform = `translateX(${
+            -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
+          }px)`;
+        }
+      }
+
+      // Вертикаль
+      if (
+        e.target.closest('.js--courses-accord-content') ||
+        e.target.closest('.js--element-overflow')
+      ) {
+        const notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
+        const locationDifference = rect.top - notesParentBounding.top;
+        const heightTooltip = tooltip.offsetHeight;
+        if (heightTooltip >= locationDifference) {
+          noteText.style.top = 'calc(100% + .25rem)';
+          noteText.style.bottom = 'auto';
+        } else if (windowHeight / 2 < topOffset) {
+          noteText.style.top = 'auto';
+          noteText.style.bottom = 'calc(100% + .25rem)';
+        } else {
+          noteText.style.top = 'calc(100% + .25rem)';
+          noteText.style.bottom = 'auto';
+        }
+      } else {
+        if (windowHeight / 2 > topOffset) {
+          noteText.classList.remove('up');
+          noteText.classList.add('down');
+          noteText.style.top = 'calc(100% + .25rem)';
+          noteText.style.bottom = 'auto';
+        } else {
+          noteText.classList.remove('down');
+          noteText.classList.add('up');
+          noteText.style.top = 'auto';
+          noteText.style.bottom = 'calc(100% + .25rem)';
+        }
+      }
     }
 
+    // Активация при наведении на содержимое тултипа
     if (e.target.closest && e.target.closest('.content-note__text')) {
       const root = e.target.closest('.js--content-note');
       if (root) {
@@ -269,22 +245,21 @@ export default function contentNote() {
 }
 
 
------------------------------------
-
+----------------------------------------------------------------------------------------------------------
 .row-title-container-with-tooltip {
+  //display: flex;
+  //align-items: center;
+  //column-gap: 4px;
+
   position: relative;
   margin-bottom: 20px;
-
   @include respondTo(small) {
     margin-bottom: 16px;
   }
-
-  .calc-tax-deduc-new__row-title.big {
-    margin: 0;
+  .calc-tax-deduc-new__row-title.big{
+    margin-bottom: 0;
   }
-
-  // === Иконка тултипа ===
-  .content-note {
+  .content-note{
     margin-left: 4px;
     top: 2px;
     flex-shrink: 0;
@@ -294,49 +269,42 @@ export default function contentNote() {
     display: inline-flex;
     height: 16px;
     justify-content: center;
+    //margin: 0;
     min-width: unset;
     position: relative;
     width: 16px;
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M8 1.33333C4.3181 1.33333 1.33333 4.3181 1.33333 8C1.33333 11.6819 4.3181 14.6667 8 14.6667C11.6819 14.6667 14.6667 11.6819 14.6667 8C14.6667 4.3181 11.6819 1.33333 8 1.33333ZM0 8C0 3.58172 3.58172 0 8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8Z' fill='%236D6D6D'/%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M8 4.66667C7.02204 4.66667 6.33333 5.37829 6.33333 6.13333C6.33333 6.50152 6.03486 6.8 5.66667 6.8C5.29848 6.8 5 6.50152 5 6.13333C5 4.53196 6.40063 3.33333 8 3.33333C9.59937 3.33333 11 4.53196 11 6.13333C11 7.50703 9.96933 8.58436 8.66667 8.86293V9.33333C8.66667 9.70152 8.36819 10 8 10C7.63181 10 7.33333 9.70152 7.33333 9.33333V8.26667C7.33333 7.89848 7.63181 7.6 8 7.6C8.97796 7.6 9.66667 6.88838 9.66667 6.13333C9.66667 5.37829 8.97796 4.66667 8 4.66667Z' fill='%236D6D6D'/%3e%3cpath d='M8.66667 12C8.66667 12.3682 8.36819 12.6667 8 12.6667C7.63181 12.6667 7.33333 12.3682 7.33333 12C7.33333 11.6318 7.63181 11.3333 8 11.3333C8.36819 11.3333 8.66667 11.6318 8.66667 12Z' fill='%236D6D6D'/%3e%3c/svg%3e");
-
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M8 1.33333C4.3181 1.33333 1.33333 4.3181 1.33333 8C1.33333 11.6819 4.3181 14.6667 8 14.6667C11.6819 14.6667 14.6667 11.6819 14.6667 8C14.6667 4.3181 11.6819 1.33333 8 1.33333ZM0 8C0 3.58172 3.58172 0 8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8Z' fill='%236D6D6D'/%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M8 4.66667C7.02204 4.66667 6.33333 5.37829 6.33333 6.13333C6.33333 6.50152 6.03486 6.8 5.66667 6.8C5.29848 6.8 5 6.50152 5 6.13333C5 4.53196 6.40063 3.33333 8 3.33333C9.59937 3.33333 11 4.53196 11 6.13333C11 7.50703 9.96933 8.58436 8.66667 8.86293V9.33333C8.66667 9.70152 8.36819 10 8 10C7.63181 10 7.33333 9.70152 7.33333 9.33333V8.26667C7.33333 7.89848 7.63181 7.6 8 7.6C8.97796 7.6 9.66667 6.88838 9.66667 6.13333C9.66667 5.37829 8.97796 4.66667 8 4.66667Z' fill='%236D6D6D'/%3e%3cpath d='M8.66667 12C8.66667 12.3682 8.36819 12.6667 8 12.6667C7.63181 12.6667 7.33333 12.3682 7.33333 12C7.33333 11.6318 7.63181 11.3333 8 11.3333C8.36819 11.3333 8.66667 11.6318 8.66667 12Z' fill='%236D6D6D'/%3e%3c/svg%3e ");
     @include respondTo(tablet) {
       transform: translateY(0);
     }
-
-    // Мобильная иконка: показываем только на small
     &.mobile {
-      display: none;
-
       @include respondTo(small) {
         display: inline-flex;
       }
     }
-
-    // Десктопная иконка: скрываем на small
-    &.desctop {
-      @include respondTo(small) {
-        display: none !important;
-      }
-    }
-
-    &.big {
+    &.big{
       width: 24px;
       height: 24px;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM0 12C0 5.37258 5.37258 0 12 0C18.6274 0 24 5.37258 24 12C24 18.6274 18.6274 24 12 24C5.37258 24 0 18.6274 0 12Z' fill='%236D6D6D'/%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M12 7C10.5331 7 9.5 8.06743 9.5 9.2C9.5 9.75229 9.05229 10.2 8.5 10.2C7.94772 10.2 7.5 9.75229 7.5 9.2C7.5 6.79795 9.60095 5 12 5C14.399 5 16.5 6.79795 16.5 9.2C16.5 11.2605 14.954 12.8765 13 13.2944V14C13 14.5523 12.5523 15 12 15C11.4477 15 11 14.5523 11 14V12.4C11 11.8477 11.4477 11.4 12 11.4C13.4669 11.4 14.5 10.3326 14.5 9.2C14.5 8.06743 13.4669 7 12 7Z' fill='%236D6D6D'/%3e%3cpath d='M13 18C13 18.5523 12.5523 19 12 19C11.4477 19 11 18.5523 11 18C11 17.4477 11.4477 17 12 17C12.5523 17 13 17.4477 13 18Z' fill='%236D6D6D'/%3e%3c/svg%3e");
-
-      transform: translateY(0);
-
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM0 12C0 5.37258 5.37258 0 12 0C18.6274 0 24 5.37258 24 12C24 18.6274 18.6274 24 12 24C5.37258 24 0 18.6274 0 12Z' fill='%236D6D6D'/%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M12 7C10.5331 7 9.5 8.06743 9.5 9.2C9.5 9.75229 9.05229 10.2 8.5 10.2C7.94772 10.2 7.5 9.75229 7.5 9.2C7.5 6.79795 9.60095 5 12 5C14.399 5 16.5 6.79795 16.5 9.2C16.5 11.2605 14.954 12.8765 13 13.2944V14C13 14.5523 12.5523 15 12 15C11.4477 15 11 14.5523 11 14V12.4C11 11.8477 11.4477 11.4 12 11.4C13.4669 11.4 14.5 10.3326 14.5 9.2C14.5 8.06743 13.4669 7 12 7Z' fill='%236D6D6D'/%3e%3cpath d='M13 18C13 18.5523 12.5523 19 12 19C11.4477 19 11 18.5523 11 18C11 17.4477 11.4477 17 12 17C12.5523 17 13 17.4477 13 18Z' fill='%236D6D6D'/%3e%3c/svg%3e ");
+      transform:translateY(0);
       @include respondTo(small) {
         width: 16px;
         height: 16px;
       }
     }
+    &__center{
+      .content-note__text{
+        transform:translate(-47%,-8px)!important;
+        left:0!important;
+      }
+    }
+    &:not(.js--tooltip-ready){
+      //display: none!important;
+    }
   }
-
-  // === Тултип (десктопный) ===
   .content-note__text {
     max-width: 256px;
     background-color: #252628;
@@ -346,95 +314,84 @@ export default function contentNote() {
     cursor: default;
     font-family: Gilroy-Medium, sans-serif;
     font-size: 12px;
-    left: 0;
+    left: -.25rem;
     line-height: 16px;
-    color: #fff;
+    color:#fff;
     opacity: 0;
     position: absolute;
     transition: opacity .3s, visibility .3s;
     visibility: hidden;
     display: none;
-    padding: 12px 24px 12px 12px;
+    width: 0;
+    padding: 0;
     overflow: unset;
-    transform: translateX(-50%); // базовое центрирование
-
-    // Стрелка — управляется через CSS-переменную из JS
-    &::after {
-      content: "";
-      position: absolute;
-      width: 0;
-      height: 0;
-      left: 50%;
-      transform: translateX(var(--arrow-offset, -50%)); // по умолчанию -50%
-      margin-left: 0;
+    &.up{
+      &::after{
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: black transparent transparent transparent;
+      }
     }
-
-    &.up::after {
-      top: 100%;
-      border-width: 5px;
-      border-style: solid;
-      border-color: black transparent transparent transparent;
+    &.down{
+      &::after{
+        content: " ";
+        position: absolute;
+        bottom: 100%;  /* В верхней части всплывающей подсказки */
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: transparent transparent black transparent;
+      }
+      transform:translate(-47%,8px)!important;
     }
-
-    &.down::after {
-      bottom: 100%;
-      border-width: 5px;
-      border-style: solid;
-      border-color: transparent transparent black transparent;
-    }
-
-    // Контент внутри тултипа
-    p,
-    li,
-    a {
+    p,li, a{
       font-family: inherit;
       font-size: inherit;
       line-height: inherit;
-      color: inherit;
-      margin: 0;
+      color:inherit;
     }
-
-    li {
-      p {
+    li{
+      p{
         font-family: inherit;
         font-size: inherit;
         line-height: inherit;
-        color: inherit;
+        color:inherit;
       }
     }
-
-    a {
+    a{
       @include underline-link(3px);
     }
-  }
 
+  }
   .content-note__text.active {
     z-index: 20;
     opacity: 1;
     visibility: visible;
     display: block;
-    width: auto;
+    width: 23.5rem;
+    padding: 12px 24px 12px 12px;
   }
 
-  // === Модальное окно (мобильное) ===
-  &.active {
-    .select__background {
+  &.active{
+    .select__background{
       display: block;
     }
-    .select-list__selection-window.modal-special-styles {
+    .select-list__selection-window.modal-special-styles{
       transform: translateY(0);
       z-index: 100;
     }
   }
 
-  .select__background {
-    background-color: rgba(0, 0, 0, 0.5);
-    bottom: 0;
-    display: none;
-    left: 0;
-    position: fixed;
-    right: 0;
-    top: 0;
-    z-index: 10;
+  .select__background{
+    background-color: rgba(0, 0, 0, .5);
   }
+
+
+
 }
