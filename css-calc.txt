@@ -1,335 +1,41 @@
-/* eslint-disable */
-export default function contentNote() {
-  const notes = document.querySelectorAll('.js--content-note');
+function adjustTooltipArrow(icon) {
+  const tooltip = icon.querySelector('.content-note__text');
+  if (!tooltip) return;
 
-  // === Вспомогательная функция: добавление класса направления и смещения ===
-  function adjustTooltipArrow(icon) {
-    const tooltip = icon.querySelector('.content-note__text');
-    if (!tooltip) return;
+  // Убираем старые классы направления
+  tooltip.classList.remove('left', 'right');
 
-    // Убираем старые классы
-    tooltip.classList.remove('left', 'right');
+  // Определяем горизонтальное направление
+  const leftStyle = tooltip.style.left;
+  const rightStyle = tooltip.style.right;
 
-    // Определяем направление по стилям, заданным ранее
-    const leftStyle = tooltip.style.left;
-    const rightStyle = tooltip.style.right;
+  if (leftStyle && leftStyle !== 'auto' && leftStyle !== '') {
+    tooltip.classList.add('right');
+  } else if (rightStyle && rightStyle !== 'auto' && rightStyle !== '') {
+    tooltip.classList.add('left');
+  }
 
-    if (leftStyle && leftStyle !== 'auto' && leftStyle !== '') {
-      tooltip.classList.add('right'); // тултип слева → стрелка справа
-    } else if (rightStyle && rightStyle !== 'auto' && rightStyle !== '') {
-      tooltip.classList.add('left'); // тултип справа → стрелка слева
+  // Применяем смещения, только если есть .js--with-arrow
+  if (icon.classList.contains('js--with-arrow')) {
+    // === Горизонтальное смещение ===
+    if (tooltip.classList.contains('right')) {
+      const currentLeft = parseFloat(tooltip.style.left) || 0;
+      tooltip.style.left = (currentLeft - 6) + 'px';
     }
+    // .left не смещаем по горизонтали — позиция уже корректна
 
-    // Если у иконки есть .js--with-arrow — смещаем тултип на 6px
-    if (icon.classList.contains('js--with-arrow')) {
-      if (tooltip.classList.contains('left')) {
-        const currentRight = parseFloat(rightStyle) || 0;
-        tooltip.style.right = (currentRight + 6) + 'px';
-      } else if (tooltip.classList.contains('right')) {
-        const currentLeft = parseFloat(leftStyle) || 0;
-        tooltip.style.left = (currentLeft + 6) + 'px';
-      }
+    // === Вертикальное смещение ===
+    const topStyle = tooltip.style.top;
+    const bottomStyle = tooltip.style.bottom;
+
+    if (topStyle && topStyle !== 'auto' && topStyle !== '') {
+      // Тултип СНИЗУ → сдвигаем вниз
+      const currentTop = parseFloat(topStyle) || 0;
+      tooltip.style.top = (currentTop + 8) + 'px';
+    } else if (bottomStyle && bottomStyle !== 'auto' && bottomStyle !== '') {
+      // Тултип СВЕРХУ → сдвигаем вверх
+      const currentBottom = parseFloat(bottomStyle) || 0;
+      tooltip.style.bottom = (currentBottom + 8) + 'px';
     }
   }
-
-  // === iOS / touch handling ===
-  const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
-    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-
-  if (isIOS) {
-    document.addEventListener('touchstart', (e) => {
-      if (e.target.classList.contains('js--content-note') && e.target.classList.contains('active')) {
-        e.target.classList.remove('active');
-        const textEl = e.target.querySelector('.content-note__text');
-        if (textEl) textEl.classList.remove('active');
-      }
-
-      if (!e.target.classList.contains('js--content-note')) {
-        for (const note of notes) {
-          note.classList.remove('active');
-          const textEl = note.querySelector('.content-note__text');
-          if (textEl) textEl.classList.remove('active');
-        }
-      }
-
-      if (e.target.classList.contains('js--content-note')) {
-        for (const note of notes) {
-          note.classList.remove('active');
-          const textEl = note.querySelector('.content-note__text');
-          if (textEl) textEl.classList.remove('active');
-        }
-
-        e.target.classList.add('active');
-        const textEl = e.target.querySelector('.content-note__text');
-        if (textEl) textEl.classList.add('active');
-
-        // === Ваша существующая логика позиционирования (без изменений) ===
-        const rect = e.target.getBoundingClientRect();
-        const parent = e.target.parentElement;
-        const tooltip = e.target.querySelector('.content-note__text');
-        if (!tooltip) return;
-
-        const parentPos = parent.getBoundingClientRect();
-        const relativePosLeftElement = rect.left - parentPos.left;
-        const noteText = tooltip;
-        const windowWidth = document.body.offsetWidth;
-        const windowHeight = window.innerHeight;
-        const parentWidth = parent.offsetWidth;
-        const leftOffset = rect.left + rect.width / 2;
-        const topOffset = rect.top + rect.height / 2;
-
-        // Горизонталь
-        if (
-          e.target.closest('.js--courses-accord-content') ||
-          e.target.closest('.js--element-overflow') ||
-          e.target.closest('.js--element-overflow-x')
-        ) {
-          if (parentWidth / 2 < relativePosLeftElement) {
-            noteText.style.left = 'auto';
-            noteText.style.right = '-.25rem';
-          } else {
-            noteText.style.left = '.25rem';
-            noteText.style.right = 'auto';
-          }
-
-          if (windowWidth < 600) {
-            noteText.style.inset = 'unset';
-            noteText.style.transform = `translateX(${
-              -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
-            }px)`;
-          }
-        } else {
-          if (windowWidth / 2 < leftOffset) {
-            noteText.style.left = 'auto';
-            noteText.style.right = '-.25rem';
-          } else {
-            noteText.style.left = '.25rem';
-            noteText.style.right = 'auto';
-          }
-
-          if (windowWidth < 600) {
-            noteText.style.inset = 'unset';
-            noteText.style.transform = `translateX(${
-              -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
-            }px)`;
-          }
-        }
-
-        // Вертикаль
-        if (
-          e.target.closest('.js--courses-accord-content') ||
-          e.target.closest('.js--element-overflow')
-        ) {
-          const notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
-          const locationDifference = rect.top - notesParentBounding.top;
-          const heightTooltip = tooltip.offsetHeight;
-          if (heightTooltip >= locationDifference) {
-            noteText.style.top = 'calc(100% + .25rem)';
-            noteText.style.bottom = 'auto';
-          } else if (windowHeight / 2 < topOffset) {
-            noteText.style.top = 'auto';
-            noteText.style.bottom = 'calc(100% + .25rem)';
-          } else {
-            noteText.style.top = 'calc(100% + .25rem)';
-            noteText.style.bottom = 'auto';
-          }
-        } else {
-          if (windowHeight / 2 > topOffset) {
-            noteText.classList.remove('up');
-            noteText.classList.add('down');
-            noteText.style.top = 'calc(100% + .25rem)';
-            noteText.style.bottom = 'auto';
-          } else {
-            noteText.classList.remove('down');
-            noteText.classList.add('up');
-            noteText.style.top = 'auto';
-            noteText.style.bottom = 'calc(100% + .25rem)';
-          }
-        }
-
-        // === ДОБАВЛЕНО: стрелка и смещение ===
-        adjustTooltipArrow(e.target);
-      }
-    });
-  }
-
-  // === Desktop: mouseover ===
-  document.addEventListener('mouseover', (e) => {
-    if (e.target.classList.contains('js--content-note')) {
-      e.target.classList.add('active');
-      const textEl = e.target.querySelector('.content-note__text');
-      if (textEl) textEl.classList.add('active');
-
-      const rect = e.target.getBoundingClientRect();
-      const parent = e.target.parentElement;
-      const tooltip = e.target.querySelector('.content-note__text');
-      if (!tooltip) return;
-
-      const parentPos = parent.getBoundingClientRect();
-      const relativePosLeftElement = rect.left - parentPos.left;
-      const noteText = tooltip;
-      const windowWidth = document.body.offsetWidth;
-      const windowHeight = window.innerHeight;
-      const parentWidth = parent.offsetWidth;
-      const leftOffset = rect.left + rect.width / 2;
-      const topOffset = rect.top + rect.height / 2;
-
-      // Горизонталь
-      if (
-        e.target.closest('.js--courses-accord-content') ||
-        e.target.closest('.js--element-overflow') ||
-        e.target.closest('.js--element-overflow-x')
-      ) {
-        if (parentWidth / 2 < relativePosLeftElement) {
-          noteText.style.left = 'auto';
-          noteText.style.right = '-.25rem';
-        } else {
-          noteText.style.left = '.25rem';
-          noteText.style.right = 'auto';
-        }
-
-        if (windowWidth < 470) {
-          noteText.style.left = '0';
-          noteText.style.transform = `translateX(${
-            -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
-          }px)`;
-        }
-      } else {
-        if (windowWidth / 2 < leftOffset) {
-          noteText.style.left = 'auto';
-          noteText.style.right = '-.25rem';
-        } else {
-          noteText.style.left = '.25rem';
-          noteText.style.right = 'auto';
-        }
-
-        if (windowWidth < 470) {
-          noteText.style.left = '0';
-          noteText.style.transform = `translateX(${
-            -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
-          }px)`;
-        }
-      }
-
-      // Вертикаль
-      if (
-        e.target.closest('.js--courses-accord-content') ||
-        e.target.closest('.js--element-overflow')
-      ) {
-        const notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
-        const locationDifference = rect.top - notesParentBounding.top;
-        const heightTooltip = tooltip.offsetHeight;
-        if (heightTooltip >= locationDifference) {
-          noteText.style.top = 'calc(100% + .25rem)';
-          noteText.style.bottom = 'auto';
-        } else if (windowHeight / 2 < topOffset) {
-          noteText.style.top = 'auto';
-          noteText.style.bottom = 'calc(100% + .25rem)';
-        } else {
-          noteText.style.top = 'calc(100% + .25rem)';
-          noteText.style.bottom = 'auto';
-        }
-      } else {
-        if (windowHeight / 2 > topOffset) {
-          noteText.classList.remove('up');
-          noteText.classList.add('down');
-          noteText.style.top = 'calc(100% + .25rem)';
-          noteText.style.bottom = 'auto';
-        } else {
-          noteText.classList.remove('down');
-          noteText.classList.add('up');
-          noteText.style.top = 'auto';
-          noteText.style.bottom = 'calc(100% + .25rem)';
-        }
-      }
-
-      // === ДОБАВЛЕНО: стрелка и смещение ===
-      adjustTooltipArrow(e.target);
-    }
-
-    if (e.target.closest && e.target.closest('.content-note__text')) {
-      const root = e.target.closest('.js--content-note');
-      if (root) {
-        root.classList.add('active');
-        const textEl = root.querySelector('.content-note__text');
-        if (textEl) textEl.classList.add('active');
-      }
-    }
-  });
-
-  // === Desktop: mouseout ===
-  document.addEventListener('mouseout', (e) => {
-    const from = e.relatedTarget || e.toElement;
-    const currentTooltip = e.target.closest && e.target.closest('.js--content-note');
-    const fromInsideSameTooltip = from && from.closest && from.closest('.js--content-note');
-
-    if (currentTooltip && !fromInsideSameTooltip) {
-      currentTooltip.classList.remove('active');
-      const textEl = currentTooltip.querySelector('.content-note__text');
-      if (textEl) textEl.classList.remove('active');
-    }
-  });
-}
-
-
-// ... остальной код .row-title-container-with-tooltip без изменений ...
-
-.content-note__text {
-  max-width: 256px;
-  background-color: #252628;
-  border-radius: 4px;
-  bottom: calc(100% + .25rem);
-  box-shadow: none;
-  cursor: default;
-  font-family: Gilroy-Medium, sans-serif;
-  font-size: 12px;
-  left: -.25rem;
-  line-height: 16px;
-  color: #fff;
-  opacity: 0;
-  position: absolute;
-  transition: opacity .3s, visibility .3s;
-  visibility: hidden;
-  display: none;
-  width: 0;
-  padding: 0;
-  overflow: unset;
-
-  &::after {
-    content: "";
-    position: absolute;
-    border-width: 5px;
-    border-style: solid;
-  }
-
-  &.up::after {
-    top: 100%;
-    border-color: black transparent transparent transparent;
-  }
-
-  &.down::after {
-    bottom: 100%;
-    border-color: transparent transparent black transparent;
-  }
-
-  // Стрелка слева (тултип справа от иконки)
-  &.left::after {
-    left: 6px;
-    right: auto;
-  }
-
-  // Стрелка справа (тултип слева от иконки)
-  &.right::after {
-    right: 6px;
-    left: auto;
-  }
-}
-
-.content-note__text.active {
-  z-index: 20;
-  opacity: 1;
-  visibility: visible;
-  display: block;
-  width: 23.5rem;
-  padding: 12px 24px 12px 12px;
 }
