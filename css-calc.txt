@@ -1,41 +1,35 @@
-function adjustTooltipArrow(icon) {
-  const tooltip = icon.querySelector('.content-note__text');
-  if (!tooltip) return;
-
-  // Убираем старые классы направления
-  tooltip.classList.remove('left', 'right');
-
-  // Определяем горизонтальное направление
-  const leftStyle = tooltip.style.left;
-  const rightStyle = tooltip.style.right;
-
-  if (leftStyle && leftStyle !== 'auto' && leftStyle !== '') {
-    tooltip.classList.add('right');
-  } else if (rightStyle && rightStyle !== 'auto' && rightStyle !== '') {
-    tooltip.classList.add('left');
-  }
-
-  // Применяем смещения, только если есть .js--with-arrow
-  if (icon.classList.contains('js--with-arrow')) {
-    // === Горизонтальное смещение ===
-    if (tooltip.classList.contains('right')) {
-      const currentLeft = parseFloat(tooltip.style.left) || 0;
-      tooltip.style.left = (currentLeft - 6) + 'px';
-    }
-    // .left не смещаем по горизонтали — позиция уже корректна
-
-    // === Вертикальное смещение ===
-    const topStyle = tooltip.style.top;
-    const bottomStyle = tooltip.style.bottom;
-
-    if (topStyle && topStyle !== 'auto' && topStyle !== '') {
-      // Тултип СНИЗУ → сдвигаем вниз
-      const currentTop = parseFloat(topStyle) || 0;
-      tooltip.style.top = (currentTop + 8) + 'px';
-    } else if (bottomStyle && bottomStyle !== 'auto' && bottomStyle !== '') {
-      // Тултип СВЕРХУ → сдвигаем вверх
-      const currentBottom = parseFloat(bottomStyle) || 0;
-      tooltip.style.bottom = (currentBottom + 8) + 'px';
-    }
-  }
+.tooltip-mobile {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+          transform 0.3s linear,
+          opacity 0.3s linear,
+          visibility 0.3s linear;
+  backface-visibility: hidden;
+  display: block;
+  position: fixed;
+  bottom: 0;
+  transform: translateY(105%);
+  width: 100%;
+  left: 0;
+  background-color: #fff;
+  box-shadow: 0 10px 30px rgba(202, 204, 223, .5);
+  border-top-right-radius: 16px;
+  border-top-left-radius: 16px;
+  padding: 16px 5px 16px 0;
+  z-index: 11;
 }
+
+&.active{
+    .select__background{
+      display: block;
+    }
+    .select-list__selection-window.modal-special-styles, .tooltip-mobile{
+      transform: translateY(0);
+      z-index: 100;
+      visibility: visible;
+      pointer-events: auto;
+      opacity: 1;
+    }
+  }
