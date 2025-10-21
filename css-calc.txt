@@ -1,30 +1,598 @@
-showError() {
-  if (this.error_input_name === true) {
-    this.error_name = true;
-  }
-  if (this.error_input_birthday === true) {
-    this.error_birthday = true;
-  }
-  if (this.error_input_region === true) {
-    this.error_region = true;
+<template lang="pug">
+  .test-n.polls__swiper-container.test-n__area-final-window(ref="finalWindow")
+    .test-n__emoticon.marathon-new-last-emoticon
+      img(src="/dist/img/emoji-test.png")
+
+
+    .test-new__title.center Тест завершен
+    p.test-new__correct_answers.center.
+      Правильных ответов: <span>{{correct_answers}}</span>/<span>{{count_question}}</span>
+    .test-new__area-final-window-des
+      p
+        span.highlighting Заполните данные о себе для получения сертификата и участия в розыгрыше призов
+      p Важно: пройти тестирование и заполнить форму можно только один раз!
+
+    .marathon-new-last__wr-form-final-test
+      .marathon-new-last__form-test-row-1.marathon-new-last__form-test-row
+        .calc-tax-deduc-new__col-input.disabled
+          p {{nickname}}
+      .marathon-new-last__form-test-row-2.marathon-new-last__form-test-row
+        div.marathon-new-last__form-row-wrap
+          .calc-tax-deduc-new__col-input.js--test-input.js--test-input_name(
+            :class="error_name?'input_error':''"
+          )
+            input(
+              type="text"
+              placeholder="Фамилия, имя, отчество"
+              @keyup="fieldCalculation"
+              @focus="inpFocus"
+              @blur="inpBlur"
+              @input="inputFieldName"
+              @paste="pasteName"
+
+            )
+            .calc-tax-deduc-new__input-clear.js--clear-calc-tax(@click="clearInput")
+          p.marathon-new-last__form-error(v-if="error_name") Поле обязательно для заполнения
+        div.marathon-new-last__form-row-wrap
+          .calc-tax-deduc-new__col-input.js--credit-calendar-input(
+            :class="error_birthday?'input_error':''"
+          )
+            input.property-calculator__value(
+              type="text"
+              placeholder="Дата рождения"
+              inputmode="numeric"
+              @input="changeDate"
+              @click ="showCalendar"
+            )
+            .js__vanilla-calendar-calc.vanilla-calendar-style.property-calculator__vanilla-calendar(
+              @click.stop ="showCalendar"
+            )
+            .property-calculator__input-additional-elem(
+              @click ="showCalendar"
+            )
+              svg(width='16', height='16', viewbox='0 0 16 16', fill='none', xmlns='http://www.w3.org/2000/svg')
+                path(fill-rule='evenodd', clip-rule='evenodd', d='M4.6665 0.667969C5.03469 0.667969 5.33317 0.966446 5.33317 1.33464V2.0013H10.6665V1.33464C10.6665 0.966446 10.965 0.667969 11.3332 0.667969C11.7014 0.667969 11.9998 0.966446 11.9998 1.33464V2.0013H14.0604C14.6955 2.0013 15.3332 2.47965 15.3332 3.21342V14.1225C15.3332 14.8563 14.6955 15.3346 14.0604 15.3346H1.93923C1.30413 15.3346 0.666504 14.8563 0.666504 14.1225V3.21342C0.666504 2.47965 1.30413 2.0013 1.93923 2.0013H3.99984V1.33464C3.99984 0.966446 4.29831 0.667969 4.6665 0.667969ZM3.99984 3.33464H1.99984V6.0013H13.9998V3.33464H11.9998V4.0013C11.9998 4.36949 11.7014 4.66797 11.3332 4.66797C10.965 4.66797 10.6665 4.36949 10.6665 4.0013V3.33464H5.33317V4.0013C5.33317 4.36949 5.03469 4.66797 4.6665 4.66797C4.29831 4.66797 3.99984 4.36949 3.99984 4.0013V3.33464ZM13.9998 7.33464H1.99984V14.0013H13.9998V7.33464Z', fill='#252628')
+          p.marathon-new-last__form-error(v-if="error_birthday") Поле обязательно для заполнения
+      .marathon-new-last__form-test-row-2.marathon-new-last__form-test-row.calc-tax-deduc-new__row
+        div.marathon-new-last__form-row-wrap
+          .calc-tax-deduc-new__col-input.disabled
+            p {{inn}}
+        div.marathon-new-last__form-row-wrap
+          .select-list__wrapper.js--select.js--openlist-container.js--only-mobile-fixed.js--select-child(
+            :class="error_region?'input_error':''"
+          )
+            .select__background.modal-special-background.js--openlist-background
+            .select__choosen.select__choosen_bordered.js--openlist-btn
+              p.select__substituted-text.input-emty Регион проживания
+              .select__arrow-search
+                svg(width='12', height='8', viewbox='0 0 12 8', fill='none', xmlns='http://www.w3.org/2000/svg')
+                  path(fill-rule='evenodd', clip-rule='evenodd', d='M11.753 0.868692C11.9987 1.13419 12.0361 1.58803 11.7904 1.85353L6.50907 7.10074C6.22563 7.40708 5.76607 7.40707 5.48263 7.10074L0.210749 1.84152C-0.0349036 1.57603 -0.000290891 1.13927 0.245361 0.873779C0.491014 0.608285 0.974545 0.608131 1.2202 0.873625L6.00253 5.59224L10.7671 0.868661C11.0127 0.603166 11.5074 0.603198 11.753 0.868692Z', fill='#252628')
+            .select-list__selection-window.modal-special-styles.js--openlist-body
+              .select-list__head
+                p Регион проживания
+                .select-list__head-close.js--select-list-close
+                  svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                    path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+              .select-list__wr-search
+                .select-list__search-item.js--openlist-item(
+                  v-for="item in region"
+                  :data-code="item.code"
+                  :class="item===1?'active':''"
+                  @click = "selectRegion"
+                )
+                  p {{item.name}}
+          p.marathon-new-last__form-error(v-if="error_region") Выберите регион
+
+      .marathon-new-last__form-test-row-2.marathon-new-last__form-test-row
+        div.marathon-new-last__form-row-wrap
+          .calc-tax-deduc-new__col-input.js--test-input.js--reg-input-mail(
+            :class="error_mail || error_mail_too_long ? 'input_error' : ''"
+          )
+            input(
+              placeholder="E-mail"
+              @keyup="fieldCalculation"
+              @focus="inpFocus"
+              @blur="inpBlur"
+            )
+            .calc-tax-deduc-new__input-clear.js--clear-calc-tax(@click="clearInput")
+          p.marathon-new-last__form-error(v-if="error_mail") Поле обязательно для заполнения
+          p.marathon-new-last__form-error(v-if="error_mail_too_long") Превышено допустимое количество символов
+        div.marathon-new-last__form-row-wrap
+          .calc-tax-deduc-new__col-input.js--test-input.js--reg-tel-mask(
+            :class="error_tel?'input_error':''"
+          )
+            input(
+              placeholder="Телефон"
+              @keyup="fieldCalculation"
+              @focus="inpFocus"
+              @blur="inpBlur"
+            )
+            .calc-tax-deduc-new__input-clear.js--clear-calc-tax(@click="clearInput")
+          p.marathon-new-last__form-error(v-if="error_tel") Поле обязательно для заполнения
+      .marathon-new-last__final-test-read-rules
+        .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper(
+          :class="checbox_error_personal?'input_error':''"
+        )
+          .personal-office__user-form-subscription-em
+          .feed_back__user-form-block
+            input#personal-data-test(
+              ref="checkboxInn"
+              type="checkbox"
+              @change="changeCheckboxAgreePersonal"
+            )
+            label.feed_back__chek-label(for='personal-data-test')
+              p Даю согласие на обработку <a target="_blank" href="/user-agreement/#user-agreement">персональных данных</a>
+            p.marathon-new-last__test-field-error(v-if="checbox_error_personal") Подтвердите согласие
+
+
+        .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper(
+          :class="checbox_error_advertising?'input_error':''"
+        )
+          .personal-office__user-form-subscription-em
+          .feed_back__user-form-block
+            input#advertising_materials(
+              type="checkbox"
+              @change="changeCheckboxAdvertising"
+            )
+            label.feed_back__chek-label(for='advertising_materials')
+              p Даю согласие на рассылку <a target="_blank" href="/user-agreement/#user-personalized-communications">рекламных материалов</a>
+            p.marathon-new-last__form-error(v-if="checbox_error_advertising") Подтвердите согласие
+        .marathon-new-last__final-test-form-btn
+
+          .btn_s.black(
+            v-if="status_internet===true && !error_input_name && input_region!=='' && !error_input_mail && !error_input_tel && date_birth!=='' && checkbox_agree_personal===true && checkbox_agree_advertising===true"
+            @click="sendForm"
+          ) Отправить
+          .btn_s.black.disabled(
+            v-if="status_internet===false || error_input_name || input_region==='' || error_input_mail || error_input_tel || date_birth==='' || checkbox_agree_personal===false || checkbox_agree_advertising===false"
+            @click="showError"
+          ) Отправить
+
+          p.test-a__error-hint(v-if="status_internet===false") Нет интернета
+          p.test-a__error-hint(v-if="error_sand_form") {{error_sand_form_text}}
+
+
+</template>
+<script>
+import Storage from '../development-tools/state.vue';
+import VanillaCalendar from '../../vanilla-calendar';
+import IMask from 'imask';
+import catalogNew from '../../catalog-new';
+
+let mask;
+let maskMail;
+
+export default {
+  name: 'FinalWindow',
+  props:['correct_answers','count_question','nickname','inn'],
+  data(){
+    return {
+      calendar:'',
+      checbox_error_personal:false,
+      checbox_error_advertising:false,
+      region:null,
+      input_name:'',
+      input_region:'',
+      input_mail:'',
+      input_tel:'',
+      checkbox_agree_personal:false,
+      checkbox_agree_advertising:false,
+
+      error_name:false,
+      error_birthday:false,
+      error_region:false,
+      error_mail:false,
+      error_tel:false,
+
+      error_input_name:true,
+      error_input_birthday:true,
+      error_input_region:true,
+      error_input_mail:true,
+      error_input_tel:true,
+      error_input_checkbox_personal:true,
+      error_input_checkbox_advertising:true,
+      error_mail_too_long: false,
+
+    }
+  },
+  methods: {
+    pasteName(e) {
+      const element = e.currentTarget
+      let char = (e.clipboardData || window.clipboardData).getData('text');
+      if ( char.search(/^[а-яё\-\s]*$/i) == -1 ) {
+        e.preventDefault();
+      }
+    },
+
+
+
+
+    sendForm(){
+      Storage.dispatch('ActionSendFForm', [this.input_name,this.date_birth,this.input_region,this.input_mail,this.input_tel,this.checkbox_agree_personal,this.checkbox_agree_advertising]);
+    },
+    showError() {
+      if (this.error_input_name === true) {
+        this.error_name = true;
+      }
+      if (this.error_input_birthday === true) {
+        this.error_birthday = true;
+      }
+      if (this.error_input_region === true) {
+        this.error_region = true;
+      }
+
+      // Email — особая обработка
+      this.error_mail = false;
+      this.error_mail_too_long = false;
+      if (this.input_mail.length > 10) {
+        this.error_mail_too_long = true;
+      } else if (this.error_input_mail) {
+        this.error_mail = true;
+      }
+
+      if (this.error_input_tel === true) {
+        this.error_tel = true;
+      }
+      if (this.error_input_checkbox_personal === true) {
+        this.checbox_error_personal = true;
+      }
+      if (this.error_input_checkbox_advertising === true) {
+        this.checbox_error_advertising = true;
+      }
+    },
+
+    selectRegion(e){
+      const element = e.currentTarget;
+      if (element.hasAttribute('data-code')) {
+        this.input_region=element.getAttribute('data-code')
+      }
+    },
+
+    inputMail(){
+      const input_status = document.querySelectorAll('.js--reg-input-mail input');
+      const maskOptions = {
+        mask: /^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]*$/i
+        // lazy: false,  // make placeholder always visible
+        // placeholderChar: ''
+
+      };
+      for (const item of input_status) {
+        maskMail = IMask(item, maskOptions);
+      }
+    },
+
+
+    changeCheckboxAdvertising(e){
+      const element = e.currentTarget;
+      if (element.checked) {
+        this.checkbox_agree_advertising=true
+        this.checbox_error_advertising=false
+      }
+      else {
+        this.checkbox_agree_advertising=false
+      }
+    },
+    changeCheckboxAgreePersonal(e) {
+      const element = e.currentTarget;
+      if (element.checked) {
+        this.checkbox_agree_personal=true
+        this.checbox_error_personal=false
+      }
+      else {
+        this.checkbox_agree_personal=false
+      }
+    },
+
+    inputCost(){
+      const input_status = document.querySelectorAll('.js--reg-tel-mask input');
+      const maskOptions = {
+        mask: '+{7} 000 000 00 00',
+        prepare: (appended, masked) => {
+          if (appended === '8' && masked.value === '') {
+            return '';
+          }
+
+          return appended;
+        },
+
+      };
+      for (const item of input_status) {
+        mask = IMask(item, maskOptions);
+      }
+    },
+
+    //Календарь
+    inputCalendar(){
+      const input_status = document.querySelectorAll('.js--credit-calendar-input input');
+      const maskOptions = {
+        mask: Date,
+
+      };
+      for (const item of input_status) {
+        // eslint-disable-next-line no-new
+        new IMask(item, maskOptions);
+      }
+    },
+    initPluginCalendarVanilla(dates,month,year){
+      this.calendar = new VanillaCalendar('.js__vanilla-calendar-calc', {
+        date: {
+          min: '1924-01-01',
+          max: new Date().toISOString().slice(0, 10),
+        },
+        settings: {
+          lang: 'ru',
+          range: {
+            // max: new Date().toISOString().slice(0, 10)
+          },
+          selected: {
+            dates: dates,
+            month: month,
+            year:year
+          },
+          selection: {
+
+          },
+        },
+        actions: {
+          clickDay(e, dates) {
+            const data = String(dates[0])
+              .substr(8, 2) + '.' + String(dates[0])
+              .substr(5, 2) + '.' + String(dates[0])
+              .substr(0, 4);
+            if (dates.length !== 0) {
+              const parent = e.target.closest('.js--credit-calendar-input');
+              if(parent!==null){
+                parent.querySelector('input').value = data;
+                Storage.dispatch('ActionDateBirth', data);
+                e.target.closest('.js__vanilla-calendar-calc').classList.remove('active');
+              }
+            }
+          }
+        }
+      })
+      this.calendar.init();
+    },
+    changeDate(el) {
+      const element = el.currentTarget;
+      const container = element.closest('.js--tax-deduction_calculations');
+      const data1 = new Date(element.value.replace(/(_|\s)+/g, "").substr(6, 4)+'-'+element.value.replace(/(_|\s)+/g, "").substr(3, 2)+"-"+element.value.replace(/(_|\s)+/g, "").substr(0, 2));
+      const date2 = this.first_period_date;
+      const oneDay = 1000 * 60 * 60 * 24;
+
+
+      if (element.value.replace(/(_|\s)+/g, "").length===10&&element.value.replace(/(_|\s)+/g, "").substr(3, 2)<=12) {
+        const date = element.value.replace(/(_|\s)+/g, "").substr(6, 4)+'-'+element.value.replace(/(_|\s)+/g, "").substr(3, 2)+"-"+element.value.replace(/(_|\s)+/g, "").substr(0, 2)
+        const month = parseInt(element.value.replace(/(_|\s)+/g, "").substr(3, 2)) - 1;
+        const year = element.value.replace(/(_|\s)+/g, "").substr(6, 4)
+
+        this.calendar = null
+        this.initPluginCalendarVanilla([`${date}`],month,year)
+
+        const date_begin = element.value.replace(/(_|\s)+/g, "").substr(0, 2)
+        Storage.dispatch('ActionDateBirth',element.value)
+        setTimeout(()=>{
+          element.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc').classList.remove('active')
+        },500)
+
+      }
+      else if(element.value.replace(/(_|\s)+/g, "").length < 10){
+        Storage.dispatch('ActionDateBirth','')
+      }
+
+    },
+    showCalendar(el){
+      const element = el.currentTarget;
+      element.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc').classList.add('active')
+
+    },
+    CalendarVanillaClose() {
+      let count = 0;
+      document.body.onclick = () => {
+        const array_parent = document.querySelectorAll('.js--credit-calendar-input');
+        const array_element = document.querySelectorAll('.js__vanilla-calendar-calc.active');
+        for (const item of array_parent) {
+          item.onclick = function (w) {
+            w.stopImmediatePropagation();
+          };
+        }
+        if (count > 0) {
+          for (let i = 0; i < array_element.length; i++) {
+            array_element[i].classList.remove('active');
+          }
+        }
+        if (count < 1) {
+          count += 1;
+        }
+
+      };
+    },
+    fieldCalculation(e){
+      const element = e.currentTarget;
+      const parent = element.closest('.js--test-input')
+      if (element.value.length > 0) {
+        element.classList.add('active')
+        parent.querySelector('.js--clear-calc-tax').classList.add('active')
+      } else {
+        element.classList.remove('active')
+        parent.querySelector('.js--clear-calc-tax').classList.remove('active')
+      }
+
+      if (element.closest('.js--test-input').classList.contains('js--test-input_name')) {
+        this.input_name=element.value
+      }
+      if (element.closest('.js--test-input').classList.contains('js--reg-input-mail')) {
+        this.input_mail=element.value
+      }
+      if (element.closest('.js--test-input').classList.contains('js--reg-tel-mask')) {
+        this.input_tel=element.value
+      }
+
+      //
+    },
+    inpFocus(el){
+      const element = el.currentTarget;
+      element.closest('.js--test-input').classList.add('input-focus')
+    },
+    inpBlur(el){
+      const element = el.currentTarget;
+      element.closest('.js--test-input').classList.remove('input-focus')
+    },
+    inputFieldName(e){
+      const element = e.currentTarget
+      element.value = element.value.replace(/[^а-яё -]/i,'').replace(/ +(?= )/g,'').replace(/^\s/g, '');
+      element.value = element.value.substring(0, 58)
+    },
+    clearInput(e){
+      const element = e.currentTarget;
+      const parent = element.closest('.js--test-input')
+      parent.querySelector('input').value='';
+      element.classList.remove('active')
+      if (parent.classList.contains('js--reg-tel-mask')) {
+        mask.value=''
+        this.input_tel=''
+        this.error_tel=false
+      }
+      if (parent.classList.contains('js--reg-input-mail')) {
+        maskMail.value = '';
+        this.input_mail = '';
+        this.error_mail = false;
+        this.error_mail_too_long = false; // ← добавь
+      }
+      if (parent.classList.contains('js--test-input_name')) {
+        this.input_name=''
+        this.error_name=false
+      }
+
+
+      // this.field_filling=false
+      // this.field_error=false
+    },
+    closeModal(el){
+      const element = el.currentTarget
+      element.closest('.modal-for-polls').classList.remove('open')
+      document.body.classList.remove('body-unactive')
+      document.body.classList.remove('body-modal')
+
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+
+      document.ontouchmove =  (e)=> {
+        return true;
+      }
+    }
+  },
+  computed: {
+    status_internet() {
+      return Storage.getters.STATUSINTERNET;
+    },
+    date_birth() {
+      return Storage.getters.DATEBIRTH;
+    },
+    error_sand_form() {
+      return Storage.getters.ERRORSANDFORM;
+    },
+    error_sand_form_text() {
+      return Storage.getters.ERRORSANDFORMTEXT;
+    },
+
+
+
+  },
+  mounted(){
+    this.inputCost()
+    this.inputMail()
+    this.inputCalendar()
+    this.initPluginCalendarVanilla()
+    this.CalendarVanillaClose()
+    catalogNew();
+
+    // this.region = conf.dictionary.region
+  },
+  beforeMount() {
+    if(typeof conf !== "undefined" && typeof conf.dictionary !== "undefined" && typeof conf.dictionary.regions !== "undefined") {
+      this.region = conf.dictionary.regions
+    }
+  },
+  watch:{
+    input_name(){
+      if (this.input_name.length > 0) {
+        this.error_input_name=false
+        this.error_name=false
+      }
+      else {
+        this.error_input_name=true
+      }
+    },
+    date_birth(){
+      if (this.date_birth.length > 0) {
+        this.error_input_birthday=false
+        this.error_birthday=false
+      }
+      else {
+        this.error_input_birthday=true
+      }
+    },
+    input_region(){
+      if (this.input_region.length > 0) {
+        this.error_input_region=false
+        this.error_region=false
+      }
+      else {
+        this.error_input_region=true
+      }
+    },
+    // input_mail(){
+    //   if (this.input_mail.length>0&&this.input_mail.match(/^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+(?:\.[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i)) {
+    //     this.error_input_mail=false
+    //     this.error_mail=false
+    //   }
+    //   else {
+    //     this.error_input_mail=true
+    //   }
+    // },
+
+    input_mail() {
+      const isTooLong = this.input_mail.length > 10;
+      const isValidFormat = this.input_mail.length > 0 &&
+        this.input_mail.match(/^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+(?:\.[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i);
+
+      // Ошибка валидации = пусто ИЛИ невалидный формат ИЛИ слишком длинный
+      this.error_input_mail = this.input_mail.length === 0 || !isValidFormat || isTooLong;
+    },
+    input_tel(){
+      if (this.input_tel.length >= 16) {
+        this.error_input_tel=false
+        this.error_tel=false
+      }
+      else {
+        this.error_input_tel=true
+      }
+    },
+
+    checkbox_agree_personal(){
+      if (this.checkbox_agree_personal === true) {
+        this.error_input_checkbox_personal=false
+      }
+      else {
+        this.error_input_checkbox_personal=true
+      }
+    },
+    checkbox_agree_advertising(){
+      if (this.checkbox_agree_advertising === true) {
+        this.error_input_checkbox_advertising=false
+      }
+      else {
+        this.error_input_checkbox_advertising=true
+      }
+    },
+
+
+
   }
 
-  // Email — особая обработка
-  this.error_mail = false;
-  this.error_mail_too_long = false;
-  if (this.input_mail.length > 70) {
-    this.error_mail_too_long = true;
-  } else if (this.error_input_mail) {
-    this.error_mail = true;
-  }
-
-  if (this.error_input_tel === true) {
-    this.error_tel = true;
-  }
-  if (this.error_input_checkbox_personal === true) {
-    this.checbox_error_personal = true;
-  }
-  if (this.error_input_checkbox_advertising === true) {
-    this.checbox_error_advertising = true;
-  }
-}
+};
+</script>
+<style scoped>
+</style>
