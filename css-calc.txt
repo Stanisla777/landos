@@ -1,44 +1,58 @@
 p.marathon-new-last__form-error(v-if="error_mail") Поле обязательно для заполнения
-p.marathon-new-last__form-error(v-if="isMailTooLong") Превышено допустимое количество символов
+p.marathon-new-last__form-error(v-if="error_mail_too_long") Превышено допустимое количество символов
 
-.calc-tax-deduc-new__col-input.js--test-input.js--reg-input-mail(
-  :class="error_mail || isMailTooLong ? 'input_error' : ''"
-)
+:class="error_mail || error_mail_too_long ? 'input_error' : ''"
+
 
 data() {
   return {
-    // ... все остальные поля
-    isMailTooLong: false, // ← добавь эту строку
+    // ... остальные поля
+    error_mail_too_long: false, // ← для отображения ошибки под полем
   }
 }
 
-fieldCalculation(e) {
-  const element = e.currentTarget;
-  const parent = element.closest('.js--test-input');
-  if (element.value.length > 0) {
-    element.classList.add('active');
-    parent.querySelector('.js--clear-calc-tax').classList.add('active');
-  } else {
-    element.classList.remove('active');
-    parent.querySelector('.js--clear-calc-tax').classList.remove('active');
+showError() {
+  if (this.error_input_name === true) {
+    this.error_name = true;
   }
+  if (this.error_input_birthday === true) {
+    this.error_birthday = true;
+  }
+  if (this.error_input_region === true) {
+    this.error_region = true;
+  }
+  if (this.error_input_mail === true) {
+    this.error_mail = true;
+  }
+  // ← новая проверка
+  if (this.input_mail.length > 70) {
+    this.error_mail_too_long = true;
+  }
+  if (this.error_input_tel === true) {
+    this.error_tel = true;
+  }
+  if (this.error_input_checkbox_personal === true) {
+    this.checbox_error_personal = true;
+  }
+  if (this.error_input_checkbox_advertising === true) {
+    this.checbox_error_advertising = true;
+  }
+}
+input_mail() {
+  const isTooLong = this.input_mail.length > 70;
+  const isValidFormat = this.input_mail.length > 0 && 
+    this.input_mail.match(/^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+(?:\.[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i);
 
-  if (element.closest('.js--test-input').classList.contains('js--test-input_name')) {
-    this.input_name = element.value;
-  }
-  if (element.closest('.js--test-input').classList.contains('js--reg-input-mail')) {
-    this.input_mail = element.value;
-    this.isMailTooLong = element.value.length > 70; // ← добавь эту строку
-  }
-  if (element.closest('.js--test-input').classList.contains('js--reg-tel-mask')) {
-    this.input_tel = element.value;
-  }
-},
+  // Ошибка валидации = пусто ИЛИ невалидный формат ИЛИ слишком длинный
+  this.error_input_mail = this.input_mail.length === 0 || !isValidFormat || isTooLong;
+}
+
 
 clearInput
+
 if (parent.classList.contains('js--reg-input-mail')) {
   maskMail.value = '';
   this.input_mail = '';
   this.error_mail = false;
-  this.isMailTooLong = false; // ← добавь эту строку
+  this.error_mail_too_long = false; // ← добавь
 }
