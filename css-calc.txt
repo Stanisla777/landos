@@ -1,16 +1,3 @@
-p.marathon-new-last__form-error(v-if="error_mail") Поле обязательно для заполнения
-p.marathon-new-last__form-error(v-if="error_mail_too_long") Превышено допустимое количество символов
-
-:class="error_mail || error_mail_too_long ? 'input_error' : ''"
-
-
-data() {
-  return {
-    // ... остальные поля
-    error_mail_too_long: false, // ← для отображения ошибки под полем
-  }
-}
-
 showError() {
   if (this.error_input_name === true) {
     this.error_name = true;
@@ -21,13 +8,16 @@ showError() {
   if (this.error_input_region === true) {
     this.error_region = true;
   }
-  if (this.error_input_mail === true) {
-    this.error_mail = true;
-  }
-  // ← новая проверка
+
+  // Email — особая обработка
+  this.error_mail = false;
+  this.error_mail_too_long = false;
   if (this.input_mail.length > 70) {
     this.error_mail_too_long = true;
+  } else if (this.error_input_mail) {
+    this.error_mail = true;
   }
+
   if (this.error_input_tel === true) {
     this.error_tel = true;
   }
@@ -37,22 +27,4 @@ showError() {
   if (this.error_input_checkbox_advertising === true) {
     this.checbox_error_advertising = true;
   }
-}
-input_mail() {
-  const isTooLong = this.input_mail.length > 70;
-  const isValidFormat = this.input_mail.length > 0 && 
-    this.input_mail.match(/^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+(?:\.[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i);
-
-  // Ошибка валидации = пусто ИЛИ невалидный формат ИЛИ слишком длинный
-  this.error_input_mail = this.input_mail.length === 0 || !isValidFormat || isTooLong;
-}
-
-
-clearInput
-
-if (parent.classList.contains('js--reg-input-mail')) {
-  maskMail.value = '';
-  this.input_mail = '';
-  this.error_mail = false;
-  this.error_mail_too_long = false; // ← добавь
 }
