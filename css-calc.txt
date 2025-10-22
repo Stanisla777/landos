@@ -1,85 +1,3 @@
-.row-title-container-with-tooltip.js--tooltip-parent
-                                            .calc-tax-deduc-new__row-title.big  Оставьте отзыв
-                                                div.content-note.desctop.js--content-note.js--with-arrow
-                                                    div.content-note__text
-                                                        p.
-                                                            Здесь вы можете рассказать, о том, как для вас прошла игра.
-
-
-
-function adjustTooltipArrow(icon) {
-  const tooltip = icon.querySelector('.content-note__text');
-  if (!tooltip) return;
-
-  // Убираем старые классы направления
-  tooltip.classList.remove('left', 'right');
-
-  // Определяем горизонтальное направление по inline-стилям, установленным ранее
-  const leftStyle = tooltip.style.left;
-  const rightStyle = tooltip.style.right;
-
-  if (leftStyle && leftStyle !== 'auto' && leftStyle !== '') {
-    tooltip.classList.add('left');   // Тултип позиционирован слева → стрелка влево
-  } else if (rightStyle && rightStyle !== 'auto' && rightStyle !== '') {
-    tooltip.classList.add('right');  // Тултип позиционирован справа → стрелка вправо
-  }
-
-  // Применяем смещения, только если есть .js--with-arrow
-  if (icon.classList.contains('js--with-arrow')) {
-    // === Горизонтальное смещение ===
-    if (tooltip.classList.contains('right')) {
-      const currentLeft = parseFloat(tooltip.style.left) || 0;
-      tooltip.style.left = (currentLeft - 6) + 'px';
-    }
-    // .left не смещаем по горизонтали — позиция уже корректна
-
-    // === Вертикальное смещение ===
-    const topStyle = tooltip.style.top;
-    const bottomStyle = tooltip.style.bottom;
-
-    if (topStyle && topStyle !== 'auto' && topStyle !== '') {
-      // Тултип СНИЗУ → сдвигаем вниз
-      const currentTop = parseFloat(topStyle) || 0;
-      tooltip.style.top = (currentTop + 25) + 'px';
-    } else if (bottomStyle && bottomStyle !== 'auto' && bottomStyle !== '') {
-      // Тултип СВЕРХУ → сдвигаем вверх
-      const currentBottom = parseFloat(bottomStyle) || 0;
-      tooltip.style.bottom = (currentBottom + 25) + 'px';
-    }
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-.block-grid-area-3-col
-  .grid-area-col
-  .grid-area-col
-     .common-content
-         p.
-            Можно воспользоваться услугами риэлтора Можно воспользоваться услугами риэлтора
-                <span class="content-note js--with-arrow js--content-note">?
-                     <span class="content-note__text">
-                          Какое-то описание Какое-то описание Какое-то описание Какое-то описание
-                          Какое-то описание Какое-то описание Какое-то описание Какое-то описание
-                    </span>
-                </span>
-  .grid-area-col
-
-.block-grid-area-3-col {
-    display: grid;
-    grid-template-columns: minmax(368px, 368px) minmax(400px, 752px) minmax(240px, 1fr);
-    grid-column-gap: 16px;
-}
-
 /* eslint-disable */
 export default function contentNote() {
   const notes = document.querySelectorAll('.js--content-note');
@@ -158,59 +76,81 @@ export default function contentNote() {
         const textEl = e.target.querySelector('.content-note__text');
         if (textEl) textEl.classList.add('active');
 
-        // === Ваша существующая логика позиционирования (без изменений) ===
         const rect = e.target.getBoundingClientRect();
-        const parent = e.target.parentElement;
         const tooltip = e.target.querySelector('.content-note__text');
         if (!tooltip) return;
 
-        const parentPos = parent.getBoundingClientRect();
-        const relativePosLeftElement = rect.left - parentPos.left;
-        const noteText = tooltip;
         const windowWidth = document.body.offsetWidth;
         const windowHeight = window.innerHeight;
-        const parentWidth = parent.offsetWidth;
-        const leftOffset = rect.left + rect.width / 2;
         const topOffset = rect.top + rect.height / 2;
 
-        // Горизонталь
-        if (
+        // === Горизонтальное позиционирование с поддержкой js--focus-on-parent ===
+        const focusParent = e.target.closest('.js--focus-on-parent');
+
+        if (focusParent) {
+          const parentRect = focusParent.getBoundingClientRect();
+          const iconCenterInParent = rect.left - parentRect.left + rect.width / 2;
+          const parentCenter = parentRect.width / 2;
+
+          if (iconCenterInParent > parentCenter) {
+            tooltip.style.left = 'auto';
+            tooltip.style.right = '-4px';
+          } else {
+            tooltip.style.left = '4px';
+            tooltip.style.right = 'auto';
+          }
+
+          if (windowWidth < 600) {
+            tooltip.style.inset = 'unset';
+            tooltip.style.left = '0';
+            tooltip.style.transform = `translateX(${
+              -(rect.left - tooltip.offsetWidth / 2 + 7) + (parentRect.left + parentRect.width / 2 - tooltip.offsetWidth / 2)
+            }px)`;
+          }
+        } else if (
           e.target.closest('.js--courses-accord-content') ||
           e.target.closest('.js--element-overflow') ||
           e.target.closest('.js--element-overflow-x')
         ) {
+          const parent = e.target.parentElement;
+          const parentPos = parent.getBoundingClientRect();
+          const relativePosLeftElement = rect.left - parentPos.left;
+          const parentWidth = parent.offsetWidth;
+
           if (parentWidth / 2 < relativePosLeftElement) {
-            noteText.style.left = 'auto';
-            noteText.style.right = '-4px';
+            tooltip.style.left = 'auto';
+            tooltip.style.right = '-4px';
           } else {
-            noteText.style.left = '4px';
-            noteText.style.right = 'auto';
+            tooltip.style.left = '4px';
+            tooltip.style.right = 'auto';
           }
 
           if (windowWidth < 600) {
-            noteText.style.inset = 'unset';
-            noteText.style.transform = `translateX(${
+            tooltip.style.inset = 'unset';
+            tooltip.style.transform = `translateX(${
               -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
             }px)`;
           }
         } else {
+          const leftOffset = rect.left + rect.width / 2;
           if (windowWidth / 2 < leftOffset) {
-            noteText.style.left = 'auto';
-            noteText.style.right = '-4px';
+            tooltip.style.left = 'auto';
+            tooltip.style.right = '-4px';
           } else {
-            noteText.style.left = '4px';
-            noteText.style.right = 'auto';
+            tooltip.style.left = '4px';
+            tooltip.style.right = 'auto';
           }
 
           if (windowWidth < 600) {
-            noteText.style.inset = 'unset';
-            noteText.style.transform = `translateX(${
-              -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
+            tooltip.style.inset = 'unset';
+            tooltip.style.left = '0';
+            tooltip.style.transform = `translateX(${
+              -(rect.left - tooltip.offsetWidth / 2 + 7) + (windowWidth / 2 - tooltip.offsetWidth / 2)
             }px)`;
           }
         }
 
-        // Вертикаль
+        // === Вертикальное позиционирование (без изменений) ===
         if (
           e.target.closest('.js--courses-accord-content') ||
           e.target.closest('.js--element-overflow')
@@ -219,30 +159,29 @@ export default function contentNote() {
           const locationDifference = rect.top - notesParentBounding.top;
           const heightTooltip = tooltip.offsetHeight;
           if (heightTooltip >= locationDifference) {
-            noteText.style.top = 'calc(100% + 4px)';
-            noteText.style.bottom = 'auto';
+            tooltip.style.top = 'calc(100% + 4px)';
+            tooltip.style.bottom = 'auto';
           } else if (windowHeight / 2 < topOffset) {
-            noteText.style.top = 'auto';
-            noteText.style.bottom = 'calc(100% + 4px)';
+            tooltip.style.top = 'auto';
+            tooltip.style.bottom = 'calc(100% + 4px)';
           } else {
-            noteText.style.top = 'calc(100% + 4px)';
-            noteText.style.bottom = 'auto';
+            tooltip.style.top = 'calc(100% + 4px)';
+            tooltip.style.bottom = 'auto';
           }
         } else {
           if (windowHeight / 2 > topOffset) {
-            noteText.classList.remove('up');
-            noteText.classList.add('down');
-            noteText.style.top = 'calc(100% + 4px)';
-            noteText.style.bottom = 'auto';
+            tooltip.classList.remove('up');
+            tooltip.classList.add('down');
+            tooltip.style.top = 'calc(100% + 4px)';
+            tooltip.style.bottom = 'auto';
           } else {
-            noteText.classList.remove('down');
-            noteText.classList.add('up');
-            noteText.style.top = 'auto';
-            noteText.style.bottom = 'calc(100% + 4px)';
+            tooltip.classList.remove('down');
+            tooltip.classList.add('up');
+            tooltip.style.top = 'auto';
+            tooltip.style.bottom = 'calc(100% + 4px)';
           }
         }
 
-        // === ДОБАВЛЕНО: стрелка и смещение ===
         adjustTooltipArrow(e.target);
       }
     });
@@ -256,57 +195,79 @@ export default function contentNote() {
       if (textEl) textEl.classList.add('active');
 
       const rect = e.target.getBoundingClientRect();
-      const parent = e.target.parentElement;
       const tooltip = e.target.querySelector('.content-note__text');
       if (!tooltip) return;
 
-      const parentPos = parent.getBoundingClientRect();
-      const relativePosLeftElement = rect.left - parentPos.left;
-      const noteText = tooltip;
       const windowWidth = document.body.offsetWidth;
       const windowHeight = window.innerHeight;
-      const parentWidth = parent.offsetWidth;
-      const leftOffset = rect.left + rect.width / 2;
       const topOffset = rect.top + rect.height / 2;
 
-      // Горизонталь
-      if (
+      // === Горизонтальное позиционирование с поддержкой js--focus-on-parent ===
+      const focusParent = e.target.closest('.js--focus-on-parent');
+
+      if (focusParent) {
+        const parentRect = focusParent.getBoundingClientRect();
+        const iconCenterInParent = rect.left - parentRect.left + rect.width / 2;
+        const parentCenter = parentRect.width / 2;
+
+        if (iconCenterInParent > parentCenter) {
+          tooltip.style.left = 'auto';
+          tooltip.style.right = '-4px';
+        } else {
+          tooltip.style.left = '4px';
+          tooltip.style.right = 'auto';
+        }
+
+        if (windowWidth < 470) {
+          tooltip.style.inset = 'unset';
+          tooltip.style.left = '0';
+          tooltip.style.transform = `translateX(${
+            -(rect.left - tooltip.offsetWidth / 2 + 7) + (parentRect.left + parentRect.width / 2 - tooltip.offsetWidth / 2)
+          }px)`;
+        }
+      } else if (
         e.target.closest('.js--courses-accord-content') ||
         e.target.closest('.js--element-overflow') ||
         e.target.closest('.js--element-overflow-x')
       ) {
+        const parent = e.target.parentElement;
+        const parentPos = parent.getBoundingClientRect();
+        const relativePosLeftElement = rect.left - parentPos.left;
+        const parentWidth = parent.offsetWidth;
+
         if (parentWidth / 2 < relativePosLeftElement) {
-          noteText.style.left = 'auto';
-          noteText.style.right = '-4px';
+          tooltip.style.left = 'auto';
+          tooltip.style.right = '-4px';
         } else {
-          noteText.style.left = '4px';
-          noteText.style.right = 'auto';
+          tooltip.style.left = '4px';
+          tooltip.style.right = 'auto';
         }
 
         if (windowWidth < 470) {
-          noteText.style.left = '0';
-          noteText.style.transform = `translateX(${
+          tooltip.style.left = '0';
+          tooltip.style.transform = `translateX(${
             -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
           }px)`;
         }
       } else {
+        const leftOffset = rect.left + rect.width / 2;
         if (windowWidth / 2 < leftOffset) {
-          noteText.style.left = 'auto';
-          noteText.style.right = '-4px';
+          tooltip.style.left = 'auto';
+          tooltip.style.right = '-4px';
         } else {
-          noteText.style.left = '4px';
-          noteText.style.right = 'auto';
+          tooltip.style.left = '4px';
+          tooltip.style.right = 'auto';
         }
 
         if (windowWidth < 470) {
-          noteText.style.left = '0';
-          noteText.style.transform = `translateX(${
+          tooltip.style.left = '0';
+          tooltip.style.transform = `translateX(${
             -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
           }px)`;
         }
       }
 
-      // Вертикаль
+      // === Вертикальное позиционирование (без изменений) ===
       if (
         e.target.closest('.js--courses-accord-content') ||
         e.target.closest('.js--element-overflow')
@@ -315,30 +276,29 @@ export default function contentNote() {
         const locationDifference = rect.top - notesParentBounding.top;
         const heightTooltip = tooltip.offsetHeight;
         if (heightTooltip >= locationDifference) {
-          noteText.style.top = 'calc(100% + 4px)';
-          noteText.style.bottom = 'auto';
+          tooltip.style.top = 'calc(100% + 4px)';
+          tooltip.style.bottom = 'auto';
         } else if (windowHeight / 2 < topOffset) {
-          noteText.style.top = 'auto';
-          noteText.style.bottom = 'calc(100% + 4px)';
+          tooltip.style.top = 'auto';
+          tooltip.style.bottom = 'calc(100% + 4px)';
         } else {
-          noteText.style.top = 'calc(100% + 4px)';
-          noteText.style.bottom = 'auto';
+          tooltip.style.top = 'calc(100% + 4px)';
+          tooltip.style.bottom = 'auto';
         }
       } else {
         if (windowHeight / 2 > topOffset) {
-          noteText.classList.remove('up');
-          noteText.classList.add('down');
-          noteText.style.top = 'calc(100% + 4px)';
-          noteText.style.bottom = 'auto';
+          tooltip.classList.remove('up');
+          tooltip.classList.add('down');
+          tooltip.style.top = 'calc(100% + 4px)';
+          tooltip.style.bottom = 'auto';
         } else {
-          noteText.classList.remove('down');
-          noteText.classList.add('up');
-          noteText.style.top = 'auto';
-          noteText.style.bottom = 'calc(100% + 4px)';
+          tooltip.classList.remove('down');
+          tooltip.classList.add('up');
+          tooltip.style.top = 'auto';
+          tooltip.style.bottom = 'calc(100% + 4px)';
         }
       }
 
-      // === ДОБАВЛЕНО: стрелка и смещение ===
       adjustTooltipArrow(e.target);
     }
 
@@ -365,6 +325,3 @@ export default function contentNote() {
     }
   });
 }
-
-
-
