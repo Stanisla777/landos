@@ -41,6 +41,17 @@
 export default function contentNote() {
   const notes = document.querySelectorAll('.js--content-note');
 
+  // === Функция сброса inline-стилей тултипа ===
+  function resetTooltipStyles(tooltip) {
+    if (!tooltip) return;
+    tooltip.style.left = '';
+    tooltip.style.right = '';
+    tooltip.style.top = '';
+    tooltip.style.bottom = '';
+    tooltip.style.transform = '';
+    tooltip.style.inset = '';
+  }
+
   // === Вспомогательная функция: добавление класса направления и смещения ===
   function adjustTooltipArrow(icon) {
     const tooltip = icon.querySelector('.content-note__text');
@@ -93,32 +104,42 @@ export default function contentNote() {
       if (e.target.classList.contains('js--content-note') && e.target.classList.contains('active')) {
         e.target.classList.remove('active');
         const textEl = e.target.querySelector('.content-note__text');
-        if (textEl) textEl.classList.remove('active');
+        if (textEl) {
+          textEl.classList.remove('active', 'without-arrow');
+          resetTooltipStyles(textEl);
+        }
       }
 
       if (!e.target.classList.contains('js--content-note')) {
         for (const note of notes) {
           note.classList.remove('active');
           const textEl = note.querySelector('.content-note__text');
-          if (textEl) textEl.classList.remove('active');
+          if (textEl) {
+            textEl.classList.remove('active', 'without-arrow');
+            resetTooltipStyles(textEl);
+          }
         }
       }
 
       if (e.target.classList.contains('js--content-note')) {
+        // Закрываем все остальные
         for (const note of notes) {
           note.classList.remove('active');
           const textEl = note.querySelector('.content-note__text');
-          if (textEl) textEl.classList.remove('active');
+          if (textEl) {
+            textEl.classList.remove('active', 'without-arrow');
+            resetTooltipStyles(textEl);
+          }
         }
 
+        // Открываем текущий
         e.target.classList.add('active');
-        const textEl = e.target.querySelector('.content-note__text');
-        if (textEl) textEl.classList.add('active');
-
-        const rect = e.target.getBoundingClientRect();
         const tooltip = e.target.querySelector('.content-note__text');
         if (!tooltip) return;
 
+        tooltip.classList.add('active');
+
+        const rect = e.target.getBoundingClientRect();
         const windowWidth = document.body.offsetWidth;
         const windowHeight = window.innerHeight;
         const topOffset = rect.top + rect.height / 2;
@@ -140,8 +161,7 @@ export default function contentNote() {
           }
 
           if (windowWidth < 480) {
-            // Принудительный reflow после активации
-            void tooltip.offsetWidth;
+            void tooltip.offsetWidth; // reflow после активации и позиционирования
             const tRect = tooltip.getBoundingClientRect();
             const doesNotFit = tRect.left < 16 || tRect.right > (windowWidth - 16);
 
@@ -215,7 +235,7 @@ export default function contentNote() {
           }
         }
 
-        // === Вертикальное позиционирование (без изменений) ===
+        // === Вертикальное позиционирование ===
         if (
           e.target.closest('.js--courses-accord-content') ||
           e.target.closest('.js--element-overflow')
@@ -255,20 +275,30 @@ export default function contentNote() {
   // === Desktop: mouseover ===
   document.addEventListener('mouseover', (e) => {
     if (e.target.classList.contains('js--content-note')) {
-      e.target.classList.add('active');
-      const textEl = e.target.querySelector('.content-note__text');
-      if (textEl) textEl.classList.add('active');
+      // Закрываем другие (на всякий случай, хотя обычно не нужно на desktop)
+      for (const note of notes) {
+        if (note !== e.target) {
+          note.classList.remove('active');
+          const textEl = note.querySelector('.content-note__text');
+          if (textEl) {
+            textEl.classList.remove('active', 'without-arrow');
+            resetTooltipStyles(textEl);
+          }
+        }
+      }
 
-      const rect = e.target.getBoundingClientRect();
+      e.target.classList.add('active');
       const tooltip = e.target.querySelector('.content-note__text');
       if (!tooltip) return;
 
+      tooltip.classList.add('active');
+
+      const rect = e.target.getBoundingClientRect();
       const windowWidth = document.body.offsetWidth;
       const windowHeight = window.innerHeight;
       const topOffset = rect.top + rect.height / 2;
       const leftOffset = rect.left + rect.width / 2;
 
-      // === Горизонтальное позиционирование с поддержкой js--focus-on-parent ===
       const focusParent = e.target.closest('.js--focus-on-parent');
 
       if (focusParent) {
@@ -333,7 +363,6 @@ export default function contentNote() {
           }
         }
       } else {
-        const leftOffset = rect.left + rect.width / 2;
         if (windowWidth / 2 < leftOffset) {
           tooltip.style.left = 'auto';
           tooltip.style.right = '-4px';
@@ -359,7 +388,7 @@ export default function contentNote() {
         }
       }
 
-      // === Вертикальное позиционирование (без изменений) ===
+      // === Вертикальное позиционирование ===
       if (
         e.target.closest('.js--courses-accord-content') ||
         e.target.closest('.js--element-overflow')
@@ -414,8 +443,8 @@ export default function contentNote() {
       currentTooltip.classList.remove('active');
       const textEl = currentTooltip.querySelector('.content-note__text');
       if (textEl) {
-        textEl.classList.remove('active');
-        textEl.classList.remove('without-arrow');
+        textEl.classList.remove('active', 'without-arrow');
+        resetTooltipStyles(textEl);
       }
     }
   });
