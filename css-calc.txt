@@ -1,25 +1,20 @@
 export default function contentNote() {
   const notes = document.querySelectorAll('.js--content-note');
 
-  // === Вспомогательная функция: центрирование тултипа на мобильных (<600px) ===
-  function centerTooltip(tooltip, rect, windowWidth) {
-    tooltip.style.inset = 'unset';
-    tooltip.style.left = '0';
+  // === Новая функция: простое и надёжное центрирование по экрану ===
+  function centerTooltip(tooltip) {
+    tooltip.style.left = '50%';
+    tooltip.style.transform = 'translateX(-50%)';
     tooltip.style.right = 'auto';
-    tooltip.style.transform = `translateX(${
-      -(rect.left - tooltip.offsetWidth / 2 + 7) + (windowWidth / 2 - tooltip.offsetWidth / 2)
-    }px)`;
+    tooltip.style.inset = 'unset';
   }
 
-  // === Вспомогательная функция: добавление класса направления и смещения ===
   function adjustTooltipArrow(icon) {
     const tooltip = icon.querySelector('.content-note__text');
     if (!tooltip) return;
 
-    // Убираем старые классы направления
     tooltip.classList.remove('left', 'right');
 
-    // Определяем горизонтальное направление
     const leftStyle = tooltip.style.left;
     const rightStyle = tooltip.style.right;
 
@@ -29,15 +24,12 @@ export default function contentNote() {
       tooltip.classList.add('left');
     }
 
-    // Применяем смещения, только если есть .js--with-arrow
     if (icon.classList.contains('js--with-arrow')) {
-      // === Горизонтальное смещение ===
       if (tooltip.classList.contains('right')) {
         const currentLeft = parseFloat(tooltip.style.left) || 0;
         tooltip.style.left = (currentLeft - 6) + 'px';
       }
 
-      // === Вертикальное смещение ===
       const topStyle = tooltip.style.top;
       const bottomStyle = tooltip.style.bottom;
 
@@ -51,7 +43,6 @@ export default function contentNote() {
     }
   }
 
-  // === iOS / touch handling ===
   const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
     (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
 
@@ -80,7 +71,10 @@ export default function contentNote() {
 
         e.target.classList.add('active');
         const textEl = e.target.querySelector('.content-note__text');
-        if (textEl) textEl.classList.add('active');
+        if (textEl) {
+          textEl.classList.add('active');
+          void textEl.offsetWidth;
+        }
 
         const rect = e.target.getBoundingClientRect();
         const tooltip = e.target.querySelector('.content-note__text');
@@ -90,7 +84,6 @@ export default function contentNote() {
         const windowHeight = window.innerHeight;
         const topOffset = rect.top + rect.height / 2;
 
-        // === Горизонтальное позиционирование с поддержкой js--focus-on-parent ===
         const focusParent = e.target.closest('.js--focus-on-parent');
 
         if (focusParent) {
@@ -107,7 +100,7 @@ export default function contentNote() {
           }
 
           if (windowWidth < 600) {
-            centerTooltip(tooltip, rect, windowWidth);
+            centerTooltip(tooltip);
           }
         } else if (
           e.target.closest('.js--courses-accord-content') ||
@@ -128,7 +121,7 @@ export default function contentNote() {
           }
 
           if (windowWidth < 600) {
-            centerTooltip(tooltip, rect, windowWidth);
+            centerTooltip(tooltip);
           }
         } else {
           const leftOffset = rect.left + rect.width / 2;
@@ -141,11 +134,11 @@ export default function contentNote() {
           }
 
           if (windowWidth < 600) {
-            centerTooltip(tooltip, rect, windowWidth);
+            centerTooltip(tooltip);
           }
         }
 
-        // === Вертикальное позиционирование ===
+        // Вертикальное позиционирование — без изменений
         if (
           e.target.closest('.js--courses-accord-content') ||
           e.target.closest('.js--element-overflow')
@@ -187,7 +180,10 @@ export default function contentNote() {
     if (e.target.classList.contains('js--content-note')) {
       e.target.classList.add('active');
       const textEl = e.target.querySelector('.content-note__text');
-      if (textEl) textEl.classList.add('active');
+      if (textEl) {
+        textEl.classList.add('active');
+        void textEl.offsetWidth;
+      }
 
       const rect = e.target.getBoundingClientRect();
       const tooltip = e.target.querySelector('.content-note__text');
@@ -197,7 +193,6 @@ export default function contentNote() {
       const windowHeight = window.innerHeight;
       const topOffset = rect.top + rect.height / 2;
 
-      // === Горизонтальное позиционирование с поддержкой js--focus-on-parent ===
       const focusParent = e.target.closest('.js--focus-on-parent');
 
       if (focusParent) {
@@ -214,7 +209,7 @@ export default function contentNote() {
         }
 
         if (windowWidth < 600) {
-          centerTooltip(tooltip, rect, windowWidth);
+          centerTooltip(tooltip);
         }
       } else if (
         e.target.closest('.js--courses-accord-content') ||
@@ -235,7 +230,7 @@ export default function contentNote() {
         }
 
         if (windowWidth < 600) {
-          centerTooltip(tooltip, rect, windowWidth);
+          centerTooltip(tooltip);
         }
       } else {
         const leftOffset = rect.left + rect.width / 2;
@@ -248,11 +243,11 @@ export default function contentNote() {
         }
 
         if (windowWidth < 600) {
-          centerTooltip(tooltip, rect, windowWidth);
+          centerTooltip(tooltip);
         }
       }
 
-      // === Вертикальное позиционирование ===
+      // Вертикальное позиционирование — без изменений
       if (
         e.target.closest('.js--courses-accord-content') ||
         e.target.closest('.js--element-overflow')
@@ -292,12 +287,14 @@ export default function contentNote() {
       if (root) {
         root.classList.add('active');
         const textEl = root.querySelector('.content-note__text');
-        if (textEl) textEl.classList.add('active');
+        if (textEl) {
+          textEl.classList.add('active');
+          void textEl.offsetWidth;
+        }
       }
     }
   });
 
-  // === Desktop: mouseout ===
   document.addEventListener('mouseout', (e) => {
     const from = e.relatedTarget || e.toElement;
     const currentTooltip = e.target.closest && e.target.closest('.js--content-note');
