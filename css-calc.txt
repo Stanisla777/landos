@@ -1,50 +1,51 @@
-.grid-area-col.
-  p.
-     Можно воспользоваться услугами риэлтора
-     <span class="content-note js--content-note js--ussual-mobile-tooltip">?
-         <span class="content-note__text">Какое-то описание</span>
-     </span>
-
-
 import AddClassBody from './redesign-site/disallow-body-scrolling';
 import RemoveClassBody from './redesign-site/allow-body-scrolling';
+
+// Флаг, чтобы не дублировать обработчик клика
+let mobileTooltipClickListenerAdded = false;
+
 // === Основная функция ===
 export default function contentNote() {
-  if (document.querySelectorAll('.js--content-note').length>0) {
+  const notes = document.querySelectorAll('.js--content-note');
+  if (notes.length === 0) return;
+
+  // Добавляем глобальный обработчик закрытия ОДИН РАЗ
+  if (!mobileTooltipClickListenerAdded) {
     document.addEventListener('click', (e) => {
       if (e.target.classList.contains('js--close-mobile-tooltip-2')) {
         const wrapper = e.target.closest('.js--mobile-tooltip-wrapper');
         if (wrapper) {
-          if (wrapper.querySelector('.js--tooltip-mobile')) {
-            wrapper.querySelector('.js--tooltip-mobile').classList.remove('active')
-          }
-          setTimeout(()=>{
-            wrapper.remove();
-          },400)
+          // Плавное закрытие
+          const tooltip = wrapper.querySelector('.js--tooltip-mobile');
+          const background = wrapper.querySelector('.select__background-tooltip');
+          if (tooltip) tooltip.classList.remove('active');
+          if (background) background.classList.remove('active');
 
+          setTimeout(() => {
+            if (wrapper.parentNode) wrapper.remove();
+          }, 400); // должно совпадать с transition-duration
         } else {
-          document.querySelectorAll('.js--mobile-tooltip-wrapper').forEach(el => el.remove());
+          // Fallback: удаляем все
+          document.querySelectorAll('.js--mobile-tooltip-wrapper').forEach(el => {
+            el.remove();
+          });
         }
         RemoveClassBody();
       }
     });
+    mobileTooltipClickListenerAdded = true;
   }
-  const notes = document.querySelectorAll('.js--content-note');
 
   // === Создание мобильного тултипа ===
   function createMobileTooltip(icon, textContent) {
-    const advancedEditor = icon.closest('.advanced-editor');
-    if (!advancedEditor) return null;
-
-    // Удаляем старый, если есть
-    const existing = advancedEditor.querySelector('.js--tooltip-mobile');
-    if (existing) existing.remove();
+    // Удаляем все существующие мобильные тултипы (ограничение: один за раз)
+    document.querySelectorAll('.js--mobile-tooltip-wrapper').forEach(el => el.remove());
 
     const background = document.createElement('div');
     background.className = 'select__background select__background-tooltip js--close-mobile-tooltip-2';
 
     const tooltip = document.createElement('span');
-    tooltip.className = 'tooltip-mobile js--tooltip-mobile'; // без .active!
+    tooltip.className = 'tooltip-mobile js--tooltip-mobile';
     tooltip.innerHTML = `
       <div class="select-list__head">
         <p>${textContent}</p>
@@ -54,27 +55,22 @@ export default function contentNote() {
     `;
 
     const wrapper = document.createElement('div');
-    wrapper.className='js--mobile-tooltip-wrapper'
+    wrapper.className = 'js--mobile-tooltip-wrapper';
     wrapper.appendChild(tooltip);
     wrapper.appendChild(background);
-    advancedEditor.appendChild(wrapper);
 
-    // Запуск анимации через RAF
+    // Вставляем в body — работает везде!
+    document.body.appendChild(wrapper);
+
+    // Запуск анимации
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         tooltip.classList.add('active');
-        background.classList.add('active')
+        background.classList.add('active');
       });
     });
 
-    // Блокировка скролла
-    // document.body.classList.add('body-modal', 'body-additional-class');
-    // document.body.style.position = 'fixed';
-    // document.body.style.top = `-${window.scrollY}px`;
-
     AddClassBody();
-
-
     return tooltip;
   }
 
