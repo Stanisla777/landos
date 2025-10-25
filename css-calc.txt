@@ -1,61 +1,72 @@
-.js--not-one-height-mobile
-.marathon-new-last__swiper-schedule-des-container.js--blocks-in-slide-one-height
+mounted() {
+    this.$nextTick(() => {
+      // Сначала создаём маску для процентной ставки
+      this.inputRate();
 
-/**
- * Выравнивает высоту блоков с классом .js--blocks-in-slide-one-height
- * внутри видимых слайдов Swiper-слайдеров.
- *
- * Если у .js--slider-construtor есть класс .js--not-one-height-mobile,
- * то на экранах < 590px выравнивание НЕ применяется.
- */
-function equalizeBlocksInSlideHeight() {
-  const sliders = document.querySelectorAll('.js--slider-construtor');
+      console.log('this.answers');
+      console.log(this.answers[0].loanTerm);
+      // После создания маски — безопасно работать с answers
+      if (this.answers.length > 0 && Object.keys(this.answers[0]).length !== 0) {
+        // Подставляем сумму кредита
+        if (this.answers[0].loanAmount) {
+          this.$refs.inputLoanAmount.value = new Intl.NumberFormat("ru-RU").format(this.answers[0].loanAmount);
+          this.fieldNotEmpty(this.$refs.inputLoanAmount);
+          this.loanAmount(this.$refs.inputLoanAmount);
+        }
 
-  sliders.forEach(sliderEl => {
-    const swiper = sliderEl.swiper;
-    if (!swiper) return;
+        // Подставляем ставку
+        if (this.answers[0].bet) {
+          const betValue = this.answers[0].bet.toString().replace(/\./g, ',');
+          this.$refs.inputPersent.value = betValue;
+          if (this.mask_interest) {
+            this.mask_interest.value = betValue;
+          }
+          this.maxPercent(this.$refs.inputPersent);
+          this.fieldNotEmpty(this.$refs.inputPersent);
+          this.i_calculation = parseFloat(this.answers[0].bet);
+        }
 
-    const disableOnMobile = sliderEl.classList.contains('js--not-one-height-mobile');
-    const isMobile = window.innerWidth < 590;
+        // Подставляем срок кредита и переключаем радиокнопки
+        if (this.answers[0].loanTerm) {
+          if (this.answers[0].term === 'month') {
+            this.$refs.switchTermMonth.click();
+          } else {
+            this.$refs.switchTermYear.click();
+          }
 
-    if (disableOnMobile && isMobile) {
-      const blocks = sliderEl.querySelectorAll('.js--blocks-in-slide-one-height');
-      blocks.forEach(block => block.style.minHeight = '');
-      return;
-    }
+          const termInput = this.$refs.fieldTermWrapper.querySelector('.js--field-term');
+          if (termInput) {
+            if (this.answers[0].term === 'month') {
+              termInput.value = this.answers[0].loanTerm;
+              this.justNumber(480, termInput);
+            } else {
+              termInput.value = parseInt(this.answers[0].loanTerm, 10) / 12;
+              this.justNumber(40, termInput);
+            }
+            this.fieldNotEmpty(termInput);
+          }
+        }
 
-    // Берём ВСЕ настоящие слайды (не дубликаты, не заглушки)
-    const realSlides = Array.from(sliderEl.querySelectorAll('.swiper-slide'))
-      .filter(slide =>
-        !slide.classList.contains('swiper-slide-duplicate') &&
-        !slide.classList.contains('swiper-slide-invisible-blank')
-      );
+        // Подставляем тип платежа
+        if (this.answers[0].paymentType && this.answers[0].paymentType === 'differentiated') {
+          this.$refs.differentiatedCheck.click();
+        }
 
-    if (realSlides.length <= 1) {
-      const blocks = sliderEl.querySelectorAll('.js--blocks-in-slide-one-height');
-      blocks.forEach(block => block.style.minHeight = '');
-      return;
-    }
+        // Обрабатываем дату получения кредита
+        if (this.answers[0].dateReceipt) {
+          let dateReceipt;
+          try {
+            dateReceipt = JSON.parse(this.answers[0].dateReceipt);
+            const time_data_loan = parseInt(dateReceipt[1], 10) * 12 + parseInt(dateReceipt[0], 10) + 1;
+            eventBus.$emit('emitTimeDataLoan', time_data_loan);
+            eventBus.$emit('emitDateLoanReceipt', dateReceipt);
+          } catch (e) {
+            console.warn('Ошибка парсинга dateReceipt:', e);
+          }
+        }
+      }
 
-    const targetBlocks = realSlides
-      .map(slide => slide.querySelector('.js--blocks-in-slide-one-height'))
-      .filter(Boolean);
-
-    if (targetBlocks.length <= 1) {
-      targetBlocks.forEach(block => block.style.minHeight = '');
-      return;
-    }
-
-    // Сброс
-    targetBlocks.forEach(block => block.style.minHeight = '');
-
-    let maxHeight = 0;
-    targetBlocks.forEach(block => {
-      maxHeight = Math.max(maxHeight, block.offsetHeight);
+      // Обязательный emit при загрузке
+      eventBus.$emit('emitMonthlyPayment', this.n_calculation);
     });
-
-    targetBlocks.forEach(block => {
-      block.style.minHeight = `${maxHeight}px`;
-    });
-  });
-}
+  },
