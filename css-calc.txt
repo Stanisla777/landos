@@ -1,7 +1,21 @@
-const today = new Date();
-const day = String(today.getDate()).padStart(2, '0');
-const month = String(today.getMonth() + 1).padStart(2, '0'); // getMonth() возвращает 0–11
-const year = today.getFullYear();
+formattedTerm() {
+      const num = this.lonTerm;
+      const unit = this.termMonthOrYaer;
 
-const formattedDate = `${day}.${month}.${year}`;
-console.log(formattedDate); // Например: 29.10.2025
+      // Словарь для перевода и склонения
+      const words = {
+        month: ['месяц', 'месяца', 'месяцев'],
+        year: ['год', 'года', 'лет']
+      };
+
+      const forms = words[unit] || ['?', '?', '?'];
+
+      // Функция склонения
+      const getForm = (n, forms) => {
+        if (n % 10 === 1 && n % 100 !== 11) return forms[0]; // 1, 21, 31...
+        if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return forms[1]; // 2–4, 22–24...
+        return forms[2]; // остальные случаи
+      };
+
+      return `${num} ${getForm(num, forms)}`;
+    }
