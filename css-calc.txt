@@ -1,60 +1,7 @@
-if (!mobileTooltipClickListenerAdded) {
-  // ←←← CLICK: ЗАКРЫТИЕ ПО КРЕСТИКУ И ПО ССЫЛКЕ
-  document.addEventListener('click', (e) => {
-    // ←←← НОВОЕ: закрытие при клике по ссылке внутри тултипа
-    const linkInTooltip = e.target.closest('.js--mobile-tooltip-wrapper a');
-    if (linkInTooltip) {
-      const wrapper = e.target.closest('.js--mobile-tooltip-wrapper');
-      if (wrapper) {
-        const tooltip = wrapper.querySelector('.js--tooltip-mobile');
-        const background = wrapper.querySelector('.select__background-tooltip');
-        if (tooltip) tooltip.classList.remove('active');
-        if (background) background.classList.remove('active');
-        setTimeout(() => {
-          if (wrapper.parentNode) wrapper.remove();
-        }, 400);
-        RemoveClassBody();
-      }
-      return; // ← ссылка работает normally
-    }
+const today = new Date();
+const day = String(today.getDate()).padStart(2, '0');
+const month = String(today.getMonth() + 1).padStart(2, '0'); // getMonth() возвращает 0–11
+const year = today.getFullYear();
 
-    // ←←← СТАРОЕ: закрытие по крестику/фону
-    if (e.target.classList.contains('js--close-mobile-tooltip-2')) {
-      const wrapper = e.target.closest('.js--mobile-tooltip-wrapper');
-      if (wrapper) {
-        const tooltip = wrapper.querySelector('.js--tooltip-mobile');
-        const background = wrapper.querySelector('.select__background-tooltip');
-        if (tooltip) tooltip.classList.remove('active');
-        if (background) background.classList.remove('active');
-        setTimeout(() => {
-          if (wrapper.parentNode) wrapper.remove();
-        }, 400);
-      } else {
-        document.querySelectorAll('.js--mobile-tooltip-wrapper').forEach(el => el.remove());
-      }
-      RemoveClassBody();
-    }
-  });
-
-  // ←←← TOUCHEND: ОТКРЫТИЕ НА ANDROID
-  document.addEventListener('touchend', (e) => {
-    const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
-      (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-    if (isIOS) return;
-
-    const icon = e.target.closest('.js--content-note');
-    if (!icon) return;
-    e.preventDefault();
-
-    const windowWidth = window.innerWidth;
-    if (windowWidth < 480 && !icon.classList.contains('js--ussual-mobile-tooltip')) {
-      const textEl = icon.querySelector('.content-note__text');
-      const textContent = (textEl && textEl.innerHTML) ? textEl.innerHTML.trim() : '';
-      if (textContent) {
-        createMobileTooltip(icon, textContent);
-      }
-    }
-  });
-
-  mobileTooltipClickListenerAdded = true;
-}
+const formattedDate = `${day}.${month}.${year}`;
+console.log(formattedDate); // Например: 29.10.2025
