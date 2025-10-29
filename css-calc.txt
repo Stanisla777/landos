@@ -1,194 +1,87 @@
-<script>
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-
-methods: {
-    //Скачать расчёт
-    downloadCalculation(){
-
-    },
-
-.btn_s.black(@click="downloadCalculation") Скачать расчет
-
-#pdf-export-content.pdf__export-content
-      // Шапка (будет клонироваться на каждую страницу)
-      .pdf__header
-        .pdf__header-col-des
-          p Калькулятор досрочного погашения ипотеки
-        .pdf__header-col-img
-          img(src="img/pdf-logo-site.svg")
-      //блок с меткой время расчёта
-      .pdf__section.pdf__section-metrika
-        p.pdf__fonr-size-16 Расчет платежей от {{currentDate}}
-        a(href="https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/").pdf__link-new-calculation Сделать новый расчет
-      .pdf__section.pdf__padding-16.pdf__section-information
-        .pdf__section-information-img
-          .pdf__section-information-img-icon
-        p.
-            Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий
-      //Данные об ипотеке
-      .pdf__section.pdf__padding-16.grey-border
-        p.pdf__section-title Данные об ипотеке
-        .pdf__row-block-mt24
-          .pdf__col-block-50
-            p.pdf__fonr-size-16.pdf__input-title Сумма кредита, ₽
-            .pdf__block-with-data-radius
-              p {{loanAmount | format_decimal}}
-          .pdf__col-block-50
-            p.pdf__fonr-size-16.pdf__input-title Дата получения
-            .pdf__block-with-data-radius
-              p {{obj_month[startMonth - 1] | capitalize}} {{startYear}}
-
-        .pdf__row-block-mt24
-          .pdf__col-block-50
-            p.pdf__fonr-size-16.pdf__input-title Ставка, %
-            .pdf__block-with-data-radius
-              p {{annualInterestRate | replace_point}}
-          .pdf__col-block-50
-            p.pdf__fonr-size-16.pdf__input-title Срок кредита
-            .pdf__block-with-data-radius
-              p {{formattedTerm}}
-
-        .pdf__row-block-mt24
-          p.pdf__fonr-size-16.pdf__payment-type Тип платежа: <span>{{state.payment_type==='annuity'?'Аннуитетный':'Дифференцированный'}}</span>
-
-
-
-
-.pdf{
-  &__export-content{
-    box-sizing: border-box;
-    width: 595px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    row-gap:16px;
-  }
-  &__header{
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-  }
-  &__header-col-des{
-    width: 250px;
-    font-family: $ff-semi-bold;
-    font-size: 22px;
-    line-height: 127%;
-    color: #252628;
-    p{
-      font-family: inherit;
-      font-size: inherit;
-      line-height: inherit;
-      color: inherit;
-    }
-  }
-  &__section{
-    //margin-top: 16px;
-    &.grey-border{
-      border: 1px solid #c8c8cb;
-      border-radius: 8px;
-    }
-
-  }
-  &__section-metrika{
-    display: flex;
-    column-gap: 20px;
-    justify-content: space-between;
-    align-items: center;
-  }
-  &__fonr-size-16{
-    font-family: $ff-semi-bold;
-    font-size: 16px;
-    line-height: 125%;
-    color: #252628;
-  }
-  &__link-new-calculation{
-    font-family: $ff-semi-bold;
-    font-size: 14px;
-    line-height: 143%;
-    color: #252628;
-    @include underline-link(3px);
-  }
-  &__padding-16{
-    padding: 16px;
-  }
-  &__section-information{
-    border-radius: 8px;
-    background-color: #f4f4f4;
-    display: flex;
-    align-items: center;
-    column-gap:16px;
-    font-family: $ff-medium;
-    font-size: 14px;
-    line-height: 143%;
-    color: #252628;
-    p{
-      font-family: inherit;
-      font-size: inherit;
-      line-height: inherit;
-      color: inherit;
-    }
-  }
-  &__section-information-img{
-    flex-shrink:0;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 40px;
-    height: 40px;
-    background-color: #fff;
-  }
-  &__section-information-img-icon{
-    width: 15px;
-    height: 15px;
-    background-position: 50%;
-    background-repeat: no-repeat;
-    background-size: contain;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='15' height='15' viewBox='0 0 15 15' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M0 7.33333C0 11.3834 3.28325 14.6667 7.33333 14.6667C11.3834 14.6667 14.6667 11.3834 14.6667 7.33333C14.6667 3.28325 11.3834 0 7.33333 0C3.28325 0 0 3.28325 0 7.33333ZM13.3333 7.33335C13.3333 10.6471 10.647 13.3333 7.33333 13.3333C4.01962 13.3333 1.33333 10.6471 1.33333 7.33335C1.33333 4.01964 4.01962 1.33335 7.33333 1.33335C10.647 1.33335 13.3333 4.01964 13.3333 7.33335Z' fill='%23252628' /%3e%3cpath d='M6.66667 4.66667V7.33333C6.66667 7.70152 6.96515 8 7.33334 8C7.70153 8 8.00001 7.70152 8.00001 7.33333V4.66667C8.00001 4.29848 7.70153 4 7.33334 4C6.96515 4 6.66667 4.29848 6.66667 4.66667Z' fill='%23252628' /%3e%3cpath d='M6.86194 9.80473C7.12229 10.0651 7.5444 10.0651 7.80475 9.80473C8.0651 9.54438 8.0651 9.12226 7.80475 8.86191C7.5444 8.60156 7.12229 8.60156 6.86194 8.86191C6.60159 9.12226 6.60159 9.54438 6.86194 9.80473Z' fill='%23252628' /%3e%3c/svg%3e");
-  }
-  &__section-title{
-    font-family: $ff-semi-bold;
-    font-size: 20px;
-    line-height: 120%;
-    color: #252628;
-  }
-  &__row-block-mt24{
-    margin-top: 24px;
-    display: flex;
-    column-gap:24px;
-  }
-  &__col-block-50{
-    width: 50%;
-  }
-  &__input-title{
-    margin-bottom: 8px;
-  }
-  &__block-with-data-radius{
-    width: 100%;
-    border: 1px solid #c8c8cb;
-    border-radius: 20px;
-    padding: 10px 20px;
-    font-family: $ff-semi-bold;
-    font-size: 14px;
-    line-height: 143%;
-    color: #252628;
-    p{
-      font-family: inherit;
-      font-size: inherit;
-      line-height:inherit;
-      color: inherit;
-    }
-  }
-  &__payment-type{
-    span{
-      font-family: $ff-medium;
-      font-size: 14px;
-      line-height: 143%;
-      color: #252628;
-    }
-  }
-
-
-
-}
+[Vue warn]: Failed to resolve async component: ()=>Promise.all(/*! import() */[s.e(3),s.e(13),s.e(21)]).then(s.bind(null,/*! ./MortgageRepaymentCalculator.vue */"./src/js/modules/calculator-dosrochnogo-mortgage-repayment/MortgageRepaymentCalculator.vue"))
+Reason: Error: Module parse failed: Unexpected token (10:13)
+File was processed with these loaders:
+ * ./node_modules/cache-loader/dist/cjs.js
+ * ./node_modules/source-map-loader/dist/cjs.js
+You may need an additional loader to handle the result of these loaders.
+| import { ColorType, CompressionMethod, DisposeOpType, FilterMethod, InterlaceMethod, BlendOpType, } from './internalTypes';
+| export default class PngDecoder extends IOBuffer {
+>     _checkCrc;
+|     _inflator;
+|     _png;
+kn @ bundle.js:1963
+(anonymous) @ bundle.js:1963
+(anonymous) @ bundle.js:1963
+Promise.then
+p @ bundle.js:1963
+jn @ bundle.js:1963
+(anonymous) @ bundle.js:1963
+ft @ bundle.js:1963
+t._c @ bundle.js:1963
+n @ bundle.js:845
+e._render @ bundle.js:1963
+n @ bundle.js:1963
+e.get @ bundle.js:1963
+e @ bundle.js:1963
+(anonymous) @ bundle.js:1963
+Qn.$mount @ bundle.js:1963
+Qn.$mount @ bundle.js:1963
+init @ bundle.js:1963
+(anonymous) @ bundle.js:1963
+f @ bundle.js:1963
+g @ bundle.js:1963
+f @ bundle.js:1963
+(anonymous) @ bundle.js:1963
+e._update @ bundle.js:1963
+n @ bundle.js:1963
+e.get @ bundle.js:1963
+e @ bundle.js:1963
+(anonymous) @ bundle.js:1963
+Qn.$mount @ bundle.js:1963
+Qn.$mount @ bundle.js:1963
+t._init @ bundle.js:1963
+Qn @ bundle.js:1963
+fn @ bundle.js:2054
+(anonymous) @ bundle.js:2054
+(anonymous) @ bundle.js:2054
+(anonymous) @ bundle.js:2054
+bundle.js:1986 [WDS] Live Reloading enabled.
+bundle.js:1986 [WDS] Errors while compiling. Reload prevented.
+errors @ bundle.js:1986
+(anonymous) @ bundle.js:1994
+sock.onmessage @ bundle.js:1982
+n.dispatchEvent @ bundle.js:1568
+(anonymous) @ bundle.js:1568
+w._transportMessage @ bundle.js:1568
+r.emit @ bundle.js:1568
+ws.onmessage @ bundle.js:1568
+bundle.js:1986 ./node_modules/fast-png/lib-esm/PngDecoder.js 10:13
+Module parse failed: Unexpected token (10:13)
+File was processed with these loaders:
+ * ./node_modules/cache-loader/dist/cjs.js
+ * ./node_modules/source-map-loader/dist/cjs.js
+You may need an additional loader to handle the result of these loaders.
+| import { ColorType, CompressionMethod, DisposeOpType, FilterMethod, InterlaceMethod, BlendOpType, } from './internalTypes';
+| export default class PngDecoder extends IOBuffer {
+>     _checkCrc;
+|     _inflator;
+|     _png;
+errors @ bundle.js:1986
+(anonymous) @ bundle.js:1994
+sock.onmessage @ bundle.js:1982
+n.dispatchEvent @ bundle.js:1568
+(anonymous) @ bundle.js:1568
+w._transportMessage @ bundle.js:1568
+r.emit @ bundle.js:1568
+ws.onmessage @ bundle.js:1568
+bundle.js:1986 ./node_modules/fast-png/lib-esm/PngEncoder.js 11:8
+Module parse failed: Unexpected token (11:8)
+File was processed with these loaders:
+ * ./node_modules/cache-loader/dist/cjs.js
+ * ./node_modules/source-map-loader/dist/cjs.js
+You may need an additional loader to handle the result of these loaders.
+| };
+| export default class PngEncoder extends IOBuffer {
+>     _png;
+|     _zlibOptions;
+|     _colorType;
