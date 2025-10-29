@@ -1,17 +1,17 @@
 async exportToPDF() {
   const el = document.getElementById('pdf-export-content');
-
   const canvas = await html2canvas(el, {
-    scale: 2,
+    scale: 1.5,        // ← уменьшите с 2 до 1.5 или 1
     useCORS: true,
-    logging: false,
-    // ВАЖНО: не используйте removeContainer: true
+    logging: false
   });
+
+  const imgData = canvas.toDataURL('image/jpeg', 0.9); // ← JPEG вместо PNG
 
   const pdf = new jsPDF('p', 'pt', 'a4');
   const imgWidth = 595;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
+  pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight); // ← 'JPEG'
   pdf.save('ipoteka-raschet.pdf');
 }
