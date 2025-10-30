@@ -1,7 +1,160 @@
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-testPDF() {
-  pdfMake.createPdf({ content: ['Тест'] }).download('test.pdf');
-}
+
+data(){
+    return {
+      placeholder:'Размер выплаты',
+      screenWidth : window.innerWidth,
+      screenHeight: window.innerHeight,
+      min_date_mobile:`${new Date().getFullYear() - 30}-01-01`,
+      max_date_mobile:`${new Date().getFullYear() + 99}-12-31`,
+
+      //для отображения блока ипотечные каникулы
+      // limit_mortgage_holidays:15000000, // ИЗ АДМИНКИ!!! лимит для ипотечных каникул, получаю его из админки(пока поставил 15000000)
+      visibility_mortgage_holidays_block:true, //если false блок с каникулами не отображать, зависит превышен или нет лимит
+      result_comparing_holidays_early:[], //массив с объектом месяца, года и id, который формируется если есть совпадения досрочки и каникул,
+      //оющий стэйт с полученными данными из блоков для расчёта
+      state:{
+        payment_type:null,
+        count:0, // чтобы понять сколько месяцев было до досрочного погашения и остановить обычную формулу расчёта
+        // просто массив с названиями месяцев
+        obj_month:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
+        obj_month_holiday:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь","январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
+        loan_registration_date: {//дата оформления кредита
+          'month':null,
+          'year':null
+        },
+        array_month:[],//массив из названий месяцев для графика платежей
+        array_payment_schedule:[], //массив графика платежей
+        array_holiday_schedule:[], //массив c месяцами и годами ипотечных каникул
+        array_final_month_massive:[],
+        n_calculation:0, // количество платежей(срок кредита)
+        n_calculation_constanta:0, // количество платежей(срок кредита)
+        n_calculation_with_holiday:0,
+        n_calculation_constanta_with_holiday:0,
+        array_n_calculation:[],
+        a_calculation:[], //массив исходных ежемесячных платежей
+        a_calculation_constanta:0, //исходный ежемесячный платеж
+        i_calculation:null, //ежемесячная процентная ставка
+        loan_amount:0, //сумма кредита
+        premaining:0, //остаток долга по кредиту(задолженность)
+        array_premaining:[], //массив с остаток долга по кредиту(задолженностями)
+        a_proc:0,//часть ежемесячного платежа, направленная на погашение процентов
+        array_interest_repayment_payments : [], //платежи на погашение процентов (погашение процентов)
+        a_ocn:null, //часть ежемесячного платежа, направленная на погашение основного долга;
+        array_main_debt_repayment_payments : [], //платежи на основоного долга(Погашение основного долга)
+        holidays_term:0, //срок каникул
+        holidays_date: {//дата начала каникул
+          'month':null,
+          'year':null
+        },
+        array_calculate_holiday:[],
+        array_holiday_schedule__2:[],
+        massive_for_obj_2:[], //массив отсроченных месяцев
+
+        //ДОСРОЧНОЕ ПОГАШЕНИЕ
+        periodicity_early_repayment:0, //передичность досрочного погашения 1-единовременно, 2 раз в месяц, 3 раз в год пока временно тут это буду засовыввать в массив ниже
+        array_early_repayment:[],//массив с досрочным погашением вида
+        array_premaining_early_repayment_term:[], //массив задолжностей (задолжность минус досрочное погашение) на весь срок, если её не было, то стоит 0
+        array_monthly_arrears:[], //массив с суммой досрочного погашения на весь срок, если её не было, то стоит 0
+        months_before_early_repayment:0,  //индекс месяца, чтобы можно было определить по его индексу, сколько было платежей до досрочки
+        monthly_payment_before_early_repayment:0,  //последний аануитентный ежемесячный платёж
+        integer_number_months:true, //целое или нет количество месяцев
+      },
+
+      //-------------------Новое-----------------
+
+      //массив месяцев, чтобы формировать названия из их порядкого номера
+      obj_month:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь","январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
+      loanAmount:0, //сумма кредита
+      loanTerm:0, // срок кредита
+      termMonthOrYear:'year',
+      annualInterestRate:0, //годовая ставка
+      startMonth:null, //месяц взфтия кредита
+      startYear:0,//год взятия кредита
+      shedule:[], //окончательный  график платежей, который будет формироваться c досрочками и ипотечными календарями
+      shedule_first:[], // график платежей, который будет формироваться без досрочек и ипотечных каникул
+
+      //КАНИКУЛЫ
+      holidays_term:0, // срок ипотечных каникул
+      holidays_date: [], // массив с началом каникул
+      holidays_date_to_send: [], // массив с началом каникул для отправки на сервер
+
+      array_holidays:[], //окончатедбный масив со всеми каникулами
+      array_early_repayment:[], // массив с досрочными погашениями
+      array_repayment_end:[],
+      array_repayment_main:[],
+      array_repayment_all_period:[],
+      array_repayment_select_period:[],
+      array_repayment_date:[],
+      array_repayment_amount:[],
+      array_repayment_selected_dates:[],
+      array_repayment_what_reduce:[],
+      array_block_requared:[],
+
+      array_early_repayment_to_send:[], // массив с досрочными погашениями
+      //ещё новенькое
+      startMortage:'',
+      startMortageDiff:'',
+      //Даныые о погашении
+      repayment_information:{
+        mortgage_closure_month:null, //Вы закроете ипотеку месяц
+        mortgage_closure_year:null, //Вы закроете ипотеку год
+        if_earlier_month:0, //Раньше на 2 месяца(если раньше)
+        monthly_payment_annuity:null,//Ежемесячный платеж для аннуитентных платежей
+        monthly_payment_min:null,//Ежемесячный платеж
+        monthly_payment_max:null,//Ежемесячный платеж
+        main_debt:0,//Основной долг:
+        percentages:0,//сумма всех Процентов
+        percentages_first:0, //сумма всех Процентов из графика платежей, который будет формироваться без досрочек и ипотечных каникул
+        principal:0,//сумма всех основной долг
+
+        pay_in_total:0,//Всего заплатите
+        savings:0//Экономия
+      },
+      result_button:[],
+      btn_status:false,
+
+      dateLoanReceipt:null,
+
+
+      flag_send_results:true,
+      answersToSand:[],
+      captcha_id:null,
+
+      answerLink:null,
+      answersId:null,
+      description_after_sand:null,
+      description_after_sand_mail:null,
+      answer_code:null,
+      mask_mail:null,
+      check_agree_advertisement:false,
+      check_agree_personal:false,
+      mail_error:false,
+      mail_fill:false,
+
+      error_mail_fill:false,
+      chek_error:false,
+      isAnimatingMobile:false,
+      isAnimatingMobileEarly:false,
+
+      not_field_information:false,
+      not_field_holidays:false,
+      not_field_early:false,
+      not_field_early_period:false,
+
+      //для pdf
+      currentDate:this.getCurrentDate()
+
+    }
+  },
+
+Пример, как получаю например сумму кредита в главной компоненте, 
+template
+          component-information-mortgage(           
+            @sendLoanAmount="receivedLoanAmount"
+          )
+
+//получаю сумму кредита
+    receivedLoanAmount(data){
+      this.loanAmount = data
+    },
