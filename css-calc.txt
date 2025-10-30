@@ -1,278 +1,203 @@
-// === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (ваши фильтры) ===
-    formatDecimal(val) {
-      if (val !== undefined && val !== null) {
-        return new Intl.NumberFormat("ru-RU").format(Math.abs(val.toFixed(2)));
+лого:
+iVBORw0KGgoAAAANSUhEUgAAATgAAABgCAYAAACJ1W5EAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAy3SURBVHgB7d1ddtrWFgfwvQW4zhsdQemKcch9ifPch+AR1B2BnREkee9awSOIMwKTEcQdQFfoCOK81BjIijKC6z4l14DO3VuAkYRA4ts6/f/WahxAPhZK+ft8i2kB+/uVY0NUn3mQoXq73XwefbpcrnwgpiqtQbvVZFqR8n7lXL6czDrGeHTY6TQb6yxjG07/pBo79Dr6vLNDpd9/oa8EkBEOzSlVuGVcmmDaRBkAsJy5Ag7htrkyAGB5qQMO4ba5MgBgNVIFHMJtc2UAwOrkkw5IDje+ka7yIi3LzBGgzEcr+ZlDycGU/B5XUQYArNbMgEsVboYPic1HWlLciOs0MhJbWtVIbGIwGXNpHH7Hht6sswwAWL2pTdS04dZu/31JGZUmmLrd/x2yZ27WWQYArEdswCHc6C6YXNedGkzM5s2yZQDA+kwEHMKN0gcT88HSZQDA2oQCDuFGqwkmhBvAvXA3yIBwo1UF07t2+/qEAGDr/Bocwo1WF26t5gkBwL2Qtz3cSqVSceeHB+fGmKOpByHcAKzk2F5zKxR2jxBuAP9OM5ZqZT/cEiHcAKw2JeAQbikh3ADusfilWsZctNtX9oYb6VvkV8tO4zCe3RsQAGTd3BteAgBkBQIOAKyFgAMAayHgAMBaCDgAsBYCDgCshYADAGsh4ADAWgg4ALAWAg4ArIWAAwBrIeAAwFoIOACwVuKd7QGyTnd19jc+JfOEiYvMpqjPe4Zccpyv7PUa7Xbb6t1z/q0QcGCtvb1KlZleE1NVH0u4+c+b4VfWL8bIX3J6zw5XXjhtt5t1AmugiQrWqVQqpXK58oEd+jAKtxRKcuy5BN2XUqlSIrACAg6sUi7/56Dv8cc5gi2qVNihL48ePX5JkHloooI1NNyIzQdpdxYnX9Vt+M2FYfrK0vdmHC4azytJM/WZNF0Pokd7xryRkKPr66szgsxCwIEVtFna97z38tdwuBlzqdvTdzpXjWnfOwjG/jlFgk5DrlwuYwAiw9BEBSt4Hr8h7UcLPmfM23b7+mmn02zM+l69uVK7df1UhhtOo685Tr5KkFmowUHmyYDCiaHwvW813D63r+fqR+u0mrWH5cdFh80LGVxtMDmvrlvbv7Oc1CKlZpnza5ee5904jnGXrVXqQEou5x04juPXeOX9ur3e98tlb8S0rnIXhYADGxxHHrvzhttIv/utxvndi2m1vr39R+/j+uzSMsxvO5F+PR3xlUGR0uhxr8vVL1+uvkof4AvPUC3Yp+jkBo2uRae16C8D0uvlD8KMG3A6Zaaws6uvNzw5x8+tq4u0Zeo8w52d3RdSAz4hvxYdU+5+pd69pVPXbbqx5yWj13cPJBTlfR3O+pmDLgkjXRI8mNNI/CrunBFwkGmD/9EjI6ZmsqmZ1rCm0Zj2Ohv5QHG4KTwXEzMA4kh5ZlxmPt/7UYKmLrXQ6oySRtNaXktwHE4LjhH/OvXpPHF0WV53yFQHgfQ98daag/5L772hxGtyIqPTJ/v7lVqr1TyNfT/jc5hJA1X+zWUwicffE3ddCX1wkHHdrhepTfFN9ifrOslBNKbTWj7Mmrs3/CUwz5xAdVIo/PBBw2TaAeNR6/SBL0FYk/A+pyUUCg9ep/2ZqMFBpnHOCQWckVFT2ix39svahDJFmgePm8D6fiQU/nKIL3VqCxujrz2j8Ae8VCiY9xJGh9Ea1124TQTCeNrM8PETjvRj6nkUCrs6Mj3RXBw2EWOm5ETKNfSMo8HKdCLN70+LTMGRGuBr6W9N3f2AgINM48gHlxMDZ7VG/WXTXvf7vKQpSQuQ/rpXMvAxEQJaq8oVHtR0MOTuSQmj/M6ufvBrwWMl3CZqOzoA0+9+r8WFoY5GhwZsJJz0PURrxYNR63C46Sh07/bbWZqQ7Zs5Q188fLh/ZCLvLwmaqGCVcY0k2/xwm1LD0QD53L566Rl+G3xeBj9eBJuUGiw06PgflyshpAMwcX1rzWbTbbWufpNywp31zC+CD3VUNzpqPQzj2rRypT/vqZ66jk4bjw71WJqDvhcZYHlDc4qvwTEfSSdjlTYoNIqSyK/2E0AUG/qJsq/eSdF80xFfZ+fB8bgmZYr5/K42YRv+631pGoY77N00wXJ7++15YedBNVDugW5cMBpZ9ih/4oQ/f4nnq8En4ft0keki40GFYE1UmsIpmv5Tmqj+N85dhVxSKf2hCDcYkFrMjTTV7h4zmx8p4zziP9Icp2HxsPz4ncM0rmE5fn9XQ/9q2PzKwYRLObqs5UqFQ89hPP0mx3fBKeH2hBY8X1rAzg8PzqUvshQsyjPeH06kZhkHTVTINPmwhQYVDDnPKOMc03NTHxt5/8EarD+lJUAn3VJK0uQMD9YE+8ycSJ9elz7SmviDCibUHHZ1WgwzpwpLBBxkWi4XnbNmitqcogzr9fL/pTXo9zl1NxB7JhQgZoFBgWUNVqiEBxWk/+550py/IAQcZJp2YEu1rRF8zt/kcgnb3g9OJ/qmPVanjgQfe2T+uXuNwyHlFOgppS03Mpk5VGMy4XLnOd+0/AES5tCggg6QJK0rjtI+OJfWYnyhQwajXC5tiL92L+e4tIT7UgZM9U7+q949Yqpq02bKjPmZBsujzFnS0qJ1MpzTJlmq+XxS0/o12M2m8+XuyjHOVw70T0r1pyp/XlCacknKDRRsKNhk5U/yx8Ei55sOF6Nz7IZri2s0p3y71fyZNkh+3glt0OfPLf0HTfWPet/LgHg6R0uXLFFgoEqbNhJyNE/IyfHHGm7Dh7q0qDpcWvSONmg43eMsqVM+bplatzuuzbIxFxQYgHDYOZba6VlSaA/Xqx4En+vffmvcPdAaM48HIAbnW6knlev/8vDMP8krTSYGORdeW4wmKtjBOL9NPKXLgvYr50lNTp2GUC4/fiPH16MvGZO0MnIdTDFpmVRg8uz4uyR4giEzbM65oXITlnX5/ZeRpqGoB8O22/1+MZimETxfXUkxvVytUfu/PObfFt4fVKAFYSUDWEH3dNvbe/SKnYkPp7/IW3fJkP6qP6g/HnXkQT/TM533GTenyu/z2da6Vl0mtbP7Uc77VANlFDCjnTv6Hr+MnnOvS8+jxWinvH9vijF/7aqWK/Wyy9G2S4Mb9LA0d3UZVGgalgZMqBas5yLX+jR0rf3zDZer56rz8rRP1FCopumfg3xNbj3KLy7X/dulBSHgwBqdzvXZ3n6lKFWuyUEG6Zdj3Z0jts1i4p45nXe2/Rr4O4ZI0Emt5/GwxmSKg7MNn7Oeb1wTUWtxck1OI9ekNFg+5t9NLFxKhNf3Xrluy50s91r7KbUZe5xcbhTfdG9NYq1ssDpiuf340EQFq2go6VIgWnggi29Gy45oS+T8azHPTl20nxTG/jWhebeQ0kXz9HzYdxxL+9Ojy8XSlcuJ2zv572kF98PIS7rXCLamd0v1bYzU2WzY9/Tz3qPHL6XWpp3speTvkmAj8zZusfim9ftcd0z/03DtZWn6kXzj9fszQ2hEQ06ajy7x5OL7KO3L63VNqvlmuiZWyr2cr9wrl2YfeNlZYMQ0Tj62Og8bk8/7o14uwcoNawBnfse5LmEy/jZDo743f+qDMd5XnVrR7X67SBNs8iHV5t678eNv/8w6Xici9/vjvjEmJ1WTazTq7k921b4xY4p63hLCN2z8KRt/pT3nkeHoZV135ZAh1SrrFkmRayFlX8w712xU7nDnlKpco5+C5cqfn9j0Lzqztlk342vU7XKDErBx5Pp47uhxvxu/SSlLWxkLO7fI31lhzv+h1u30T6pJx/TELz5nh0q//2LHbh33SflR5UtwR99el0uztmCC9NAHBwDWQsABgLUQcABgrXz3NsVkO1ij71sdsQOwWR5TFADAVljJALBl/p3ADLvjx7OnnkB6CDiALeu0rn8jWAsMMgCAtfL3eXtn5v5NO2b2s261ks/Pc5Oa+6vX+3657aVBALbKR7ZSuV9Mri5/TmwBU9jxFyMfkwXy+V1dGN4gAFg5NFEBwFoIOACwFgIOAKyFgAMAa8XPg2P6i7yJG3Csl7/V8ZLM5IDESs5jFdeD/T3prRgYAciK+IDz6Et7wzfb0Lsf0ZJWcc6x57GC61EuVyh4qzUAWD80UQHAWgg4ALAWAg4ArIWAAwBrIeAAwFoIOACwFgIOAKyFgAMAayHgAMBasSsZmE3xPm+EOc26znkV18OQecLEBACbExtwhviIHTqijFnX5p2ruR4IN4BNQxMVAKyFgAMAayHgAMBaCDgAsNb92fAyhsmRG/u8nBvzmu5Eta4NL6fo9eLfIwAs795seDmPTqfZoDVZ14aXALB5aKICgLUQcABgLQQcAFgLAQcA1vo/4J9wkUX74FUAAAAASUVORK5CYII=
+
+иконка
+iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAAA5ZDbSAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAoXSURBVHgB7Z2/dxvFFsevc15rxbTPLjad/ZqE8w5yGfuRVydKDYlcPmJDUr33oAgpCKGC4IQWKdBiJ7QYrJQ2RUyD3Vmck9Q40h8g7nd31hmNdy3tamd1R57POWP5pyTrq3vvzL13ZqdoAuj1ejN8c4lHwOMijxn1eaB+ZUYNkzaPI238pm73MKampo7IcabIQVjQJYoEvUxvhLVBmyKxn1MkeIscwwmBlYXWeVylSNAZGg+w6BaPZ7hlwdskHLECG6IukUxaPJokWGxxAiv3e5PHNRqfpeahwaPpohsvBQjLY7vnPi941MkT0YuEPexNHoc9AUKPzUX3Ild8l+TG16Jo81gZl+suXWAWNuCbb2nyhTVp8LhX9mTsHJUIi/sR37ygsycuqPNAfL5LJVKKBZ9hq02jzWO5DGu2bsFn3GrTCCiy5ttkGWsW3IsSFXBH1v8Jx/mKLfkOWcKKwMolb1KUVvQMpk2WXHbhArO4EBXiBuTJQpssiFxoDGZxkV7cJi9uHgKK4vI1KpDCLJifGPLHDfIUQZ0tuUkFUIjAXlwrFCLyyAJ7ca0yssgjCazixSZ5bFJjkZ9STnILrJZCSGC4VLN1EXSRYHa9RznINYtW4mK27MW1D17jTfWaZyazBasMFSw3IE+ZwIKXs3Z65rFgpB8D8pQNEkiZK1GZBFaFA59bHh+3sxYohnbRflIlBrjot4dNaWaxYD+pkgE0+HbYXx5KYNWFEJBHCkvDuuqBLtq7ZrEM5aqHsWBYrxdXHkO56lMtWLW2bpNHMsunteQOEviQfOyVDvZFLaf9MNVFq678gDzSWVKeNpFUC/bW6xRttuILST9ItGBvvc4RpFlxogXzL2NZ5Dsi3SIxFp+w4N6b4xE8bpEYi5Nc9E3yuMoJ7fpctMpaHZLjdLtd2tnZpZ3dXXr16hXt7x9Qp9uhbqcb/ny6Mk1zs7M0PV2hhYV5WqxWaXGxyl9Pk+Mgu3VBrxmbAtcpQyJbGhB1/dFj2j/YPxYzC1euvEvXa7Xw1mHusMBfxV+YAiNrtUSOsbX1M312//PQWotglq17bfUWXb9eIwfpm2wdC+yie4ag//3fx7TLrtgGcN/fPH4UCu4Yb8VuWhe4Tg6550bzCbvjR6mueG727+xqr9A8i1TlGHu+UjmOsYjRL1++Ct8geHP8xB4gzforHK/XVlfp5s0b5BDHbloXGP3Nhe6LscX6+uNQ3CSu165RjV0rJk5ZwESs2WzSxmZyCzJEXlu7RY5w7KZ1gf8kB8qCaeIuVt+hBw8+H9mdwpLX1x8lCu2QyEcs8Fv4JBTYlbJgkrhY8nxowYWmhQCHRA7LiHGiQ3zmKn7BdWCt3z95YiU+1vk+f3y6ecIj4Dk0+bk4QKhpLPBlEkzoNpPE/a4ZznRtET9GkshFLckssoQPTljwf26t9rlKuOWkF94GeAwslfCYMR1+LlieCQfnZtM5tRUlIKFsbGzSAc9wdRBzy1ybwksg9upgeYUEi2BQQpyBBYu2XqQedbAMyhNzNzae0j/fqdLyv67wDDn7jlfE5Kqx9EL2TDiXRAu8lZCAWFtbpTzEM2Lc3/2cwnzx4H7f17ivHUtZtIIIILDYte8PxloU1pvXNetvlE6OQgTAY+M56GDpJpjQgi+SQCDCz1tbfd+r18dfqq4ZBYgDVK66+d4wJXBerAWbBQRYz/y8vSXRsCAFqnsRvBF3dnZIKHJdtBnb/i2oRmvWi3d3fyWhyBV431gaVTnXLIUFw5NITnpA4IAEghYbnbm5OZIC2nt0fjfejIKYKfVA8CyYViGp6I5eLp2u8WYUhFyBzSqOpIa4SqX/ueRddpWBWIGLRs8lO9iCkxuxAk8bVjLqWvOTj/8fCov7HbWea1qsadGS+BtFvbTiZtIVjnO6m+50OiO5abTDYhSB5PmBCSw408FaZTG/sND3NXqepWAKXJHbMN8W66LRFalzcDDaUmTUapKOmYRZMN6MgjiCwG0SiNkV+dOItdciqkkxZh1YUhLGIBT4DxIIaq/6RGvU0pyeODHXsVlAhs100YuLiySU12JjMGamC/P9rg9uNi9FzaIbRsMdcuSCN63tTUne0QCLff/9/hLh9i9bY5u1wnIRw3W+ebwe7qAQyh2xMRiYpTkwzma3r43iPp6bYHHBHgTeI8HAteqgTjyOvmS45k1j9u1AA/zeObULrU1CQe3VbHbDjHj/oLwKTlJfNjoti0qcWAIn7xzF62DRVoxmN7Mv+YMPVkupw+Ix3uN5gNmXjV5p4fyGD7HAz0kw0Ybs/m7K+IW3KTKWREmPUXZfdk5a+OCEBQP0JZsxDy/81Ws1KzEZMfe9GzcS2nZvubJXONTUve2jHAuTWlVrHA8/5Be/iO2jaacGQFzTkwilf/socOl8jjSRAYSGtWfdlIZiBvYEb6bkqR0SFzxjgcMGbl1gnCD+JTnCoCMcojXqu8dr6bm52b4jHF6/7oRWitn41ilHONjaf2yZFRa4gU90geGe/ySHgCjYeXhgqemtqFMDxsCF+CT4iThGCeU/uOwij1FCgsXR87KSj1ECrrlpE7haiJ1nWydc8T/m52l1bTXzAS7COHbPwBQYbhpnZTl9jYb4KMMwxu7vc6mwSy/ZuvWjDM9zPEbXCI40rE7OUYbggn6hjhPHCbPIDfIHkrpKg8Vd0b+R1LLTII+rnLiYdNqB4E5Ots44e2y9b5vfTGu6u0ce13iY9E1/UY7JINtFORQr5HGFVI876MJYPhbLJ9V6waDGdx+L5XOqpz1VYHVNvBZ5pNI47bqFwF9e1l2KubysugPvquXxcJjLvA+04Bg/4RLFqRMrnSy7CxHMRW5zOWNAg+Vhf3logb2rFsO9YVxzzNAuOoZdNa7m8RF5xgHi7u0sf5BHYMymEY/9BSzLpU3RrDlTmMy8w189QI0Eb3eZQNoUXWQj8xwoswXHsCXDgmHJfn1sl6HWu2nkPqODHxCd874gYZ+VvOKCkQ5h4QfGlnsvsj1W1Gucm9wuWsf1y9IKpa87Mi+FCAy8yIVSiLigMIEBi4z9MBDZT7zygQnVyG5Zp1CBgao+YXYdkCcLbR41NXktjMIFBl7kzEDU2iiz5TSsHGWonihaOB+SZxB4jZZtiAusWLCO2u90l3xcNkG8vRdfqdsW1gUG3mWfoEUjJjCGpZTTZvGPqAI1yo1nuaaM//0OtneWIS4oxYJ1lDV/Smdvg1uLSrJandIFjlGXlceaOaDJpkVRrG3RWQQZMGyT6U0eh73oTewBvUjoFz332e4JEnZsLjoN9eLUya0YjckT0otNaa5YnMAxvWgytkSR0EskkxaPZxTtMBC5OhArsI4m9lV1O66kCUREWlG0qDpOCGyi3Dhahi6r24Ds0KZI0OcU7aBvkWM4KbBJL+r0vKQGPr+obuMRJPzZEb1JurTVeE2RoPh8zwULHcRf0A1q1OL7lvMAAAAASUVORK5CYII=
+
+
+
+
+exportToPDF() {
+  // === ЛОГОТИПЫ (замените на ваши base64) ===
+  const logoBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'; // ваш логотип
+  const iconBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'; // иконка 40x40
+
+  // === ПОДКЛЮЧЕНИЕ ШРИФТОВ GILROY ===
+  const customFonts = {
+    Gilroy: {
+      normal: '...base64 Gilroy-Medium.ttf...',
+      bold: '...base64 Gilroy-SemiBold.ttf...'
+    }
+  };
+
+  const docDefinition = {
+    pageSize: 'A4',
+    pageMargins: [40, 80, 40, 40],
+
+    // ШАПКА
+    header: (currentPage) => {
+      if (currentPage === 1) {
+        return {
+          columns: [
+            {
+              stack: [
+                { text: 'Калькулятор', style: 'headerTitleLine1' },
+                { text: 'досрочного погашения', style: 'headerTitleLine2' },
+                { text: 'ипотеки', style: 'headerTitleLine1' }
+              ]
+            },
+            {
+              image: 'logo',
+              width: 100,
+              alignment: 'right'
+            }
+          ],
+          margin: [40, 20, 40, 16]
+        };
       }
-      return '';
-    },
-    capitalize(str) {
-      if (!str) return '';
-      return str.charAt(0).toUpperCase() + str.slice(1);
-    },
-    replacePoint(val) {
-      if (val == null) return '';
-      return String(val).replace('.', ',');
+      return {};
     },
 
-
-    // === ОСНОВНОЙ МЕТОД ЭКСПОРТА ===
-    exportToPDF() {
-      // === ЛОГОТИП (замените на ваш base64) ===
-      const logoBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAAAgCAYAAAD+Fz2gAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAU0SURBVHgB7VrdUeNIEO4ey8Y8HSHIBQJxL2siOKgL4EwEQATgBG4hAkMENhGsL4ArfBl4XxZjm7IuA+3TArI02z2SWDGW/4BazFpfFcijmWmp5pv+mW4hJGCa5lo+v3IFiGVuS4Czfrdzam3aDWoewBj0uh3U79m2bfoBXLFYbgcSjm57nYZl/V4GlHRfrvH9oYfmYHD9P8yIs3/hFAV8hACO/v4TGvCLw4h/6OSkA11aWDdxw0wbpZMTQycnw3QI/qeR47DmpA0OpKyStpTiP0Bw9DEaOdzfUA8S+CEmR8mX0IIMUyF0crwH2EM5uvCzQCeHZREZofmS8iQmh80mZJgJQifHcToOPANMtE6OLisjZ36IkBx0X0IOo1gssl8xYRzRiOcZOfNDhBfpvoScJCSZxzRZQSA/Q4a5ISDDQiMjaMGREbTgMGAJsbFh79LW3CWH+RsCfu5RhgMWFEunQZS2qlOq6Ao5dYVEEkKd7g0syyrDAmKpCLKs7RrF+xUZwB5nQvrdm52cgJJKX2HueB5Zpmmbk/r4XDhvXxqWxsSpRUF5IhGr/X6nFd/vdDoO9dG5zVE5RmvLHtCJ2kzOTSSNJYJsShC7nBWhthP4QfX2ttvkcZub9oEEPA9zjUVun3a7HZU2U1kWH+pKa1XfVvPhAav5fKjFccJ5fX2zInLiU5xEXhoNMoxiaMJ82db7YnJiUM7xgrWM/2ixn4wnAsoykPsgxQ4Rd8mLyeaRCaB2I5DBJR3USzTwiMaebG1tn6jHqiwLpboiuQHtGUVOAixD5HL1J+8dXU3eHTAFIrTX9cTbvhsg+kRCbtbR7VjLLMsm8/ejhzTwot+/bkXNNmncgURj1/PBpPVpU0nlJOprrFvbvCkOKChhkk3Pw1LiEL8TyT/ka5wqkxC0KHCpxM9bGg3q9XptTmlRgDBS1+IyyCSfMhGS/JdML58gPinNEO7ccWIKK6t1lmUIrCbvG2nFNh005pAuh5PGsC3nd9LvR/m30xGZvc4e/GTIIDhDgTWyAtTwLzwv5xoG+RsM6vmCKn8cTZOBUh4TmU3WBPIxH8mIlKl4WEU2JwjHbNJubq7POZTnSJFM3j/+8L6dL6y6+XyxRnPPmKhCYaXu+/Ly8d2kLJOG7eU0JTeevXNeCa+VA5wF/f4NLdwWEEnHFLUdEikKiNh8uP9WnUkI7fJ8AQdMMlt4FUBE5nBj0z4j/8UboBYOhdZt70aZPNLSPWL3Ez3zkIMEmuf4PlaFiPyQFPuO88VhP5R8nEETBvCGKJW25yp5vxRMEl3UDuf2cHjXTgYJ3j0HBj9Mkefd7SfnB4AXeQGt4RBMfS5bC1rgBvchCrff+/IYYPTC3yWlWdQXtdn3UARYbDE53A6jSpt8VbgmhnzjyqaU377CGyAZaieha7Qe4TEic+6kzZ/Ul/bcSL477h2M/hv4gncLCY3nVpufCyMO8+YBqX2TmVeHKiFe9AFILAveASiwmRpEvDYMPsXCnKBDn0OXljBETT91zwvEVS6TvwuC3gLRQRVdCfJi2mAKJf+i/yNJxbSvgKiW/oFkVvjrHcqP/DcqS51HTMgwERFB0p3lewEKH03guF9D2lxlOhEqTM6Y/j+o34QME5EV7BYcGUELjtgHrZHJuZo+nP3PaIY0dW5kvtjXKHM20p8uK8NTxD5oLaxTTMOYBZ0810z3NRk5syAuN6iPDWefFqZCwrTIGMErWKHEYo1rK77HRax0xCmNDOl4rKg+J2k5aU5cR6FEpPszE6K/Gr4DDAuXHcb4g8YAAAAASUVORK5CYII='; // ← ВАША СТРОКА СЮДА
-
-      const docDefinition = {
-        pageSize: 'A4',
-        pageMargins: [40, 80, 40, 40], // left, top, right, bottom (pt)
-
-        // ШАПКА ТОЛЬКО НА ПЕРВОЙ СТРАНИЦЕ
-        header: (currentPage) => {
-          if (currentPage === 1) {
-            return {
-              columns: [
-                {
-                  text: 'Калькулятор досрочного погашения ипотеки',
-                  style: 'headerTitle'
-                },
-                {
-                  image: 'logo',
-                  width: 100,
-                  alignment: 'right'
-                }
-              ],
-              margin: [40, 20, 40, 10]
-            };
+    content: [
+      // МЕТА-БЛОК
+      {
+        columns: [
+          { text: `Расчет платежей от ${this.currentDate}`, style: 'metaText' },
+          { 
+            text: 'Сделать новый расчет', 
+            link: 'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/',
+            style: 'link' 
           }
-          return {};
-        },
+        ],
+        margin: [0, 0, 0, 16]
+      },
 
-        content: [
-          // === МЕТА-БЛОК ===
+      // ИНФОРМАЦИОННЫЙ БЛОК С ИКОНКОЙ
+      {
+        columns: [
+          { image: 'icon', width: 40, height: 40 },
           {
-            columns: [
-              {
-                text: `Расчет платежей от ${this.currentDate}`,
-                style: 'metaText'
-              },
-              {
-                text: 'Сделать новый расчет',
-                link: 'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/',
-                style: 'link'
-              }
-            ],
-            margin: [0, 0, 0, 16]
-          },
+            text: 'Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий',
+            style: 'infoText'
+          }
+        ],
+        columnGap: 16,
+        style: 'infoBlock'
+      },
 
-          // === ИНФОРМАЦИОННЫЙ БЛОК ===
-          {
-            columns: [
-              {
-                text: 'ℹ',
-                style: 'infoIcon'
-              },
-              {
-                text: 'Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий',
-                style: 'infoText'
-              }
-            ],
-            margin: [0, 0, 0, 16]
-          },
-
-          // === ДАННЫЕ ОБ ИПОТЕКЕ ===
+      // ДАННЫЕ ОБ ИПОТЕКЕ В РАМКЕ
+      {
+        stack: [
           { text: 'Данные об ипотеке', style: 'sectionTitle' },
           this.createTwoColumnBlock(
             [
-              { label: 'Сумма кредита, ₽', value: this.formatDecimal(this.loanAmount) },
-              { label: 'Ставка, %', value: this.replacePoint(this.annualInterestRate) },
-              {
-                label: 'Тип платежа',
-                value: this.state.payment_type === 'annuity' ? 'Аннуитетный' : 'Дифференцированный'
+              { label: 'Сумма кредита, ₽', value: this.$options.filters.format_decimal(this.loanAmount) },
+              { label: 'Ставка, %', value: this.$options.filters.replace_point(this.annualInterestRate) },
+              { 
+                label: 'Тип платежа', 
+                value: this.state.payment_type === 'annuity' ? 'Аннуитетный' : 'Дифференцированный' 
               }
             ],
             [
-              {
-                label: 'Дата получения',
-                value: `${this.capitalize(this.obj_month[this.startMonth - 1])} ${this.startYear}`
+              { 
+                label: 'Дата получения', 
+                value: `${this.$options.filters.capitalize(this.obj_month[this.startMonth - 1])} ${this.startYear}` 
               },
               { label: 'Срок кредита', value: this.formattedTerm }
             ]
-          ),
+          )
+        ],
+        style: 'sectionBox'
+      },
 
-          // === ДАННЫЕ О ПОГАШЕНИИ ===
-          { text: 'Данные о погашении', style: 'sectionTitle', margin: [0, 20, 0, 8] },
+      // ДАННЫЕ О ПОГАШЕНИИ В РАМКЕ
+      {
+        stack: [
+          { text: 'Данные о погашении', style: 'sectionTitle' },
           this.createRepaymentBlock()
         ],
-
-        images: {
-          logo: logoBase64 // ← подключаем логотип
-        },
-
-        styles: {
-          headerTitle: {
-            fontSize: 16,
-            bold: true,
-            color: '#252628'
-          },
-          metaText: {
-            fontSize: 12,
-            color: '#252628'
-          },
-          link: {
-            fontSize: 12,
-            color: '#252628',
-            decoration: 'underline'
-          },
-          infoIcon: {
-            fontSize: 14,
-            color: '#252628',
-            background: '#fff',
-            border: [1, 1, 1, 1],
-            borderColor: '#252628',
-            borderRadius: 20,
-            width: 20,
-            height: 20,
-            alignment: 'center',
-            margin: [0, 0, 12, 0]
-          },
-          infoText: {
-            fontSize: 12,
-            color: '#252628',
-            background: '#f4f4f4',
-            padding: [8, 6]
-          },
-          sectionTitle: {
-            fontSize: 16,
-            bold: true,
-            color: '#252628',
-            margin: [0, 16, 0, 8]
-          },
-          dataLabel: {
-            fontSize: 10,
-            bold: true,
-            color: '#6d6d6d',
-            margin: [0, 0, 0, 4]
-          },
-          dataValue: {
-            fontSize: 12,
-            color: '#252628',
-            background: '#f4f4f4',
-            padding: [6, 8],
-            margin: [0, 0, 0, 8]
-          },
-          resultLabel: {
-            fontSize: 10,
-            bold: true,
-            color: '#6d6d6d',
-            margin: [0, 0, 0, 4]
-          },
-          resultValue: {
-            fontSize: 12,
-            color: '#252628',
-            margin: [0, 0, 0, 8]
-          },
-          resultValueGreen: {
-            fontSize: 12,
-            color: '#699b12',
-            margin: [0, 2, 0, 8]
-          }
-        },
-
-        defaultStyle: {
-          font: 'Roboto',
-          fontSize: 10
-        }
-      };
-
-      pdfMake.createPdf(docDefinition).download('расчёт-ипотеки.pdf');
-    },
-
-    // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ФОРМИРОВАНИЯ БЛОКОВ ===
-    createTwoColumnBlock(leftItems, rightItems) {
-      const leftStack = leftItems.map(item => ({
-        stack: [
-          { text: item.label, style: 'dataLabel' },
-          { text: item.value, style: 'dataValue' }
-        ]
-      }));
-
-      const rightStack = rightItems.map(item => ({
-        stack: [
-          { text: item.label, style: 'dataLabel' },
-          { text: item.value, style: 'dataValue' }
-        ]
-      }));
-
-      return {
-        columns: [
-          { stack: leftStack, width: '*' },
-          { stack: rightStack, width: '*' }
-        ],
-        columnGap: 16,
-        margin: [0, 8, 0, 16]
-      };
-    },
-
-    createRepaymentBlock() {
-      const ri = this.repayment_information;
-      const hasEarly = this.array_early_repayment.length > 0;
-      const isAnnuity = this.state.payment_type === 'annuity';
-
-      // Левая колонка
-      const leftItems = [
-        { label: 'Вы закроете ипотеку', value: `${this.capitalize(ri.mortgage_closure_month)} ${ri.mortgage_closure_year} года` }
-      ];
-      if (ri.if_earlier_month > 0) {
-        leftItems.push({
-          label: '',
-          value: `Раньше на ${ri.if_earlier_month} ${this.getMonthDeclension(ri.if_earlier_month)}`,
-          style: 'resultValueGreen'
-        });
+        style: 'sectionBox',
+        margin: [0, 24, 0, 0]
       }
-      leftItems.push(
-        { label: 'Основной долг', value: `${this.formatDecimal(this.loanAmount)} ₽` },
-        { label: 'Проценты', value: `${this.formatDecimal(ri.percentages)} ₽` },
-        { label: 'Всего заплатите', value: `${this.formatDecimal(ri.pay_in_total)} ₽` }
-      );
+    ],
 
-      // Правая колонка
-      let paymentText = '';
-      if (hasEarly) {
-        if (ri.monthly_payment_min === ri.monthly_payment_max) {
-          paymentText = `${this.formatDecimal(ri.monthly_payment_min)} ₽`;
-        } else {
-          paymentText = `от ${this.formatDecimal(ri.monthly_payment_max)} до ${this.formatDecimal(ri.monthly_payment_min)} ₽`;
-        }
-      } else {
-        if (isAnnuity) {
-          paymentText = `${this.formatDecimal(ri.monthly_payment_annuity)} ₽`;
-        } else {
-          paymentText = `от ${this.formatDecimal(ri.monthly_payment_max)} до ${this.formatDecimal(ri.monthly_payment_min)} ₽`;
-        }
-      }
-
-      const rightItems = [
-        { label: 'Ежемесячный платеж', value: paymentText },
-        { label: 'Экономия', value: `${this.formatDecimal(ri.savings)} ₽`, style: 'resultValueGreen' }
-      ].filter(item => item.label !== 'Экономия' || hasEarly); // экономия только если есть досрочка
-
-      return {
-        columns: [
-          {
-            stack: leftItems.map(item => ({
-              stack: [
-                { text: item.label, style: item.label ? 'resultLabel' : 'resultValueGreen' },
-                { text: item.value, style: item.style || 'resultValue' }
-              ]
-            }))
-          },
-          {
-            stack: rightItems.map(item => ({
-              stack: [
-                { text: item.label, style: 'resultLabel' },
-                { text: item.value, style: item.style || 'resultValue' }
-              ]
-            }))
-          }
-        ],
-        columnGap: 16
-      };
+    images: {
+      logo: logoBase64,
+      icon: iconBase64
     },
+
+    styles: {
+      // ЗАГОЛОВОК ШАПКИ
+      headerTitleLine1: {
+        fontSize: 16,
+        bold: true,
+        color: '#252628'
+      },
+      headerTitleLine2: {
+        fontSize: 16,
+        bold: true,
+        color: '#252628' // вы можете изменить, если нужно выделить
+      },
+
+      // МЕТА-БЛОК
+      metaText: { fontSize: 12, color: '#252628' },
+      link: { fontSize: 12, color: '#252628', decoration: 'underline' },
+
+      // ИНФОРМАЦИОННЫЙ БЛОК
+      infoBlock: {
+        background: '#f4f4f4',
+        padding: [16, 16, 16, 16],
+        margin: [0, 0, 0, 16]
+      },
+      infoText: {
+        fontSize: 12,
+        color: '#252628'
+      },
+
+      // ОБЩИЕ СТИЛИ
+      sectionTitle: {
+        fontSize: 16,
+        bold: true,
+        color: '#252628',
+        margin: [0, 0, 0, 16]
+      },
+      sectionBox: {
+        border: [true, true, true, true],
+        borderColor: '#c8c8cb',
+        padding: [16, 16, 16, 16],
+        margin: [0, 0, 0, 0]
+      },
+      dataLabel: {
+        fontSize: 12,
+        bold: true,
+        color: '#6d6d6d',
+        margin: [0, 0, 0, 8]
+      },
+      dataValue: {
+        fontSize: 12,
+        color: '#252628',
+        margin: [0, 0, 0, 16] // отступ между строками = 16 + 8 = 24px
+      },
+      resultLabel: {
+        fontSize: 12,
+        bold: true,
+        color: '#6d6d6d',
+        margin: [0, 0, 0, 8]
+      },
+      resultValue: {
+        fontSize: 12,
+        color: '#252628',
+        margin: [0, 0, 0, 16]
+      },
+      resultValueGreen: {
+        fontSize: 12,
+        color: '#699b12',
+        margin: [0, 2, 0, 16]
+      }
+    },
+
+    defaultStyle: {
+      font: 'Gilroy', // или 'Roboto', если не подключаете Gilroy
+      fontSize: 10
+    }
+  };
+
+  // === ПОДКЛЮЧЕНИЕ ШРИФТОВ (если используете) ===
+  if (customFonts.Gilroy.normal) {
+    pdfMake.fonts = {
+      Gilroy: customFonts.Gilroy
+    };
+  }
+
+  pdfMake.createPdf(docDefinition).download('расчёт-ипотеки.pdf');
+},
