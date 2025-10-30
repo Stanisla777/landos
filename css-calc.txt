@@ -1,85 +1,12 @@
-createInfoBlock(text) {
-  const padding = 16;
-  const iconSize = 40;
-  // Оценим высоту блока: иконка + отступы
-  const blockHeight = iconSize + padding * 2; // ≈ 72
-
-  return {
-    stack: [
-      // Фон — рисуем, но не даём ему занимать место в потоке
-      {
-        canvas: [
-          {
-            type: 'rect',
-            x: 0,
-            y: 0,
-            w: 515,
-            h: blockHeight,
-            color: '#f4f4f4'
-          }
-        ],
-        margin: [0, 0, 0, -blockHeight] // ← поднимаем следующий элемент вверх
-      },
-      // Контент — теперь поверх фона
-      {
-        columns: [
-          {
-            width: 'auto',
-            stack: [{ image: 'icon', width: iconSize, height: iconSize }],
-            margin: [padding, padding, 16, padding]
-          },
-          {
-            width: '*',
-            stack: [{ text: text, style: 'infoText' }],
-            margin: [0, padding, padding, padding]
-          }
-        ]
-      }
-    ],
-    margin: [0, 0, 0, 16]
-  };
-}
-
-
------------------------------------------------------------
-
-createInfoBlock(text) {
-  const padding = 16;
-  const iconSize = 40;
-  const blockHeight = iconSize + padding * 2;
-
-  return {
-    stack: [
-      // Фон с абсолютной позицией — не влияет на поток
-      {
-        canvas: [
-          {
-            type: 'rect',
-            x: 0,
-            y: 0,
-            w: 515,
-            h: blockHeight,
-            color: '#f4f4f4'
-          }
-        ],
-        absolutePosition: { x: 40, y: null } // x = левый pageMargin
-      },
-      // Контент — обычный поток
-      {
-        columns: [
-          {
-            width: 'auto',
-            stack: [{ image: 'icon', width: iconSize, height: iconSize }],
-            margin: [padding, padding, 16, padding]
-          },
-          {
-            width: '*',
-            stack: [{ text: text, style: 'infoText' }],
-            margin: [0, padding, padding, padding]
-          }
-        ],
-        margin: [0, 0, 0, 16]
-      }
-    ]
-  };
-}
+columns: [
+    {
+      width: 'auto',
+      stack: [{ image: 'icon', width: 40, height: 40 }],
+      margin: [padding, (blockHeight - 40) / 2, 16, (blockHeight - 40) / 2]
+    },
+    {
+      width: '*',
+      stack: [{ text: text, style: 'infoText' }],
+      margin: [0, (blockHeight - 40) / 2, padding, (blockHeight - 40) / 2]
+    }
+  ]
