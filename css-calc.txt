@@ -1,160 +1,288 @@
-
-
-data(){
-    return {
-      placeholder:'Размер выплаты',
-      screenWidth : window.innerWidth,
-      screenHeight: window.innerHeight,
-      min_date_mobile:`${new Date().getFullYear() - 30}-01-01`,
-      max_date_mobile:`${new Date().getFullYear() + 99}-12-31`,
-
-      //для отображения блока ипотечные каникулы
-      // limit_mortgage_holidays:15000000, // ИЗ АДМИНКИ!!! лимит для ипотечных каникул, получаю его из админки(пока поставил 15000000)
-      visibility_mortgage_holidays_block:true, //если false блок с каникулами не отображать, зависит превышен или нет лимит
-      result_comparing_holidays_early:[], //массив с объектом месяца, года и id, который формируется если есть совпадения досрочки и каникул,
-      //оющий стэйт с полученными данными из блоков для расчёта
-      state:{
-        payment_type:null,
-        count:0, // чтобы понять сколько месяцев было до досрочного погашения и остановить обычную формулу расчёта
-        // просто массив с названиями месяцев
-        obj_month:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
-        obj_month_holiday:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь","январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
-        loan_registration_date: {//дата оформления кредита
-          'month':null,
-          'year':null
-        },
-        array_month:[],//массив из названий месяцев для графика платежей
-        array_payment_schedule:[], //массив графика платежей
-        array_holiday_schedule:[], //массив c месяцами и годами ипотечных каникул
-        array_final_month_massive:[],
-        n_calculation:0, // количество платежей(срок кредита)
-        n_calculation_constanta:0, // количество платежей(срок кредита)
-        n_calculation_with_holiday:0,
-        n_calculation_constanta_with_holiday:0,
-        array_n_calculation:[],
-        a_calculation:[], //массив исходных ежемесячных платежей
-        a_calculation_constanta:0, //исходный ежемесячный платеж
-        i_calculation:null, //ежемесячная процентная ставка
-        loan_amount:0, //сумма кредита
-        premaining:0, //остаток долга по кредиту(задолженность)
-        array_premaining:[], //массив с остаток долга по кредиту(задолженностями)
-        a_proc:0,//часть ежемесячного платежа, направленная на погашение процентов
-        array_interest_repayment_payments : [], //платежи на погашение процентов (погашение процентов)
-        a_ocn:null, //часть ежемесячного платежа, направленная на погашение основного долга;
-        array_main_debt_repayment_payments : [], //платежи на основоного долга(Погашение основного долга)
-        holidays_term:0, //срок каникул
-        holidays_date: {//дата начала каникул
-          'month':null,
-          'year':null
-        },
-        array_calculate_holiday:[],
-        array_holiday_schedule__2:[],
-        massive_for_obj_2:[], //массив отсроченных месяцев
-
-        //ДОСРОЧНОЕ ПОГАШЕНИЕ
-        periodicity_early_repayment:0, //передичность досрочного погашения 1-единовременно, 2 раз в месяц, 3 раз в год пока временно тут это буду засовыввать в массив ниже
-        array_early_repayment:[],//массив с досрочным погашением вида
-        array_premaining_early_repayment_term:[], //массив задолжностей (задолжность минус досрочное погашение) на весь срок, если её не было, то стоит 0
-        array_monthly_arrears:[], //массив с суммой досрочного погашения на весь срок, если её не было, то стоит 0
-        months_before_early_repayment:0,  //индекс месяца, чтобы можно было определить по его индексу, сколько было платежей до досрочки
-        monthly_payment_before_early_repayment:0,  //последний аануитентный ежемесячный платёж
-        integer_number_months:true, //целое или нет количество месяцев
-      },
-
-      //-------------------Новое-----------------
-
-      //массив месяцев, чтобы формировать названия из их порядкого номера
-      obj_month:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь","январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
-      loanAmount:0, //сумма кредита
-      loanTerm:0, // срок кредита
-      termMonthOrYear:'year',
-      annualInterestRate:0, //годовая ставка
-      startMonth:null, //месяц взфтия кредита
-      startYear:0,//год взятия кредита
-      shedule:[], //окончательный  график платежей, который будет формироваться c досрочками и ипотечными календарями
-      shedule_first:[], // график платежей, который будет формироваться без досрочек и ипотечных каникул
-
-      //КАНИКУЛЫ
-      holidays_term:0, // срок ипотечных каникул
-      holidays_date: [], // массив с началом каникул
-      holidays_date_to_send: [], // массив с началом каникул для отправки на сервер
-
-      array_holidays:[], //окончатедбный масив со всеми каникулами
-      array_early_repayment:[], // массив с досрочными погашениями
-      array_repayment_end:[],
-      array_repayment_main:[],
-      array_repayment_all_period:[],
-      array_repayment_select_period:[],
-      array_repayment_date:[],
-      array_repayment_amount:[],
-      array_repayment_selected_dates:[],
-      array_repayment_what_reduce:[],
-      array_block_requared:[],
-
-      array_early_repayment_to_send:[], // массив с досрочными погашениями
-      //ещё новенькое
-      startMortage:'',
-      startMortageDiff:'',
-      //Даныые о погашении
-      repayment_information:{
-        mortgage_closure_month:null, //Вы закроете ипотеку месяц
-        mortgage_closure_year:null, //Вы закроете ипотеку год
-        if_earlier_month:0, //Раньше на 2 месяца(если раньше)
-        monthly_payment_annuity:null,//Ежемесячный платеж для аннуитентных платежей
-        monthly_payment_min:null,//Ежемесячный платеж
-        monthly_payment_max:null,//Ежемесячный платеж
-        main_debt:0,//Основной долг:
-        percentages:0,//сумма всех Процентов
-        percentages_first:0, //сумма всех Процентов из графика платежей, который будет формироваться без досрочек и ипотечных каникул
-        principal:0,//сумма всех основной долг
-
-        pay_in_total:0,//Всего заплатите
-        savings:0//Экономия
-      },
-      result_button:[],
-      btn_status:false,
-
-      dateLoanReceipt:null,
-
-
-      flag_send_results:true,
-      answersToSand:[],
-      captcha_id:null,
-
-      answerLink:null,
-      answersId:null,
-      description_after_sand:null,
-      description_after_sand_mail:null,
-      answer_code:null,
-      mask_mail:null,
-      check_agree_advertisement:false,
-      check_agree_personal:false,
-      mail_error:false,
-      mail_fill:false,
-
-      error_mail_fill:false,
-      chek_error:false,
-      isAnimatingMobile:false,
-      isAnimatingMobileEarly:false,
-
-      not_field_information:false,
-      not_field_holidays:false,
-      not_field_early:false,
-      not_field_early_period:false,
-
-      //для pdf
-      currentDate:this.getCurrentDate()
-
+methods: {
+  // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (ваши фильтры) ===
+  formatDecimal(val) {
+    if (val !== undefined && val !== null) {
+      return new Intl.NumberFormat("ru-RU").format(Math.abs(val.toFixed(2)));
     }
+    return '';
+  },
+  capitalize(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  },
+  replacePoint(val) {
+    if (val == null) return '';
+    return String(val).replace('.', ',');
+  },
+  getMonthDeclension(months) {
+    // Пример: 1 месяц, 2 месяца, 5 месяцев
+    const mod10 = months % 10;
+    const mod100 = months % 100;
+    if (mod100 >= 11 && mod100 <= 19) return 'месяцев';
+    if (mod10 === 1) return 'месяц';
+    if (mod10 >= 2 && mod10 <= 4) return 'месяца';
+    return 'месяцев';
   },
 
-Пример, как получаю например сумму кредита в главной компоненте, 
-template
-          component-information-mortgage(           
-            @sendLoanAmount="receivedLoanAmount"
-          )
+  // === ОСНОВНОЙ МЕТОД ЭКСПОРТА ===
+  exportToPDF() {
+    // === ЛОГОТИП (замените на ваш base64) ===
+    const logoBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'; // ← ВАША СТРОКА СЮДА
 
-//получаю сумму кредита
-    receivedLoanAmount(data){
-      this.loanAmount = data
-    },
+    const docDefinition = {
+      pageSize: 'A4',
+      pageMargins: [40, 80, 40, 40], // left, top, right, bottom (pt)
+
+      // ШАПКА ТОЛЬКО НА ПЕРВОЙ СТРАНИЦЕ
+      header: (currentPage) => {
+        if (currentPage === 1) {
+          return {
+            columns: [
+              {
+                text: 'Калькулятор досрочного погашения ипотеки',
+                style: 'headerTitle'
+              },
+              {
+                image: 'logo',
+                width: 100,
+                alignment: 'right'
+              }
+            ],
+            margin: [40, 20, 40, 10]
+          };
+        }
+        return {};
+      },
+
+      content: [
+        // === МЕТА-БЛОК ===
+        {
+          columns: [
+            {
+              text: `Расчет платежей от ${this.currentDate}`,
+              style: 'metaText'
+            },
+            {
+              text: 'Сделать новый расчет',
+              link: 'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/',
+              style: 'link'
+            }
+          ],
+          margin: [0, 0, 0, 16]
+        },
+
+        // === ИНФОРМАЦИОННЫЙ БЛОК ===
+        {
+          columns: [
+            {
+              text: 'ℹ',
+              style: 'infoIcon'
+            },
+            {
+              text: 'Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий',
+              style: 'infoText'
+            }
+          ],
+          margin: [0, 0, 0, 16]
+        },
+
+        // === ДАННЫЕ ОБ ИПОТЕКЕ ===
+        { text: 'Данные об ипотеке', style: 'sectionTitle' },
+        this.createTwoColumnBlock(
+          [
+            { label: 'Сумма кредита, ₽', value: this.formatDecimal(this.loanAmount) },
+            { label: 'Ставка, %', value: this.replacePoint(this.annualInterestRate) },
+            { 
+              label: 'Тип платежа', 
+              value: this.state.payment_type === 'annuity' ? 'Аннуитетный' : 'Дифференцированный' 
+            }
+          ],
+          [
+            { 
+              label: 'Дата получения', 
+              value: `${this.capitalize(this.obj_month[this.startMonth - 1])} ${this.startYear}` 
+            },
+            { label: 'Срок кредита', value: this.formattedTerm }
+          ]
+        ),
+
+        // === ДАННЫЕ О ПОГАШЕНИИ ===
+        { text: 'Данные о погашении', style: 'sectionTitle', margin: [0, 20, 0, 8] },
+        this.createRepaymentBlock()
+      ],
+
+      images: {
+        logo: logoBase64 // ← подключаем логотип
+      },
+
+      styles: {
+        headerTitle: {
+          fontSize: 16,
+          bold: true,
+          color: '#252628'
+        },
+        metaText: {
+          fontSize: 12,
+          color: '#252628'
+        },
+        link: {
+          fontSize: 12,
+          color: '#252628',
+          decoration: 'underline'
+        },
+        infoIcon: {
+          fontSize: 14,
+          color: '#252628',
+          background: '#fff',
+          border: [1, 1, 1, 1],
+          borderColor: '#252628',
+          borderRadius: 20,
+          width: 20,
+          height: 20,
+          alignment: 'center',
+          margin: [0, 0, 12, 0]
+        },
+        infoText: {
+          fontSize: 12,
+          color: '#252628',
+          background: '#f4f4f4',
+          padding: [8, 6]
+        },
+        sectionTitle: {
+          fontSize: 16,
+          bold: true,
+          color: '#252628',
+          margin: [0, 16, 0, 8]
+        },
+        dataLabel: {
+          fontSize: 10,
+          bold: true,
+          color: '#6d6d6d',
+          margin: [0, 0, 0, 4]
+        },
+        dataValue: {
+          fontSize: 12,
+          color: '#252628',
+          background: '#f4f4f4',
+          padding: [6, 8],
+          margin: [0, 0, 0, 8]
+        },
+        resultLabel: {
+          fontSize: 10,
+          bold: true,
+          color: '#6d6d6d',
+          margin: [0, 0, 0, 4]
+        },
+        resultValue: {
+          fontSize: 12,
+          color: '#252628',
+          margin: [0, 0, 0, 8]
+        },
+        resultValueGreen: {
+          fontSize: 12,
+          color: '#699b12',
+          margin: [0, 2, 0, 8]
+        }
+      },
+
+      defaultStyle: {
+        font: 'Roboto',
+        fontSize: 10
+      }
+    };
+
+    pdfMake.createPdf(docDefinition).download('расчёт-ипотеки.pdf');
+  },
+
+  // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ФОРМИРОВАНИЯ БЛОКОВ ===
+  createTwoColumnBlock(leftItems, rightItems) {
+    const leftStack = leftItems.map(item => ({
+      stack: [
+        { text: item.label, style: 'dataLabel' },
+        { text: item.value, style: 'dataValue' }
+      ]
+    }));
+
+    const rightStack = rightItems.map(item => ({
+      stack: [
+        { text: item.label, style: 'dataLabel' },
+        { text: item.value, style: 'dataValue' }
+      ]
+    }));
+
+    return {
+      columns: [
+        { stack: leftStack, width: '*' },
+        { stack: rightStack, width: '*' }
+      ],
+      columnGap: 16,
+      margin: [0, 8, 0, 16]
+    };
+  },
+
+  createRepaymentBlock() {
+    const ri = this.repayment_information;
+    const hasEarly = this.array_early_repayment.length > 0;
+    const isAnnuity = this.state.payment_type === 'annuity';
+
+    // Левая колонка
+    const leftItems = [
+      { label: 'Вы закроете ипотеку', value: `${this.capitalize(ri.mortgage_closure_month)} ${ri.mortgage_closure_year} года` }
+    ];
+    if (ri.if_earlier_month > 0) {
+      leftItems.push({
+        label: '',
+        value: `Раньше на ${ri.if_earlier_month} ${this.getMonthDeclension(ri.if_earlier_month)}`,
+        style: 'resultValueGreen'
+      });
+    }
+    leftItems.push(
+      { label: 'Основной долг', value: `${this.formatDecimal(this.loanAmount)} ₽` },
+      { label: 'Проценты', value: `${this.formatDecimal(ri.percentages)} ₽` },
+      { label: 'Всего заплатите', value: `${this.formatDecimal(ri.pay_in_total)} ₽` }
+    );
+
+    // Правая колонка
+    let paymentText = '';
+    if (hasEarly) {
+      if (ri.monthly_payment_min === ri.monthly_payment_max) {
+        paymentText = `${this.formatDecimal(ri.monthly_payment_min)} ₽`;
+      } else {
+        paymentText = `от ${this.formatDecimal(ri.monthly_payment_max)} до ${this.formatDecimal(ri.monthly_payment_min)} ₽`;
+      }
+    } else {
+      if (isAnnuity) {
+        paymentText = `${this.formatDecimal(ri.monthly_payment_annuity)} ₽`;
+      } else {
+        paymentText = `от ${this.formatDecimal(ri.monthly_payment_max)} до ${this.formatDecimal(ri.monthly_payment_min)} ₽`;
+      }
+    }
+
+    const rightItems = [
+      { label: 'Ежемесячный платеж', value: paymentText },
+      { label: 'Экономия', value: `${this.formatDecimal(ri.savings)} ₽`, style: 'resultValueGreen' }
+    ].filter(item => item.label !== 'Экономия' || hasEarly); // экономия только если есть досрочка
+
+    return {
+      columns: [
+        {
+          stack: leftItems.map(item => ({
+            stack: [
+              { text: item.label, style: item.label ? 'resultLabel' : 'resultValueGreen' },
+              { text: item.value, style: item.style || 'resultValue' }
+            ]
+          }))
+        },
+        {
+          stack: rightItems.map(item => ({
+            stack: [
+              { text: item.label, style: 'resultLabel' },
+              { text: item.value, style: item.style || 'resultValue' }
+            ]
+          }))
+        }
+      ],
+      columnGap: 16
+    };
+  }
+}
