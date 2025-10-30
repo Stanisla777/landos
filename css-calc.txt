@@ -1,10 +1,41 @@
-// В content замените блок на:
-{
-  table: {
-    body: [[ 'ТЕСТ ФОНА' ]],
-    widths: ['*'],
-    layout: {
-      fillColor: '#00ff00'
-    }
-  }
+createInfoBlock(text) {
+  const padding = 16;
+  const iconSize = 40;
+  const lineHeight = 14;
+  const textLines = 2; // оценка: текст занимает ~2 строки
+  const blockHeight = iconSize + padding * 2; // ≈ 72
+
+  return {
+    stack: [
+      // Фон через canvas
+      {
+        canvas: [
+          {
+            type: 'rect',
+            x: 0,
+            y: 0,
+            w: 515, // 595 - 40 - 40
+            h: blockHeight,
+            color: '#f4f4f4'
+          }
+        ]
+      },
+      // Контент поверх фона
+      {
+        columns: [
+          {
+            width: 'auto',
+            stack: [{ image: 'icon', width: iconSize, height: iconSize }],
+            margin: [padding, padding, 16, padding]
+          },
+          {
+            width: '*',
+            stack: [{ text: text, style: 'infoText' }],
+            margin: [0, padding, padding, padding]
+          }
+        ]
+      }
+    ],
+    margin: [0, 0, 0, 16]
+  };
 }
