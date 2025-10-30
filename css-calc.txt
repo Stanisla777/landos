@@ -1,1 +1,278 @@
-iVBORw0KGgoAAAANSUhEUgAAAGgAAAAgCAYAAAD+Fz2gAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAU0SURBVHgB7VrdUeNIEO4ey8Y8HSHIBQJxL2siOKgL4EwEQATgBG4hAkMENhGsL4ArfBl4XxZjm7IuA+3TArI02z2SWDGW/4BazFpfFcijmWmp5pv+mW4hJGCa5lo+v3IFiGVuS4Czfrdzam3aDWoewBj0uh3U79m2bfoBXLFYbgcSjm57nYZl/V4GlHRfrvH9oYfmYHD9P8yIs3/hFAV8hACO/v4TGvCLw4h/6OSkA11aWDdxw0wbpZMTQycnw3QI/qeR47DmpA0OpKyStpTiP0Bw9DEaOdzfUA8S+CEmR8mX0IIMUyF0crwH2EM5uvCzQCeHZREZofmS8iQmh80mZJgJQifHcToOPANMtE6OLisjZ36IkBx0X0IOo1gssl8xYRzRiOcZOfNDhBfpvoScJCSZxzRZQSA/Q4a5ISDDQiMjaMGREbTgMGAJsbFh79LW3CWH+RsCfu5RhgMWFEunQZS2qlOq6Ao5dYVEEkKd7g0syyrDAmKpCLKs7RrF+xUZwB5nQvrdm52cgJJKX2HueB5Zpmmbk/r4XDhvXxqWxsSpRUF5IhGr/X6nFd/vdDoO9dG5zVE5RmvLHtCJ2kzOTSSNJYJsShC7nBWhthP4QfX2ttvkcZub9oEEPA9zjUVun3a7HZU2U1kWH+pKa1XfVvPhAav5fKjFccJ5fX2zInLiU5xEXhoNMoxiaMJ82db7YnJiUM7xgrWM/2ixn4wnAsoykPsgxQ4Rd8mLyeaRCaB2I5DBJR3USzTwiMaebG1tn6jHqiwLpboiuQHtGUVOAixD5HL1J+8dXU3eHTAFIrTX9cTbvhsg+kRCbtbR7VjLLMsm8/ejhzTwot+/bkXNNmncgURj1/PBpPVpU0nlJOprrFvbvCkOKChhkk3Pw1LiEL8TyT/ka5wqkxC0KHCpxM9bGg3q9XptTmlRgDBS1+IyyCSfMhGS/JdML58gPinNEO7ccWIKK6t1lmUIrCbvG2nFNh005pAuh5PGsC3nd9LvR/m30xGZvc4e/GTIIDhDgTWyAtTwLzwv5xoG+RsM6vmCKn8cTZOBUh4TmU3WBPIxH8mIlKl4WEU2JwjHbNJubq7POZTnSJFM3j/+8L6dL6y6+XyxRnPPmKhCYaXu+/Ly8d2kLJOG7eU0JTeevXNeCa+VA5wF/f4NLdwWEEnHFLUdEikKiNh8uP9WnUkI7fJ8AQdMMlt4FUBE5nBj0z4j/8UboBYOhdZt70aZPNLSPWL3Ez3zkIMEmuf4PlaFiPyQFPuO88VhP5R8nEETBvCGKJW25yp5vxRMEl3UDuf2cHjXTgYJ3j0HBj9Mkefd7SfnB4AXeQGt4RBMfS5bC1rgBvchCrff+/IYYPTC3yWlWdQXtdn3UARYbDE53A6jSpt8VbgmhnzjyqaU377CGyAZaieha7Qe4TEic+6kzZ/Ul/bcSL477h2M/hv4gncLCY3nVpufCyMO8+YBqX2TmVeHKiFe9AFILAveASiwmRpEvDYMPsXCnKBDn0OXljBETT91zwvEVS6TvwuC3gLRQRVdCfJi2mAKJf+i/yNJxbSvgKiW/oFkVvjrHcqP/DcqS51HTMgwERFB0p3lewEKH03guF9D2lxlOhEqTM6Y/j+o34QME5EV7BYcGUELjtgHrZHJuZo+nP3PaIY0dW5kvtjXKHM20p8uK8NTxD5oLaxTTMOYBZ0810z3NRk5syAuN6iPDWefFqZCwrTIGMErWKHEYo1rK77HRax0xCmNDOl4rKg+J2k5aU5cR6FEpPszE6K/Gr4DDAuXHcb4g8YAAAAASUVORK5CYII=
+// === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (ваши фильтры) ===
+    formatDecimal(val) {
+      if (val !== undefined && val !== null) {
+        return new Intl.NumberFormat("ru-RU").format(Math.abs(val.toFixed(2)));
+      }
+      return '';
+    },
+    capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+    replacePoint(val) {
+      if (val == null) return '';
+      return String(val).replace('.', ',');
+    },
+
+
+    // === ОСНОВНОЙ МЕТОД ЭКСПОРТА ===
+    exportToPDF() {
+      // === ЛОГОТИП (замените на ваш base64) ===
+      const logoBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAAAgCAYAAAD+Fz2gAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAU0SURBVHgB7VrdUeNIEO4ey8Y8HSHIBQJxL2siOKgL4EwEQATgBG4hAkMENhGsL4ArfBl4XxZjm7IuA+3TArI02z2SWDGW/4BazFpfFcijmWmp5pv+mW4hJGCa5lo+v3IFiGVuS4Czfrdzam3aDWoewBj0uh3U79m2bfoBXLFYbgcSjm57nYZl/V4GlHRfrvH9oYfmYHD9P8yIs3/hFAV8hACO/v4TGvCLw4h/6OSkA11aWDdxw0wbpZMTQycnw3QI/qeR47DmpA0OpKyStpTiP0Bw9DEaOdzfUA8S+CEmR8mX0IIMUyF0crwH2EM5uvCzQCeHZREZofmS8iQmh80mZJgJQifHcToOPANMtE6OLisjZ36IkBx0X0IOo1gssl8xYRzRiOcZOfNDhBfpvoScJCSZxzRZQSA/Q4a5ISDDQiMjaMGREbTgMGAJsbFh79LW3CWH+RsCfu5RhgMWFEunQZS2qlOq6Ao5dYVEEkKd7g0syyrDAmKpCLKs7RrF+xUZwB5nQvrdm52cgJJKX2HueB5Zpmmbk/r4XDhvXxqWxsSpRUF5IhGr/X6nFd/vdDoO9dG5zVE5RmvLHtCJ2kzOTSSNJYJsShC7nBWhthP4QfX2ttvkcZub9oEEPA9zjUVun3a7HZU2U1kWH+pKa1XfVvPhAav5fKjFccJ5fX2zInLiU5xEXhoNMoxiaMJ82db7YnJiUM7xgrWM/2ixn4wnAsoykPsgxQ4Rd8mLyeaRCaB2I5DBJR3USzTwiMaebG1tn6jHqiwLpboiuQHtGUVOAixD5HL1J+8dXU3eHTAFIrTX9cTbvhsg+kRCbtbR7VjLLMsm8/ejhzTwot+/bkXNNmncgURj1/PBpPVpU0nlJOprrFvbvCkOKChhkk3Pw1LiEL8TyT/ka5wqkxC0KHCpxM9bGg3q9XptTmlRgDBS1+IyyCSfMhGS/JdML58gPinNEO7ccWIKK6t1lmUIrCbvG2nFNh005pAuh5PGsC3nd9LvR/m30xGZvc4e/GTIIDhDgTWyAtTwLzwv5xoG+RsM6vmCKn8cTZOBUh4TmU3WBPIxH8mIlKl4WEU2JwjHbNJubq7POZTnSJFM3j/+8L6dL6y6+XyxRnPPmKhCYaXu+/Ly8d2kLJOG7eU0JTeevXNeCa+VA5wF/f4NLdwWEEnHFLUdEikKiNh8uP9WnUkI7fJ8AQdMMlt4FUBE5nBj0z4j/8UboBYOhdZt70aZPNLSPWL3Ez3zkIMEmuf4PlaFiPyQFPuO88VhP5R8nEETBvCGKJW25yp5vxRMEl3UDuf2cHjXTgYJ3j0HBj9Mkefd7SfnB4AXeQGt4RBMfS5bC1rgBvchCrff+/IYYPTC3yWlWdQXtdn3UARYbDE53A6jSpt8VbgmhnzjyqaU377CGyAZaieha7Qe4TEic+6kzZ/Ul/bcSL477h2M/hv4gncLCY3nVpufCyMO8+YBqX2TmVeHKiFe9AFILAveASiwmRpEvDYMPsXCnKBDn0OXljBETT91zwvEVS6TvwuC3gLRQRVdCfJi2mAKJf+i/yNJxbSvgKiW/oFkVvjrHcqP/DcqS51HTMgwERFB0p3lewEKH03guF9D2lxlOhEqTM6Y/j+o34QME5EV7BYcGUELjtgHrZHJuZo+nP3PaIY0dW5kvtjXKHM20p8uK8NTxD5oLaxTTMOYBZ0810z3NRk5syAuN6iPDWefFqZCwrTIGMErWKHEYo1rK77HRax0xCmNDOl4rKg+J2k5aU5cR6FEpPszE6K/Gr4DDAuXHcb4g8YAAAAASUVORK5CYII='; // ← ВАША СТРОКА СЮДА
+
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [40, 80, 40, 40], // left, top, right, bottom (pt)
+
+        // ШАПКА ТОЛЬКО НА ПЕРВОЙ СТРАНИЦЕ
+        header: (currentPage) => {
+          if (currentPage === 1) {
+            return {
+              columns: [
+                {
+                  text: 'Калькулятор досрочного погашения ипотеки',
+                  style: 'headerTitle'
+                },
+                {
+                  image: 'logo',
+                  width: 100,
+                  alignment: 'right'
+                }
+              ],
+              margin: [40, 20, 40, 10]
+            };
+          }
+          return {};
+        },
+
+        content: [
+          // === МЕТА-БЛОК ===
+          {
+            columns: [
+              {
+                text: `Расчет платежей от ${this.currentDate}`,
+                style: 'metaText'
+              },
+              {
+                text: 'Сделать новый расчет',
+                link: 'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/',
+                style: 'link'
+              }
+            ],
+            margin: [0, 0, 0, 16]
+          },
+
+          // === ИНФОРМАЦИОННЫЙ БЛОК ===
+          {
+            columns: [
+              {
+                text: 'ℹ',
+                style: 'infoIcon'
+              },
+              {
+                text: 'Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий',
+                style: 'infoText'
+              }
+            ],
+            margin: [0, 0, 0, 16]
+          },
+
+          // === ДАННЫЕ ОБ ИПОТЕКЕ ===
+          { text: 'Данные об ипотеке', style: 'sectionTitle' },
+          this.createTwoColumnBlock(
+            [
+              { label: 'Сумма кредита, ₽', value: this.formatDecimal(this.loanAmount) },
+              { label: 'Ставка, %', value: this.replacePoint(this.annualInterestRate) },
+              {
+                label: 'Тип платежа',
+                value: this.state.payment_type === 'annuity' ? 'Аннуитетный' : 'Дифференцированный'
+              }
+            ],
+            [
+              {
+                label: 'Дата получения',
+                value: `${this.capitalize(this.obj_month[this.startMonth - 1])} ${this.startYear}`
+              },
+              { label: 'Срок кредита', value: this.formattedTerm }
+            ]
+          ),
+
+          // === ДАННЫЕ О ПОГАШЕНИИ ===
+          { text: 'Данные о погашении', style: 'sectionTitle', margin: [0, 20, 0, 8] },
+          this.createRepaymentBlock()
+        ],
+
+        images: {
+          logo: logoBase64 // ← подключаем логотип
+        },
+
+        styles: {
+          headerTitle: {
+            fontSize: 16,
+            bold: true,
+            color: '#252628'
+          },
+          metaText: {
+            fontSize: 12,
+            color: '#252628'
+          },
+          link: {
+            fontSize: 12,
+            color: '#252628',
+            decoration: 'underline'
+          },
+          infoIcon: {
+            fontSize: 14,
+            color: '#252628',
+            background: '#fff',
+            border: [1, 1, 1, 1],
+            borderColor: '#252628',
+            borderRadius: 20,
+            width: 20,
+            height: 20,
+            alignment: 'center',
+            margin: [0, 0, 12, 0]
+          },
+          infoText: {
+            fontSize: 12,
+            color: '#252628',
+            background: '#f4f4f4',
+            padding: [8, 6]
+          },
+          sectionTitle: {
+            fontSize: 16,
+            bold: true,
+            color: '#252628',
+            margin: [0, 16, 0, 8]
+          },
+          dataLabel: {
+            fontSize: 10,
+            bold: true,
+            color: '#6d6d6d',
+            margin: [0, 0, 0, 4]
+          },
+          dataValue: {
+            fontSize: 12,
+            color: '#252628',
+            background: '#f4f4f4',
+            padding: [6, 8],
+            margin: [0, 0, 0, 8]
+          },
+          resultLabel: {
+            fontSize: 10,
+            bold: true,
+            color: '#6d6d6d',
+            margin: [0, 0, 0, 4]
+          },
+          resultValue: {
+            fontSize: 12,
+            color: '#252628',
+            margin: [0, 0, 0, 8]
+          },
+          resultValueGreen: {
+            fontSize: 12,
+            color: '#699b12',
+            margin: [0, 2, 0, 8]
+          }
+        },
+
+        defaultStyle: {
+          font: 'Roboto',
+          fontSize: 10
+        }
+      };
+
+      pdfMake.createPdf(docDefinition).download('расчёт-ипотеки.pdf');
+    },
+
+    // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ФОРМИРОВАНИЯ БЛОКОВ ===
+    createTwoColumnBlock(leftItems, rightItems) {
+      const leftStack = leftItems.map(item => ({
+        stack: [
+          { text: item.label, style: 'dataLabel' },
+          { text: item.value, style: 'dataValue' }
+        ]
+      }));
+
+      const rightStack = rightItems.map(item => ({
+        stack: [
+          { text: item.label, style: 'dataLabel' },
+          { text: item.value, style: 'dataValue' }
+        ]
+      }));
+
+      return {
+        columns: [
+          { stack: leftStack, width: '*' },
+          { stack: rightStack, width: '*' }
+        ],
+        columnGap: 16,
+        margin: [0, 8, 0, 16]
+      };
+    },
+
+    createRepaymentBlock() {
+      const ri = this.repayment_information;
+      const hasEarly = this.array_early_repayment.length > 0;
+      const isAnnuity = this.state.payment_type === 'annuity';
+
+      // Левая колонка
+      const leftItems = [
+        { label: 'Вы закроете ипотеку', value: `${this.capitalize(ri.mortgage_closure_month)} ${ri.mortgage_closure_year} года` }
+      ];
+      if (ri.if_earlier_month > 0) {
+        leftItems.push({
+          label: '',
+          value: `Раньше на ${ri.if_earlier_month} ${this.getMonthDeclension(ri.if_earlier_month)}`,
+          style: 'resultValueGreen'
+        });
+      }
+      leftItems.push(
+        { label: 'Основной долг', value: `${this.formatDecimal(this.loanAmount)} ₽` },
+        { label: 'Проценты', value: `${this.formatDecimal(ri.percentages)} ₽` },
+        { label: 'Всего заплатите', value: `${this.formatDecimal(ri.pay_in_total)} ₽` }
+      );
+
+      // Правая колонка
+      let paymentText = '';
+      if (hasEarly) {
+        if (ri.monthly_payment_min === ri.monthly_payment_max) {
+          paymentText = `${this.formatDecimal(ri.monthly_payment_min)} ₽`;
+        } else {
+          paymentText = `от ${this.formatDecimal(ri.monthly_payment_max)} до ${this.formatDecimal(ri.monthly_payment_min)} ₽`;
+        }
+      } else {
+        if (isAnnuity) {
+          paymentText = `${this.formatDecimal(ri.monthly_payment_annuity)} ₽`;
+        } else {
+          paymentText = `от ${this.formatDecimal(ri.monthly_payment_max)} до ${this.formatDecimal(ri.monthly_payment_min)} ₽`;
+        }
+      }
+
+      const rightItems = [
+        { label: 'Ежемесячный платеж', value: paymentText },
+        { label: 'Экономия', value: `${this.formatDecimal(ri.savings)} ₽`, style: 'resultValueGreen' }
+      ].filter(item => item.label !== 'Экономия' || hasEarly); // экономия только если есть досрочка
+
+      return {
+        columns: [
+          {
+            stack: leftItems.map(item => ({
+              stack: [
+                { text: item.label, style: item.label ? 'resultLabel' : 'resultValueGreen' },
+                { text: item.value, style: item.style || 'resultValue' }
+              ]
+            }))
+          },
+          {
+            stack: rightItems.map(item => ({
+              stack: [
+                { text: item.label, style: 'resultLabel' },
+                { text: item.value, style: item.style || 'resultValue' }
+              ]
+            }))
+          }
+        ],
+        columnGap: 16
+      };
+    },
