@@ -1,5 +1,4 @@
 exportToPDF() {
-  // Подключение шрифтов
   pdfMake.fonts = {
     Roboto: {
       normal: 'Roboto-Regular.ttf',
@@ -9,15 +8,13 @@ exportToPDF() {
     }
   };
 
-  // Ваши base64-изображения
-  const logoBase64 = 'image/png;base64,...'; // логотип 312x96
-  const iconBase64 = 'image/png;base64,...'; // иконка 120x120
+  const logoBase64 = 'image/png;base64,...'; // ваш логотип
+  const iconBase64 = 'image/png;base64,...'; // ваша иконка
 
   const docDefinition = {
     pageSize: 'A4',
     pageMargins: [40, 80, 40, 40],
 
-    // Шапка
     header: (currentPage) => {
       if (currentPage === 1) {
         return {
@@ -46,7 +43,6 @@ exportToPDF() {
     },
 
     content: [
-      // Мета-блок
       {
         columns: [
           { 
@@ -65,7 +61,6 @@ exportToPDF() {
         margin: [0, 0, 0, 16]
       },
 
-      // Информационный блок с иконкой
       {
         stack: [
           {
@@ -89,17 +84,15 @@ exportToPDF() {
         style: 'infoBlock'
       },
 
-      // Данные об ипотеке
       {
         stack: [
           { text: 'Данные об ипотеке', style: 'sectionTitle' },
           this.createMortgageBlock()
         ],
         style: 'sectionBox',
-        margin: [0, 0, 0, 16] // ← отступ 16px снизу
+        margin: [0, 0, 0, 16]
       },
 
-      // Данные о погашении
       {
         stack: [
           { text: 'Данные о погашении', style: 'sectionTitle' },
@@ -128,10 +121,16 @@ exportToPDF() {
         padding: [16, 16, 16, 16]
       },
       label: { fontSize: 12, bold: true, color: '#6d6d6d', margin: [0, 0, 0, 4] },
-      value: { fontSize: 12, color: '#252628', margin: [0, 0, 0, 12] },
-      valueNoMargin: { fontSize: 12, color: '#252628', margin: [0, 0, 0, 2] },
+      
+      // Стили для "Данные об ипотеке" (24px между рядами)
+      mortgageValue: { fontSize: 12, color: '#252628', margin: [0, 0, 0, 20] },
+      
+      // Стили для "Данные о погашении" (16px между рядами)
+      repaymentValue: { fontSize: 12, color: '#252628', margin: [0, 0, 0, 0] },
+      repaymentValueGreen: { fontSize: 12, color: '#699b12', margin: [0, 0, 0, 0] },
+      
       valueInline: { fontSize: 12, color: '#252628' },
-      valueGreen: { fontSize: 12, color: '#699b12', margin: [0, 0, 0, 12] }
+      valueNoMargin: { fontSize: 12, color: '#252628', margin: [0, 0, 0, 2] }
     },
 
     defaultStyle: {
@@ -144,9 +143,6 @@ exportToPDF() {
 },
 
 
-----------------------------------------------------------------------------------------
-
-
 createMortgageBlock() {
   return {
     columns: [
@@ -154,9 +150,9 @@ createMortgageBlock() {
         width: '*',
         stack: [
           { text: 'Сумма кредита, ₽', style: 'label' },
-          { text: this.$options.filters.format_decimal(this.loanAmount), style: 'value' },
+          { text: this.$options.filters.format_decimal(this.loanAmount), style: 'mortgageValue' },
           { text: 'Ставка, %', style: 'label' },
-          { text: this.$options.filters.replace_point(this.annualInterestRate), style: 'value' },
+          { text: this.$options.filters.replace_point(this.annualInterestRate), style: 'mortgageValue' },
           {
             text: [
               { text: 'Тип платежа: ', style: 'label' },
@@ -174,18 +170,16 @@ createMortgageBlock() {
           { text: 'Дата получения', style: 'label' },
           { 
             text: `${this.$options.filters.capitalize(this.obj_month[this.startMonth - 1])} ${this.startYear}`,
-            style: 'value' 
+            style: 'mortgageValue' 
           },
           { text: 'Срок кредита', style: 'label' },
-          { text: this.formattedTerm, style: 'value' }
+          { text: this.formattedTerm, style: 'mortgageValue' }
         ]
       }
     ],
     columnGap: 24
   };
-}
-
---------------------------------------------------------------------------------
+},
 
 
 createRepaymentBlock() {
@@ -193,7 +187,6 @@ createRepaymentBlock() {
   const hasEarly = this.array_early_repayment.length > 0;
   const isAnnuity = this.state.payment_type === 'annuity';
 
-  // Формируем текст ежемесячного платежа
   let paymentText = '';
   if (hasEarly) {
     if (ri.monthly_payment_min === ri.monthly_payment_max) {
@@ -209,18 +202,18 @@ createRepaymentBlock() {
     }
   }
 
-  // === РЯД 1 ===
+  // РЯД 1
   const leftStackRow1 = [
     { text: 'Вы закроете ипотеку', style: 'label' },
     { 
       text: `${this.$options.filters.capitalize(ri.mortgage_closure_month)} ${ri.mortgage_closure_year} года`,
-      style: ri.if_earlier_month > 0 ? 'valueNoMargin' : 'value'
+      style: ri.if_earlier_month > 0 ? 'valueNoMargin' : 'repaymentValue'
     }
   ];
   if (ri.if_earlier_month > 0) {
     leftStackRow1.push({
       text: `Раньше на ${ri.if_earlier_month} ${this.getMonthDeclension(ri.if_earlier_month)}`,
-      style: 'valueGreen'
+      style: 'repaymentValueGreen'
     });
   }
 
@@ -231,7 +224,7 @@ createRepaymentBlock() {
         width: '*', 
         stack: [
           { text: 'Ежемесячный платеж', style: 'label' },
-          { text: paymentText, style: 'value' }
+          { text: paymentText, style: 'repaymentValue' }
         ] 
       }
     ],
@@ -239,21 +232,21 @@ createRepaymentBlock() {
     margin: [0, 0, 0, 16]
   };
 
-  // === РЯД 2 ===
+  // РЯД 2
   const row2 = {
     columns: [
       {
         width: '*',
         stack: [
           { text: 'Основной долг', style: 'label' },
-          { text: `${this.$options.filters.format_decimal(this.loanAmount)} ₽`, style: 'value' }
+          { text: `${this.$options.filters.format_decimal(this.loanAmount)} ₽`, style: 'repaymentValue' }
         ]
       },
       {
         width: '*',
         stack: [
           { text: 'Проценты', style: 'label' },
-          { text: `${this.$options.filters.format_decimal(ri.percentages)} ₽`, style: 'value' }
+          { text: `${this.$options.filters.format_decimal(ri.percentages)} ₽`, style: 'repaymentValue' }
         ]
       }
     ],
@@ -261,13 +254,13 @@ createRepaymentBlock() {
     margin: [0, 0, 0, 16]
   };
 
-  // === РЯД 3 ===
+  // РЯД 3
   const row3Columns = [
     {
       width: '*',
       stack: [
         { text: 'Всего заплатите', style: 'label' },
-        { text: `${this.$options.filters.format_decimal(ri.pay_in_total)} ₽`, style: 'value' }
+        { text: `${this.$options.filters.format_decimal(ri.pay_in_total)} ₽`, style: 'repaymentValue' }
       ]
     }
   ];
@@ -276,7 +269,7 @@ createRepaymentBlock() {
       width: '*',
       stack: [
         { text: 'Экономия', style: 'label' },
-        { text: `${this.$options.filters.format_decimal(ri.savings)} ₽`, style: 'valueGreen' }
+        { text: `${this.$options.filters.format_decimal(ri.savings)} ₽`, style: 'repaymentValueGreen' }
       ]
     });
   }
