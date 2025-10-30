@@ -1,8 +1,280 @@
-pdfMake.fonts = {
-    Roboto: {
-      normal: 'Roboto-Regular.ttf',
-      bold: 'Roboto-Medium.ttf',
-      italics: 'Roboto-Italic.ttf',
-      bolditalics: 'Roboto-MediumItalic.ttf'
+#pdf-export-content.pdf__export-content(v-if = "shedule.length > 0")
+      .pdf__page-inner
+        // Шапка (будет клонироваться на каждую страницу)
+        .pdf__header
+          .pdf__header-col-des
+            p Калькулятор досрочного погашения ипотеки
+          .pdf__header-col-img
+            img(src="img/pdf-logo-site.svg")
+        //блок с меткой время расчёта
+        .pdf__section.pdf__section-metrika
+          p.pdf__font-size-16 Расчет платежей от {{currentDate}}
+          a(href="https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/").pdf__link-new-calculation Сделать новый расчет
+        .pdf__section.pdf__padding-16.pdf__section-information
+          .pdf__section-information-img
+            .pdf__section-information-img-icon
+          p.
+              Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий
+        //Данные об ипотеке
+        .pdf__section.pdf__padding-16.grey-border
+          p.pdf__section-title Данные об ипотеке
+          .pdf__row-block.mt24
+            .pdf__col-block-50
+              p.pdf__font-size-16.pdf__input-title Сумма кредита, ₽
+              .pdf__block-with-data-radius
+                p {{loanAmount | format_decimal}}
+            .pdf__col-block-50
+              p.pdf__font-size-16.pdf__input-title Дата получения
+              .pdf__block-with-data-radius
+                p {{obj_month[startMonth - 1] | capitalize}} {{startYear}}
+
+          .pdf__row-block.mt24
+            .pdf__col-block-50
+              p.pdf__font-size-16.pdf__input-title Ставка, %
+              .pdf__block-with-data-radius
+                p {{annualInterestRate | replace_point}}
+            .pdf__col-block-50
+              p.pdf__font-size-16.pdf__input-title Срок кредита
+              .pdf__block-with-data-radius
+                p {{formattedTerm}}
+
+          .pdf__row-block.mt24
+            p.pdf__font-size-16.pdf__payment-type Тип платежа: <span>{{state.payment_type==='annuity'?'Аннуитетный':'Дифференцированный'}}</span>
+        //Данные о погашении
+        .pdf__section.pdf__padding-16.grey-border
+          p.pdf__section-title Данные о погашении
+          .pdf__row-block.mt16
+            .pdf__col-block-50
+              p.pdf__result-label Вы закроете ипотеку
+              p.pdf__font-size-16 {{repayment_information.mortgage_closure_month | capitalize}} {{repayment_information.mortgage_closure_year}} года
+              p.pdf__additional-text(
+                v-if="repayment_information.if_earlier_month>0"
+              ) Раньше на {{repayment_information.if_earlier_month}} {{getMonthDeclension(repayment_information.if_earlier_month)}}
+            .pdf__col-block-50
+              p.pdf__result-label Ежемесячный платеж
+              p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length > 0 && (repayment_information.monthly_payment_min!==repayment_information.monthly_payment_max)") от {{repayment_information.monthly_payment_max | format_decimal}} до&nbsp;{{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
+              p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length > 0 && (repayment_information.monthly_payment_min===repayment_information.monthly_payment_max)") {{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
+
+              p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length === 0 && state.payment_type==='annuity'") {{repayment_information.monthly_payment_annuity | format_decimal}} ₽
+              p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length === 0 && state.payment_type==='differentiated'") от {{repayment_information.monthly_payment_max | format_decimal}} до&nbsp;{{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
+          .pdf__row-block.mt16
+            .pdf__col-block-50
+              p.pdf__result-label Основной долг
+              p.pdf__font-size-16 {{loanAmount | format_decimal}}&nbsp;₽
+            .pdf__col-block-50
+              p.pdf__result-label Проценты
+              p.pdf__font-size-16 {{repayment_information.percentages | format_decimal}}&nbsp;₽
+          .pdf__row-block.mt16
+            .pdf__col-block-50
+              p.pdf__result-label Всего заплатите
+              p.pdf__font-size-16 {{repayment_information.pay_in_total | format_decimal}}&nbsp;₽
+            .pdf__col-block-50(v-if="array_early_repayment.length > 0")
+              p.pdf__result-label Экономия
+              p.pdf__font-size-16.green {{repayment_information.savings | format_decimal}} ₽
+
+.pdf {
+  &__export-content {
+    //это после разрабтки расскоментировать, чтобы не виден был на странице
+    //position: absolute;
+    //left: -9999px;
+    //top: 0;
+    box-sizing: border-box;
+    width: 595px;
+    padding: 24px;
+
+  }
+
+  &__page-inner {
+    width: 100%;
+    max-width: 547px; // 595 - 24*2
+    margin: 0 auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    row-gap: 16px;
+  }
+
+  &__header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  &__header-col-des {
+    flex: 1;
+    max-width: calc(100% - 120px); // оставляем место под логотип (~100px + отступ)
+    font-family: $ff-semi-bold;
+    font-size: 22px;
+    line-height: 127%;
+    color: #252628;
+    p {
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      color: inherit;
+      margin: 0;
     }
-  };
+  }
+
+  &__header-col-img {
+    flex-shrink: 0;
+    width: 104px;
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  }
+
+  &__section {
+    &.grey-border {
+      border: 1px solid #c8c8cb;
+      border-radius: 8px;
+    }
+  }
+
+  &__section-metrika {
+    display: flex;
+    column-gap: 20px;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  &__font-size-16 {
+    font-family: $ff-semi-bold;
+    font-size: 16px;
+    line-height: 125%;
+    color: #252628;
+    &.green{
+      color: #699b12;
+    }
+  }
+
+  &__link-new-calculation {
+    font-family: $ff-semi-bold;
+    font-size: 14px;
+    line-height: 143%;
+    color: #252628;
+    @include underline-link(3px);
+  }
+
+  &__padding-16 {
+    padding: 16px;
+  }
+
+  &__section-information {
+    border-radius: 8px;
+    background-color: #f4f4f4;
+    display: flex;
+    align-items: center;
+    column-gap: 16px;
+    font-family: $ff-medium;
+    font-size: 14px;
+    line-height: 143%;
+    color: #252628;
+    width: 100%;
+    p {
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      color: inherit;
+      margin: 0;
+    }
+  }
+
+  &__section-information-img {
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    background-color: #fff;
+  }
+
+  &__section-information-img-icon {
+    width: 15px;
+    height: 15px;
+    background-position: 50%;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='15' height='15' viewBox='0 0 15 15' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M0 7.33333C0 11.3834 3.28325 14.6667 7.33333 14.6667C11.3834 14.6667 14.6667 11.3834 14.6667 7.33333C14.6667 3.28325 11.3834 0 7.33333 0C3.28325 0 0 3.28325 0 7.33333ZM13.3333 7.33335C13.3333 10.6471 10.647 13.3333 7.33333 13.3333C4.01962 13.3333 1.33333 10.6471 1.33333 7.33335C1.33333 4.01964 4.01962 1.33335 7.33333 1.33335C10.647 1.33335 13.3333 4.01964 13.3333 7.33335Z' fill='%23252628' /%3e%3cpath d='M6.66667 4.66667V7.33333C6.66667 7.70152 6.96515 8 7.33334 8C7.70153 8 8.00001 7.70152 8.00001 7.33333V4.66667C8.00001 4.29848 7.70153 4 7.33334 4C6.96515 4 6.66667 4.29848 6.66667 4.66667Z' fill='%23252628' /%3e%3cpath d='M6.86194 9.80473C7.12229 10.0651 7.5444 10.0651 7.80475 9.80473C8.0651 9.54438 8.0651 9.12226 7.80475 8.86191C7.5444 8.60156 7.12229 8.60156 6.86194 8.86191C6.60159 9.12226 6.60159 9.54438 6.86194 9.80473Z' fill='%23252628' /%3e%3c/svg%3e");
+  }
+
+  &__section-title {
+    font-family: $ff-semi-bold;
+    font-size: 20px;
+    line-height: 120%;
+    color: #252628;
+    margin: 0;
+  }
+
+  &__row-block {
+    display: flex;
+    column-gap: 24px;
+    width: 100%;
+    &.mt24{
+      margin-top: 24px;
+    }
+    &.mt16{
+      margin-top: 16px;
+    }
+
+  }
+
+  &__col-block-50 {
+    flex: 1; // ← КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: вместо width: 50%
+    // width: 50% — УДАЛЕНО
+  }
+
+  &__input-title {
+    margin-bottom: 8px;
+    margin-top: 0;
+  }
+
+  &__block-with-data-radius {
+    width: 100%;
+    border: 1px solid #c8c8cb;
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-family: $ff-semi-bold;
+    font-size: 14px;
+    line-height: 143%;
+    color: #252628;
+    box-sizing: border-box;
+    p {
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      color: inherit;
+      margin: 0;
+    }
+  }
+
+  &__payment-type {
+    span {
+      font-family: $ff-medium;
+      font-size: 14px;
+      line-height: 143%;
+      color: #252628;
+    }
+  }
+  &__result-label{
+    margin-bottom: 8px;
+    font-family: $ff-semi-bold;
+    font-size: 14px;
+    line-height: 143%;
+    color: #6d6d6d;
+  }
+  &__additional-text{
+    margin-top: 2px;
+    font-family: $ff-medium;
+    font-size: 12px;
+    line-height: 133%;
+    color: #699b12;
+  }
+}
+
