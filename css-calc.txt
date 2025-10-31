@@ -1,25 +1,21 @@
-createSectionBox(content) {
+createSectionBox(content, heightInPx) {
   const padding = 16;
-  const blockHeight = 180;
+  // Конвертируем пиксели в пункты (1px ≈ 0.75pt в PDF)
+  const blockHeight = heightInPx * 0.75;
   const borderWidth = 1;
   const borderColor = '#c8c8cb';
   const borderRadius = 8;
 
-  // Копируем исходный объект и добавляем margin
-  const contentWithPadding = {
-    ...content,
-    margin: [padding, padding, padding, padding]
-  };
-
   return {
     stack: [
+      // Рамка с закруглением
       {
         canvas: [
           {
             type: 'rect',
             x: 0,
             y: 0,
-            w: 515,
+            w: 515, // ширина контента: 595 - 40*2
             h: blockHeight,
             r: borderRadius,
             lineWidth: borderWidth,
@@ -28,7 +24,11 @@ createSectionBox(content) {
         ],
         margin: [0, 0, 0, -blockHeight]
       },
-      contentWithPadding
+      // Контент с отступами
+      {
+        ...content,
+        margin: [padding, padding, padding, padding]
+      }
     ],
     margin: [0, 0, 0, 16]
   };
