@@ -1,1 +1,48 @@
-iVBORw0KGgoAAAANSUhEUgAAAC0AAAAtCAYAAAA6GuKaAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAVFSURBVHgBzVk/UxtXEN99d/LgmZARCHvocowRiDTInTtElxI+gXGZClylRHyC4DKVlS5d8CdArlIGmiADwecumQh8nbHu9F52T3/83ukQujsJ85uB0737t7f3e/t2f4uQEYuLpQpYWEapVgFUGRDzNOxop7igwEVUnkTxFmVQPzs7O4IMQEiBUqnkSAnPFeAOGZqH5HCVUgeBj69ct+FCQiQymo1tt+E1XVWB8aHmt2AvifEjGe04Tj6Xe7gLqHZgQiBDqqenjb0Rzx2O0LsSDsHkqQGloK5AHYNUdSFs1/el1ztm2+AoJfMgsIKAqzj8K7nk9fXbvD7U6KWlEvN2P5636JGhr4LW9b7ruh6MiC7FKvTkXYh3BE3c9uawyYrDDYYaxBmLsHf+7mQfMmJxqVQl72/HOYUM2yK6/Bp3XazRT54sbQhL/B4dZxoE/vVmEs/ehg79FD0Ly+YR9EAF63Eex/ib4J/Rtyev752fNqowIXS8HlJGN8/zW+pplOOWvsNRAoX9B/2c18cnbTDj6rJZny3M0Tw1JuqUJaB8ddU0aGIY/fjx/E+02dDH7sLgHtjwmdlHM2T5s/4ggsMvw8e+DHXRDW3v9Zsg4sHpu5NNuGMUi6VDcwFjmnxa6M0l0RsmgyN8Arf1Wb2EFKDIs8sPXl5e2YYUsCx4EU7EPlTefjDVX9hCerCXKTLUjCsVvLy4aNQhIcjYLfLSPn9WotYPM4VHxx8vm40k92g2mx5R4qHObwqN5W+nv/nF87zr0NNxXj47a9QgDSIrHnLmlwK8aN3k7R49KsYVCkbKASYJ5i+vuPoYKljjrSgWi+wJRz/o+1CHewBbRChLX3FhYeU7oYRd0cd51UuT404CjQbZgZSLaBC2Wheg5JpxJsJbuEeQEt+YI6osMEINyuoylULjBnnVsMeiqEQTUTjGSSpw4R5BSmkkZ+TUVRFNjILA/gj3CEIod2AM7jksyxpIg8dutJJmmApacYXE6AiCwepGREOKbQczkAHn57T0q/ZTzg7pBdbHHz7Rsykwe3otIMHixSZTBOlWG+OJQiQE8eLRA+klZDTgMf3W8oN0uYKOUHUSUGFqZPU0KlauvoCrfqHQjMvEl1XIgGLx+zIKOOTSKfcA3nfThCyoGHso6oK1NXMQKlx2QUpIUFv6vkJrA1IiLi9qt9SRCPkXnYxawp0U0RUs0wqLllFE9PIi0d0xCkfWItJ6O8zDFVUeVFTIttz8+/TkAFKACxOAaG7esdPmf5xw5x5MaYVAP+GuQgp0C4gaZACrsnBDyhx6ulswxni75MBXQFj+DTqsH4n6KyLpC9VoeZPLkax7x2BadgVPHSxM9qupvtGccEfLG44kxeWVn+EOQTTl5zn6GIVlQ3w3xBoWRAqFAoUo1BWmZ3OFObi8bE68OGDpgTZG5OKIQWLRj/rYQMJkCdw0aRKqTNXuDScCpkRxqfQ6hsdu4LMGYiJWNeVVjdbPwxgJdiTROwnCZ0GbWiKDqmmc+Miw4m50dfXfP4XZuX/pRhXandIO5Un92WG6TE/PffC8ZmrJl70baoeofqPnzEcNJiKvX1ycxIo8QzsBHY9L1qmdmMMu/dWTNnk4mRIC1oZ0xqgTIKgT8FfyTkAPo/RcaLZQKoBHNMuPod1Zxil5d3O5dp6qaQdtywn7jB31ybn5Nizaw4tMPRcd8aL3uJCsJZK8jyjDGf4cxoJ0zabUHVvuUClU2zjQK7kdTANq0b0JPn+qpenfpDJaB78A9Q3LvT4hRYM8bSP9GuK7kh+owDjy/euDrI2m/wGRgm3+D9mZIQAAAABJRU5ErkJggg==
+createInfoBlock(text) {
+  const padding = 16;
+  const iconSize = 40;
+  const blockHeight = 72; // можно оставить 72 — он будет подстраиваться под контент
+  // Уберём verticalPadding — будем управлять отступами отдельно
+
+  return {
+    stack: [
+      // Фон — теперь растягиваем под реальный контент
+      {
+        canvas: [
+          {
+            type: 'rect',
+            x: 0,
+            y: 0,
+            w: 515,
+            h: blockHeight,
+            r: 8,
+            color: '#f4f4f4'
+          }
+        ],
+        margin: [0, 0, 0, -blockHeight]
+      },
+      // Контент
+      {
+        columns: [
+          {
+            width: 'auto',
+            stack: [this.createIconBlock()], // иконка 40×40
+            margin: [padding, 16, 16, 16] // отступы: [left, top, right, bottom]
+          },
+          {
+            width: '*',
+            stack: [
+              {
+                text: text,
+                style: 'infoText',
+                margin: [0, 8, 0, 0] // ← ОТСТУП СВЕРХУ ДЛЯ ТЕКСТА!
+              }
+            ],
+            margin: [0, 16, padding, 16] // внешние отступы колонки
+          }
+        ]
+      }
+    ],
+    margin: [0, 0, 0, 16]
+  };
+}
