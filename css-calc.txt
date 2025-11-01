@@ -1,6 +1,651 @@
-Manrope: {
-    normal: 'data:font/truetype;base64,' + manropeBase64,
-    bold: 'data:font/truetype;base64,' + manropeBoldBase64,
-    italics: 'data:font/truetype;base64,' + manropeItalicBase64,
-    bolditalics: 'data:font/truetype;base64,' + manropeBoldItalicBase64,
+#pdf-export-content.pdf__export-content(v-if = "shedule.length > 0")
+  .pdf__page-inner
+    // Шапка (будет клонироваться на каждую страницу)
+    .pdf__header
+      .pdf__header-col-des
+        p Калькулятор досрочного погашения ипотеки
+      .pdf__header-col-img
+        img(src="img/pdf-logo-site.svg")
+    //блок с меткой время расчёта
+    .pdf__section.pdf__section-metrika
+      p.pdf__font-size-16 Расчет платежей от {{currentDate}}
+      a(href="https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/").pdf__link-new-calculation Сделать новый расчет
+    .pdf__section.pdf__padding-16.pdf__section-information
+      .pdf__section-information-img
+        .pdf__section-information-img-icon
+      p.
+          Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий
+    //Данные об ипотеке
+    .pdf__section.pdf__padding-16.grey-border
+      p.pdf__section-title Данные об ипотеке
+      .pdf__row-block.mt24
+        .pdf__col-block-50
+          p.pdf__font-size-16.pdf__input-title Сумма кредита, ₽
+          .pdf__block-with-data-radius
+            p {{loanAmount | format_decimal}}
+        .pdf__col-block-50
+          p.pdf__font-size-16.pdf__input-title Дата получения
+          .pdf__block-with-data-radius
+            p {{obj_month[startMonth - 1] | capitalize}} {{startYear}}
+
+      .pdf__row-block.mt24
+        .pdf__col-block-50
+          p.pdf__font-size-16.pdf__input-title Ставка, %
+          .pdf__block-with-data-radius
+            p {{annualInterestRate | replace_point}}
+        .pdf__col-block-50
+          p.pdf__font-size-16.pdf__input-title Срок кредита
+          .pdf__block-with-data-radius
+            p {{formattedTerm}}
+
+      .pdf__row-block.mt24
+        p.pdf__font-size-16.pdf__payment-type Тип платежа: <span>{{state.payment_type==='annuity'?'Аннуитетный':'Дифференцированный'}}</span>
+    //Данные о погашении
+    .pdf__section.pdf__padding-16.grey-border
+      p.pdf__section-title Данные о погашении
+      .pdf__row-block.mt16
+        .pdf__col-block-50
+          p.pdf__result-label Вы закроете ипотеку
+          p.pdf__font-size-16 {{repayment_information.mortgage_closure_month | capitalize}} {{repayment_information.mortgage_closure_year}} года
+          p.pdf__additional-text(
+            v-if="repayment_information.if_earlier_month>0"
+          ) Раньше на {{repayment_information.if_earlier_month}} {{getMonthDeclension(repayment_information.if_earlier_month)}}
+        .pdf__col-block-50
+          p.pdf__result-label Ежемесячный платеж
+          p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length > 0 && (repayment_information.monthly_payment_min!==repayment_information.monthly_payment_max)") от {{repayment_information.monthly_payment_max | format_decimal}} до&nbsp;{{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
+          p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length > 0 && (repayment_information.monthly_payment_min===repayment_information.monthly_payment_max)") {{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
+
+          p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length === 0 && state.payment_type==='annuity'") {{repayment_information.monthly_payment_annuity | format_decimal}} ₽
+          p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length === 0 && state.payment_type==='differentiated'") от {{repayment_information.monthly_payment_max | format_decimal}} до&nbsp;{{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
+      .pdf__row-block.mt16
+        .pdf__col-block-50
+          p.pdf__result-label Основной долг
+          p.pdf__font-size-16 {{loanAmount | format_decimal}}&nbsp;₽
+        .pdf__col-block-50
+          p.pdf__result-label Проценты
+          p.pdf__font-size-16 {{repayment_information.percentages | format_decimal}}&nbsp;₽
+      .pdf__row-block.mt16
+        .pdf__col-block-50
+          p.pdf__result-label Всего заплатите
+          p.pdf__font-size-16 {{repayment_information.pay_in_total | format_decimal}}&nbsp;₽
+        .pdf__col-block-50(v-if="array_early_repayment.length > 0")
+          p.pdf__result-label Экономия
+          p.pdf__font-size-16.green {{repayment_information.savings | format_decimal}} ₽
+
+
+    //Ипотечные каникулы
+    .pdf__section.pdf__padding-16.grey-border(v-if="holidays_term&&holidays_term!==0")
+      p.pdf__section-title Ипотечные каникулы
+      .pdf__row-block.mt24
+        .pdf__col-block-50
+          p.pdf__font-size-16.pdf__input-title Начало каникул
+          .pdf__block-with-data-radius
+            p {{obj_month[holidays_date[0].month -1] | capitalize}} {{holidays_date[0].year}}
+        .pdf__col-block-50
+          p.pdf__font-size-16.pdf__input-title Срок каникул, мес.
+          .pdf__block-with-data-radius
+            p {{holidays_term}}
+
+    //График платежей
+    .pdf__section.pdf__padding-16
+      p.pdf__section-title График платежей
+      .pdf__block-shedule
+        .pdf__block-shedule-item-wrapper(
+            v-for='(item,index) in shedule' :key="index"
+            :class="item.isHoliday===true?'holidays':''"
+          )
+          .pdf__block-shedule-item
+            p.pdf__block-shedule-item-die(v-if="item.isHoliday===true") Ипотечные каникулы
+            .pdf__block-shedule-item-date
+              p.pdf__font-size-16.pdf__block-shedule-item-col-first {{item.nameMonth | capitalize}} {{item.year}}
+              p.pdf__block-shedule-item-value(v-if="item.isHoliday===true") 0
+            .pdf__block-shedule-item-row(v-if="item.isHoliday!==true")
+              .pdf__block-shedule-item-col-first
+                p.pdf__block-shedule-item-label Задолженность
+                p.pdf__block-shedule-item-value {{item.remainingBalance | format_decimal}} ₽
+              .pdf__block-shedule-item-col
+                p.pdf__block-shedule-item-label Сумма платежа
+                p.pdf__block-shedule-item-value {{item.payment | format_decimal}} ₽
+            .pdf__block-shedule-item-row(v-if="item.isHoliday!==true")
+              .pdf__block-shedule-item-col-first
+                p.pdf__block-shedule-item-label Погашение процентов
+                p.pdf__block-shedule-item-value {{item.interest | format_decimal}} ₽
+              .pdf__block-shedule-item-col
+                p.pdf__block-shedule-item-label Погашение основного долга
+                p.pdf__block-shedule-item-value {{item.principal | format_decimal}} ₽
+
+
+.pdf {
+    &__block-shedule{
+    margin-top: 16px;
   }
+  &__block-shedule-item-wrapper{
+    padding-left: 16px;
+    &.holidays{
+      background-color: #f4f4f4;
+    }
+  }
+  &__block-shedule-item{
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f4f4f4;
+
+  }
+  &__block-shedule-item-row{
+    display: flex;
+    column-gap:16px;
+    margin-top: 8px;
+  }
+  &__block-shedule-item-label{
+    font-family: $ff-medium;
+    font-size: 12px;
+    line-height: 133%;
+    color: #6d6d6d;
+    margin-bottom: 2px;
+  }
+  &__block-shedule-item-value{
+    font-family: $ff-medium;
+    font-size: 14px;
+    line-height: 143%;
+    color: #252628;
+  }
+  &__block-shedule-item-col-first{
+    width: 120px;
+  }
+  &__block-shedule-item-die{
+    padding: 2px 8px;
+    margin-bottom: 12px;
+    font-family: $ff-medium;
+    font-size: 12px;
+    line-height: 133%;
+    color: #fff;
+    background-color: #252628;
+    width: 136px;
+  }
+  &__block-shedule-item-date{
+    display: flex;
+  }
+
+
+}
+
+
+
+exportToPDF() {
+      pdfMake.fonts = {
+        Roboto: {
+          normal: 'Roboto-Regular.ttf',
+          bold: 'Roboto-Medium.ttf',
+          italics: 'Roboto-Italic.ttf',
+          bolditalics: 'Roboto-MediumItalic.ttf'
+        }
+      };
+
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [40, 80, 40, 40],
+
+        header: (currentPage) => {
+          if (currentPage === 1) {
+            return {
+              columns: [
+                {
+                  stack: [
+                    { text: 'Калькулятор', style: 'headerTitle' },
+                    {
+                      text: 'досрочного погашения',
+                      background: '#daff01',
+                      style: 'headerTitleHighlighted'
+                    },
+                    { text: 'ипотеки', style: 'headerTitle' }
+                  ]
+                },
+                {
+                  image: 'logo',
+                  width: 104,
+                  alignment: 'right'
+                }
+              ],
+              margin: [40, 20, 40, 16]
+            };
+          }
+          return {};
+        },
+
+        content: [
+          {
+            columns: [
+              {
+                text: `Расчет платежей от ${this.currentDate}`,
+                style: 'metaText',
+                width: '*'
+              },
+              {
+                text: 'Сделать новый расчет',
+                link: 'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/',
+                style: 'link',
+                width: 'auto',
+                alignment: 'right'
+              }
+            ],
+            margin: [0, 0, 0, 16]
+          },
+
+          this.createInfoBlock('Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий'),
+
+          // Секции с заголовками ВНУТРИ рамок
+          this.createSectionBox(this.createMortgageSection(), 290),
+          this.createSectionBox(this.createRepaymentSection(), 275),
+          // this.createSectionBox(this.createHolidaysSection(), 160),
+          (this.holidays_term && this.holidays_term!==0)
+            ? this.createSectionBox(this.createHolidaysSection(), 160)
+            : {}
+        ],
+
+        images: {
+          logo: logoBase64,
+          iconSymbol: iconSymbolBase64
+        },
+
+        styles: {
+          headerTitle: { fontSize: 16, bold: true, color: '#252628' },
+          headerTitleHighlighted: { fontSize: 16, bold: true, color: '#252628' },
+          metaText: { fontSize: 12, color: '#252628' },
+          link: { fontSize: 12, color: '#252628', decoration: 'underline' },
+          infoText: { fontSize: 12, color: '#252628' },
+          sectionTitle: { fontSize: 16, bold: true, color: '#252628', margin: [0, 0, 0, 16] },
+          label: { fontSize: 12, bold: true, color: '#6d6d6d', margin: [0, 0, 0, 4] },
+          mortgageValue: { fontSize: 12, color: '#252628' },
+          repaymentValue: { fontSize: 12, color: '#252628', margin: [0, 0, 0, 0] },
+          repaymentValueGreen: { fontSize: 12, color: '#699b12', margin: [0, 0, 0, 0] },
+          valueInline: { fontSize: 12, color: '#252628' },
+          valueNoMargin: { fontSize: 12, color: '#252628', margin: [0, 0, 0, 2] }
+        },
+
+        defaultStyle: {
+          font: 'Roboto',
+          fontSize: 10
+        }
+      };
+
+      pdfMake.createPdf(docDefinition).download('расчёт-ипотеки.pdf');
+    },
+
+    // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
+
+    // Иконка: белый круг + чёрный символ
+
+    createIconBlock() {
+      const size = 40;
+      const iconSize = 15;
+      return {
+        stack: [
+          {
+            canvas: [
+              {
+                type: 'ellipse',
+                x: size / 2,
+                y: size / 2,
+                r1: size / 2,
+                r2: size / 2,
+                color: '#ffffff'
+              }
+            ],
+            margin: [0, 0, 0, -size]
+          },
+          {
+            image: 'iconSymbol',
+            width: iconSize,
+            height: iconSize,
+            alignment: 'center',
+            margin: [0, (size - iconSize) / 2, 0, (size - iconSize) / 2]
+          }
+        ],
+        width: size,
+        height: size
+      };
+    },
+
+    // Блок "Расчёт носит справочный характер"
+
+    createInfoBlock(text) {
+      const padding = 16;
+      const blockHeight = 72;
+      return {
+        stack: [
+          {
+            canvas: [
+              {
+                type: 'rect',
+                x: 0,
+                y: 0,
+                w: 515,
+                h: blockHeight,
+                r: 8,
+                color: '#f4f4f4'
+              }
+            ],
+            margin: [0, 0, 0, -blockHeight]
+          },
+          {
+            columns: [
+              {
+                width: 'auto',
+                stack: [this.createIconBlock()],
+                margin: [padding, 16, 16, 16]
+              },
+              {
+                width: '*',
+                stack: [{
+                  text: text,
+                  style: 'infoText',
+                  margin: [0, 7, 0, 0]
+                }],
+                margin: [0, 16, padding, 16]
+              }
+            ]
+          }
+        ],
+        margin: [0, 0, 0, 16]
+      };
+    },
+
+    // Рамка с закруглёнными углами
+
+    createSectionBox(content, heightInPx) {
+      const padding = 16;
+      const blockHeight = heightInPx * 0.75;
+      const borderWidth = 1;
+      const borderColor = '#c8c8cb';
+      const borderRadius = 8;
+
+      return {
+        stack: [
+          {
+            canvas: [
+              {
+                type: 'rect',
+                x: 0,
+                y: 0,
+                w: 515,
+                h: blockHeight,
+                r: borderRadius,
+                lineWidth: borderWidth,
+                lineColor: borderColor
+              }
+            ],
+            margin: [0, 0, 0, -blockHeight]
+          },
+          {
+            ...content,
+            margin: [padding, padding, padding, padding]
+          }
+        ],
+        margin: [0, 0, 0, 16]
+      };
+    },
+
+    // Полная секция "Данные об ипотеке" (заголовок + контент)
+
+    createMortgageSection() {
+      return {
+        stack: [
+          { text: 'Данные об ипотеке', style: 'sectionTitle' },
+          this.createMortgageBlock()
+        ]
+      };
+    },
+
+    // Полная секция "Данные о погашении" (заголовок + контент)
+
+    createRepaymentSection() {
+      return {
+        stack: [
+          { text: 'Данные о погашении', style: 'sectionTitle' },
+          this.createRepaymentBlock()
+        ]
+      };
+    },
+
+    // Блок с данными: закруглённая рамка + текст
+
+    createDataBlock(text) {
+      const padding = [20, 8, 20, 10]; // [left, top, right, bottom] → как padding: 10px 20px
+      const blockHeight = 30; // высота блока (подберите позже)
+      const borderWidth = 1;
+      const borderColor = '#c8c8cb';
+      const borderRadius = 20;
+
+      return {
+        stack: [
+          // Рамка
+          {
+            canvas: [
+              {
+                type: 'rect',
+                x: 0,
+                y: 0,
+                w: 230, // ширина одного блока (515 - 24*2 - 24) / 2 ≈ 230
+                h: blockHeight,
+                r: borderRadius,
+                lineWidth: borderWidth,
+                lineColor: borderColor
+              }
+            ],
+            margin: [0, 0, 0, -blockHeight]
+          },
+          // Текст внутри
+          {
+            text: text,
+            style: 'mortgageValue',
+            margin: padding
+          }
+        ],
+        width: 230 // фиксированная ширина для выравнивания
+      };
+    },
+
+    // Контент "Данные об ипотеке"
+
+    createMortgageBlock() {
+      return {
+        stack: [
+          {
+            columns: [
+              {
+                width: '*',
+                stack: [
+                  { text: 'Сумма кредита, ₽', style: 'label' },
+                  this.createDataBlock(this.$options.filters.format_decimal(this.loanAmount))
+                ]
+              },
+              {
+                width: '*',
+                stack: [
+                  { text: 'Дата получения', style: 'label' },
+                  this.createDataBlock(`${this.$options.filters.capitalize(this.obj_month[this.startMonth - 1])} ${this.startYear}`)
+                ]
+              }
+            ],
+            columnGap: 24,
+            margin: [0, 0, 0, 17]
+          },
+          {
+            columns: [
+              {
+                width: '*',
+                stack: [
+                  { text: 'Ставка, %', style: 'label' },
+                  this.createDataBlock(this.$options.filters.replace_point(this.annualInterestRate))
+                ]
+              },
+              {
+                width: '*',
+                stack: [
+                  { text: 'Срок кредита', style: 'label' },
+                  this.createDataBlock(this.formattedTerm)
+                ]
+              }
+            ],
+            columnGap: 24,
+            margin: [0, 0, 0, 17]
+          },
+          {
+            columns: [
+              {
+                width: '*',
+                stack: [
+                  {
+                    text: [
+                      { text: 'Тип платежа: ', style: 'label' },
+                      {
+                        text: this.state.payment_type === 'annuity' ? 'Аннуитетный' : 'Дифференцированный',
+                        style: 'valueInline'
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            columnGap: 24
+          }
+        ]
+      };
+    },
+
+    // Контент "Данные о погашении"
+
+    createRepaymentBlock() {
+      const ri = this.repayment_information;
+      const hasEarly = this.array_early_repayment.length > 0;
+      const isAnnuity = this.state.payment_type === 'annuity';
+
+      let paymentText = '';
+      if (hasEarly) {
+        if (ri.monthly_payment_min === ri.monthly_payment_max) {
+          paymentText = `${this.$options.filters.format_decimal(ri.monthly_payment_min)} ₽`;
+        } else {
+          paymentText = `от ${this.$options.filters.format_decimal(ri.monthly_payment_max)} до ${this.$options.filters.format_decimal(ri.monthly_payment_min)} ₽`;
+        }
+      } else {
+        if (isAnnuity) {
+          paymentText = `${this.$options.filters.format_decimal(ri.monthly_payment_annuity)} ₽`;
+        } else {
+          paymentText = `от ${this.$options.filters.format_decimal(ri.monthly_payment_max)} до ${this.$options.filters.format_decimal(ri.monthly_payment_min)} ₽`;
+        }
+      }
+
+      const leftStackRow1 = [
+        { text: 'Вы закроете ипотеку', style: 'label' },
+        {
+          text: `${this.$options.filters.capitalize(ri.mortgage_closure_month)} ${ri.mortgage_closure_year} года`,
+          style: ri.if_earlier_month > 0 ? 'valueNoMargin' : 'repaymentValue'
+        }
+      ];
+      if (ri.if_earlier_month > 0) {
+        leftStackRow1.push({
+          text: `Раньше на ${ri.if_earlier_month} ${this.getMonthDeclension(ri.if_earlier_month)}`,
+          style: 'repaymentValueGreen'
+        });
+      }
+
+      const row1 = {
+        columns: [
+          { width: '*', stack: leftStackRow1 },
+          {
+            width: '*',
+            stack: [
+              { text: 'Ежемесячный платеж', style: 'label' },
+              { text: paymentText, style: 'repaymentValue' }
+            ]
+          }
+        ],
+        columnGap: 24,
+        margin: [0, 0, 0, 12]
+      };
+
+      const row2 = {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: 'Основной долг', style: 'label' },
+              { text: `${this.$options.filters.format_decimal(this.loanAmount)} ₽`, style: 'repaymentValue' }
+            ]
+          },
+          {
+            width: '*',
+            stack: [
+              { text: 'Проценты', style: 'label' },
+              { text: `${this.$options.filters.format_decimal(ri.percentages)} ₽`, style: 'repaymentValue' }
+            ]
+          }
+        ],
+        columnGap: 24,
+        margin: [0, 0, 0, 12]
+      };
+
+      const row3Columns = [
+        {
+          width: '*',
+          stack: [
+            { text: 'Всего заплатите', style: 'label' },
+            { text: `${this.$options.filters.format_decimal(ri.pay_in_total)} ₽`, style: 'repaymentValue' }
+          ]
+        }
+      ];
+      if (hasEarly) {
+        row3Columns.push({
+          width: '*',
+          stack: [
+            { text: 'Экономия', style: 'label' },
+            { text: `${this.$options.filters.format_decimal(ri.savings)} ₽`, style: 'repaymentValueGreen' }
+          ]
+        });
+      }
+
+      const row3 = {
+        columns: row3Columns,
+        columnGap: 24
+      };
+
+      return { stack: [row1, row2, row3] };
+    },
+
+    // Секция "Ипотечные каникулы"
+
+    createHolidaysSection() {
+      if (this.holidays_term&&this.holidays_term===0) {
+        return {text:''}
+      }
+      // Формируем тексты
+      const startDateText = `${this.$options.filters.capitalize(this.obj_month[this.holidays_date[0].month - 1])} ${this.holidays_date[0].year}`;
+      const termText = this.holidays_term;
+
+      return {
+        stack: [
+          { text: 'Ипотечные каникулы', style: 'sectionTitle' },
+          {
+            columns: [
+              {
+                width: '*',
+                stack: [
+                  { text: 'Начало каникул', style: 'label' },
+                  this.createDataBlock(startDateText)
+                ]
+              },
+              {
+                width: '*',
+                stack: [
+                  { text: 'Срок каникул, мес.', style: 'label' },
+                  this.createDataBlock(termText)
+                ]
+              }
+            ],
+            columnGap: 24
+          }
+        ],
+        // Запрещаем разрыв страницы внутри этой секции
+        unbreakable: true
+      };
+    },
