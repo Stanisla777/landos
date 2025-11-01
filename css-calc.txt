@@ -1,73 +1,174 @@
-Добавьте стили для графика платежей
+exportToPDF() {
+  pdfMake.fonts = {
+    Roboto: {
+      normal: 'Roboto-Regular.ttf',
+      bold: 'Roboto-Medium.ttf',
+      italics: 'Roboto-Italic.ttf',
+      bolditalics: 'Roboto-MediumItalic.ttf'
+    }
+  };
 
-// Стили для графика платежей
-sheduleTitle: {
-  fontSize: 16,
-  bold: true,
-  color: '#252628',
-  margin: [0, 0, 0, 16]
-},
-sheduleItemLabel: {
-  fontSize: 10, // 12px → 9pt → 10pt для читаемости
-  color: '#6d6d6d',
-  margin: [0, 0, 0, 2]
-},
-sheduleItemValue: {
-  fontSize: 11, // 14px → 10.5 → 11pt
-  color: '#252628'
-},
-holidayBadge: {
-  fontSize: 10,
-  color: '#fff',
-  background: '#252628',
-  padding: [2, 8, 2, 8],
-  margin: [0, 0, 12, 0]
-},
-holidayValue: {
-  fontSize: 11,
-  color: '#252628',
-  margin: [0, 0, 0, 0]
-}
+  const docDefinition = {
+    pageSize: 'A4',
+    pageMargins: [40, 40, 40, 40], // ← уменьшен top до 40
 
+    header: (currentPage) => {
+      if (currentPage === 1) {
+        return {
+          columns: [
+            {
+              stack: [
+                { text: 'Калькулятор', style: 'headerTitle' },
+                {
+                  text: 'досрочного погашения',
+                  background: '#daff01',
+                  style: 'headerTitleHighlighted'
+                },
+                { text: 'ипотеки', style: 'headerTitle' }
+              ]
+            },
+            {
+              image: 'logo',
+              width: 104,
+              alignment: 'right'
+            }
+          ],
+          margin: [40, 40, 40, 16] // ← увеличен top до 40
+        };
+      }
+      // Пустой header для остальных страниц
+      return { text: '', margin: [0, 0, 0, 0] };
+    },
 
-Создайте метод
+    content: [
+      // ... предыдущие блоки ...
 
+      this.createSectionBox(this.createMortgageSection(), 290),
+      this.createSectionBox(this.createRepaymentSection(), 275),
+      (this.holidays_term && this.holidays_term !== 0)
+        ? this.createSectionBox(this.createHolidaysSection(), 160)
+        : {},
+
+      // ===== ГРАФИК ПЛАТЕЖЕЙ =====
+      (this.holidays_term && this.holidays_term !== 0)
+        ? {
+            stack: [
+              { text: 'График платежей', style: 'sheduleTitle' },
+              this.createSheduleBufferBlock(), // ← буферный блок
+              this.createSheduleBlocks()
+            ],
+            unbreakable: true,
+            margin: [0, 0, 0, 16]
+          }
+        : {
+            stack: [
+              { text: 'График платежей', style: 'sheduleTitle' },
+              this.createSheduleBlocks()
+            ],
+            margin: [0, 0, 0, 16]
+          }
+    ],
+
+    // ... images, styles, defaultStyle ...
+  };
+
+  // ... остальной код ...
+},
+
+----------------------
+styles: {
+  // ... существующие стили ...
+
+  // Стили для графика платежей
+  sheduleTitle: {
+    fontSize: 16,
+    bold: true,
+    color: '#252628',
+    margin: [0, 0, 0, 16]
+  },
+  sheduleItemLabel: {
+    fontSize: 10,
+    color: '#6d6d6d',
+    margin: [0, 0, 0, 2]
+  },
+  sheduleItemValue: {
+    fontSize: 11,
+    color: '#252628'
+  },
+  holidayBadge: {
+    fontSize: 10,
+    color: '#fff',
+    background: '#252628',
+    padding: [2, 8, 2, 8],
+    margin: [0, 0, 12, 0]
+  },
+  holidayValue: {
+    fontSize: 11,
+    color: '#252628',
+    margin: [0, 0, 0, 0]
+  }
+},
+
+---------------------------------------
+
+// Буферный блок для предотвращения "осиротевшего" заголовка
+createSheduleBufferBlock() {
+  return {
+    canvas: [{ type: 'rect', x: 0, y: 0, w: 0, h: 100 }], // высота 100pt
+    margin: [0, 0, 0, 0]
+  };
+},
+
+// График платежей
 createSheduleBlocks() {
   const blocks = [];
 
   this.shedule.forEach(item => {
     if (item.isHoliday) {
-      // Блок для ипотечных каникул
+      // Блок для ипотечных каникул с фоном
       blocks.push({
-        stack: [
-          { text: 'Ипотечные каникулы', style: 'holidayBadge' },
-          {
-            columns: [
-              {
-                width: 120, // как в макете .pdf__block-shedule-item-col-first
-                stack: [
-                  {
-                    text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
-                    style: 'sheduleItemValue'
-                  }
-                ]
-              },
-              {
-                width: '*',
-                stack: [
-                  { text: '0', style: 'holidayValue' }
-                ]
-              }
-            ],
-            margin: [0, 0, 0, 12]
+        table: {
+          body: [[
+            {
+              stack: [
+                { text: 'Ипотечные каникулы', style: 'holidayBadge' },
+                {
+                  columns: [
+                    {
+                      width: 120,
+                      stack: [
+                        {
+                          text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+                          style: 'sheduleItemValue'
+                        }
+                      ]
+                    },
+                    {
+                      width: '*',
+                      stack: [
+                        { text: '0', style: 'holidayValue' }
+                      ]
+                    }
+                  ],
+                  margin: [0, 0, 0, 12]
+                }
+              ]
+            }
+          ]],
+          widths: ['*'],
+          layout: {
+            fillColor: () => '#f4f4f4',
+            hLineWidth: () => 0,
+            vLineWidth: () => 0,
+            paddingTop: () => 12,
+            paddingBottom: () => 12
           }
-        ],
-        unbreakable: true, // запрет разрыва
-        margin: [0, 0, 0, 12],
-        background: '#f4f4f4' // фон как в макете
+        },
+        unbreakable: true,
+        margin: [0, 0, 0, 12]
       });
     } else {
-      // Стандартный блок платежа
+      // Стандартный блок платежа с нижней границей
       blocks.push({
         stack: [
           {
@@ -113,35 +214,17 @@ createSheduleBlocks() {
             ]
           }
         ],
-        unbreakable: true, // запрет разрыва
+        unbreakable: true,
         margin: [0, 0, 0, 12],
-        // Нет фона — как в макете
         border: [false, false, false, true], // только нижняя граница
-        borderColor: ['#f4f4f4']
+        borderColor: [null, null, null, '#f4f4f4'] // только нижний цвет
       });
     }
   });
 
-  return blocks;
+  // Общий отступ слева (как padding-left: 16px)
+  return {
+    stack: blocks,
+    margin: [16, 0, 0, 0]
+  };
 }
-
-В docDefinition.content добавьте после секций:
-
-content: [
-  // ... существующие блоки ...
-
-  this.createSectionBox(this.createMortgageSection(), 290),
-  this.createSectionBox(this.createRepaymentSection(), 275),
-  (this.holidays_term && this.holidays_term !== 0)
-    ? this.createSectionBox(this.createHolidaysSection(), 160)
-    : {},
-
-  // ===== ГРАФИК ПЛАТЕЖЕЙ =====
-  {
-    stack: [
-      { text: 'График платежей', style: 'sheduleTitle' },
-      ...this.createSheduleBlocks() // раскрываем массив блоков
-    ],
-    margin: [0, 0, 0, 16]
-  }
-],
