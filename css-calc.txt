@@ -1,853 +1,147 @@
-#pdf-export-content.pdf__export-content(v-if = "shedule.length > 0")
-  .pdf__page-inner
-    // Шапка (будет клонироваться на каждую страницу)
-    .pdf__header
-      .pdf__header-col-des
-        p Калькулятор досрочного погашения ипотеки
-      .pdf__header-col-img
-        img(src="img/pdf-logo-site.svg")
-    //блок с меткой время расчёта
-    .pdf__section.pdf__section-metrika
-      p.pdf__font-size-16 Расчет платежей от {{currentDate}}
-      a(href="https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/").pdf__link-new-calculation Сделать новый расчет
-    .pdf__section.pdf__padding-16.pdf__section-information
-      .pdf__section-information-img
-        .pdf__section-information-img-icon
-      p.
-          Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий
-    //Данные об ипотеке
-    .pdf__section.pdf__padding-16.grey-border
-      p.pdf__section-title Данные об ипотеке
-      .pdf__row-block.mt24
-        .pdf__col-block-50
-          p.pdf__font-size-16.pdf__input-title Сумма кредита, ₽
-          .pdf__block-with-data-radius
-            p {{loanAmount | format_decimal}}
-        .pdf__col-block-50
-          p.pdf__font-size-16.pdf__input-title Дата получения
-          .pdf__block-with-data-radius
-            p {{obj_month[startMonth - 1] | capitalize}} {{startYear}}
+Добавьте стили для графика платежей
 
-      .pdf__row-block.mt24
-        .pdf__col-block-50
-          p.pdf__font-size-16.pdf__input-title Ставка, %
-          .pdf__block-with-data-radius
-            p {{annualInterestRate | replace_point}}
-        .pdf__col-block-50
-          p.pdf__font-size-16.pdf__input-title Срок кредита
-          .pdf__block-with-data-radius
-            p {{formattedTerm}}
-
-      .pdf__row-block.mt24
-        p.pdf__font-size-16.pdf__payment-type Тип платежа: <span>{{state.payment_type==='annuity'?'Аннуитетный':'Дифференцированный'}}</span>
-    //Данные о погашении
-    .pdf__section.pdf__padding-16.grey-border
-      p.pdf__section-title Данные о погашении
-      .pdf__row-block.mt16
-        .pdf__col-block-50
-          p.pdf__result-label Вы закроете ипотеку
-          p.pdf__font-size-16 {{repayment_information.mortgage_closure_month | capitalize}} {{repayment_information.mortgage_closure_year}} года
-          p.pdf__additional-text(
-            v-if="repayment_information.if_earlier_month>0"
-          ) Раньше на {{repayment_information.if_earlier_month}} {{getMonthDeclension(repayment_information.if_earlier_month)}}
-        .pdf__col-block-50
-          p.pdf__result-label Ежемесячный платеж
-          p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length > 0 && (repayment_information.monthly_payment_min!==repayment_information.monthly_payment_max)") от {{repayment_information.monthly_payment_max | format_decimal}} до&nbsp;{{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
-          p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length > 0 && (repayment_information.monthly_payment_min===repayment_information.monthly_payment_max)") {{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
-
-          p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length === 0 && state.payment_type==='annuity'") {{repayment_information.monthly_payment_annuity | format_decimal}} ₽
-          p.pdf__font-size-16(v-if = "shedule.length > 0 && array_early_repayment.length === 0 && state.payment_type==='differentiated'") от {{repayment_information.monthly_payment_max | format_decimal}} до&nbsp;{{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
-      .pdf__row-block.mt16
-        .pdf__col-block-50
-          p.pdf__result-label Основной долг
-          p.pdf__font-size-16 {{loanAmount | format_decimal}}&nbsp;₽
-        .pdf__col-block-50
-          p.pdf__result-label Проценты
-          p.pdf__font-size-16 {{repayment_information.percentages | format_decimal}}&nbsp;₽
-      .pdf__row-block.mt16
-        .pdf__col-block-50
-          p.pdf__result-label Всего заплатите
-          p.pdf__font-size-16 {{repayment_information.pay_in_total | format_decimal}}&nbsp;₽
-        .pdf__col-block-50(v-if="array_early_repayment.length > 0")
-          p.pdf__result-label Экономия
-          p.pdf__font-size-16.green {{repayment_information.savings | format_decimal}} ₽
-
-
-    //Ипотечные каникулы
-    .pdf__section.pdf__padding-16.grey-border(v-if="holidays_term&&holidays_term!==0")
-      p.pdf__section-title Ипотечные каникулы
-      .pdf__row-block.mt24
-        .pdf__col-block-50
-          p.pdf__font-size-16.pdf__input-title Начало каникул
-          .pdf__block-with-data-radius
-            p {{obj_month[holidays_date[0].month -1] | capitalize}} {{holidays_date[0].year}}
-        .pdf__col-block-50
-          p.pdf__font-size-16.pdf__input-title Срок каникул, мес.
-          .pdf__block-with-data-radius
-            p {{holidays_term}}
-
-    //График платежей
-    .pdf__section.pdf__padding-16
-      p.pdf__section-title График платежей
-      .pdf__block-shedule
-        .pdf__block-shedule-item-wrapper(
-            v-for='(item,index) in shedule' :key="index"
-            :class="item.isHoliday===true?'holidays':''"
-          )
-          .pdf__block-shedule-item
-            p.pdf__block-shedule-item-die(v-if="item.isHoliday===true") Ипотечные каникулы
-            .pdf__block-shedule-item-date
-              p.pdf__font-size-16.pdf__block-shedule-item-col-first {{item.nameMonth | capitalize}} {{item.year}}
-              p.pdf__block-shedule-item-value(v-if="item.isHoliday===true") 0
-            .pdf__block-shedule-item-row(v-if="item.isHoliday!==true")
-              .pdf__block-shedule-item-col-first
-                p.pdf__block-shedule-item-label Задолженность
-                p.pdf__block-shedule-item-value {{item.remainingBalance | format_decimal}} ₽
-              .pdf__block-shedule-item-col
-                p.pdf__block-shedule-item-label Сумма платежа
-                p.pdf__block-shedule-item-value {{item.payment | format_decimal}} ₽
-            .pdf__block-shedule-item-row(v-if="item.isHoliday!==true")
-              .pdf__block-shedule-item-col-first
-                p.pdf__block-shedule-item-label Погашение процентов
-                p.pdf__block-shedule-item-value {{item.interest | format_decimal}} ₽
-              .pdf__block-shedule-item-col
-                p.pdf__block-shedule-item-label Погашение основного долга
-                p.pdf__block-shedule-item-value {{item.principal | format_decimal}} ₽
-
-
-.pdf {
-  &__export-content {
-    //это после разрабтки расскоментировать, чтобы не виден был на странице
-    //position: absolute;
-    //left: -9999px;
-    //top: 0;
-    box-sizing: border-box;
-    width: 595px;
-    padding: 24px;
-
-  }
-
-  &__page-inner {
-    width: 100%;
-    max-width: 547px; // 595 - 24*2
-    margin: 0 auto;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    row-gap: 16px;
-  }
-
-  &__header {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  &__header-col-des {
-    flex: 1;
-    max-width: calc(100% - 120px); // оставляем место под логотип (~100px + отступ)
-    font-family: $ff-semi-bold;
-    font-size: 22px;
-    line-height: 127%;
-    color: #252628;
-    p {
-      font-family: inherit;
-      font-size: inherit;
-      line-height: inherit;
-      color: inherit;
-      margin: 0;
-    }
-  }
-
-  &__header-col-img {
-    flex-shrink: 0;
-    width: 104px;
-    img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-  }
-
-  &__section {
-    &.grey-border {
-      border: 1px solid #c8c8cb;
-      border-radius: 8px;
-    }
-  }
-
-  &__section-metrika {
-    display: flex;
-    column-gap: 20px;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-
-  &__font-size-16 {
-    font-family: $ff-semi-bold;
-    font-size: 16px;
-    line-height: 125%;
-    color: #252628;
-    &.green{
-      color: #699b12;
-    }
-  }
-
-  &__link-new-calculation {
-    font-family: $ff-semi-bold;
-    font-size: 14px;
-    line-height: 143%;
-    color: #252628;
-    @include underline-link(3px);
-  }
-
-  &__padding-16 {
-    padding: 16px;
-  }
-
-  &__section-information {
-    border-radius: 8px;
-    background-color: #f4f4f4;
-    display: flex;
-    align-items: center;
-    column-gap: 16px;
-    font-family: $ff-medium;
-    font-size: 14px;
-    line-height: 143%;
-    color: #252628;
-    width: 100%;
-    p {
-      font-family: inherit;
-      font-size: inherit;
-      line-height: inherit;
-      color: inherit;
-      margin: 0;
-    }
-  }
-
-  &__section-information-img {
-    flex-shrink: 0;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 40px;
-    height: 40px;
-    background-color: #fff;
-  }
-
-  &__section-information-img-icon {
-    width: 15px;
-    height: 15px;
-    background-position: 50%;
-    background-repeat: no-repeat;
-    background-size: contain;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='15' height='15' viewBox='0 0 15 15' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath fill-rule='evenodd' clip-rule='evenodd' d='M0 7.33333C0 11.3834 3.28325 14.6667 7.33333 14.6667C11.3834 14.6667 14.6667 11.3834 14.6667 7.33333C14.6667 3.28325 11.3834 0 7.33333 0C3.28325 0 0 3.28325 0 7.33333ZM13.3333 7.33335C13.3333 10.6471 10.647 13.3333 7.33333 13.3333C4.01962 13.3333 1.33333 10.6471 1.33333 7.33335C1.33333 4.01964 4.01962 1.33335 7.33333 1.33335C10.647 1.33335 13.3333 4.01964 13.3333 7.33335Z' fill='%23252628' /%3e%3cpath d='M6.66667 4.66667V7.33333C6.66667 7.70152 6.96515 8 7.33334 8C7.70153 8 8.00001 7.70152 8.00001 7.33333V4.66667C8.00001 4.29848 7.70153 4 7.33334 4C6.96515 4 6.66667 4.29848 6.66667 4.66667Z' fill='%23252628' /%3e%3cpath d='M6.86194 9.80473C7.12229 10.0651 7.5444 10.0651 7.80475 9.80473C8.0651 9.54438 8.0651 9.12226 7.80475 8.86191C7.5444 8.60156 7.12229 8.60156 6.86194 8.86191C6.60159 9.12226 6.60159 9.54438 6.86194 9.80473Z' fill='%23252628' /%3e%3c/svg%3e");
-  }
-
-  &__section-title {
-    font-family: $ff-semi-bold;
-    font-size: 20px;
-    line-height: 120%;
-    color: #252628;
-    margin: 0;
-  }
-
-  &__row-block {
-    display: flex;
-    column-gap: 24px;
-    width: 100%;
-    &.mt24{
-      margin-top: 24px;
-    }
-    &.mt16{
-      margin-top: 16px;
-    }
-
-  }
-
-  &__col-block-50 {
-    flex: 1; // ← КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: вместо width: 50%
-    // width: 50% — УДАЛЕНО
-  }
-
-  &__input-title {
-    margin-bottom: 8px;
-    margin-top: 0;
-  }
-
-  &__block-with-data-radius {
-    width: 100%;
-    border: 1px solid #c8c8cb;
-    border-radius: 20px;
-    padding: 10px 20px;
-    font-family: $ff-semi-bold;
-    font-size: 14px;
-    line-height: 143%;
-    color: #252628;
-    box-sizing: border-box;
-    p {
-      font-family: inherit;
-      font-size: inherit;
-      line-height: inherit;
-      color: inherit;
-      margin: 0;
-    }
-  }
-
-  &__payment-type {
-    span {
-      font-family: $ff-medium;
-      font-size: 14px;
-      line-height: 143%;
-      color: #252628;
-    }
-  }
-  &__result-label{
-    margin-bottom: 8px;
-    font-family: $ff-semi-bold;
-    font-size: 14px;
-    line-height: 143%;
-    color: #6d6d6d;
-  }
-  &__additional-text{
-    margin-top: 2px;
-    font-family: $ff-medium;
-    font-size: 12px;
-    line-height: 133%;
-    color: #699b12;
-  }
-  &__block-shedule{
-    margin-top: 16px;
-  }
-  &__block-shedule-item-wrapper{
-    padding-left: 16px;
-    &.holidays{
-      background-color: #f4f4f4;
-    }
-  }
-  &__block-shedule-item{
-    padding-top: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f4f4f4;
-
-  }
-  &__block-shedule-item-row{
-    display: flex;
-    column-gap:16px;
-    margin-top: 8px;
-  }
-  &__block-shedule-item-label{
-    font-family: $ff-medium;
-    font-size: 12px;
-    line-height: 133%;
-    color: #6d6d6d;
-    margin-bottom: 2px;
-  }
-  &__block-shedule-item-value{
-    font-family: $ff-medium;
-    font-size: 14px;
-    line-height: 143%;
-    color: #252628;
-  }
-  &__block-shedule-item-col-first{
-    width: 120px;
-  }
-  &__block-shedule-item-die{
-    padding: 2px 8px;
-    margin-bottom: 12px;
-    font-family: $ff-medium;
-    font-size: 12px;
-    line-height: 133%;
-    color: #fff;
-    background-color: #252628;
-    width: 136px;
-  }
-  &__block-shedule-item-date{
-    display: flex;
-  }
+// Стили для графика платежей
+sheduleTitle: {
+  fontSize: 16,
+  bold: true,
+  color: '#252628',
+  margin: [0, 0, 0, 16]
+},
+sheduleItemLabel: {
+  fontSize: 10, // 12px → 9pt → 10pt для читаемости
+  color: '#6d6d6d',
+  margin: [0, 0, 0, 2]
+},
+sheduleItemValue: {
+  fontSize: 11, // 14px → 10.5 → 11pt
+  color: '#252628'
+},
+holidayBadge: {
+  fontSize: 10,
+  color: '#fff',
+  background: '#252628',
+  padding: [2, 8, 2, 8],
+  margin: [0, 0, 12, 0]
+},
+holidayValue: {
+  fontSize: 11,
+  color: '#252628',
+  margin: [0, 0, 0, 0]
 }
 
 
+Создайте метод
 
-exportToPDF() {
-      pdfMake.fonts = {
-        Roboto: {
-          normal: 'Roboto-Regular.ttf',
-          bold: 'Roboto-Medium.ttf',
-          italics: 'Roboto-Italic.ttf',
-          bolditalics: 'Roboto-MediumItalic.ttf'
-        }
-      };
+createSheduleBlocks() {
+  const blocks = [];
 
-      const docDefinition = {
-        pageSize: 'A4',
-        pageMargins: [40, 80, 40, 40],
-
-        header: (currentPage) => {
-          if (currentPage === 1) {
-            return {
-              columns: [
-                {
-                  stack: [
-                    { text: 'Калькулятор', style: 'headerTitle' },
-                    {
-                      text: 'досрочного погашения',
-                      background: '#daff01',
-                      style: 'headerTitleHighlighted'
-                    },
-                    { text: 'ипотеки', style: 'headerTitle' }
-                  ]
-                },
-                {
-                  image: 'logo',
-                  width: 104,
-                  alignment: 'right'
-                }
-              ],
-              margin: [40, 20, 40, 16]
-            };
-          }
-          return {};
-        },
-
-        content: [
+  this.shedule.forEach(item => {
+    if (item.isHoliday) {
+      // Блок для ипотечных каникул
+      blocks.push({
+        stack: [
+          { text: 'Ипотечные каникулы', style: 'holidayBadge' },
           {
             columns: [
               {
-                text: `Расчет платежей от ${this.currentDate}`,
-                style: 'metaText',
-                width: '*'
-              },
-              {
-                text: 'Сделать новый расчет',
-                link: 'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/',
-                style: 'link',
-                width: 'auto',
-                alignment: 'right'
-              }
-            ],
-            margin: [0, 0, 0, 16]
-          },
-
-          this.createInfoBlock('Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий'),
-
-          // Секции с заголовками ВНУТРИ рамок
-          this.createSectionBox(this.createMortgageSection(), 290),
-          this.createSectionBox(this.createRepaymentSection(), 275),
-          // this.createSectionBox(this.createHolidaysSection(), 160),
-          (this.holidays_term && this.holidays_term!==0)
-            ? this.createSectionBox(this.createHolidaysSection(), 160)
-            : {}
-        ],
-
-        images: {
-          logo: logoBase64,
-          iconSymbol: iconSymbolBase64
-        },
-
-        styles: {
-          headerTitle: { fontSize: 16, bold: true, color: '#252628' },
-          headerTitleHighlighted: { fontSize: 16, bold: true, color: '#252628' },
-          metaText: { fontSize: 12, color: '#252628' },
-          link: { fontSize: 12, color: '#252628', decoration: 'underline' },
-          infoText: { fontSize: 12, color: '#252628' },
-          sectionTitle: { fontSize: 16, bold: true, color: '#252628', margin: [0, 0, 0, 16] },
-          label: { fontSize: 12, bold: true, color: '#6d6d6d', margin: [0, 0, 0, 4] },
-          mortgageValue: { fontSize: 12, color: '#252628' },
-          repaymentValue: { fontSize: 12, color: '#252628', margin: [0, 0, 0, 0] },
-          repaymentValueGreen: { fontSize: 12, color: '#699b12', margin: [0, 0, 0, 0] },
-          valueInline: { fontSize: 12, color: '#252628' },
-          valueNoMargin: { fontSize: 12, color: '#252628', margin: [0, 0, 0, 2] }
-        },
-
-        defaultStyle: {
-          font: 'Roboto',
-          fontSize: 10
-        }
-      };
-
-      pdfMake.createPdf(docDefinition).download('расчёт-ипотеки.pdf');
-    },
-
-    // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
-
-    // Иконка: белый круг + чёрный символ
-
-    createIconBlock() {
-      const size = 40;
-      const iconSize = 15;
-      return {
-        stack: [
-          {
-            canvas: [
-              {
-                type: 'ellipse',
-                x: size / 2,
-                y: size / 2,
-                r1: size / 2,
-                r2: size / 2,
-                color: '#ffffff'
-              }
-            ],
-            margin: [0, 0, 0, -size]
-          },
-          {
-            image: 'iconSymbol',
-            width: iconSize,
-            height: iconSize,
-            alignment: 'center',
-            margin: [0, (size - iconSize) / 2, 0, (size - iconSize) / 2]
-          }
-        ],
-        width: size,
-        height: size
-      };
-    },
-
-    // Блок "Расчёт носит справочный характер"
-
-    createInfoBlock(text) {
-      const padding = 16;
-      const blockHeight = 72;
-      return {
-        stack: [
-          {
-            canvas: [
-              {
-                type: 'rect',
-                x: 0,
-                y: 0,
-                w: 515,
-                h: blockHeight,
-                r: 8,
-                color: '#f4f4f4'
-              }
-            ],
-            margin: [0, 0, 0, -blockHeight]
-          },
-          {
-            columns: [
-              {
-                width: 'auto',
-                stack: [this.createIconBlock()],
-                margin: [padding, 16, 16, 16]
-              },
-              {
-                width: '*',
-                stack: [{
-                  text: text,
-                  style: 'infoText',
-                  margin: [0, 7, 0, 0]
-                }],
-                margin: [0, 16, padding, 16]
-              }
-            ]
-          }
-        ],
-        margin: [0, 0, 0, 16]
-      };
-    },
-
-    // Рамка с закруглёнными углами
-
-    createSectionBox(content, heightInPx) {
-      const padding = 16;
-      const blockHeight = heightInPx * 0.75;
-      const borderWidth = 1;
-      const borderColor = '#c8c8cb';
-      const borderRadius = 8;
-
-      return {
-        stack: [
-          {
-            canvas: [
-              {
-                type: 'rect',
-                x: 0,
-                y: 0,
-                w: 515,
-                h: blockHeight,
-                r: borderRadius,
-                lineWidth: borderWidth,
-                lineColor: borderColor
-              }
-            ],
-            margin: [0, 0, 0, -blockHeight]
-          },
-          {
-            ...content,
-            margin: [padding, padding, padding, padding]
-          }
-        ],
-        margin: [0, 0, 0, 16]
-      };
-    },
-
-    // Полная секция "Данные об ипотеке" (заголовок + контент)
-
-    createMortgageSection() {
-      return {
-        stack: [
-          { text: 'Данные об ипотеке', style: 'sectionTitle' },
-          this.createMortgageBlock()
-        ]
-      };
-    },
-
-    // Полная секция "Данные о погашении" (заголовок + контент)
-
-    createRepaymentSection() {
-      return {
-        stack: [
-          { text: 'Данные о погашении', style: 'sectionTitle' },
-          this.createRepaymentBlock()
-        ]
-      };
-    },
-
-    // Блок с данными: закруглённая рамка + текст
-
-    createDataBlock(text) {
-      const padding = [20, 8, 20, 10]; // [left, top, right, bottom] → как padding: 10px 20px
-      const blockHeight = 30; // высота блока (подберите позже)
-      const borderWidth = 1;
-      const borderColor = '#c8c8cb';
-      const borderRadius = 20;
-
-      return {
-        stack: [
-          // Рамка
-          {
-            canvas: [
-              {
-                type: 'rect',
-                x: 0,
-                y: 0,
-                w: 230, // ширина одного блока (515 - 24*2 - 24) / 2 ≈ 230
-                h: blockHeight,
-                r: borderRadius,
-                lineWidth: borderWidth,
-                lineColor: borderColor
-              }
-            ],
-            margin: [0, 0, 0, -blockHeight]
-          },
-          // Текст внутри
-          {
-            text: text,
-            style: 'mortgageValue',
-            margin: padding
-          }
-        ],
-        width: 230 // фиксированная ширина для выравнивания
-      };
-    },
-
-    // Контент "Данные об ипотеке"
-
-    createMortgageBlock() {
-      return {
-        stack: [
-          {
-            columns: [
-              {
-                width: '*',
-                stack: [
-                  { text: 'Сумма кредита, ₽', style: 'label' },
-                  this.createDataBlock(this.$options.filters.format_decimal(this.loanAmount))
-                ]
-              },
-              {
-                width: '*',
-                stack: [
-                  { text: 'Дата получения', style: 'label' },
-                  this.createDataBlock(`${this.$options.filters.capitalize(this.obj_month[this.startMonth - 1])} ${this.startYear}`)
-                ]
-              }
-            ],
-            columnGap: 24,
-            margin: [0, 0, 0, 17]
-          },
-          {
-            columns: [
-              {
-                width: '*',
-                stack: [
-                  { text: 'Ставка, %', style: 'label' },
-                  this.createDataBlock(this.$options.filters.replace_point(this.annualInterestRate))
-                ]
-              },
-              {
-                width: '*',
-                stack: [
-                  { text: 'Срок кредита', style: 'label' },
-                  this.createDataBlock(this.formattedTerm)
-                ]
-              }
-            ],
-            columnGap: 24,
-            margin: [0, 0, 0, 17]
-          },
-          {
-            columns: [
-              {
-                width: '*',
+                width: 120, // как в макете .pdf__block-shedule-item-col-first
                 stack: [
                   {
-                    text: [
-                      { text: 'Тип платежа: ', style: 'label' },
-                      {
-                        text: this.state.payment_type === 'annuity' ? 'Аннуитетный' : 'Дифференцированный',
-                        style: 'valueInline'
-                      }
-                    ]
+                    text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+                    style: 'sheduleItemValue'
                   }
-                ]
-              }
-            ],
-            columnGap: 24
-          }
-        ]
-      };
-    },
-
-    // Контент "Данные о погашении"
-
-    createRepaymentBlock() {
-      const ri = this.repayment_information;
-      const hasEarly = this.array_early_repayment.length > 0;
-      const isAnnuity = this.state.payment_type === 'annuity';
-
-      let paymentText = '';
-      if (hasEarly) {
-        if (ri.monthly_payment_min === ri.monthly_payment_max) {
-          paymentText = `${this.$options.filters.format_decimal(ri.monthly_payment_min)} ₽`;
-        } else {
-          paymentText = `от ${this.$options.filters.format_decimal(ri.monthly_payment_max)} до ${this.$options.filters.format_decimal(ri.monthly_payment_min)} ₽`;
-        }
-      } else {
-        if (isAnnuity) {
-          paymentText = `${this.$options.filters.format_decimal(ri.monthly_payment_annuity)} ₽`;
-        } else {
-          paymentText = `от ${this.$options.filters.format_decimal(ri.monthly_payment_max)} до ${this.$options.filters.format_decimal(ri.monthly_payment_min)} ₽`;
-        }
-      }
-
-      const leftStackRow1 = [
-        { text: 'Вы закроете ипотеку', style: 'label' },
-        {
-          text: `${this.$options.filters.capitalize(ri.mortgage_closure_month)} ${ri.mortgage_closure_year} года`,
-          style: ri.if_earlier_month > 0 ? 'valueNoMargin' : 'repaymentValue'
-        }
-      ];
-      if (ri.if_earlier_month > 0) {
-        leftStackRow1.push({
-          text: `Раньше на ${ri.if_earlier_month} ${this.getMonthDeclension(ri.if_earlier_month)}`,
-          style: 'repaymentValueGreen'
-        });
-      }
-
-      const row1 = {
-        columns: [
-          { width: '*', stack: leftStackRow1 },
-          {
-            width: '*',
-            stack: [
-              { text: 'Ежемесячный платеж', style: 'label' },
-              { text: paymentText, style: 'repaymentValue' }
-            ]
-          }
-        ],
-        columnGap: 24,
-        margin: [0, 0, 0, 12]
-      };
-
-      const row2 = {
-        columns: [
-          {
-            width: '*',
-            stack: [
-              { text: 'Основной долг', style: 'label' },
-              { text: `${this.$options.filters.format_decimal(this.loanAmount)} ₽`, style: 'repaymentValue' }
-            ]
-          },
-          {
-            width: '*',
-            stack: [
-              { text: 'Проценты', style: 'label' },
-              { text: `${this.$options.filters.format_decimal(ri.percentages)} ₽`, style: 'repaymentValue' }
-            ]
-          }
-        ],
-        columnGap: 24,
-        margin: [0, 0, 0, 12]
-      };
-
-      const row3Columns = [
-        {
-          width: '*',
-          stack: [
-            { text: 'Всего заплатите', style: 'label' },
-            { text: `${this.$options.filters.format_decimal(ri.pay_in_total)} ₽`, style: 'repaymentValue' }
-          ]
-        }
-      ];
-      if (hasEarly) {
-        row3Columns.push({
-          width: '*',
-          stack: [
-            { text: 'Экономия', style: 'label' },
-            { text: `${this.$options.filters.format_decimal(ri.savings)} ₽`, style: 'repaymentValueGreen' }
-          ]
-        });
-      }
-
-      const row3 = {
-        columns: row3Columns,
-        columnGap: 24
-      };
-
-      return { stack: [row1, row2, row3] };
-    },
-
-    // Секция "Ипотечные каникулы"
-
-    createHolidaysSection() {
-      if (this.holidays_term&&this.holidays_term===0) {
-        return {text:''}
-      }
-      // Формируем тексты
-      const startDateText = `${this.$options.filters.capitalize(this.obj_month[this.holidays_date[0].month - 1])} ${this.holidays_date[0].year}`;
-      const termText = this.holidays_term;
-
-      return {
-        stack: [
-          { text: 'Ипотечные каникулы', style: 'sectionTitle' },
-          {
-            columns: [
-              {
-                width: '*',
-                stack: [
-                  { text: 'Начало каникул', style: 'label' },
-                  this.createDataBlock(startDateText)
                 ]
               },
               {
                 width: '*',
                 stack: [
-                  { text: 'Срок каникул, мес.', style: 'label' },
-                  this.createDataBlock(termText)
+                  { text: '0', style: 'holidayValue' }
                 ]
               }
             ],
-            columnGap: 24
+            margin: [0, 0, 0, 12]
           }
         ],
-        // Запрещаем разрыв страницы внутри этой секции
-        unbreakable: true
-      };
-    },
+        unbreakable: true, // запрет разрыва
+        margin: [0, 0, 0, 12],
+        background: '#f4f4f4' // фон как в макете
+      });
+    } else {
+      // Стандартный блок платежа
+      blocks.push({
+        stack: [
+          {
+            text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+            style: 'sheduleItemValue',
+            margin: [0, 0, 0, 12]
+          },
+          {
+            columns: [
+              {
+                width: 120,
+                stack: [
+                  { text: 'Задолженность', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(item.remainingBalance)} ₽`, style: 'sheduleItemValue' }
+                ]
+              },
+              {
+                width: '*',
+                stack: [
+                  { text: 'Сумма платежа', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(item.payment)} ₽`, style: 'sheduleItemValue' }
+                ]
+              }
+            ],
+            margin: [0, 0, 0, 8]
+          },
+          {
+            columns: [
+              {
+                width: 120,
+                stack: [
+                  { text: 'Погашение процентов', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(item.interest)} ₽`, style: 'sheduleItemValue' }
+                ]
+              },
+              {
+                width: '*',
+                stack: [
+                  { text: 'Погашение основного долга', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(item.principal)} ₽`, style: 'sheduleItemValue' }
+                ]
+              }
+            ]
+          }
+        ],
+        unbreakable: true, // запрет разрыва
+        margin: [0, 0, 0, 12],
+        // Нет фона — как в макете
+        border: [false, false, false, true], // только нижняя граница
+        borderColor: ['#f4f4f4']
+      });
+    }
+  });
 
+  return blocks;
+}
+
+В docDefinition.content добавьте после секций:
+
+content: [
+  // ... существующие блоки ...
+
+  this.createSectionBox(this.createMortgageSection(), 290),
+  this.createSectionBox(this.createRepaymentSection(), 275),
+  (this.holidays_term && this.holidays_term !== 0)
+    ? this.createSectionBox(this.createHolidaysSection(), 160)
+    : {},
+
+  // ===== ГРАФИК ПЛАТЕЖЕЙ =====
+  {
+    stack: [
+      { text: 'График платежей', style: 'sheduleTitle' },
+      ...this.createSheduleBlocks() // раскрываем массив блоков
+    ],
+    margin: [0, 0, 0, 16]
+  }
+],
