@@ -1,32 +1,161 @@
-{
+createSheduleBlocks() {
+      const blocks = [];
+      let holidayCounter = 0 // счётчик блоков
+
+      this.shedule.forEach(item => {
+        if (item.isHoliday) { //блоки с ипотечными каникулами
+          holidayCounter++ //увеличиваю счётчик
+          const blockHeight = holidayCounter === 1 ? 59 : 43; //высота блока ипотечные каникулы в графике платежей для первого блока 59, для последующих 42
+          const contentWidth = 515; // ← вся ширина контента
+          const badgeHeight = this.converPx(18); // высота плашки "Ипотечные каникулы"
+
+          blocks.push({
             stack: [
+              // Фон на всю ширину
               {
                 canvas: [
                   {
                     type: 'rect',
                     x: 0,
                     y: 0,
-                    w: 136, // ширина плашки (как в макете)
-                    h: badgeHeight,
-                    r: 4, // радиус закругления
-                    color: '#252628'
+                    w: contentWidth, // ← 515pt
+                    r: 8,
+                    h: blockHeight,
+                    color: '#f4f4f4'
                   }
                 ],
-                margin: [0, 0, 0, -badgeHeight]
+                margin: [0, 0, 0, -blockHeight]
               },
+              // Содержимое с отступами ВНУТРИ
               {
-                text: 'Ипотечные каникулы',
-                style: 'holidayBadgeText', // ← новый стиль без background
-                margin: [8, 4, 8, 4] // отступы внутри плашки
+                stack: [
+                  //плашка ипотечные каникулы с закруглением
+                  ...(holidayCounter===1 ? [
+                    {
+                      stack: [
+                        {
+                          canvas: [
+                            {
+                              type: 'rect',
+                              x: 0,
+                              y: 0,
+                              w: this.converPx(135), // ширина плашки (как в макете)
+                              h: badgeHeight,
+                              r: 4, // радиус закругления
+                              color: '#252628'
+                            }
+                          ],
+                          margin: [0, 0, 0, -badgeHeight]
+                        },
+                        {
+                          text: 'Ипотечные каникулы',
+                          style: 'holidayBadgeText', // ← новый стиль без background
+                          margin: [this.converPx(8), this.converPx(2), this.converPx(8), this.converPx(2)] // отступы внутри плашки
+                        }
+                      ],
+                      margin: [16, 0, 16, 8] // отступы вокруг плашки
+                    },
+                  ] : []),
+
+                  {
+                    columns: [
+                      {
+                        width: 120,
+                        stack: [
+                          {
+                            text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+                            style: 'sheduleItemValue'
+                          }
+                        ]
+                      },
+                      {
+                        width: contentWidth - 120 - 32, // ← 515 - 120 - 16 - 16
+                        stack: [{ text: '0', style: 'holidayValue' }]
+                      }
+                    ],
+                    margin: [16, holidayCounter === 1 ? 0 : 4, 16, 12] // вроде как тоже отступы внутри блока ипотечных каникул
+                  }
+                ],
+                margin: [0, 12, 0, 12] //отступы внутри блока ипотечных каникул
               }
             ],
-            margin: [16, 0, 16, 8] // отступы вокруг плашки
-          },
+            unbreakable: true,
+            margin: [0, 0, 0, 0] // ← НЕТ левого отступа!
+          });
+        } else {
+          blocks.push({
+            stack: [
+              {
+                text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+                style: 'sheduleItemValue',
+                margin: [16, 0, 16, 12]
+              },
+              {
+                columns: [
+                  {
+                    width: 120,
+                    stack: [
+                      { text: 'Задолженность', style: 'sheduleItemLabel' },
+                      { text: `${this.$options.filters.format_decimal(item.remainingBalance)} ₽`, style: 'sheduleItemValue' }
+                    ]
+                  },
+                  {
+                    width: 515 - 16 - 120 - 16,
+                    stack: [
+                      { text: 'Сумма платежа', style: 'sheduleItemLabel' },
+                      { text: `${this.$options.filters.format_decimal(item.payment)} ₽`, style: 'sheduleItemValue' }
+                    ]
+                  }
+                ],
+                margin: [16, 0, 16, 8]
+              },
+              {
+                columns: [
+                  {
+                    width: 120,
+                    stack: [
+                      { text: 'Погашение процентов', style: 'sheduleItemLabel' },
+                      { text: `${this.$options.filters.format_decimal(item.interest)} ₽`, style: 'sheduleItemValue' }
+                    ]
+                  },
+                  {
+                    width: 515 - 16 - 120 - 16,
+                    stack: [
+                      { text: 'Погашение основного долга', style: 'sheduleItemLabel' },
+                      { text: `${this.$options.filters.format_decimal(item.principal)} ₽`, style: 'sheduleItemValue' }
+                    ]
+                  }
+                ],
+                margin: [16,0,16,0]
+              },
+              // ===== НИЖНЯЯ ЛИНИЯ ПОД БЛОКОМ ГРАФИКА =====
+              {
+                canvas: [
+                  {
+                    type: 'line',
+                    // x1: 16,(закомментировал, так как мне кажется диз ошибся)
+                    x1: 0,
+                    y1: 0,
+                    // x2: 515 - 16, // ширина контента - левый отступ (закомментировал, так как мне кажется диз ошибся)
+                    x2: 515, // ширина контента - левый отступ
+                    y2: 0,
+                    lineWidth: 1,
+                    lineColor: '#e6e6e6'
+                  }
+                ],
+                margin: [0, 12, 0, 12] // [left, top, right, bottom]
+              }
+            ],
+            unbreakable: true,
+            margin: [0, 0, 0, 0], //отступы обычных платежей, смещегы вправо, как будто padding-left и отступ снизу margin-bottom
+            // border: [false, false, false, true],
+            // borderColor: ['#f4f4f4', '#f4f4f4', '#f4f4f4', '#f4f4f4']
+          });
+        }
+      });
 
-holidayBadgeText: {
-    fontSize: 10,
-    color: '#fff',
-    // УБРАНО: background
-    // УБРАНО: padding
-    margin: [0, 0, 0, 0] // отступы задаются вручную
-  }
+      return {
+        stack: blocks,
+        // margin: [16, 0, 0, 0] // ← левый отступ как padding-left: 16px
+      };
+    }
