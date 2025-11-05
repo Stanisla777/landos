@@ -1,7 +1,165 @@
-1. https://xn--h1alcedd.xn--d1aqf.xn--p1ai/tag/support_measures/
-Подписаться на новости
+// Оценка ширины текста (приблизительно)
+getTextWidth(text, fontSize = 10) {
+  // Средняя ширина символа в pt (для Roboto)
+  const avgCharWidth = fontSize * 0.6;
+  return text.length * avgCharWidth;
+}
 
-Но тут нужно посмотреть, здесь тоже возможно, как и в футере, должно быть обязательным получение рекламных материалов, так как подписываемся на рассылку.
 
-2. https://xn--h1alcedd.xn--d1aqf.xn--p1ai/education/courses/
-То же самое, Подпишитесь на рассылку и узнайте о появлении курсов первыми возможно там нужна обязательность на рассылку рекламных материалов
+
+createEarlyRepaymentBlock(product) {
+  const blockHeight = 85;
+  const contentWidth = 515;
+  const badgeHeight = this.converPx(18);
+  const fontSize = this.converPx(11);
+  const paddingHorizontal = this.converPx(8);
+  const gap = this.converPx(4);
+
+  // Тексты плашек
+  const label1 = 'Досрочное погашение';
+  const label2 = product.type === 'payment' ? 'Уменьшение платежа' : 'Уменьшение срока';
+
+  // Рассчитываем ширину каждой плашки
+  const width1 = this.getTextWidth(label1, fontSize) + paddingHorizontal * 2;
+  const width2 = this.getTextWidth(label2, fontSize) + paddingHorizontal * 2;
+  const minWidth = this.converPx(100);
+  const finalWidth1 = Math.max(width1, minWidth);
+  const finalWidth2 = Math.max(width2, minWidth);
+
+  // ОБЩИЕ ПАРАМЕТРЫ КОЛОНКИ (как в обычных платежах)
+  const COL1_WIDTH = 120;
+  const COL2_WIDTH = contentWidth - 16 - COL1_WIDTH - 16;
+  const ROW1_MARGIN = [16, 0, 16, 8]; // как в обычных платежах
+  const ROW2_MARGIN = [16, 0, 16, 0]; // как в обычных платежах
+
+  return {
+    stack: [
+      // Фон всего блока (как у каникул)
+      {
+        canvas: [
+          {
+            type: 'rect',
+            x: 0,
+            y: 0,
+            w: contentWidth,
+            r: 8,
+            h: blockHeight,
+            color: '#f4f4f4'
+          }
+        ],
+        margin: [0, 0, 0, -blockHeight]
+      },
+      // Содержимое
+      {
+        stack: [
+          // Плашки
+          {
+            columns: [
+              {
+                width: finalWidth1,
+                stack: [
+                  {
+                    canvas: [
+                      {
+                        type: 'rect',
+                        x: 0,
+                        y: 0,
+                        w: finalWidth1,
+                        h: badgeHeight,
+                        r: 4,
+                        color: '#daff01'
+                      }
+                    ],
+                    margin: [0, 0, 0, -badgeHeight]
+                  },
+                  {
+                    text: label1,
+                    fontSize: fontSize,
+                    color: '#252628',
+                    bold: true,
+                    margin: [paddingHorizontal, this.converPx(2), paddingHorizontal, this.converPx(2)]
+                  }
+                ],
+                margin: [16, 0, gap / 2, 8]
+              },
+              {
+                width: finalWidth2,
+                stack: [
+                  {
+                    canvas: [
+                      {
+                        type: 'rect',
+                        x: 0,
+                        y: 0,
+                        w: finalWidth2,
+                        h: badgeHeight,
+                        r: 4,
+                        color: '#fff'
+                      }
+                    ],
+                    margin: [0, 0, 0, -badgeHeight]
+                  },
+                  {
+                    text: label2,
+                    fontSize: fontSize,
+                    color: '#252628',
+                    margin: [paddingHorizontal, this.converPx(2), paddingHorizontal, this.converPx(2)]
+                  }
+                ],
+                margin: [gap / 2, 0, 16, 8]
+              }
+            ]
+          },
+          // Дата (как в обычных платежах)
+          {
+            text: `${this.$options.filters.capitalize(product.nameMonth)} ${product.year}`,
+            style: 'sheduleItemValue',
+            margin: [16, 12, 16, 12]
+          },
+          // Ряды с данными (точно как в обычных платежах)
+          {
+            columns: [
+              {
+                width: COL1_WIDTH,
+                stack: [
+                  { text: 'Задолженность', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(product.remainingBalance)} ₽`, style: 'sheduleItemValue' }
+                ]
+              },
+              {
+                width: COL2_WIDTH,
+                stack: [
+                  { text: 'Сумма платежа', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(product.amount)} ₽`, style: 'sheduleItemValue' }
+                ]
+              }
+            ],
+            margin: ROW1_MARGIN // ← как в обычных платежах
+          },
+          {
+            columns: [
+              {
+                width: COL1_WIDTH,
+                stack: [
+                  { text: 'Погашение процентов', style: 'sheduleItemLabel' },
+                  { text: '-', style: 'sheduleItemValue' }
+                ]
+              },
+              {
+                width: COL2_WIDTH,
+                stack: [
+                  { text: 'Погашение основного долга', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(product.amount)} ₽`, style: 'sheduleItemValue' }
+                ]
+              }
+            ],
+            margin: ROW2_MARGIN // ← как в обычных платежах
+          }
+        ],
+        margin: [0, 12, 0, 12]
+      }
+    ],
+    unbreakable: true,
+    margin: [0, 0, 0, 0]
+  };
+},
