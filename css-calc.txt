@@ -1,59 +1,151 @@
-// Плашки "Досрочное погашение"
-{
-  columns: [
-    {
-      width: finalWidth1,
-      stack: [
-        {
-          canvas: [
-            {
-              type: 'rect',
-              x: 0,
-              y: 0,
-              w: finalWidth1,
-              h: badgeHeight,
-              r: 4,
-              color: '#daff01'
-            }
-          ],
-          margin: [0, 0, 0, -badgeHeight]
-        },
-        {
-          text: label1,
-          fontSize: fontSize,
-          color: '#252628',
-          bold: true,
-          margin: [paddingHorizontal, this.converPx(2), paddingHorizontal, this.converPx(2)]
-        }
-      ],
-      margin: [16, 0, 0, 8] // ← убрали gap/2 справа
-    },
-    {
-      width: finalWidth2,
-      stack: [
-        {
-          canvas: [
-            {
-              type: 'rect',
-              x: 0,
-              y: 0,
-              w: finalWidth2,
-              h: badgeHeight,
-              r: 4,
-              color: '#fff'
-            }
-          ],
-          margin: [0, 0, 0, -badgeHeight]
-        },
-        {
-          text: label2,
-          fontSize: fontSize,
-          color: '#252628',
-          margin: [paddingHorizontal, this.converPx(2), paddingHorizontal, this.converPx(2)]
-        }
-      ],
-      margin: [0, 0, 16, 8] // ← убрали gap/2 слева
-    }
-  ],
-  columnGap: gap // ← основной gap между колонками
-}
+createEarlyRepaymentBlock(product) {
+  const blockHeight = 85;
+  const contentWidth = 515;
+  const badgeHeight = this.converPx(18);
+  const fontSize = this.converPx(11);
+  const paddingHorizontal = this.converPx(8);
+  const gap = this.converPx(4); // 4px → 3pt
+
+  // ФИКСИРОВАННЫЕ ШИРИНЫ В PX (подберите вручную!)
+  const BADGE1_WIDTH = this.converPx(136); // "Досрочное погашение"
+  const BADGE2A_WIDTH = this.converPx(140); // "Уменьшение платежа"
+  const BADGE2B_WIDTH = this.converPx(130); // "Уменьшение срока"
+
+  // Выбираем ширину второй плашки в зависимости от типа
+  const finalWidth2 = product.type === 'payment' ? BADGE2A_WIDTH : BADGE2B_WIDTH;
+
+  // Общие параметры колонки
+  const COL1_WIDTH = 120;
+  const COL2_WIDTH = contentWidth - 16 - COL1_WIDTH - 16;
+
+  return {
+    stack: [
+      // Фон всего блока
+      {
+        canvas: [
+          {
+            type: 'rect',
+            x: 0,
+            y: 0,
+            w: contentWidth,
+            r: 8,
+            h: blockHeight,
+            color: '#f4f4f4'
+          }
+        ],
+        margin: [0, 0, 0, -blockHeight]
+      },
+      // Содержимое
+      {
+        stack: [
+          // Плашки с жёсткими ширинами
+          {
+            columns: [
+              {
+                width: BADGE1_WIDTH,
+                stack: [
+                  {
+                    canvas: [
+                      {
+                        type: 'rect',
+                        x: 0,
+                        y: 0,
+                        w: BADGE1_WIDTH,
+                        h: badgeHeight,
+                        r: 4,
+                        color: '#daff01'
+                      }
+                    ],
+                    margin: [0, 0, 0, -badgeHeight]
+                  },
+                  {
+                    text: 'Досрочное погашение',
+                    fontSize: fontSize,
+                    color: '#252628',
+                    bold: true,
+                    margin: [paddingHorizontal, this.converPx(2), paddingHorizontal, this.converPx(2)]
+                  }
+                ],
+                margin: [16, 0, 0, 8]
+              },
+              {
+                width: finalWidth2,
+                stack: [
+                  {
+                    canvas: [
+                      {
+                        type: 'rect',
+                        x: 0,
+                        y: 0,
+                        w: finalWidth2,
+                        h: badgeHeight,
+                        r: 4,
+                        color: '#fff'
+                      }
+                    ],
+                    margin: [0, 0, 0, -badgeHeight]
+                  },
+                  {
+                    text: product.type === 'payment' ? 'Уменьшение платежа' : 'Уменьшение срока',
+                    fontSize: fontSize,
+                    color: '#252628',
+                    margin: [paddingHorizontal, this.converPx(2), paddingHorizontal, this.converPx(2)]
+                  }
+                ],
+                margin: [0, 0, 16, 8]
+              }
+            ],
+            columnGap: gap
+          },
+          // ... остальное содержимое без изменений ...
+          {
+            text: `${this.$options.filters.capitalize(product.nameMonth)} ${product.year}`,
+            style: 'sheduleItemValue',
+            margin: [16, 12, 16, 12]
+          },
+          {
+            columns: [
+              {
+                width: COL1_WIDTH,
+                stack: [
+                  { text: 'Задолженность', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(product.remainingBalance)} ₽`, style: 'sheduleItemValue' }
+                ]
+              },
+              {
+                width: COL2_WIDTH,
+                stack: [
+                  { text: 'Сумма платежа', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(product.amount)} ₽`, style: 'sheduleItemValue' }
+                ]
+              }
+            ],
+            margin: [16, 0, 16, 8]
+          },
+          {
+            columns: [
+              {
+                width: COL1_WIDTH,
+                stack: [
+                  { text: 'Погашение процентов', style: 'sheduleItemLabel' },
+                  { text: '-', style: 'sheduleItemValue' }
+                ]
+              },
+              {
+                width: COL2_WIDTH,
+                stack: [
+                  { text: 'Погашение основного долга', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(product.amount)} ₽`, style: 'sheduleItemValue' }
+                ]
+              }
+            ],
+            margin: [16, 0, 16, 0]
+          }
+        ],
+        margin: [0, 12, 0, 12]
+      }
+    ],
+    unbreakable: true,
+    margin: [0, 0, 0, 0]
+  };
+},
