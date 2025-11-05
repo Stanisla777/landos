@@ -1,154 +1,94 @@
-createEarlyRepaymentBlock(product) {
-  const blockHeight = 85;
-  const contentWidth = 515;
-  const badgeHeight = this.converPx(18);
-  const fontSize = this.converPx(12); // 12px → 9pt
-  const paddingHorizontal = this.converPx(8); // 8px → 6pt
-  const paddingVertical = this.converPx(2); // 2px → 1.5pt
-  const gap = this.converPx(4); // 4px → 3pt
-
-  // ТРИ ФИКСИРОВАННЫЕ ШИРИНЫ В PX
-  const BADGE1_WIDTH = this.converPx(145); // "Досрочное погашение" (19 символов)
-  const BADGE2A_WIDTH = this.converPx(150); // "Уменьшение платежа" (18 символов, но шире из-за букв)
-  const BADGE2B_WIDTH = this.converPx(140); // "Уменьшение срока" (17 символов)
-
-  // Выбираем ширину второй плашки в зависимости от типа
-  const finalWidth2 = product.type === 'payment' ? BADGE2A_WIDTH : BADGE2B_WIDTH;
-
-  // Параметры колонок (как в обычных платежах)
-  const COL1_WIDTH = 120;
-  const COL2_WIDTH = contentWidth - 16 - COL1_WIDTH - 16;
-
-  return {
-    stack: [
-      // Фон всего блока
-      {
-        canvas: [
-          {
-            type: 'rect',
-            x: 0,
-            y: 0,
-            w: contentWidth,
-            r: 8,
-            h: blockHeight,
-            color: '#f4f4f4'
-          }
-        ],
-        margin: [0, 0, 0, -blockHeight]
-      },
-      // Содержимое
-      {
-        stack: [
-          // Плашки с тремя разными ширинами
-          {
-            columns: [
-              {
-                width: BADGE1_WIDTH,
-                stack: [
-                  {
-                    canvas: [
-                      {
-                        type: 'rect',
-                        x: 0,
-                        y: 0,
-                        w: BADGE1_WIDTH,
-                        h: badgeHeight,
-                        r: 4,
-                        color: '#daff01'
-                      }
-                    ],
-                    margin: [0, 0, 0, -badgeHeight]
-                  },
-                  {
-                    text: 'Досрочное погашение',
-                    fontSize: fontSize,
-                    color: '#252628',
-                    bold: true,
-                    margin: [paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical]
-                  }
-                ],
-                margin: [16, 0, 0, 8]
-              },
-              {
-                width: finalWidth2,
-                stack: [
-                  {
-                    canvas: [
-                      {
-                        type: 'rect',
-                        x: 0,
-                        y: 0,
-                        w: finalWidth2,
-                        h: badgeHeight,
-                        r: 4,
-                        color: '#fff'
-                      }
-                    ],
-                    margin: [0, 0, 0, -badgeHeight]
-                  },
-                  {
-                    text: product.type === 'payment' ? 'Уменьшение платежа' : 'Уменьшение срока',
-                    fontSize: fontSize,
-                    color: '#252628',
-                    margin: [paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical]
-                  }
-                ],
-                margin: [0, 0, 16, 8]
-              }
-            ],
-            columnGap: gap
-          },
-          // Дата
-          {
-            text: `${this.$options.filters.capitalize(product.nameMonth)} ${product.year}`,
-            style: 'sheduleItemValue',
-            margin: [16, 12, 16, 12]
-          },
-          // Ряд 1
-          {
-            columns: [
-              {
-                width: COL1_WIDTH,
-                stack: [
-                  { text: 'Задолженность', style: 'sheduleItemLabel' },
-                  { text: `${this.$options.filters.format_decimal(product.remainingBalance)} ₽`, style: 'sheduleItemValue' }
-                ]
-              },
-              {
-                width: COL2_WIDTH,
-                stack: [
-                  { text: 'Сумма платежа', style: 'sheduleItemLabel' },
-                  { text: `${this.$options.filters.format_decimal(product.amount)} ₽`, style: 'sheduleItemValue' }
-                ]
-              }
-            ],
-            margin: [16, 0, 16, 8]
-          },
-          // Ряд 2
-          {
-            columns: [
-              {
-                width: COL1_WIDTH,
-                stack: [
-                  { text: 'Погашение процентов', style: 'sheduleItemLabel' },
-                  { text: '-', style: 'sheduleItemValue' }
-                ]
-              },
-              {
-                width: COL2_WIDTH,
-                stack: [
-                  { text: 'Погашение основного долга', style: 'sheduleItemLabel' },
-                  { text: `${this.$options.filters.format_decimal(product.amount)} ₽`, style: 'sheduleItemValue' }
-                ]
-              }
-            ],
-            margin: [16, 0, 16, 0]
-          }
-        ],
-        margin: [0, 12, 0, 12]
-      }
-    ],
-    unbreakable: true,
-    margin: [0, 0, 0, 0]
-  };
-},
+{
+  columns: [
+    // 1. Жёлтая плашка
+    {
+      width: BADGE1_WIDTH,
+      stack: [
+        {
+          canvas: [
+            {
+              type: 'rect',
+              x: 0,
+              y: 0,
+              w: BADGE1_WIDTH,
+              h: badgeHeight,
+              r: 4,
+              color: '#daff01'
+            }
+          ],
+          margin: [0, 0, 0, -badgeHeight]
+        },
+        {
+          text: 'Досрочное\u00A0погашение'.replace(/е/g, 'e'),
+          fontSize: fontSize,
+          color: '#252628',
+          bold: true,
+          margin: [paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical]
+        }
+      ],
+      margin: [16, 0, 0, 8] // отступ слева от края блока
+    },
+    // 2. GAP колонка
+    {
+      width: gap,
+      stack: [
+        {
+          canvas: [
+            {
+              type: 'rect',
+              x: 0,
+              y: 0,
+              w: gap,
+              h: badgeHeight,
+              color: '#f4f4f4' // фон блока
+            }
+          ]
+        }
+      ]
+    },
+    // 3. Белая плашка
+    {
+      width: BADGE2_WIDTH,
+      stack: [
+        {
+          canvas: [
+            {
+              type: 'rect',
+              x: 0,
+              y: 0,
+              w: BADGE2_WIDTH,
+              h: badgeHeight,
+              r: 4,
+              color: '#fff'
+            }
+          ],
+          margin: [0, 0, 0, -badgeHeight]
+        },
+        {
+          text: (product.type === 'payment' ? 'Уменьшение\u00A0платежа' : 'Уменьшение\u00A0срока').replace(/е/g, 'e'),
+          fontSize: fontSize,
+          color: '#252628',
+          margin: [paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical]
+        }
+      ]
+    },
+    // 4. Компенсация справа (чтобы закрасить лишнее)
+    {
+      width: 16,
+      stack: [
+        {
+          canvas: [
+            {
+              type: 'rect',
+              x: 0,
+              y: 0,
+              w: 16,
+              h: badgeHeight,
+              color: '#f4f4f4' // фон блока
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
