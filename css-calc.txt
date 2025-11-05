@@ -2,16 +2,20 @@ createEarlyRepaymentBlock(product) {
   const blockHeight = 85;
   const contentWidth = 515;
   const badgeHeight = this.converPx(18);
-  const fontSize = this.converPx(12); // ← как в каникулах!
-  const paddingHorizontal = this.converPx(8);
-  const paddingVertical = this.converPx(2);
-  const gap = this.converPx(4);
+  const fontSize = this.converPx(12); // 12px → 9pt
+  const paddingHorizontal = this.converPx(8); // 8px → 6pt
+  const paddingVertical = this.converPx(2); // 2px → 1.5pt
+  const gap = this.converPx(4); // 4px → 3pt
 
-  // ШИРИНЫ КАК В ИПОТЕЧНЫХ КАНИКУЛАХ, НО ЧУТЬ БОЛЬШЕ
-  const BADGE1_WIDTH = this.converPx(145); // ← увеличено с 135 до 145
-  const BADGE2_WIDTH = this.converPx(145); // ← для обоих типов
+  // ТРИ ФИКСИРОВАННЫЕ ШИРИНЫ В PX
+  const BADGE1_WIDTH = this.converPx(145); // "Досрочное погашение" (19 символов)
+  const BADGE2A_WIDTH = this.converPx(150); // "Уменьшение платежа" (18 символов, но шире из-за букв)
+  const BADGE2B_WIDTH = this.converPx(140); // "Уменьшение срока" (17 символов)
 
-  // Общие параметры колонки
+  // Выбираем ширину второй плашки в зависимости от типа
+  const finalWidth2 = product.type === 'payment' ? BADGE2A_WIDTH : BADGE2B_WIDTH;
+
+  // Параметры колонок (как в обычных платежах)
   const COL1_WIDTH = 120;
   const COL2_WIDTH = contentWidth - 16 - COL1_WIDTH - 16;
 
@@ -35,7 +39,7 @@ createEarlyRepaymentBlock(product) {
       // Содержимое
       {
         stack: [
-          // Плашки (копия логики каникул)
+          // Плашки с тремя разными ширинами
           {
             columns: [
               {
@@ -57,7 +61,7 @@ createEarlyRepaymentBlock(product) {
                   },
                   {
                     text: 'Досрочное погашение',
-                    fontSize: fontSize, // ← 12px как в каникулах
+                    fontSize: fontSize,
                     color: '#252628',
                     bold: true,
                     margin: [paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical]
@@ -66,7 +70,7 @@ createEarlyRepaymentBlock(product) {
                 margin: [16, 0, 0, 8]
               },
               {
-                width: BADGE2_WIDTH,
+                width: finalWidth2,
                 stack: [
                   {
                     canvas: [
@@ -74,7 +78,7 @@ createEarlyRepaymentBlock(product) {
                         type: 'rect',
                         x: 0,
                         y: 0,
-                        w: BADGE2_WIDTH,
+                        w: finalWidth2,
                         h: badgeHeight,
                         r: 4,
                         color: '#fff'
@@ -84,7 +88,7 @@ createEarlyRepaymentBlock(product) {
                   },
                   {
                     text: product.type === 'payment' ? 'Уменьшение платежа' : 'Уменьшение срока',
-                    fontSize: fontSize, // ← 12px как в каникулах
+                    fontSize: fontSize,
                     color: '#252628',
                     margin: [paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical]
                   }
@@ -94,3 +98,57 @@ createEarlyRepaymentBlock(product) {
             ],
             columnGap: gap
           },
+          // Дата
+          {
+            text: `${this.$options.filters.capitalize(product.nameMonth)} ${product.year}`,
+            style: 'sheduleItemValue',
+            margin: [16, 12, 16, 12]
+          },
+          // Ряд 1
+          {
+            columns: [
+              {
+                width: COL1_WIDTH,
+                stack: [
+                  { text: 'Задолженность', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(product.remainingBalance)} ₽`, style: 'sheduleItemValue' }
+                ]
+              },
+              {
+                width: COL2_WIDTH,
+                stack: [
+                  { text: 'Сумма платежа', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(product.amount)} ₽`, style: 'sheduleItemValue' }
+                ]
+              }
+            ],
+            margin: [16, 0, 16, 8]
+          },
+          // Ряд 2
+          {
+            columns: [
+              {
+                width: COL1_WIDTH,
+                stack: [
+                  { text: 'Погашение процентов', style: 'sheduleItemLabel' },
+                  { text: '-', style: 'sheduleItemValue' }
+                ]
+              },
+              {
+                width: COL2_WIDTH,
+                stack: [
+                  { text: 'Погашение основного долга', style: 'sheduleItemLabel' },
+                  { text: `${this.$options.filters.format_decimal(product.amount)} ₽`, style: 'sheduleItemValue' }
+                ]
+              }
+            ],
+            margin: [16, 0, 16, 0]
+          }
+        ],
+        margin: [0, 12, 0, 12]
+      }
+    ],
+    unbreakable: true,
+    margin: [0, 0, 0, 0]
+  };
+},
