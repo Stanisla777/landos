@@ -1,12 +1,15 @@
-isPdfLoading: false // ← новое свойство
-
-this.isPdfLoading = true;
-
-
-const pdfDoc = pdfMake.createPdf(docDefinition);
-  
-  // Генерируем и скачиваем PDF
-  pdfDoc.download('расчёт-ипотеки.pdf', () => {
-    // Завершение загрузки (вызывается после скачивания)
-    this.isPdfLoading = false;
+this.$nextTick(() => {
+    try {
+      const docDefinition = { /* ... */ };
+      const pdfDoc = pdfMake.createPdf(docDefinition);
+      
+      pdfDoc.download('расчёт-ипотеки.pdf', () => {
+        this.isPdfLoading = false;
+      });
+    } catch (error) {
+      console.error('PDF error:', error);
+      this.isPdfLoading = false;
+      alert('Ошибка при создании PDF');
+    }
   });
+
