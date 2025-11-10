@@ -1,1 +1,39 @@
-nextItem.prepayments && nextItem.prepayments.length > 0
+// ДОСРОЧНЫЕ ПОГАШЕНИЯ
+if (item.prepayments && item.prepayments.length > 0) {
+  item.prepayments.forEach((product, prepaymentIndex) => {
+    // ... пропуск e-notation ...
+    blocks.push(this.createEarlyRepaymentBlock(product));
+  });
+
+  // ===== ПРОВЕРКА: следующий элемент — досрочный? =====
+  const hasNextItem = index < totalItems - 1;
+  const nextItem = hasNextItem ? this.shedule[index + 1] : null;
+  
+  const nextItemIsEarly = nextItem && 
+    !nextItem.isHoliday && 
+    nextItem.prepayments && 
+    nextItem.prepayments.length > 0;
+
+  const nextItemIsHoliday = nextItem && nextItem.isHoliday;
+
+  // 1. ЛИНИЯ после блока(ов) досрочного
+  blocks.push({
+    canvas: [{
+      type: 'line',
+      x1: this.converPx(16),
+      y1: 0,
+      x2: 515 - 16 - 16,
+      y2: 0,
+      lineWidth: 1,
+      // Белая линия, если следующий — досрочный или каникулы
+      lineColor: nextItemIsEarly || nextItemIsHoliday ? '#ffffff' : '#f4f4f4'
+    }],
+    margin: [
+      0,
+      this.converPx(12), // отступ сверху (фиксированный)
+      0,
+      // 🔑 КЛЮЧЕВОЕ: отступ снизу — ТОЛЬКО если следующий — досрочный
+      nextItemIsEarly ? this.converPx(12) : (nextItemIsHoliday ? 0 : this.converPx(12))
+    ]
+  });
+}
