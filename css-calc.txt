@@ -1,57 +1,177 @@
-else {
-  blocks.push(this.createStandardPaymentBlock(item));
+createSheduleBlocks() {
+      const blocks = [];
+      const totalItems = this.shedule.length;
 
-  if (item.prepayments && item.prepayments.length > 0) {
-    for (let i = 0; i < item.prepayments.length; i++) {
-      const product = item.prepayments[i];
-      if (String(product.amount).toLowerCase().includes('e')) continue;
+      this.shedule.forEach((item, index) => {
+        const hasNextItem = index < totalItems - 1;
+        const nextItem = hasNextItem ? this.shedule[index + 1] : null;
+        const nextIsHoliday = nextItem && nextItem.isHoliday;
+        const nextIsEarlyRepayment = nextItem && nextItem.prepayments && nextItem.prepayments.length > 0;
 
-      blocks.push(this.createEarlyRepaymentBlock(product));
+        if (item.isHoliday) {
+          // === ИПОТЕЧНЫЕ КАНИКУЛЫ ===
+          let holidayCounter = 0;
+          for (let i = index; i >= 0 && this.shedule[i].isHoliday; i--) {
+            holidayCounter++;
+          }
 
-      const isLastEarlyInItem = (i === item.prepayments.length - 1);
+          const blockHeight = holidayCounter === 1 ? 60 : 39;
+          const contentWidth = 515 - this.converPx(16) - this.converPx(16);
+          const badgeHeight = this.converPx(20);
 
-      if (hasNextItem && isLastEarlyInItem) {
-        const nextItem = this.shedule[index + 1];
+          const isLastHolidayBlock = (index === totalItems - 1) || (!this.shedule[index + 1].isHoliday);
 
-        // === Исправленная проверка на досрочное (игнорируем 'e') ===
-        let nextHasVisibleEarlyRepayment = false;
-        if (nextItem && nextItem.prepayments && nextItem.prepayments.length > 0) {
-          for (let j = 0; j < nextItem.prepayments.length; j++) {
-            const p = nextItem.prepayments[j];
-            // Только если amount — не содержит 'e' и не NaN
-            if (p && typeof p.amount !== 'undefined') {
-              const amountStr = String(p.amount).toLowerCase();
-              if (amountStr.indexOf('e') === -1 && amountStr !== 'nan') {
-                nextHasVisibleEarlyRepayment = true;
-                break;
+          blocks.push({
+            stack: [
+              {
+                canvas: [
+                  {
+                    type: 'rect',
+                    x: 0,
+                    y: 0,
+                    w: contentWidth,
+                    r: 8,
+                    h: blockHeight,
+                    color: '#f4f4f4'
+                  }
+                ],
+                margin: [0, 0, 0, -blockHeight]
+              },
+              {
+                stack: [
+                  ...(holidayCounter === 1 ? [
+                    {
+                      stack: [
+                        {
+                          canvas: [
+                            {
+                              type: 'rect',
+                              x: 0,
+                              y: 0,
+                              w: this.converPx(135),
+                              h: badgeHeight,
+                              r: 4,
+                              color: '#252628'
+                            }
+                          ],
+                          margin: [0, 0, 0, -badgeHeight]
+                        },
+                        {
+                          text: 'Ипотечные каникулы',
+                          style: 'holidayBadgeText',
+                          margin: [this.converPx(8), 4, this.converPx(8), 3]
+                        }
+                      ],
+                      margin: [this.converPx(16), 0, this.converPx(16), this.converPx(11)]
+                    }
+                  ] : []),
+                  {
+                    columns: [
+                      {
+                        width: 120,
+                        stack: [
+                          {
+                            text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+                            style: 'sheduleItemValueDate'
+                          }
+                        ]
+                      },
+                      {
+                        width: contentWidth - 120,
+                        stack: [{ text: '0', style: 'holidayValue' }]
+                      }
+                    ],
+                    margin: [this.converPx(16), 0, 16, this.converPx(11)]
+                  }
+                ],
+                margin: [0, this.converPx(16), 0, this.converPx(16)]
               }
+            ],
+            unbreakable: true,
+            margin: [0, 0, 0, 0]
+          });
+
+          // После каникул всегда добавляем отступ 12px
+          if (isLastHolidayBlock && hasNextItem) {
+            const nextItem = this.shedule[index + 1];
+            const nextIsHoliday = nextItem.isHoliday;
+            const nextIsEarlyRepayment = nextItem.prepayments && nextItem.prepayments.length > 0;
+
+            if (nextIsHoliday || nextIsEarlyRepayment) {
+              blocks.push({ text: '', margin: [0, 0, 0, this.converPx(12)] });
+            } else {
+              blocks.push({
+                canvas: [
+                  {
+                    type: 'line',
+                    x1: this.converPx(16),
+                    y1: 0,
+                    x2: 515 - this.converPx(16) - this.converPx(16),
+                    y2: 0,
+                    lineWidth: 1,
+                    lineColor: '#f4f4f4'
+                  }
+                ],
+                margin: [0, 0, 0, this.converPx(11)]
+              });
+            }
+          }
+
+        } else {
+          // === ПЛАТЁЖ + ДОСРОЧНЫЕ ===
+          blocks.push(this.createStandardPaymentBlock(item));
+
+          if (item.prepayments && item.prepayments.length > 0) {
+            // Рисуем все досрочные
+            for (let i = 0; i < item.prepayments.length; i++) {
+              const product = item.prepayments[i];
+              if (String(product.amount).toLowerCase().includes('e')) continue;
+
+              blocks.push(this.createEarlyRepaymentBlock(product));
+
+              // Определяем: это последнее досрочное в этом item?
+              const isLastEarlyInItem = (i === item.prepayments.length - 1);
+
+              if (hasNextItem && isLastEarlyInItem) {
+                const nextItem = this.shedule[index + 1];
+
+                // Явные проверки БЕЗ ?.
+                const nextIsEarlyRepayment = nextItem && nextItem.prepayments && nextItem.prepayments.length > 0;
+                const nextIsHoliday = nextItem && nextItem.isHoliday === true; // ← === true, а не просто truthy
+
+                console.log('проверка');
+                console.log(nextIsEarlyRepayment);
+                console.log(nextIsHoliday);
+
+                if (nextIsHoliday) {
+                  // Следующий блок — особый → отступ 12px
+                  blocks.push({ text: '', margin: [0, 0, 0, this.converPx(12)] });
+                } else {
+                  // Следующий блок — обычный платёж → линия с отступами 12px/12px
+                  blocks.push({
+                    canvas: [
+                      {
+                        type: 'line',
+                        x1: this.converPx(16),
+                        y1: 0,
+                        x2: 515 - this.converPx(16) - this.converPx(16),
+                        y2: 0,
+                        lineWidth: 1,
+                        lineColor: '#f4f4f4'
+                      }
+                    ],
+                    margin: [0, this.converPx(12), 0, this.converPx(12)]
+                  });
+                }
+              } else if (!isLastEarlyInItem) {
+                // Не последнее досрочное → просто отступ (как было)
+                blocks.push({ text: '', margin: [0, 0, 0, this.converPx(12)] });
+              }
+              // Если !hasNextItem и isLastEarlyInItem — ничего не добавляем (конец графика)
             }
           }
         }
+      });
 
-        const nextIsHoliday = nextItem && nextItem.isHoliday === true;
-
-        if (nextHasVisibleEarlyRepayment || nextIsHoliday) {
-          blocks.push({ text: '', margin: [0, 0, 0, this.converPx(12)] });
-        } else {
-          blocks.push({
-            canvas: [
-              {
-                type: 'line',
-                x1: this.converPx(16),
-                y1: 0,
-                x2: 515 - this.converPx(16) - this.converPx(16),
-                y2: 0,
-                lineWidth: 1,
-                lineColor: '#f4f4f4'
-              }
-            ],
-            margin: [0, this.converPx(12), 0, this.converPx(12)]
-          });
-        }
-      } else if (!isLastEarlyInItem) {
-        blocks.push({ text: '', margin: [0, 0, 0, this.converPx(12)] });
-      }
-    }
-  }
-}
+      return { stack: blocks };
+    },
