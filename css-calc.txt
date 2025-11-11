@@ -57,9 +57,8 @@ createSheduleBlocks() {
             ],
             margin: [0, this.converPx(16), 0, this.converPx(16)]
           },
-          // Линия после каникул — только если следующий платёж
           ...(isLastHolidayBlock && nextIsPayment ? [{
-            canvas: [{ type: 'line', x1: this.converPx(16), y1: 0, x2: 515 - 16 - 16, y2: 0, lineWidth: 1, lineColor: '#f4f4f4' }],
+            canvas: [{ type: 'line', x1: this.converPx(16), y1: 0, x2: 483, y2: 0, lineWidth: 1, lineColor: '#f4f4f4' }],
             margin: [0, 0, 0, this.converPx(12)]
           }] : [])
         ],
@@ -68,31 +67,32 @@ createSheduleBlocks() {
       });
 
     } else {
-      // === ПЛАТЁЖ ИЛИ ДОСРОЧНОЕ ===
+      // === ОСНОВНОЙ БЛОК: платёж + досрочные (всё в одном item) ===
+      
+      // 1. Сначала — платёж за месяц
+      blocks.push(this.createStandardPaymentBlock(item));
+
+      // 2. Потом — досрочные погашения (если есть)
       if (item.prepayments && item.prepayments.length > 0) {
-        // Досрочные
         item.prepayments.forEach((product, i) => {
           if (String(product.amount).toLowerCase().includes('e')) return;
           blocks.push(this.createEarlyRepaymentBlock(product));
         });
 
-        // После досрочного:
+        // 3. После ВСЕХ досрочных в этом месяце — решаем, нужна ли линия
         if (nextIsPayment) {
-          // → платёж: линия
+          // Следующий — обычный платёж → нужна линия
           blocks.push({
             canvas: [{ type: 'line', x1: this.converPx(16), y1: 0, x2: 483, y2: 0, lineWidth: 1, lineColor: '#f4f4f4' }],
             margin: [0, this.converPx(12), 0, this.converPx(12)]
           });
         } else if (nextIsEarly || nextIsHoliday) {
-          // → досрочное / каникулы: только отступ
+          // Следующий — досрочное или каникулы → только отступ
           blocks.push({ text: '', margin: [0, this.converPx(12), 0, 0] });
         }
-
+        // Если конец списка — ничего не добавляем
       } else {
-        // Обычный платёж
-        blocks.push(this.createStandardPaymentBlock(item));
-
-        // После платежа — линия, если следующий не каникулы
+        // Нет досрочных → линия, если следующий не каникулы
         if (hasNextItem && !nextIsHoliday) {
           blocks.push({
             canvas: [{ type: 'line', x1: this.converPx(16), y1: 0, x2: 483, y2: 0, lineWidth: 1, lineColor: '#f4f4f4' }],
