@@ -1,2 +1,57 @@
-console.log(nextIsEarlyRepayment);
-console.log(nextIsHoliday);
+else {
+  blocks.push(this.createStandardPaymentBlock(item));
+
+  if (item.prepayments && item.prepayments.length > 0) {
+    for (let i = 0; i < item.prepayments.length; i++) {
+      const product = item.prepayments[i];
+      if (String(product.amount).toLowerCase().includes('e')) continue;
+
+      blocks.push(this.createEarlyRepaymentBlock(product));
+
+      const isLastEarlyInItem = (i === item.prepayments.length - 1);
+
+      if (hasNextItem && isLastEarlyInItem) {
+        const nextItem = this.shedule[index + 1];
+
+        // === Исправленная проверка на досрочное (игнорируем 'e') ===
+        let nextHasVisibleEarlyRepayment = false;
+        if (nextItem && nextItem.prepayments && nextItem.prepayments.length > 0) {
+          for (let j = 0; j < nextItem.prepayments.length; j++) {
+            const p = nextItem.prepayments[j];
+            // Только если amount — не содержит 'e' и не NaN
+            if (p && typeof p.amount !== 'undefined') {
+              const amountStr = String(p.amount).toLowerCase();
+              if (amountStr.indexOf('e') === -1 && amountStr !== 'nan') {
+                nextHasVisibleEarlyRepayment = true;
+                break;
+              }
+            }
+          }
+        }
+
+        const nextIsHoliday = nextItem && nextItem.isHoliday === true;
+
+        if (nextHasVisibleEarlyRepayment || nextIsHoliday) {
+          blocks.push({ text: '', margin: [0, 0, 0, this.converPx(12)] });
+        } else {
+          blocks.push({
+            canvas: [
+              {
+                type: 'line',
+                x1: this.converPx(16),
+                y1: 0,
+                x2: 515 - this.converPx(16) - this.converPx(16),
+                y2: 0,
+                lineWidth: 1,
+                lineColor: '#f4f4f4'
+              }
+            ],
+            margin: [0, this.converPx(12), 0, this.converPx(12)]
+          });
+        }
+      } else if (!isLastEarlyInItem) {
+        blocks.push({ text: '', margin: [0, 0, 0, this.converPx(12)] });
+      }
+    }
+  }
+}
