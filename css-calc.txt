@@ -1,39 +1,230 @@
-// После последнего досрочного в месяце
-if (i === item.prepayments.length - 1 && hasNextItem) {
-  const nextItem = this.shedule[index + 1];
-  const nextHasEarly = nextItem.prepayments && nextItem.prepayments.length > 0;
+createSheduleBlocks() {
+  const blocks = [];
+  const totalItems = this.shedule.length;
 
-  if (nextItem.isHoliday || nextHasEarly) {
-    // Следующий — каникулы или досрочное: "невидимая" линия с отступом 12px сверху
-    blocks.push({
-      canvas: [
-        {
-          type: 'line',
-          x1: this.converPx(16),
-          y1: 0,
-          x2: 515 - 16 - 16,
-          y2: 0,
-          lineWidth: 1,
-          lineColor: '#ffffff' // или '#f4f4f4', если фон такой — у вас фон блоков '#f4f4f4'
+  this.shedule.forEach((item, index) => {
+    const hasNextItem = index < totalItems - 1;
+    const nextItem = hasNextItem ? this.shedule[index + 1] : null;
+    const nextIsHoliday = nextItem && nextItem.isHoliday;
+
+    if (item.isHoliday) {
+      // === ИПОТЕЧНЫЕ КАНИКУЛЫ ===
+      let holidayCounter = 0;
+      for (let i = index; i >= 0 && this.shedule[i].isHoliday; i--) {
+        holidayCounter++;
+      }
+
+      const blockHeight = holidayCounter === 1 ? 60 : 41;
+      const contentWidth = 515 - 16 - 16;
+      const badgeHeight = this.converPx(20);
+
+      const isLastHolidayBlock =
+        (index === totalItems - 1) ||
+        (!this.shedule[index + 1].isHoliday);
+
+      blocks.push({
+        stack: [
+          {
+            canvas: [
+              {
+                type: 'rect',
+                x: 0,
+                y: 0,
+                w: contentWidth,
+                r: 8,
+                h: blockHeight,
+                color: '#f4f4f4'
+              }
+            ],
+            margin: [0, 0, 0, -blockHeight]
+          },
+          {
+            stack: [
+              ...(holidayCounter === 1 ? [
+                {
+                  stack: [
+                    {
+                      canvas: [
+                        {
+                          type: 'rect',
+                          x: 0,
+                          y: 0,
+                          w: this.converPx(135),
+                          h: badgeHeight,
+                          r: 4,
+                          color: '#252628'
+                        }
+                      ],
+                      margin: [0, 0, 0, -badgeHeight]
+                    },
+                    {
+                      text: 'Ипотечные каникулы',
+                      style: 'holidayBadgeText',
+                      margin: [this.converPx(8), 4, this.converPx(8), 3]
+                    }
+                  ],
+                  margin: [this.converPx(16), 0, this.converPx(16), this.converPx(11)]
+                }
+              ] : []),
+              {
+                columns: [
+                  {
+                    width: 120,
+                    stack: [
+                      {
+                        text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+                        style: 'sheduleItemValueDate'
+                      }
+                    ]
+                  },
+                  {
+                    width: contentWidth - 120,
+                    stack: [{ text: '0', style: 'holidayValue' }]
+                  }
+                ],
+                margin: [this.converPx(16), holidayCounter === 1 ? 0 : 4, 16, this.converPx(11)]
+              }
+            ],
+            margin: [0, this.converPx(16), 0, this.converPx(16)]
+          },
+          ...(isLastHolidayBlock && hasNextItem ? [
+            // Отступ 12px после каникул
+            { text: '', margin: [0, 0, 0, this.converPx(12)] },
+            // Линия только если следующий обычный платеж (не досрочное)
+            ...((!nextItem.isHoliday && (!nextItem.prepayments || nextItem.prepayments.length === 0)) ? [
+              {
+                canvas: [
+                  {
+                    type: 'line',
+                    x1: this.converPx(16),
+                    y1: 0,
+                    x2: 515 - 16 - 16,
+                    y2: 0,
+                    lineWidth: 1,
+                    lineColor: '#f4f4f4'
+                  }
+                ],
+                margin: [0, 0, 0, this.converPx(12)]
+              }
+            ] : [])
+          ] : [])
+        ],
+        unbreakable: true,
+        margin: [0, 0, 0, 0]
+      });
+
+    } else {
+      // === ПЛАТЁЖ + ДОСРОЧНЫЕ ===
+      blocks.push(this.createStandardPaymentBlock(item));
+
+      if (item.prepayments && item.prepayments.length > 0) {
+        // Рисуем все досрочные
+        for (let i = 0; i < item.prepayments.length; i++) {
+          const product = item.prepayments[i];
+          if (String(product.amount).toLowerCase().includes('e')) continue;
+
+          blocks.push(this.createEarlyRepaymentBlock(product));
+
+          // После последнего досрочного — отступ 12px всегда, а линия только если следующий обычный платеж
+          if (i === item.prepayments.length - 1) {
+            const nextIsEarlyRepayment = nextItem && nextItem.prepayments && nextItem.prepayments.length > 0;
+            
+            // Всегда добавляем отступ 12px после блока досрочного погашения
+            blocks.push({
+              text: '',
+              margin: [0, 0, 0, this.converPx(12)]
+            });
+            
+            // Линию добавляем только если следующий блок обычный платеж (НЕ каникулы и НЕ досрочное)
+            if (hasNextItem && !nextIsHoliday && !nextIsEarlyRepayment) {
+              blocks.push({
+                canvas: [
+                  {
+                    type: 'line',
+                    x1: this.converPx(16),
+                    y1: 0,
+                    x2: 515 - 16 - 16,
+                    y2: 0,
+                    lineWidth: 1,
+                    lineColor: '#f4f4f4'
+                  }
+                ],
+                margin: [0, 0, 0, this.converPx(12)]
+              });
+            }
+          }
         }
-      ],
-      margin: [0, this.converPx(12), 0, 0] // только верхний отступ 12px
-    });
-  } else {
-    // Следующий — обычный платёж: видимая линия с отступами 12px сверху и снизу
-    blocks.push({
-      canvas: [
-        {
-          type: 'line',
-          x1: this.converPx(16),
-          y1: 0,
-          x2: 515 - 16 - 16,
-          y2: 0,
-          lineWidth: 1,
-          lineColor: '#f4f4f4'
-        }
-      ],
-      margin: [0, this.converPx(12), 0, this.converPx(12)]
-    });
-  }
-}
+      }
+    }
+  });
+
+  return { stack: blocks };
+},
+
+--------------------------
+
+createStandardPaymentBlock(item) {
+  return {
+    stack: [
+      {
+        text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+        style: 'sheduleItemValueDate',
+        margin: [this.converPx(16), 0, this.converPx(16), this.converPx(8)]
+      },
+      {
+        columns: [
+          {
+            width: 120,
+            stack: [
+              { text: 'Задолженность', style: 'sheduleItemLabel' },
+              { text: `${this.$options.filters.format_decimal_pdf(item.remainingBalance)} ₽`, style: 'sheduleItemValue' }
+            ]
+          },
+          {
+            width: 515 - 16 - 120 - 16,
+            stack: [
+              { text: 'Сумма платежа', style: 'sheduleItemLabel' },
+              { text: `${this.$options.filters.format_decimal_pdf(item.payment)} ₽`, style: 'sheduleItemValue' }
+            ]
+          }
+        ],
+        margin: [this.converPx(16), 0, this.converPx(16), this.converPx(8)] //отступы ряда блока обычного пплатежа
+      },
+      {
+        columns: [
+          {
+            width: 120,
+            stack: [
+              { text: 'Погашение процентов', style: 'sheduleItemLabel' },
+              { text: `${this.$options.filters.format_decimal_pdf(item.interest)} ₽`, style: 'sheduleItemValue' }
+            ]
+          },
+          {
+            width: 515 - 16 - 120 - 16,
+            stack: [
+              { text: 'Погашение основного долга', style: 'sheduleItemLabel' },
+              { text: `${this.$options.filters.format_decimal_pdf(item.principal)} ₽`, style: 'sheduleItemValue' }
+            ]
+          }
+        ],
+        margin: [this.converPx(16), 0, this.converPx(16), 0] //отступы ряда блока обычного пплатежа
+      },
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: this.converPx(16),
+            y1: 0,
+            x2: 515 - 16 - 16,
+            y2: 0,
+            lineWidth: 1,
+            lineColor: '#f4f4f4'
+          }
+        ],
+        margin: [0, this.converPx(12), 0, this.converPx(12)] // сверху и снизу по 12px = 24px
+      }
+    ],
+    unbreakable: true,
+    margin: [0, 0, 0, 0]
+  };
+},
