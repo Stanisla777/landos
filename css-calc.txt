@@ -1,2 +1,64 @@
-console.log(nextIsEarlyRepayment );
-console.log(nextIsHoliday);
+else {
+  // === ПЛАТЁЖ + ДОСРОЧНЫЕ ===
+  blocks.push(this.createStandardPaymentBlock(item));
+
+  if (item.prepayments && item.prepayments.length > 0) {
+    // Фильтруем "e" значения (как было)
+    var validPrepayments = [];
+    for (var p = 0; p < item.prepayments.length; p++) {
+      var product = item.prepayments[p];
+      if (String(product.amount).toLowerCase().indexOf('e') === -1) {
+        validPrepayments.push(product);
+      }
+    }
+
+    var totalPrepayments = validPrepayments.length;
+
+    for (var i = 0; i < totalPrepayments; i++) {
+      var product = validPrepayments[i];
+      blocks.push(this.createEarlyRepaymentBlock(product));
+
+      // Определяем, что идёт ДАЛЬШЕ:
+      if (i < totalPrepayments - 1) {
+        // Ещё будут досрочные → просто отступ 12px (как раньше)
+        blocks.push({ text: '', margin: [0, 0, 0, this.converPx(12)] });
+      } else {
+        // Это последнее досрочное в этом месяце → смотрим на следующий элемент shedule
+        if (hasNextItem) {
+          var nextItem = this.shedule[index + 1];
+          // Явные проверки без ?. 
+          var nextIsEarlyRepayment = false;
+          if (nextItem && nextItem.prepayments && nextItem.prepayments.length > 0) {
+            nextIsEarlyRepayment = true;
+          }
+          var nextIsHoliday = false;
+          if (nextItem && nextItem.isHoliday === true) {
+            nextIsHoliday = true;
+          }
+
+          if (nextIsEarlyRepayment || nextIsHoliday) {
+            // Следующий блок — досрочное или каникулы → отступ 12px
+            blocks.push({ text: '', margin: [0, 0, 0, this.converPx(12)] });
+          } else {
+            // Следующий блок — обычный платёж → линия с отступами 12px сверху и снизу
+            blocks.push({
+              canvas: [
+                {
+                  type: 'line',
+                  x1: this.converPx(16),
+                  y1: 0,
+                  x2: 515 - this.converPx(16) - this.converPx(16),
+                  y2: 0,
+                  lineWidth: 1,
+                  lineColor: '#f4f4f4'
+                }
+              ],
+              margin: [0, this.converPx(12), 0, this.converPx(12)]
+            });
+          }
+        }
+        // Если hasNextItem === false — ничего не добавляем (конец графика)
+      }
+    }
+  }
+}
