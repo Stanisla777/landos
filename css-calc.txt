@@ -98,7 +98,8 @@ createSheduleBlocks() {
 
     } else {
       // === ПЛАТЁЖ + ДОСРОЧНЫЕ ===
-      blocks.push(this.createStandardPaymentBlock(item, hasNextItem && !nextIsHoliday && !nextIsEarlyRepayment));
+      // Всегда добавляем обычный платеж с линией
+      blocks.push(this.createStandardPaymentBlock(item));
 
       if (item.prepayments && item.prepayments.length > 0) {
         // Рисуем все досрочные
@@ -120,76 +121,69 @@ createSheduleBlocks() {
   return { stack: blocks };
 },
 
+--------------------------
 
-------------------------------
-
-createStandardPaymentBlock(item, showLine = true) {
-  const stackContent = [
-    {
-      text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
-      style: 'sheduleItemValueDate',
-      margin: [this.converPx(16), 0, this.converPx(16), this.converPx(8)]
-    },
-    {
-      columns: [
-        {
-          width: 120,
-          stack: [
-            { text: 'Задолженность', style: 'sheduleItemLabel' },
-            { text: `${this.$options.filters.format_decimal_pdf(item.remainingBalance)} ₽`, style: 'sheduleItemValue' }
-          ]
-        },
-        {
-          width: 515 - 16 - 120 - 16,
-          stack: [
-            { text: 'Сумма платежа', style: 'sheduleItemLabel' },
-            { text: `${this.$options.filters.format_decimal_pdf(item.payment)} ₽`, style: 'sheduleItemValue' }
-          ]
-        }
-      ],
-      margin: [this.converPx(16), 0, this.converPx(16), this.converPx(8)]
-    },
-    {
-      columns: [
-        {
-          width: 120,
-          stack: [
-            { text: 'Погашение процентов', style: 'sheduleItemLabel' },
-            { text: `${this.$options.filters.format_decimal_pdf(item.interest)} ₽`, style: 'sheduleItemValue' }
-          ]
-        },
-        {
-          width: 515 - 16 - 120 - 16,
-          stack: [
-            { text: 'Погашение основного долга', style: 'sheduleItemLabel' },
-            { text: `${this.$options.filters.format_decimal_pdf(item.principal)} ₽`, style: 'sheduleItemValue' }
-          ]
-        }
-      ],
-      margin: [this.converPx(16), 0, this.converPx(16), 0]
-    }
-  ];
-
-  // Добавляем линию только если нужно
-  if (showLine) {
-    stackContent.push({
-      canvas: [
-        {
-          type: 'line',
-          x1: this.converPx(16),
-          y1: 0,
-          x2: 515 - 16 - 16,
-          y2: 0,
-          lineWidth: 1,
-          lineColor: '#f4f4f4'
-        }
-      ],
-      margin: [0, this.converPx(12), 0, this.converPx(12)]
-    });
-  }
-
+createStandardPaymentBlock(item) {
   return {
-    stack: stackContent,
+    stack: [
+      {
+        text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+        style: 'sheduleItemValueDate',
+        margin: [this.converPx(16), 0, this.converPx(16), this.converPx(8)]
+      },
+      {
+        columns: [
+          {
+            width: 120,
+            stack: [
+              { text: 'Задолженность', style: 'sheduleItemLabel' },
+              { text: `${this.$options.filters.format_decimal_pdf(item.remainingBalance)} ₽`, style: 'sheduleItemValue' }
+            ]
+          },
+          {
+            width: 515 - 16 - 120 - 16,
+            stack: [
+              { text: 'Сумма платежа', style: 'sheduleItemLabel' },
+              { text: `${this.$options.filters.format_decimal_pdf(item.payment)} ₽`, style: 'sheduleItemValue' }
+            ]
+          }
+        ],
+        margin: [this.converPx(16), 0, this.converPx(16), this.converPx(8)]
+      },
+      {
+        columns: [
+          {
+            width: 120,
+            stack: [
+              { text: 'Погашение процентов', style: 'sheduleItemLabel' },
+              { text: `${this.$options.filters.format_decimal_pdf(item.interest)} ₽`, style: 'sheduleItemValue' }
+            ]
+          },
+          {
+            width: 515 - 16 - 120 - 16,
+            stack: [
+              { text: 'Погашение основного долга', style: 'sheduleItemLabel' },
+              { text: `${this.$options.filters.format_decimal_pdf(item.principal)} ₽`, style: 'sheduleItemValue' }
+            ]
+          }
+        ],
+        margin: [this.converPx(16), 0, this.converPx(16), 0]
+      },
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: this.converPx(16),
+            y1: 0,
+            x2: 515 - 16 - 16,
+            y2: 0,
+            lineWidth: 1,
+            lineColor: '#f4f4f4'
+          }
+        ],
+        margin: [0, this.converPx(12), 0, this.converPx(12)]
+      }
+    ],
     unbreakable: true,
     margin: [0, 0, 0, 0]
   };
