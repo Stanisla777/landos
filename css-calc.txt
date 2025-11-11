@@ -5,16 +5,6 @@ createSheduleBlocks() {
   this.shedule.forEach((item, index) => {
     const hasNextItem = index < totalItems - 1;
     const nextItem = hasNextItem ? this.shedule[index + 1] : null;
-
-    const nextIsPayment = nextItem && 
-      !nextItem.isHoliday && 
-      (!(nextItem.prepayments && nextItem.prepayments.length > 0));
-
-    const nextIsEarly = nextItem && 
-      !nextItem.isHoliday && 
-      nextItem.prepayments && 
-      nextItem.prepayments.length > 0;
-
     const nextIsHoliday = nextItem && nextItem.isHoliday;
 
     if (item.isHoliday) {
@@ -35,69 +25,118 @@ createSheduleBlocks() {
       blocks.push({
         stack: [
           {
-            canvas: [{ type: 'rect', x: 0, y: 0, w: contentWidth, r: 8, h: blockHeight, color: '#f4f4f4' }],
+            canvas: [
+              {
+                type: 'rect',
+                x: 0,
+                y: 0,
+                w: contentWidth,
+                r: 8,
+                h: blockHeight,
+                color: '#f4f4f4'
+              }
+            ],
             margin: [0, 0, 0, -blockHeight]
           },
           {
             stack: [
-              ...(holidayCounter === 1 ? [{
-                stack: [
-                  { canvas: [{ type: 'rect', x: 0, y: 0, w: this.converPx(135), h: badgeHeight, r: 4, color: '#252628' }], margin: [0, 0, 0, -badgeHeight] },
-                  { text: 'Ипотечные каникулы', style: 'holidayBadgeText', margin: [this.converPx(8), 4, this.converPx(8), 3] }
-                ],
-                margin: [this.converPx(16), 0, this.converPx(16), this.converPx(11)]
-              }] : []),
+              ...(holidayCounter === 1 ? [
+                {
+                  stack: [
+                    {
+                      canvas: [
+                        {
+                          type: 'rect',
+                          x: 0,
+                          y: 0,
+                          w: this.converPx(135),
+                          h: badgeHeight,
+                          r: 4,
+                          color: '#252628'
+                        }
+                      ],
+                      margin: [0, 0, 0, -badgeHeight]
+                    },
+                    {
+                      text: 'Ипотечные каникулы',
+                      style: 'holidayBadgeText',
+                      margin: [this.converPx(8), 4, this.converPx(8), 3]
+                    }
+                  ],
+                  margin: [this.converPx(16), 0, this.converPx(16), this.converPx(11)]
+                }
+              ] : []),
               {
                 columns: [
-                  { width: 120, stack: [{ text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`, style: 'sheduleItemValueDate' }] },
-                  { width: contentWidth - 120, stack: [{ text: '0', style: 'holidayValue' }] }
+                  {
+                    width: 120,
+                    stack: [
+                      {
+                        text: `${this.$options.filters.capitalize(item.nameMonth)} ${item.year}`,
+                        style: 'sheduleItemValueDate'
+                      }
+                    ]
+                  },
+                  {
+                    width: contentWidth - 120,
+                    stack: [{ text: '0', style: 'holidayValue' }]
+                  }
                 ],
                 margin: [this.converPx(16), holidayCounter === 1 ? 0 : 4, 16, this.converPx(11)]
               }
             ],
             margin: [0, this.converPx(16), 0, this.converPx(16)]
           },
-          ...(isLastHolidayBlock && nextIsPayment ? [{
-            canvas: [{ type: 'line', x1: this.converPx(16), y1: 0, x2: 483, y2: 0, lineWidth: 1, lineColor: '#f4f4f4' }],
-            margin: [0, 0, 0, this.converPx(12)]
-          }] : [])
+          ...(isLastHolidayBlock ? [
+            {
+              canvas: [
+                {
+                  type: 'line',
+                  x1: this.converPx(16),
+                  y1: 0,
+                  x2: 515 - 16 - 16,
+                  y2: 0,
+                  lineWidth: 1,
+                  lineColor: '#f4f4f4'
+                }
+              ],
+              margin: [0, 0, 0, this.converPx(12)]
+            }
+          ] : [])
         ],
         unbreakable: true,
         margin: [0, 0, 0, 0]
       });
 
     } else {
-      // === ОСНОВНОЙ БЛОК: платёж + досрочные (всё в одном item) ===
-      
-      // 1. Сначала — платёж за месяц
+      // === ПЛАТЁЖ + ДОСРОЧНЫЕ ===
       blocks.push(this.createStandardPaymentBlock(item));
 
-      // 2. Потом — досрочные погашения (если есть)
       if (item.prepayments && item.prepayments.length > 0) {
-        item.prepayments.forEach((product, i) => {
-          if (String(product.amount).toLowerCase().includes('e')) return;
-          blocks.push(this.createEarlyRepaymentBlock(product));
-        });
+        // Рисуем все досрочные
+        for (let i = 0; i < item.prepayments.length; i++) {
+          const product = item.prepayments[i];
+          if (String(product.amount).toLowerCase().includes('e')) continue;
 
-        // 3. После ВСЕХ досрочных в этом месяце — решаем, нужна ли линия
-        if (nextIsPayment) {
-          // Следующий — обычный платёж → нужна линия
-          blocks.push({
-            canvas: [{ type: 'line', x1: this.converPx(16), y1: 0, x2: 483, y2: 0, lineWidth: 1, lineColor: '#f4f4f4' }],
-            margin: [0, this.converPx(12), 0, this.converPx(12)]
-          });
-        } else if (nextIsEarly || nextIsHoliday) {
-          // Следующий — досрочное или каникулы → только отступ
-          blocks.push({ text: '', margin: [0, this.converPx(12), 0, 0] });
-        }
-        // Если конец списка — ничего не добавляем
-      } else {
-        // Нет досрочных → линия, если следующий не каникулы
-        if (hasNextItem && !nextIsHoliday) {
-          blocks.push({
-            canvas: [{ type: 'line', x1: this.converPx(16), y1: 0, x2: 483, y2: 0, lineWidth: 1, lineColor: '#f4f4f4' }],
-            margin: [0, this.converPx(12), 0, this.converPx(12)]
-          });
+          blocks.push(this.createEarlyRepaymentBlock(product));
+
+          // После последнего досрочного — линия, если следующий не каникулы
+          if (i === item.prepayments.length - 1 && hasNextItem && !nextIsHoliday) {
+            blocks.push({
+              canvas: [
+                {
+                  type: 'line',
+                  x1: this.converPx(16),
+                  y1: 0,
+                  x2: 515 - 16 - 16,
+                  y2: 0,
+                  lineWidth: 1,
+                  lineColor: '#f4f4f4'
+                }
+              ],
+              margin: [0, this.converPx(12), 0, this.converPx(12)]
+            });
+          }
         }
       }
     }
