@@ -1,43 +1,119 @@
-function resizeWindowCloseMobileMenu(){
-  const containerYandexSearch = document.querySelector('.js--yandex-search');
+// Предполагаем, что RemoveClassBody уже доступна (глобально или импортирована)
+// Если используете модули — раскомментируйте:
+// import { RemoveClassBody } from './path/to/your/file.js';
+
+let isMobileMenuOpen = false;
+
+document.addEventListener('DOMContentLoaded', () => {
   const btn = document.querySelector('.js--header-burger');
   const mobileMenu = document.querySelector('.js--mobile-menu');
-  const header = btn.closest('.js--page-content').querySelector('.header');
+  if (!btn || !mobileMenu) return;
 
-  const isBodyUnLock = document.body.classList.contains('body-modal-not-remove');
+  // === Безопасное получение header (без optional chaining) ===
+  let header = null;
+  const pageContent = btn.closest && btn.closest('.js--page-content');
+  if (pageContent) {
+    header = pageContent.querySelector('.header');
+  }
 
+  const containerYandexSearch = document.querySelector('.js--yandex-search');
 
+  // === Отслеживание состояния меню с debounce (для iOS-стабильности) ===
+  let updateDebounceId;
+  const updateMenuState = () => {
+    clearTimeout(updateDebounceId);
+    updateDebounceId = setTimeout(() => {
+      isMobileMenuOpen = mobileMenu.classList.contains('active');
+    }, 10);
+  };
 
-  window.addEventListener('resize', ()=>{
+  updateMenuState();
+  const observer = new MutationObserver(updateMenuState);
+  observer.observe(mobileMenu, { attributes: true, attributeFilter: ['class'] });
+  observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
 
-    if (window.innerWidth > 1225) {
-      if (mobileMenu && mobileMenu.classList.contains('active') && !document.body.classList.contains('body-modal-not-remove-else')) {
-        mobileMenu.classList.remove('active')
-        if (btn && btn.classList.contains('open')) {
-          btn.classList.remove('open')
-        }
-        if (header && header.classList.contains('z-ind')){
-          header.classList.remove('z-ind');
-        }
-        const menu_accordeon = mobileMenu.querySelectorAll('.header__mobile-menu-item.js-accordion-parent')
-        for (let item of menu_accordeon) {
-          item.classList.remove('active')
-          if (item.querySelector('.js-accordion-body')) {
-            item.querySelector('.js-accordion-body').setAttribute('style', `max-height:0;`)
-          }
-        }
+  // === Функция закрытия — с вашими условиями ===
+  const closeMobileMenuIfOpen = () => {
+    const body = document.body;
 
-        if ((containerYandexSearch&&!containerYandexSearch.classList.contains('active'))
-          && document.body.classList.contains('body-modal')
-          && document.body.classList.contains('body-additional-class')) {
-          RemoveClassBody();
-        }
-        if (!containerYandexSearch
-          && document.body.classList.contains('body-modal')
-          && document.body.classList.contains('body-additional-class')) {
-          RemoveClassBody();
-        }
+    // 🔹 Условие из вашего кода: не закрываем, если стоит 'body-modal-not-remove-else'
+    if (
+      !isMobileMenuOpen ||
+      !mobileMenu.classList.contains('active') ||
+      body.classList.contains('body-modal-not-remove-else')
+    ) {
+      return;
+    }
+
+    // 🔹 Закрываем меню и кнопку
+    mobileMenu.classList.remove('active');
+    if (btn.classList.contains('open')) {
+      btn.classList.remove('open');
+    }
+    if (header && header.classList.contains('z-ind')) {
+      header.classList.remove('z-ind');
+    }
+
+    // 🔹 Сворачиваем аккордеоны (ваша логика)
+    const accordions = mobileMenu.querySelectorAll('.header__mobile-menu-item.js-accordion-parent');
+    for (let i = 0; i < accordions.length; i++) {
+      const item = accordions[i];
+      item.classList.remove('active');
+      const bodyEl = item.querySelector('.js-accordion-body');
+      if (bodyEl) {
+        bodyEl.setAttribute('style', 'max-height:0;');
       }
     }
-  });
-}
+
+    // 🔹 Условия для RemoveClassBody — как у вас (два варианта)
+    const hasModalClasses = body.classList.contains('body-modal') && body.classList.contains('body-additional-class');
+    if (hasModalClasses) {
+      // Вариант 1: есть containerYandexSearch, но он не активен
+      if (
+        containerYandexSearch &&
+        !containerYandexSearch.classList.contains('active')
+      ) {
+        safeCallRemoveClassBody();
+      }
+      // Вариант 2: containerYandexSearch вообще нет
+      else if (!containerYandexSearch) {
+        safeCallRemoveClassBody();
+      }
+    }
+
+    isMobileMenuOpen = false;
+  };
+
+  // Вспомогательная функция — безопасный вызов
+  function safeCallRemoveClassBody() {
+    if (typeof RemoveClassBody === 'function') {
+      RemoveClassBody();
+    } else if (typeof window?.RemoveClassBody === 'function') {
+      window.RemoveClassBody();
+    }
+  }
+
+  // === Подписка через matchMedia (эффективно + iOS-safe) ===
+  const mediaQuery = window.matchMedia('(min-width: 1225px)');
+
+  const handleMediaChange = (e) => {
+    if (e.matches) {
+      closeMobileMenuIfOpen();
+    }
+  };
+
+  // Совместимая подписка
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleMediaChange);
+  } else if (mediaQuery.addListener) {
+    mediaQuery.addListener(handleMediaChange); // legacy, но для полной поддержки
+  }
+
+  // Инициализация при старте
+  if (mediaQuery.matches) {
+    closeMobileMenuIfOpen();
+  }
+
+  // Экспорт (на случай ручного вызова)
+  window.closeMobileMenuIfOpen = closeMobileMenuIfOpen;
+});
