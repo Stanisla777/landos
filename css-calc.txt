@@ -1,40 +1,53 @@
-Uncaught (in promise) Unrecognized document structure: {"width":"*"}
+function resizeWindowCloseMobileMenu(){
+  const containerYandexSearch = document.querySelector('.js--yandex-search');
+  const btn = document.querySelector('.js--header-burger');
+  const mobileMenu = document.querySelector('.js--mobile-menu');
+  const header = btn.closest('.js--page-content').querySelector('.header');
+  window.addEventListener('resize', ()=>{
 
-const docDefinition = {
-          pageSize: 'A4',
-          pageMargins: [40, 30, 40, 40], //// [left, top, right, bottom]
-          content: [
-            {
-              columns: [
-                {
-                  stack: [
-                    { text: 'Калькулятор', style: 'headerTitle' },
-                    {
-                      text: 'досрочного погашения',
-                      background: '#daff01',
-                      style: 'headerTitleHighlighted'
-                    },
-                    { text: 'ипотеки', style: 'headerTitle' }
-                  ]
-                },
-                {
-                  columns: [
-                    { width: '*' },
-                    {
-                      width: 'auto',
-                      stack: [
-                        {
-                          image: 'logo', // ← имя из images
-                          width: 104,
-                          link: 'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/'
-                        }
-                      ],
-                      alignment: 'right'
-                    }
-                  ]
-                }
-              ],
-              margin: [0, 0, 0, this.converPx(15)]
-            },
+    if (window.innerWidth > 1225) {
+      if (mobileMenu && mobileMenu.classList.contains('active')) {
+        mobileMenu.classList.remove('active')
+      }
+      if (btn && btn.classList.contains('open')) {
+        btn.classList.remove('open')
+      }
+      if (header && header.classList.contains('z-ind')){
+        header.classList.remove('z-ind');
+      }
+      if (mobileMenu) {
+        const menu_accordeon = mobileMenu.querySelectorAll('.header__mobile-menu-item.js-accordion-parent')
+        for (let item of menu_accordeon) {
+          item.classList.remove('active')
+          if (item.querySelector('.js-accordion-body')) {
+            item.querySelector('.js-accordion-body').setAttribute('style', `max-height:0;`)
+          }
+        }
+      }
 
 
+      if ((containerYandexSearch&&!containerYandexSearch.classList.contains('active'))
+        && document.body.classList.contains('body-modal')
+        && document.body.classList.contains('body-additional-class')) {
+        RemoveClassBody();
+      }
+      if (!containerYandexSearch
+        && document.body.classList.contains('body-modal')
+        && document.body.classList.contains('body-additional-class')
+        && !document.body.classList.contains('body-modal-not-remove')) {
+        RemoveClassBody();
+      }
+    }
+  });
+}
+
+export default function RemoveClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal');
+    document.body.classList.remove('body-additional-class');
+  }
+  const scrollY = document.body.style.top;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  window.scrollTo(0, parseInt(scrollY || '0') * -1);
+}
