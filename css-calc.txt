@@ -1,6 +1,22 @@
-format_decimal_pdf:(val) => {
-      if (val == null || val === '') return '';
-      return Math.abs(Math.round(val))
-        .toString()
-        .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    },
+format_decimal_pdf: (val) => {
+  if (val == null || val === '') return '';
+
+  // Приводим к числу и берём абсолютное значение
+  const num = Math.abs(Number(val));
+
+  // Фиксируем до 2 знаков после запятой (но без лишних нулей)
+  let str = num.toFixed(2); // например: '42803.74' или '100.00'
+  str = parseFloat(str).toString(); // убираем конечные нули → '100'
+
+  // Разделяем целую и дробную части
+  const [integerPart, decimalPart] = str.split('.');
+
+  // Форматируем целую часть с пробелами-разделителями тысяч
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+  // Собираем результат
+  return decimalPart != null
+    ? `${formattedInteger},${decimalPart}`
+    : formattedInteger;
+}
+
