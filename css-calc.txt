@@ -1,22 +1,177 @@
-format_decimal_pdf: (val) => {
-  if (val == null || val === '') return '';
+.btn_s.black.btn-icon-download-left(@click="exportToPDF" :class="isPdfLoading?'submitting disabled':''") Скачать расчет
 
-  // Приводим к числу и берём абсолютное значение
-  const num = Math.abs(Number(val));
+data(){
+    return {
+      isPdfLoading: false,
 
-  // Фиксируем до 2 знаков после запятой (но без лишних нулей)
-  let str = num.toFixed(2); // например: '42803.74' или '100.00'
-  str = parseFloat(str).toString(); // убираем конечные нули → '100'
+exportToPDF() {
+      const px = (value) => value *0.75;
+      this.isPdfLoading = true;
+      registerGilroy(pdfMake)
+      const ri = this.repayment_information;
+      const hasEarlierMonth = this.repayment_information&&this.repayment_information.if_earlier_month > 0;
+      // Подбираем высоту для блока данные о кредите в зависмости от того есть предложене раньше на или нет
+      const repaymentHeight = hasEarlierMonth ? 250 : 236;
 
-  // Разделяем целую и дробную части
-  const [integerPart, decimalPart] = str.split('.');
+      setTimeout(() => {
+        const docDefinition = {
+          pageSize: 'A4',
+          pageMargins: [40, 30, 40, 40], //// [left, top, right, bottom]
+          content: [
+            {
+              columns: [
+                {
+                  stack: [
+                    { text: 'Калькулятор', style: 'headerTitle' },
+                    {
+                      text: 'досрочного погашения',
+                      background: '#daff01',
+                      style: 'headerTitleHighlighted'
+                    },
+                    { text: 'ипотеки', style: 'headerTitle' }
+                  ]
+                },
+                {
+                  stack:[
+                    {
+                      image: 'logo',
+                      width: 104,
+                      link:'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/',
+                      decoration:'none'
+                    }
+                  ],
+                  alignment: 'right'
+                }
 
-  // Форматируем целую часть с пробелами-разделителями тысяч
-  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+              ],
+              margin: [0, 0, 0, this.converPx(15)]
+            },
+            {
+              columns: [
+                {
+                  text: `Расчет платежей от ${this.currentDate}`,
+                  style: 'metaText',
+                  width: '*'
+                },
+                {
+                  text: 'Сделать новый расчет',
+                  link: 'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/',
+                  style: 'link',
+                  width: 'auto',
+                  alignment: 'right'
+                }
+              ],
+              margin: [0, 0, 0, this.converPx(16)]
+            },
 
-  // Собираем результат
-  return decimalPart != null
-    ? `${formattedInteger},${decimalPart}`
-    : formattedInteger;
-}
+            this.createInfoBlock('Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий'),
 
+            this.createSectionBox(this.createMortgageSection(), 278),
+            this.createSectionBox(this.createRepaymentSection(), repaymentHeight),
+            (this.holidays_term && this.holidays_term !== 0)
+              ? this.createSectionBox(this.createHolidaysSection(), 155)
+              : {},
+
+            // Отступ после каникул
+            (this.holidays_term && this.holidays_term !== 0)
+              ? { text: '', margin: [0, 0, 0, 50] }
+              : {},
+
+            // График платежей
+            {
+              stack: [
+                { text: 'График платежей', style: 'sheduleTitle' },
+                this.createSheduleBlocks()
+              ],
+              margin: [this.converPx(16), this.converPx(32 - 16), 0, 16]
+            }
+          ],
+
+
+          images: {
+            logo: logoBase64,
+            iconSymbol: iconSymbolBase64
+          },
+
+          styles: {
+            headerTitle: { fontSize: this.converPx(22), bold: true, color: '#252628' },
+            headerTitleHighlighted: { fontSize: this.converPx(22), bold: true, color: '#252628' },
+            metaText: { fontSize: this.converPx(16),bold: true, color: '#252628' },
+            link: { fontSize: this.converPx(14), color: '#252628', decoration: 'underline' },
+            infoText: { fontSize: this.converPx(14), color: '#252628',lineHeight:1.4 },
+            sectionTitle: { fontSize: this.converPx(20), bold: true, color: '#252628', margin: [0, 0, 0, this.converPx(24)] },
+            sectionTitleRepayment: { fontSize: this.converPx(20), bold: true, color: '#252628', margin: [0, 0, 0, this.converPx(16)] },
+            label: { fontSize: this.converPx(16), bold: true, color: '#252628', margin: [0, 0, 0, this.converPx(8)] },
+            labelGrey: { fontSize: this.converPx(14), bold: true, color: '#6d6d6d', margin: [0, 0, 0, this.converPx(8)] },
+            mortgageValue: { fontSize: this.converPx(14), bold: true, color: '#252628' },
+            repaymentValue: { fontSize: this.converPx(16), bold: true, color: '#252628', margin: [0, 0, 0, 0] },
+            repaymentValueGreen: { fontSize: this.converPx(12), color: '#699b12', margin: [0, 0, 0, 0] },
+            repaymentValueGreenKey: { fontSize: this.converPx(16), bold: true, color: '#699b12', margin: [0, 0, 0, 0] },
+            valueInline: { fontSize: this.converPx(14), color: '#252628' },
+            valueNoMargin: { fontSize: this.converPx(16), bold: true, color: '#252628', margin: [0, 0, 0, 2] },
+
+            // Стили для графика платежей
+            sheduleTitle: {
+              fontSize: this.converPx(20),
+              bold: true,
+              color: '#252628',
+              margin: [0, 0, 0, this.converPx(16)]
+            },
+            sheduleItemLabel: {
+              fontSize: this.converPx(12),
+              color: '#6d6d6d',
+              margin: [0, 0, 0, 5]
+            },
+            sheduleItemLabelGreen: {
+              fontSize: this.converPx(12),
+              color: '#699b12',
+              margin: [0, 0, 0, 5]
+            },
+
+            sheduleItemValue: {
+              fontSize: this.converPx(14),
+              color: '#252628'
+            },
+            sheduleItemValueGreen: {
+              fontSize: this.converPx(14),
+              color: '#699b12'
+            },
+
+            sheduleItemValueDate: {
+              fontSize: this.converPx(16),
+              color: '#252628',
+              bold: true,
+            },
+
+            holidayBadge: {
+              fontSize: 10,
+              color: '#fff',
+              background: '#252628',
+              padding: [2, 8, 2, 8],
+              margin: [0, 0, 12, 0]
+            },
+            holidayValue: {
+              fontSize: this.converPx(14),
+              color: '#252628',
+              margin: [0, 3, 0, 0]
+            },
+            holidayBadgeText: {
+              fontSize: this.converPx(12),
+              color: '#fff',
+              margin: [0, 0, 0, 0] // отступы задаются вручную
+            }
+          },
+
+          defaultStyle: {
+            font: 'Gilroy',
+            fontSize: 10,
+          }
+        };
+        const pdfDoc = pdfMake.createPdf(docDefinition);
+
+        pdfDoc.download(`СПРОСИ.ДОМ.РФ.Расчет платежей от ${this.currentDate}.pdf`, () => {
+          this.isPdfLoading = false;
+        });
+      }, 300);
+
+    }
