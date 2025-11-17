@@ -1,3 +1,6 @@
+if (error.response && error.response.data && error.response.data.description) {
+        this.description_after_sand = error.response.data.description;
+      }
 data() {
   return {
     // ... остальные поля ...
