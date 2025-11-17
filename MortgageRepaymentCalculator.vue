@@ -1,112 +1,2836 @@
-function resizeWindowCloseMobileMenu(){
-  let isMobileMenuOpen = false;
-  const btn = document.querySelector('.js--header-burger');
-  const mobileMenu = document.querySelector('.js--mobile-menu');
-  if (!btn || !mobileMenu) return;
+[
+        {
+          "loanAmount": "588888",
+          "dateReceipt": "[0,2025]",
+          "bet": "5",
+          "term": "year",
+          "loanTerm": "12",
+          "paymentType": "annuity"
+        },
+    {
+      "termHoliday": "2",
+      "beginningHolidays": "[2,2025]"
+    },
+    [
+      {
+        "id": 0,
+        "field_data": "",
+        "field_amount": "",
+        "field_period": "",
+        "repetitionPeriod": "all-term",
+        "periodicityParameter": 0,
+        "dateEarly": [
+          ""
+        ],
+        "whatReduce": "payment",
+        "fieldAmount": "",
+        "earlyEnd": {
+          "id": 0,
+          "min_date_holidays_begin": "2025-0",
+          "selected_value": null,
+          "selected_value_calculations": null,
+          "flag": 0,
+          "selected_value_begin": [
+            4,
+            2025
+          ]
+        },
+        "earlyMain": {
+          "id": 0,
+          "min_date_holidays_begin": "2025-0",
+          "selected_value": null,
+          "flag": 0
+        },
+        "earlyAllPeriod": {
+          "id": 0,
+          "selected_value_end": null,
+          "selected_value_begin": null
+        },
+        "earlySelectPeriod": {
+          "key": 0,
+          "value": 1,
+          "period": "all-term"
+        },
+        "earlyDate": [
+          [
+            4,
+            2025
+          ],
+          0,
+          "calendar"
+        ],
+        "earlyAmount": {
+          "index": 0,
+          "amount": 588
+        },
+        "whatReduceArray": {
+          "index": 0,
+          "what_reduce": "payment"
+        },
+        "blockRequared": {
+          "id": 0,
+          "period": false,
+          "date_full": false,
+          "date_end": false,
+          "date_begin": false,
+          "amount_full": false,
+          "period_full": false
+        }
+      },
+      {
+        "id": 1,
+        "field_data": 2025,
+        "field_amount": "4 555",
+        "field_period": true,
+        "repetitionPeriod": "all-term",
+        "periodicityParameter": 1,
+        "dateEarly": [
+          5,
+          2025
+        ],
+        "whatReduce": "payment",
+        "fieldAmount": "4 555",
+        "earlyEnd": {
+          "id": 1,
+          "min_date_holidays_begin": "2025-0",
+          "selected_value": "2025-5",
+          "selected_value_calculations": null,
+          "flag": 1,
+          "selected_value_begin": [
+            5,
+            2025
+          ]
+        },
+        "earlyMain": {
+          "id": 1,
+          "min_date_holidays_begin": "2025-0",
+          "selected_value": "2025-5",
+          "flag": 1
+        },
+        "earlyAllPeriod": {
+          "id": 1,
+          "selected_value_end": null,
+          "selected_value_begin": [
+            5,
+            2025
+          ]
+        },
+        "earlySelectPeriod": {
+          "key": 1,
+          "value": 1,
+          "period": "all-term"
+        },
+        "earlyDate": [
+          [
+            5,
+            2025
+          ],
+          1,
+          "calendar"
+        ],
+        "earlyAmount": {
+          "index": 1,
+          "amount": 4555
+        },
+        "whatReduceArray": {
+          "index": 1,
+          "what_reduce": "payment"
+        },
+        "blockRequared": {
+          "id": 1,
+          "date_full": true,
+          "date_begin": true,
+          "date_end": false,
+          "amount_full": true,
+          "period_full": true
+        }
+      }
+    ]
+  ]
 
-  // === Безопасное получение header (без optional chaining) ===
-  let header = null;
-  const pageContent = btn.closest && btn.closest('.js--page-content');
-  if (pageContent) {
-    header = pageContent.querySelector('.header');
-  }
 
-  const containerYandexSearch = document.querySelector('.js--yandex-search');
+    //---
 
-  // === Отслеживание состояния меню с debounce (для iOS-стабильности) ===
-  let updateDebounceId;
-  const updateMenuState = () => {
-    clearTimeout(updateDebounceId);
-    updateDebounceId = setTimeout(() => {
-      isMobileMenuOpen = mobileMenu.classList.contains('active');
-    }, 10);
-  };
+    [
+      {
+        "loanAmount": "588888",
+        "dateReceipt": "[0,2025]",
+        "bet": "5",
+        "term": "year",
+        "loanTerm": "12",
+        "paymentType": "annuity"
+      },
+      {},
+      [
+        {
+          "id": 0,
+          "field_data": "",
+          "field_amount": "",
+          "field_period": "",
+          "repetitionPeriod": "all-term",
+          "periodicityParameter": 0,
+          "dateEarly": [
+            ""
+          ],
+          "whatReduce": "payment",
+          "fieldAmount": "",
+          "earlyEnd": {
+            "id": 0,
+            "min_date_holidays_begin": "2025-0",
+            "selected_value": null,
+            "selected_value_calculations": null,
+            "flag": 0,
+            "selected_value_begin": [
+              4,
+              2025
+            ]
+          },
+          "earlyMain": {
+            "id": 0,
+            "min_date_holidays_begin": "2025-0",
+            "selected_value": null,
+            "flag": 0
+          },
+          "earlyAllPeriod": {
+            "id": 0,
+            "selected_value_end": null,
+            "selected_value_begin": null
+          },
+          "earlySelectPeriod": {
+            "key": 0,
+            "value": 1,
+            "period": "all-term"
+          },
+          "earlyDate": [
+            [
+              4,
+              2025
+            ],
+            0,
+            "calendar"
+          ],
+          "earlyAmount": {
+            "index": 0,
+            "amount": 588
+          },
+          "whatReduceArray": {
+            "index": 0,
+            "what_reduce": "payment"
+          },
+          "blockRequared": {
+            "id": 0,
+            "period": false,
+            "date_full": false,
+            "date_end": false,
+            "date_begin": false,
+            "amount_full": false,
+            "period_full": false
+          }
+        },
+        {
+          "id": 1,
+          "field_data": 2025,
+          "field_amount": "4 555",
+          "field_period": true,
+          "repetitionPeriod": "all-term",
+          "periodicityParameter": 1,
+          "dateEarly": [
+            5,
+            2025
+          ],
+          "whatReduce": "payment",
+          "fieldAmount": "4 555",
+          "earlyEnd": {
+            "id": 1,
+            "min_date_holidays_begin": "2025-0",
+            "selected_value": "2025-5",
+            "selected_value_calculations": null,
+            "flag": 1,
+            "selected_value_begin": [
+              5,
+              2025
+            ]
+          },
+          "earlyMain": {
+            "id": 1,
+            "min_date_holidays_begin": "2025-0",
+            "selected_value": "2025-5",
+            "flag": 1
+          },
+          "earlyAllPeriod": {
+            "id": 1,
+            "selected_value_end": null,
+            "selected_value_begin": [
+              5,
+              2025
+            ]
+          },
+          "earlySelectPeriod": {
+            "key": 1,
+            "value": 1,
+            "period": "all-term"
+          },
+          "earlyDate": [
+            [
+              5,
+              2025
+            ],
+            1,
+            "calendar"
+          ],
+          "earlyAmount": {
+            "index": 1,
+            "amount": 4555
+          },
+          "whatReduceArray": {
+            "index": 1,
+            "what_reduce": "payment"
+          },
+          "blockRequared": {
+            "id": 1,
+            "date_full": true,
+            "date_begin": true,
+            "date_end": false,
+            "amount_full": true,
+            "period_full": true
+          }
+        }
+      ]
+    ]
 
-  updateMenuState();
-  const observer = new MutationObserver(updateMenuState);
-  observer.observe(mobileMenu, { attributes: true, attributeFilter: ['class'] });
-  observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
+------------------------------------
 
-  // === Функция закрытия — с вашими условиями ===
-  const closeMobileMenuIfOpen = () => {
-    const body = document.body;
 
-    // 🔹 Условие из вашего кода: не закрываем, если стоит 'body-modal-not-remove-else'
-    if (
-      !isMobileMenuOpen ||
-      !mobileMenu.classList.contains('active') ||
-      body.classList.contains('body-modal-not-remove-else')
+      [
+        {
+          "loanAmount": "500000",
+          "dateReceipt": "[0,2025]",
+          "bet": "10",
+          "term": "year",
+          "loanTerm": "12",
+          "paymentType": "annuity"
+        },
+    {}
+  ]
+
+
+  -----------------------------------------------------------------
+
+  <template lang="pug">
+  div
+    .layer-overlay.js--layer-overlay
+    .block-grid-area-big-small.mor-rep-calculators__block-grid-area
+      .block-grid-area__col.js--block-grid-area
+        .calc-tax-deduc-new__block.mobile-padding.grey(v-if="answers_expired===1")
+            .mor-rep-calculators__container-footnote.family-calculator
+              .mor-rep-calculators__container-footnote-icon
+                .mor-rep-calculators__match-warning-icon
+              p.calc-tax-deduc-new__block-subtitle.
+                Срок хранения результатов расчета истек. Для просмотра результатов необходимо повторно ввести данные
+        template
+          component-information-mortgage(
+            :answers="answers"
+            :tooltip_information="tooltip_information"
+            :screenWidth="screenWidth"
+            @sendClearInputLoanAmount="receivedClearInputLoanAmount"
+            @sendMonthlyPayment="receivedMonthlyPayment"
+            @sendMonthlyInterestRate="receivedMonthlyInterestRate"
+            @sendLoanAmount="receivedLoanAmount"
+            @sendDateLoanReceipt="receivedDateLoanReceipt"
+            @sendPaymentType="receivedPaymentType"
+            @sendLoanAmountForHolidays="receivedLoanAmountForHolidays"
+            @sendButtonResult="resultButtonStatus"
+            @sendTermMonthOrYear="resultTermMonthOrYear"
+
+          )
+
+        // Ипотечные каникулы
+        template
+          component-mortgage-holidays(
+            v-if="visibility_mortgage_holidays_block!==false"
+            :answers="answers"
+            :period_holidays="period_holidays"
+            :html_tooltip="html_tooltip"
+            :tooltip_holidays="tooltip_holidays"
+            @sendHolidaysTerm="receivedHolidaysTerm"
+            @sendBeginningHolidays="receivedBeginningHolidays"
+            @sendButtonResult="resultButtonStatus"
+            @sendClearCalendarHolidayAll="resultClearCalendarHolidayAll"
+            :result_comparing_holidays_early='result_comparing_holidays_early'
+          )
+
+        // Досрочное погашение
+        template
+          component-early-repayment(
+            @sendClearCompareWhithHoliday="resultClearCompareWhithHoliday"
+            @sendArrayEarlyRepayment="receivedArrayEarlyRepayment"
+            @sendArrayEarlyRepaymentTotal="receivedArrayEarlyRepaymentTotal"
+            @sendtotalCalculation="checkingBeforeCreatingScheduleAsync"
+            @sendButtonResult="resultButtonStatus"
+            @sendtotalCalculationRepaymentEnd="receivedRepaymentEnd"
+            @sendtotalCalculationRepaymentMain="receivedRepaymentMain"
+            @sendtotalCalculationRepaymentAllPeriod="receivedRepaymentAllPeriod"
+            @sendtotalCalculationRepaymentPeriod="receivedRepaymentSelectPeriod"
+            @sendtotalCalculationRepaymentDate="receivedRepaymentDate"
+            @sendtotalCalculationRepaymentAmount="receivedRepaymentAmount"
+            @sendtotalCalculationRepaymentSelectedDates="receivedRepaymentSelectedDates"
+            @sendtotalCalculationRepaymentWhatReduce="receivedRepaymentWhatReduce"
+            @sendBlockRequared="receivedBlockRequared"
+            :answers="answers"
+            :result_comparing_holidays_early='result_comparing_holidays_early'
+            :btn_status="btn_status"
+            :tooltip_early="tooltip_early"
+            :description_after_sand="description_after_sand"
+            :not_field_information="not_field_information"
+            :not_field_holidays="not_field_holidays"
+            :not_field_early="not_field_early"
+            :not_field_early_period="not_field_early_period"
+
+          )
+
+        .calc-tax-deduc-new__block.mobile-padding.grey(
+          v-if="result_comparing_holidays_early.length>0||(not_field_information||not_field_holidays||not_field_early||not_field_early_period)"
+        )
+            .mor-rep-calculators__container-footnote.mor-rep-calculators__container-footnote-early
+              .mor-rep-calculators__container-footnote-icon
+                .mor-rep-calculators__match-warning-icon
+
+              .mor-rep-calculators__alarm-field-empty-compair
+                p.calc-tax-deduc-new__block-subtitle(v-if="result_comparing_holidays_early.length>0") Один из периодов с досрочным погашением совпадает с ипотечными каникулами
+                p.calc-tax-deduc-new__block-subtitle(v-if="not_field_information||not_field_holidays||not_field_early||not_field_early_period") Не заполнено одно из обязательных полей
+
+
+        //мобильная кнопка рассчитать
+        .calc-tax-deduc-new__block.mobile-padding.grey.js--container-block.mor-rep-calculators__mobile-button-result
+          button.btn_s.black.mor-rep-calculators__btn-result-mobile.disabled__can-check.js--mobileButtonResult(
+              type="button"
+              @click="totalCalculationMobile"
+              :class="btn_status===false?'disabled':''"
+            ) Рассчитать
+
+
+
+        //график платежей для большого разрешения экрана
+        .calc-tax-deduc-new__block.mobile-padding.mor-rep-calculators__block-schedule.desctop.grey.js--container-block(
+          v-if="shedule.length>0"
+        )
+          .calc-tax-deduc-new__container-title
+            h3.calc-tax-deduc-new__block-title.big График платежей
+
+
+
+          .calc-tax-deduc-new__payment-schedule.mor-rep-calculators__payment-schedule
+            .calc-tax-deduc-new__payment-schedule-row-container.header-row
+              .calc-tax-deduc-new__payment-schedule-row.thead
+                .calc-tax-deduc-new__payment-schedule-col
+                  p №
+                .calc-tax-deduc-new__payment-schedule-col
+                  p Месяц и год платежа
+                .calc-tax-deduc-new__payment-schedule-col
+                  p Задолженность
+                .calc-tax-deduc-new__payment-schedule-col
+                  p Погашение процентов
+                .calc-tax-deduc-new__payment-schedule-col
+                  p Погашение основного долга
+                .calc-tax-deduc-new__payment-schedule-col
+                  p Сумма платежа
+
+            .calc-tax-deduc-new__payment-schedule-tbody
+              .calc-tax-deduc-new__payment-schedule-row-container(
+                v-for='(item,index) in shedule' :key="index"
+                :class="getItemClasses(item)"
+
+              )
+                //будет появляться если это ипотечные каникулы и у родителя стоит класс .mortgage-holidays
+                .mor-rep-calculators__payment-schedule-early-wrapper(v-if="item.isHoliday===true")
+                  .mor-rep-calculators__payment-schedule-early-plate.black
+                    p Ипотечные каникулы
+
+                .calc-tax-deduc-new__payment-schedule-row
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{index+1}}
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{item.nameMonth}}, {{item.year}}
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{item.remainingBalance | format_decimal}} ₽
+
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{item.interest | format_decimal}} ₽
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{item.principal | format_decimal}} ₽
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{item.payment | format_decimal}}  ₽
+
+
+
+                //появляется блок, если есть досрочное погашение
+                .mor-rep-calculators__payment-schedule-early-container(
+                  v-if="(item.prepayments&&item.prepayments.length>0) && !String(product.amount).toLowerCase().includes('e')"
+                  v-for = "(product,index) in item.prepayments" :key="index"
+                )
+                  .mor-rep-calculators__payment-schedule-early-container-wr
+                    .mor-rep-calculators__payment-schedule-early-wrapper
+                      .mor-rep-calculators__payment-schedule-early-plate.yellow
+                        p Досрочное погашение
+                      .mor-rep-calculators__payment-schedule-early-plate.white
+                        p(v-if="product.type==='payment'") Уменьшение платежа
+                        p(v-if="product.type==='term'") Уменьшение срока
+                        p(v-if="product.type===''") Уменьшение платежа
+                    .calc-tax-deduc-new__payment-schedule-row.mor-rep-calculators__early-repayment
+                      .calc-tax-deduc-new__payment-schedule-col
+                        p
+                      .calc-tax-deduc-new__payment-schedule-col
+                        p {{product.nameMonth}}, {{product.year}}
+                      .calc-tax-deduc-new__payment-schedule-col
+                        p {{product.remainingBalance | format_decimal}} ₽
+                      .calc-tax-deduc-new__payment-schedule-col
+                        p -
+                      .calc-tax-deduc-new__payment-schedule-col
+                        p {{product.amount | format_decimal}} ₽
+                      .calc-tax-deduc-new__payment-schedule-col
+                        p {{product.amount | format_decimal}} ₽
+          .mor-rep-calculators__shedule-footer-share
+            .mor-rep-calculators__shedule-footer-share-item.mor-rep-calculators__shedule-footer-share-item-share(v-if="can_share===1&&answerLink!==null")
+              .btn_s.transparent_black_border.hover-green.btn-icon-share Отправить расчёт
+              .select-list__selection-window.mor-rep-calculators__selection-window-share.modal-special-styles
+                .select-list__wr-search
+                  .select-list__search-item(
+                    v-if="answerLink.link!==undefined&&answerLink.link!==''"
+                    :data-link="answerLink.link"
+                    @click="copyLink"
+                  )
+                    .select-list__search-item-icon
+                      svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                        g(clip-path='url(#clip0_2191_3622)')
+                          circle(cx='12' cy='12' r='12' fill='#C8C8CB')
+                          path(fill-rule='evenodd' clip-rule='evenodd' d='M14.0455 7.5H8.95455C8.15122 7.5 7.5 8.05103 7.5 8.73077V14.2692C7.5 14.949 8.15122 15.5 8.95455 15.5H14.0455C14.8488 15.5 15.5 14.949 15.5 14.2692V8.73077C15.5 8.05103 14.8488 7.5 14.0455 7.5Z' fill='white')
+                          path(fill-rule='evenodd' clip-rule='evenodd' d='M16.25 9.25V14.5909C16.25 15.4626 15.3665 16.25 14.1667 16.25H9.25V16.75H14.1667C15.5442 16.75 16.75 15.8279 16.75 14.5909V9.25H16.25Z' fill='white')
+                        defs
+                          clippath#clip0_2191_3622
+                            rect(width='24' height='24' fill='white')
+                    p Скопировать ссылку
+                  a.select-list__search-item(
+                    :href="answerLink.vk"
+                    v-if="answerLink.vk!==undefined&&answerLink.vk!==''"
+                  )
+                    .select-list__search-item-icon
+                      svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                        path(d='M12 0C5.37244 0 0 5.37244 0 12C0 18.6276 5.37244 24 12 24C18.6276 24 24 18.6276 24 12C24 5.37244 18.6276 0 12 0ZM18.4492 16.5538C17.9371 16.8741 15.8561 16.9695 15.3523 16.6035C15.0759 16.4028 14.8232 16.1516 14.5833 15.9125C14.4153 15.7453 14.2248 15.6642 14.0805 15.4828C13.9627 15.3343 13.8819 15.1591 13.7579 15.0125C13.5486 14.7666 13.2265 14.5573 12.9717 14.8578C12.588 15.3099 13.0321 16.1977 12.5204 16.5354C12.3489 16.6487 12.1757 16.6815 11.9613 16.6653L11.4863 16.6869C11.2074 16.6924 10.7654 16.695 10.448 16.6378C10.0939 16.5738 9.80147 16.3804 9.4812 16.2385C8.8734 15.9689 8.29445 15.6016 7.85381 15.0928C6.65459 13.7072 5.04385 11.8016 4.41811 10.0596C4.28943 9.70165 3.94939 8.99272 4.27175 8.6857C4.71005 8.36724 6.86127 8.27756 7.19688 8.76993C7.3331 8.9701 7.41915 9.26283 7.5156 9.48977C7.6357 9.77262 7.70069 10.0391 7.88839 10.2894C8.05451 10.5114 8.17695 10.7347 8.30537 10.9781C8.44965 11.2513 8.58587 11.5133 8.76135 11.7647C8.88042 11.9358 9.19523 12.2761 9.39411 12.3013C9.87972 12.3634 9.84957 11.1834 9.81343 10.8954C9.77886 10.6178 9.77002 10.3232 9.77912 10.0417C9.78691 9.80147 9.80849 9.463 9.66629 9.26698C9.4344 8.94723 8.91785 9.18639 8.87756 8.75667C8.96282 8.63475 8.94489 8.5266 9.51447 8.33891C9.96317 8.19151 10.253 8.19619 10.5489 8.21984C11.152 8.2682 11.7915 8.10494 12.3738 8.30043C12.9302 8.48787 12.8441 9.27842 12.8254 9.75208C12.8002 10.3986 12.8272 11.0298 12.8254 11.6862C12.8246 11.9849 12.8127 12.2758 13.1771 12.2514C13.5187 12.2288 13.5536 11.9412 13.7166 11.7042C13.9432 11.3735 14.1515 11.0381 14.3823 10.7088C14.6935 10.2634 14.7876 9.763 15.0806 9.30676C15.1854 9.14376 15.2756 8.79645 15.437 8.6675C15.5592 8.5695 15.7913 8.62071 15.9393 8.62071H16.291C16.5601 8.62071 16.8346 8.61863 17.1112 8.62825C17.5094 8.64203 17.9555 8.55052 18.3504 8.60641C20.0545 8.84688 16.2086 12.4898 16.4088 13.1402C16.5471 13.5894 17.4244 14.0914 17.7411 14.4593C18.1614 14.9493 19.4555 15.9234 18.4492 16.5538Z' fill='#4C75A3')
+                    p ВКонтакте
+                  a.select-list__search-item(
+                    :href="answerLink.tg"
+                    v-if="answerLink.tg!==undefined&&answerLink.tg!==''"
+                  )
+                    .select-list__search-item-icon
+                      svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                        path(d='M10.0754 14.8388C10.0667 14.841 10.0581 14.8434 10.0495 14.8458L9.56922 13.3746C9.53731 13.2768 9.50571 13.1789 9.47411 13.081C9.38664 12.8102 9.29924 12.5395 9.20562 12.2706C9.16842 12.1633 9.18666 12.1112 9.28434 12.0498C10.4428 11.3221 11.6002 10.5925 12.7575 9.86293C13.3269 9.50398 13.8964 9.14502 14.4659 8.78627C14.5471 8.73515 14.6332 8.68235 14.7242 8.65883C14.7698 8.64702 14.821 8.65708 14.8723 8.66716C14.8961 8.67182 14.9198 8.67649 14.9431 8.67899C14.9326 8.69801 14.9235 8.71841 14.9144 8.7388C14.8945 8.78323 14.8746 8.82761 14.8415 8.85755C14.1612 9.47593 13.4784 10.0916 12.7955 10.7073C12.6958 10.7973 12.596 10.8873 12.4963 10.9772C12.3155 11.1402 12.1348 11.3033 11.9541 11.4664C11.4281 11.9411 10.9021 12.4159 10.3737 12.8884C10.2842 12.9685 10.2434 13.053 10.2338 13.172C10.2009 13.5811 10.1625 13.9895 10.1242 14.3978C10.1124 14.523 10.1007 14.6481 10.0891 14.7733C10.0877 14.7884 10.084 14.8034 10.0802 14.8185C10.0785 14.8252 10.0769 14.832 10.0754 14.8388Z' fill='#139BD0')
+                        path(fill-rule='evenodd' clip-rule='evenodd' d='M24 12C24 18.6274 18.6274 24 12 24C5.37258 24 0 18.6274 0 12C0 5.37258 5.37258 0 12 0C18.6274 0 24 5.37258 24 12ZM11.3802 14.5181C11.5125 14.3896 11.6451 14.2607 11.7782 14.1311C11.794 14.1422 11.8093 14.1528 11.8241 14.163C11.8487 14.1801 11.8722 14.1963 11.8951 14.2129C12.1388 14.393 12.3826 14.5732 12.6264 14.7534C13.1522 15.1421 13.6781 15.5308 14.2043 15.9186C14.6642 16.2577 15.0566 16.1118 15.1756 15.5531C15.6767 13.1999 16.1757 10.846 16.6742 8.49227C16.6889 8.4226 16.7045 8.35298 16.7201 8.28334C16.7712 8.05503 16.8223 7.8265 16.8446 7.59515C16.8899 7.12307 16.5544 6.88547 16.1179 7.05419C15.0482 7.46712 13.9787 7.87989 12.9092 8.29265C11.683 8.76585 10.4569 9.23904 9.23082 9.71243C9.03575 9.78763 8.84061 9.86269 8.64547 9.93775C7.93572 10.2107 7.22591 10.4838 6.51906 10.7639C6.36402 10.8253 6.21474 10.9218 6.08969 11.0324C5.95434 11.1524 5.97642 11.3192 6.12738 11.4215C6.22506 11.488 6.33906 11.535 6.4521 11.571C7.18674 11.8045 7.92257 12.0349 8.65985 12.26C8.75537 12.2896 8.80002 12.3354 8.83026 12.4297C9.01035 12.9922 9.19254 13.5536 9.37473 14.115C9.50743 14.5239 9.64013 14.9328 9.77202 15.3421C9.81498 15.4748 9.89322 15.5363 10.0331 15.5437C10.2381 15.5545 10.3987 15.4768 10.5415 15.3361C10.8193 15.063 11.0989 14.7914 11.3802 14.5181Z' fill='#139BD0')
+                    p Telegram
+
+                  a.select-list__search-item(
+                    :href="answerLink.wp"
+                    v-if="answerLink.wp!==undefined&&answerLink.wp!==''"
+                  )
+                    .select-list__search-item-icon
+                      img(src="/dist/img/WhatsApp.svg")
+                    p WhatsApp
+                  .select-list__search-item(@click="openModal")
+                    .select-list__search-item-icon
+                      svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                        rect(width='24' height='24' rx='12' fill='#82BF00')
+                        path(fill-rule='evenodd' clip-rule='evenodd' d='M6.5 9.5C6.5 8.94772 6.94772 8.5 7.5 8.5H16.5C17.0523 8.5 17.5 8.94772 17.5 9.5V12.25C17.5 12.5261 17.2761 12.75 17 12.75C16.7239 12.75 16.5 12.5261 16.5 12.25V10.0403L12.937 12.8907C12.3892 13.3289 11.6108 13.3289 11.063 12.8907L7.5 10.0403V15H12C12.2761 15 12.5 15.2239 12.5 15.5C12.5 15.7761 12.2761 16 12 16H7.5C6.94772 16 6.5 15.5523 6.5 15V9.5ZM8.42539 9.5L11.6877 12.1098C11.8703 12.2559 12.1297 12.2559 12.3123 12.1098L15.5746 9.5H8.42539ZM15.3535 13.0251C15.5488 12.8299 15.8653 12.8299 16.0606 13.0251L17.5104 14.4749C17.7056 14.6701 17.7056 14.9867 17.5104 15.182L16.0606 16.6317C15.8653 16.827 15.5488 16.827 15.3535 16.6317C15.1582 16.4365 15.1582 16.1199 15.3535 15.9246L15.9497 15.3284H13.4999C13.2238 15.3284 12.9999 15.1046 12.9999 14.8284C12.9999 14.5523 13.2238 14.3284 13.4999 14.3284H15.9497L15.3535 13.7322C15.1582 13.537 15.1582 13.2204 15.3535 13.0251Z' fill='white')
+                    p Отправить на e-mail
+          .mor-rep-calculators__input-error.mor-rep-calculators__after-sand-error(v-show="description_after_sand!==null") {{description_after_sand}}
+
+
+      .block-grid-area__col
+        .sticky-aside.calc-tax-deduc-new__sticky-aside(ref="heightBlock")
+          .calc-tax-deduc-new__block.mobile-padding.grey
+            .calc-tax-deduc-new__result-container-title
+              h3.calc-tax-deduc-new__block-title.big Данные о погашении
+            .calc-tax-deduc-new__result-body
+              .calc-tax-deduc-new__result-row.one-column
+                .calc-tax-deduc-new__result-col.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent
+                  .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
+                    p Вы закроете ипотеку
+                    span.content-note.desctop.content-note__center.js--content-note(v-if="tooltip_result['close-mortgage']!==''")
+                      span.content-note__text {{tooltip_result["close-mortgage"]}}
+                    span.content-note.mobile(
+                      v-if="tooltip_result['close-mortgage']!==''"
+                      @click="openTooltipMobile"
+                    )
+                  div(v-if="tooltip_result['close-mortgage']!==''")
+                    .select__background.modal-special-background(@click="closeTooltipMobile")
+                    .select-list__selection-window.modal-special-styles.js--openlist-body
+                      .select-list__head
+                        p Вы закроете ипотеку
+                        .select-list__head-close(@click="closeTooltipMobile")
+                          svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                            path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+                      .select-list__wr-search.mor-rep-calculators__wr-search
+                        p {{tooltip_result["close-mortgage"]}}
+
+                  .calc-tax-deduc-new__result-container-value
+                    p.calc-tax-deduc-new__result-value(
+                      v-if = "shedule.length > 0"
+                    ) {{repayment_information.mortgage_closure_month | capitalize}} {{repayment_information.mortgage_closure_year}} года
+                    p.calc-tax-deduc-new__result-value(
+                      v-if ="shedule.length === 0"
+                    ) -
+
+                    p.calc-tax-deduc-new__result-value-explanation.green(
+                      v-if="repayment_information.if_earlier_month>0"
+                    ) Раньше на {{repayment_information.if_earlier_month}} {{getMonthDeclension(repayment_information.if_earlier_month)}}
+
+              .calc-tax-deduc-new__result-row.one-column
+                .calc-tax-deduc-new__result-col.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent
+                  .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
+                    p Ежемесячный платеж
+                    span.content-note.desctop.content-note__center.js--content-note(v-if="tooltip_result['monthly-payment']!==''")
+                      span.content-note__text {{tooltip_result["monthly-payment"]}}
+                    span.content-note.mobile(
+                      v-if="tooltip_result['monthly-payment']!==''"
+                      @click="openTooltipMobile"
+                    )
+                  div(v-if="tooltip_result['monthly-payment']!==''")
+                    .select__background.modal-special-background(@click="closeTooltipMobile")
+                    .select-list__selection-window.modal-special-styles.js--openlist-body
+                      .select-list__head
+                        p Ежемесячный платеж
+                        .select-list__head-close(@click="closeTooltipMobile")
+                          svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                            path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+                      .select-list__wr-search.mor-rep-calculators__wr-search
+                        p {{tooltip_result["monthly-payment"]}}
+
+                  .calc-tax-deduc-new__result-container-value
+                    p.calc-tax-deduc-new__result-value(v-if = "shedule.length > 0 && array_early_repayment.length > 0 && (repayment_information.monthly_payment_min!==repayment_information.monthly_payment_max)") от {{repayment_information.monthly_payment_max | format_decimal}} до&nbsp;{{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
+                    p.calc-tax-deduc-new__result-value(v-if = "shedule.length > 0 && array_early_repayment.length > 0 && (repayment_information.monthly_payment_min===repayment_information.monthly_payment_max)") {{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
+
+                    p.calc-tax-deduc-new__result-value(v-if = "shedule.length > 0 && array_early_repayment.length === 0 && state.payment_type==='annuity'") {{repayment_information.monthly_payment_annuity | format_decimal}} ₽
+                    p.calc-tax-deduc-new__result-value(v-if = "shedule.length > 0 && array_early_repayment.length === 0 && state.payment_type==='differentiated'") от {{repayment_information.monthly_payment_max | format_decimal}} до&nbsp;{{repayment_information.monthly_payment_min | format_decimal}}&nbsp;₽
+
+
+                    p.calc-tax-deduc-new__result-value(v-if = "shedule.length === 0") -
+
+              .calc-tax-deduc-new__result-row.two-column
+                .calc-tax-deduc-new__result-col
+                  .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
+                    p Основной долг
+
+                  .calc-tax-deduc-new__result-container-value
+                    p.calc-tax-deduc-new__result-value(
+                      v-if = "shedule.length > 0"
+                    ) {{loanAmount | format_decimal}}&nbsp;₽
+                    p.calc-tax-deduc-new__result-value(
+                      v-if ="shedule.length === 0"
+                    ) -
+
+                .calc-tax-deduc-new__result-col
+                  .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
+                    p Проценты
+
+                  .calc-tax-deduc-new__result-container-value
+                    p.calc-tax-deduc-new__result-value(
+                      v-if = "shedule.length > 0"
+                    ) {{repayment_information.percentages | format_decimal}}&nbsp;₽
+                    p.calc-tax-deduc-new__result-value(
+                      v-if ="shedule.length === 0"
+                    ) -
+
+              .calc-tax-deduc-new__result-row.two-column
+                .calc-tax-deduc-new__result-col.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent
+                  .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
+                    p Всего заплатите
+                    span.content-note.desctop.content-note__center.js--content-note(v-if="tooltip_result['pay-total']!==''")
+                      span.content-note__text {{tooltip_result["pay-total"]}}
+                    span.content-note.mobile(
+                      v-if="tooltip_result['pay-total']!==''"
+                      @click="openTooltipMobile"
+                    )
+                  div(v-if="tooltip_result['pay-total']!==''")
+                    .select__background.modal-special-background(@click="closeTooltipMobile")
+                    .select-list__selection-window.modal-special-styles.js--openlist-body
+                      .select-list__head
+                        p Вы закроете ипотеку
+                        .select-list__head-close(@click="closeTooltipMobile")
+                          svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                            path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+                      .select-list__wr-search.mor-rep-calculators__wr-search
+                        p {{tooltip_result["pay-total"]}}
+                  .calc-tax-deduc-new__result-container-value
+                    p.calc-tax-deduc-new__result-value(v-if = "shedule.length > 0") {{repayment_information.pay_in_total | format_decimal}}&nbsp;₽
+                    p.calc-tax-deduc-new__result-value(
+                      v-if ="shedule.length === 0"
+                    ) -
+
+                .calc-tax-deduc-new__result-col.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent(v-if="shedule.length > 0 && array_early_repayment.length > 0")
+                  .calc-tax-deduc-new__result-label.calc-tax-deduc-new__row-title-container
+                    p Экономия
+                    span.content-note.desctop.content-note__center.js--content-note(v-if="tooltip_result['savings']!==''")
+                      span.content-note__text {{tooltip_result["savings"]}}
+                    span.content-note.mobile(
+                      v-if="tooltip_result['savings']!==''"
+                      @click="openTooltipMobile"
+                    )
+                  div(v-if="tooltip_result['savings']!==''")
+                    .select__background.modal-special-background(@click="closeTooltipMobile")
+                    .select-list__selection-window.modal-special-styles.js--openlist-body
+                      .select-list__head
+                        p Экономия
+                        .select-list__head-close(@click="closeTooltipMobile")
+                          svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                            path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+                      .select-list__wr-search.mor-rep-calculators__wr-search
+                        p {{tooltip_result["savings"]}}
+                  .calc-tax-deduc-new__result-container-value
+                    p.calc-tax-deduc-new__result-value.green {{repayment_information.savings | format_decimal}} ₽
+          .calc-tax-deduc-new__block.mobile-padding.grey
+            .mor-rep-calculators__container-footnote
+              .mor-rep-calculators__container-footnote-icon
+                .mor-rep-calculators__wr-footnote-icon
+              p.calc-tax-deduc-new__block-subtitle.
+                Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий
+
+
+
+
+    //график платежей для среднего разрешения экрана
+    .calc-tax-deduc-new__block.mobile-padding.mor-rep-calculators__block-schedule.grey.tablet.js--container-block(
+      v-if="shedule.length>0"
+    )
+      .calc-tax-deduc-new__container-title
+        h3.calc-tax-deduc-new__block-title.big График платежей
+
+
+
+      .calc-tax-deduc-new__payment-schedule.mor-rep-calculators__payment-schedule
+        .calc-tax-deduc-new__payment-schedule-row-container.header-row
+          .calc-tax-deduc-new__payment-schedule-row.thead
+            .calc-tax-deduc-new__payment-schedule-col
+              p №
+            .calc-tax-deduc-new__payment-schedule-col
+              p Месяц и год платежа
+            .calc-tax-deduc-new__payment-schedule-col
+              p Задолженность
+            .calc-tax-deduc-new__payment-schedule-col
+              p Погашение процентов
+            .calc-tax-deduc-new__payment-schedule-col
+              p Погашение основного долга
+            .calc-tax-deduc-new__payment-schedule-col
+              p Сумма платежа
+
+        .calc-tax-deduc-new__payment-schedule-tbody
+          .calc-tax-deduc-new__payment-schedule-row-container(
+            v-for='(item,index) in shedule' :key="index"
+            :class="getItemClasses(item)"
+
+          )
+            //будет появляться если это ипотечные каникулы и у родителя стоит класс .mortgage-holidays
+            .mor-rep-calculators__payment-schedule-early-wrapper(v-if="item.isHoliday===true")
+              .mor-rep-calculators__payment-schedule-early-plate.black
+                p Ипотечные каникулы
+
+            .calc-tax-deduc-new__payment-schedule-row
+              .calc-tax-deduc-new__payment-schedule-col
+                p {{index+1}}
+              .calc-tax-deduc-new__payment-schedule-col
+                p {{item.nameMonth}}, {{item.year}}
+              .calc-tax-deduc-new__payment-schedule-col
+                p {{item.remainingBalance | format_decimal}} ₽
+
+              .calc-tax-deduc-new__payment-schedule-col
+                p {{item.interest | format_decimal}} ₽
+              .calc-tax-deduc-new__payment-schedule-col
+                p {{item.principal | format_decimal}} ₽
+              .calc-tax-deduc-new__payment-schedule-col
+                p {{item.payment | format_decimal}}  ₽
+
+
+
+            //появляется блок, если есть досрочное погашение
+            .mor-rep-calculators__payment-schedule-early-container(
+              v-if="(item.prepayments&&item.prepayments.length>0) && !String(product.amount).toLowerCase().includes('e')"
+              v-for = "(product,index) in item.prepayments" :key="index"
+            )
+              .mor-rep-calculators__payment-schedule-early-container-wr
+                .mor-rep-calculators__payment-schedule-early-wrapper
+                  .mor-rep-calculators__payment-schedule-early-plate.yellow
+                    p Досрочное погашение
+                  .mor-rep-calculators__payment-schedule-early-plate.white
+                    p(v-if="product.type==='payment'") Уменьшение платежа
+                    p(v-if="product.type==='term'") Уменьшение срока
+                .calc-tax-deduc-new__payment-schedule-row.mor-rep-calculators__early-repayment
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{product.nameMonth}}, {{product.year}}
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{product.remainingBalance | format_decimal}} ₽
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p -
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{product.amount | format_decimal}} ₽
+                  .calc-tax-deduc-new__payment-schedule-col
+                    p {{product.amount | format_decimal}} ₽
+      .mor-rep-calculators__shedule-footer-share
+
+        .mor-rep-calculators__shedule-footer-share-item.mor-rep-calculators__shedule-footer-share-item-share(v-if="can_share===1&&answerLink!==null")
+          .btn_s.transparent_black_border.hover-green.btn-icon-share Отправить расчёт
+          .select-list__selection-window.mor-rep-calculators__selection-window-share.modal-special-styles
+            .select-list__wr-search
+              .select-list__search-item(
+                v-if="answerLink.link!==undefined&&answerLink.link!==''"
+                :data-link="answerLink.link"
+                @click="copyLink"
+              )
+                .select-list__search-item-icon
+                  svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                    g(clip-path='url(#clip0_2191_3622)')
+                      circle(cx='12' cy='12' r='12' fill='#C8C8CB')
+                      path(fill-rule='evenodd' clip-rule='evenodd' d='M14.0455 7.5H8.95455C8.15122 7.5 7.5 8.05103 7.5 8.73077V14.2692C7.5 14.949 8.15122 15.5 8.95455 15.5H14.0455C14.8488 15.5 15.5 14.949 15.5 14.2692V8.73077C15.5 8.05103 14.8488 7.5 14.0455 7.5Z' fill='white')
+                      path(fill-rule='evenodd' clip-rule='evenodd' d='M16.25 9.25V14.5909C16.25 15.4626 15.3665 16.25 14.1667 16.25H9.25V16.75H14.1667C15.5442 16.75 16.75 15.8279 16.75 14.5909V9.25H16.25Z' fill='white')
+                    defs
+                      clippath#clip0_2191_3622
+                        rect(width='24' height='24' fill='white')
+                p Скопировать ссылку
+              a.select-list__search-item(
+                :href="answerLink.vk"
+                v-if="answerLink.vk!==undefined&&answerLink.vk!==''"
+              )
+                .select-list__search-item-icon
+                  svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                    path(d='M12 0C5.37244 0 0 5.37244 0 12C0 18.6276 5.37244 24 12 24C18.6276 24 24 18.6276 24 12C24 5.37244 18.6276 0 12 0ZM18.4492 16.5538C17.9371 16.8741 15.8561 16.9695 15.3523 16.6035C15.0759 16.4028 14.8232 16.1516 14.5833 15.9125C14.4153 15.7453 14.2248 15.6642 14.0805 15.4828C13.9627 15.3343 13.8819 15.1591 13.7579 15.0125C13.5486 14.7666 13.2265 14.5573 12.9717 14.8578C12.588 15.3099 13.0321 16.1977 12.5204 16.5354C12.3489 16.6487 12.1757 16.6815 11.9613 16.6653L11.4863 16.6869C11.2074 16.6924 10.7654 16.695 10.448 16.6378C10.0939 16.5738 9.80147 16.3804 9.4812 16.2385C8.8734 15.9689 8.29445 15.6016 7.85381 15.0928C6.65459 13.7072 5.04385 11.8016 4.41811 10.0596C4.28943 9.70165 3.94939 8.99272 4.27175 8.6857C4.71005 8.36724 6.86127 8.27756 7.19688 8.76993C7.3331 8.9701 7.41915 9.26283 7.5156 9.48977C7.6357 9.77262 7.70069 10.0391 7.88839 10.2894C8.05451 10.5114 8.17695 10.7347 8.30537 10.9781C8.44965 11.2513 8.58587 11.5133 8.76135 11.7647C8.88042 11.9358 9.19523 12.2761 9.39411 12.3013C9.87972 12.3634 9.84957 11.1834 9.81343 10.8954C9.77886 10.6178 9.77002 10.3232 9.77912 10.0417C9.78691 9.80147 9.80849 9.463 9.66629 9.26698C9.4344 8.94723 8.91785 9.18639 8.87756 8.75667C8.96282 8.63475 8.94489 8.5266 9.51447 8.33891C9.96317 8.19151 10.253 8.19619 10.5489 8.21984C11.152 8.2682 11.7915 8.10494 12.3738 8.30043C12.9302 8.48787 12.8441 9.27842 12.8254 9.75208C12.8002 10.3986 12.8272 11.0298 12.8254 11.6862C12.8246 11.9849 12.8127 12.2758 13.1771 12.2514C13.5187 12.2288 13.5536 11.9412 13.7166 11.7042C13.9432 11.3735 14.1515 11.0381 14.3823 10.7088C14.6935 10.2634 14.7876 9.763 15.0806 9.30676C15.1854 9.14376 15.2756 8.79645 15.437 8.6675C15.5592 8.5695 15.7913 8.62071 15.9393 8.62071H16.291C16.5601 8.62071 16.8346 8.61863 17.1112 8.62825C17.5094 8.64203 17.9555 8.55052 18.3504 8.60641C20.0545 8.84688 16.2086 12.4898 16.4088 13.1402C16.5471 13.5894 17.4244 14.0914 17.7411 14.4593C18.1614 14.9493 19.4555 15.9234 18.4492 16.5538Z' fill='#4C75A3')
+                p ВКонтакте
+              a.select-list__search-item(
+                :href="answerLink.tg"
+                v-if="answerLink.tg!==undefined&&answerLink.tg!==''"
+              )
+                .select-list__search-item-icon
+                  svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                    path(d='M10.0754 14.8388C10.0667 14.841 10.0581 14.8434 10.0495 14.8458L9.56922 13.3746C9.53731 13.2768 9.50571 13.1789 9.47411 13.081C9.38664 12.8102 9.29924 12.5395 9.20562 12.2706C9.16842 12.1633 9.18666 12.1112 9.28434 12.0498C10.4428 11.3221 11.6002 10.5925 12.7575 9.86293C13.3269 9.50398 13.8964 9.14502 14.4659 8.78627C14.5471 8.73515 14.6332 8.68235 14.7242 8.65883C14.7698 8.64702 14.821 8.65708 14.8723 8.66716C14.8961 8.67182 14.9198 8.67649 14.9431 8.67899C14.9326 8.69801 14.9235 8.71841 14.9144 8.7388C14.8945 8.78323 14.8746 8.82761 14.8415 8.85755C14.1612 9.47593 13.4784 10.0916 12.7955 10.7073C12.6958 10.7973 12.596 10.8873 12.4963 10.9772C12.3155 11.1402 12.1348 11.3033 11.9541 11.4664C11.4281 11.9411 10.9021 12.4159 10.3737 12.8884C10.2842 12.9685 10.2434 13.053 10.2338 13.172C10.2009 13.5811 10.1625 13.9895 10.1242 14.3978C10.1124 14.523 10.1007 14.6481 10.0891 14.7733C10.0877 14.7884 10.084 14.8034 10.0802 14.8185C10.0785 14.8252 10.0769 14.832 10.0754 14.8388Z' fill='#139BD0')
+                    path(fill-rule='evenodd' clip-rule='evenodd' d='M24 12C24 18.6274 18.6274 24 12 24C5.37258 24 0 18.6274 0 12C0 5.37258 5.37258 0 12 0C18.6274 0 24 5.37258 24 12ZM11.3802 14.5181C11.5125 14.3896 11.6451 14.2607 11.7782 14.1311C11.794 14.1422 11.8093 14.1528 11.8241 14.163C11.8487 14.1801 11.8722 14.1963 11.8951 14.2129C12.1388 14.393 12.3826 14.5732 12.6264 14.7534C13.1522 15.1421 13.6781 15.5308 14.2043 15.9186C14.6642 16.2577 15.0566 16.1118 15.1756 15.5531C15.6767 13.1999 16.1757 10.846 16.6742 8.49227C16.6889 8.4226 16.7045 8.35298 16.7201 8.28334C16.7712 8.05503 16.8223 7.8265 16.8446 7.59515C16.8899 7.12307 16.5544 6.88547 16.1179 7.05419C15.0482 7.46712 13.9787 7.87989 12.9092 8.29265C11.683 8.76585 10.4569 9.23904 9.23082 9.71243C9.03575 9.78763 8.84061 9.86269 8.64547 9.93775C7.93572 10.2107 7.22591 10.4838 6.51906 10.7639C6.36402 10.8253 6.21474 10.9218 6.08969 11.0324C5.95434 11.1524 5.97642 11.3192 6.12738 11.4215C6.22506 11.488 6.33906 11.535 6.4521 11.571C7.18674 11.8045 7.92257 12.0349 8.65985 12.26C8.75537 12.2896 8.80002 12.3354 8.83026 12.4297C9.01035 12.9922 9.19254 13.5536 9.37473 14.115C9.50743 14.5239 9.64013 14.9328 9.77202 15.3421C9.81498 15.4748 9.89322 15.5363 10.0331 15.5437C10.2381 15.5545 10.3987 15.4768 10.5415 15.3361C10.8193 15.063 11.0989 14.7914 11.3802 14.5181Z' fill='#139BD0')
+                p Telegram
+
+              a.select-list__search-item(
+                :href="answerLink.wp"
+                v-if="answerLink.wp!==undefined&&answerLink.wp!==''"
+              )
+                .select-list__search-item-icon
+                  img(src="/dist/img/WhatsApp.svg")
+                p WhatsApp
+              .select-list__search-item(@click="openModal")
+                .select-list__search-item-icon
+                  svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                    rect(width='24' height='24' rx='12' fill='#82BF00')
+                    path(fill-rule='evenodd' clip-rule='evenodd' d='M6.5 9.5C6.5 8.94772 6.94772 8.5 7.5 8.5H16.5C17.0523 8.5 17.5 8.94772 17.5 9.5V12.25C17.5 12.5261 17.2761 12.75 17 12.75C16.7239 12.75 16.5 12.5261 16.5 12.25V10.0403L12.937 12.8907C12.3892 13.3289 11.6108 13.3289 11.063 12.8907L7.5 10.0403V15H12C12.2761 15 12.5 15.2239 12.5 15.5C12.5 15.7761 12.2761 16 12 16H7.5C6.94772 16 6.5 15.5523 6.5 15V9.5ZM8.42539 9.5L11.6877 12.1098C11.8703 12.2559 12.1297 12.2559 12.3123 12.1098L15.5746 9.5H8.42539ZM15.3535 13.0251C15.5488 12.8299 15.8653 12.8299 16.0606 13.0251L17.5104 14.4749C17.7056 14.6701 17.7056 14.9867 17.5104 15.182L16.0606 16.6317C15.8653 16.827 15.5488 16.827 15.3535 16.6317C15.1582 16.4365 15.1582 16.1199 15.3535 15.9246L15.9497 15.3284H13.4999C13.2238 15.3284 12.9999 15.1046 12.9999 14.8284C12.9999 14.5523 13.2238 14.3284 13.4999 14.3284H15.9497L15.3535 13.7322C15.1582 13.537 15.1582 13.2204 15.3535 13.0251Z' fill='white')
+                p Отправить на e-mail
+      .mor-rep-calculators__input-error.mor-rep-calculators__after-sand-error(v-show="description_after_sand!==null") {{description_after_sand}}
+
+
+    //график платежей для маленького разрешения экрана
+
+
+    .calc-tax-deduc-new__block.mobile-padding.mor-rep-calculators__block-schedule.mobile.grey.js--container-block(
+          v-show="shedule.length>0"
+        )
+      h3.calc-tax-deduc-new__block-title.big График платежей
+
+      .mor-rep-calculators__shedule-calendar
+        component-calendar-mobile-shedule(
+          :loanTerm="loanTerm"
+          :min_date_mobile="min_date_mobile"
+          :max_date_mobile="max_date_mobile"
+          @sendDateMobile="receivedDateMobile"
+        )
+
+      .mor-rep-calculators__cal-mobile-item-container
+        .calc-tax-deduc-new__area.mor-rep-calculators__shedule-calendar-mobile-container(ref="mobileShedule")
+          .mor-rep-calculators__shedule-calendar-mobile-item.calc-tax-deduc-new__area.js-accordion-parent-calc(
+            v-for='(item,index) in shedule' :key="index"
+            :class="getItemClasses(item)"
+            :data-date="`${item.year}-${item.month}`"
+
+          )
+            .mor-rep-calculators__shedule-calendar-mobile-wr-row(@click="dropdownAreaMobileShedule")
+
+              .mor-rep-calculators__payment-schedule-early-wrapper(v-if="item.isHoliday===true")
+                .mor-rep-calculators__payment-schedule-early-plate.black
+                  p Ипотечные каникулы
+              .mor-rep-calculators__shedule-calendar-mobile-row
+                .mor-rep-calculators__calendar-mobile-item-col
+                  .mor-rep-calculators__shedule-calendar-mobile-month {{item.nameMonth}}, {{item.year}}
+                .mor-rep-calculators__calendar-mobile-item-col.row
+                  .mor-rep-calculators__shedule-calendar-mobile-value {{item.payment | format_decimal}}  ₽
+                  .mor-rep-calculators__shedule-calendar-mobile-icon
+
+            .calc-tax-deduc-new__wr-function-block.active(@transitionend="handleTransitionEnd")
+              .calc-tax-deduc-new__acc-wr
+                .mor-rep-calculators__shedule-calendar-mobile
+                  .mor-rep-calculators__shedule-calendar-mobile-row
+                    .mor-rep-calculators__calendar-mobile-item-col
+                      p.mor-rep-calculators__shedule-calendar-mobile-key Задолженность
+                      .mor-rep-calculators__shedule-calendar-mobile-value {{item.remainingBalance | format_decimal}} ₽
+                    .mor-rep-calculators__calendar-mobile-item-col
+                      p.mor-rep-calculators__shedule-calendar-mobile-key Сумма платежа
+                      .mor-rep-calculators__shedule-calendar-mobile-value {{item.payment | format_decimal}}  ₽
+
+                  .mor-rep-calculators__shedule-calendar-mobile-row.margin
+                    .mor-rep-calculators__calendar-mobile-item-col
+                      p.mor-rep-calculators__shedule-calendar-mobile-key.col-1 Погашение процентов
+                      .mor-rep-calculators__shedule-calendar-mobile-value {{item.interest | format_decimal}} ₽
+                    .mor-rep-calculators__calendar-mobile-item-col
+                      p.mor-rep-calculators__shedule-calendar-mobile-key.col-2 Погашение основного долга
+                      .mor-rep-calculators__shedule-calendar-mobile-value {{item.principal | format_decimal}} ₽
+
+            .mor-rep-calculators__shedule-calendar-mobile-item-early.calc-tax-deduc-new__area.js-accordion-parent-calc-early(
+                  v-if="(item.prepayments&&item.prepayments.length>0) && !String(product.amount).toLowerCase().includes('e')"
+                  v-for = "(product,index) in item.prepayments" :key="index"
+                )
+              .mor-rep-calculators__shedule-calendar-mobile-wr-row(@click="dropdownAreaMobileSheduleEarly")
+                .mor-rep-calculators__payment-schedule-early-wrapper
+                  .mor-rep-calculators__payment-schedule-early-plate.yellow
+                    p Досрочное погашение
+                  .mor-rep-calculators__payment-schedule-early-plate.white
+                    p(v-if="product.type==='payment'") Уменьшение платежа
+                    p(v-if="product.type==='term'") Уменьшение срока
+                .mor-rep-calculators__shedule-calendar-mobile-row
+                  .mor-rep-calculators__calendar-mobile-item-col
+                    .mor-rep-calculators__shedule-calendar-mobile-month {{product.nameMonth}}, {{product.year}}
+                  .mor-rep-calculators__calendar-mobile-item-col.row
+                    .mor-rep-calculators__shedule-calendar-mobile-value.green {{product.amount | format_decimal}} ₽
+                    .mor-rep-calculators__shedule-calendar-mobile-icon.early
+
+              .mor-rep-calculators__wr-function-block.active(@transitionend="handleTransitionEndEarly")
+                .calc-tax-deduc-new__acc-wr
+                  .mor-rep-calculators__shedule-calendar-mobile
+                    .mor-rep-calculators__shedule-calendar-mobile-row
+                      .mor-rep-calculators__calendar-mobile-item-col
+                        p.mor-rep-calculators__shedule-calendar-mobile-key Задолженность
+                        .mor-rep-calculators__shedule-calendar-mobile-value {{product.remainingBalance | format_decimal}} ₽
+                      .mor-rep-calculators__calendar-mobile-item-col
+                        p.mor-rep-calculators__shedule-calendar-mobile-key Сумма платежа
+                        .mor-rep-calculators__shedule-calendar-mobile-value {{product.amount | format_decimal}} ₽
+
+                    .mor-rep-calculators__shedule-calendar-mobile-row.margin
+                      .mor-rep-calculators__calendar-mobile-item-col
+                        p.mor-rep-calculators__shedule-calendar-mobile-key.col-1 Погашение процентов
+                        .mor-rep-calculators__shedule-calendar-mobile-value -
+                      .mor-rep-calculators__calendar-mobile-item-col
+                        p.mor-rep-calculators__shedule-calendar-mobile-key.col-2 Погашение основного долга
+                        .mor-rep-calculators__shedule-calendar-mobile-value  {{product.amount | format_decimal}} ₽
+
+
+      .mor-rep-calculators__shedule-footer-share
+
+        .mor-rep-calculators__shedule-footer-share-item.mor-rep-calculators__parent-tooltip-mobile.js--tooltip-parent(v-if="can_share===1&&answerLink!==null")
+          .btn_s.transparent_black_border.hover-green.btn-icon-share(@click="openTooltipMobile") Отправить расчёт
+          div(v-if="tooltip_result['monthly-payment']!==''")
+            .select__background.modal-special-background(@click="closeTooltipMobile")
+            .select-list__selection-window.mor-rep-calculators__selection-window-share.modal-special-styles.js--openlist-body
+              .select-list__head
+                p Отправить расчёт
+                .select-list__head-close(@click="closeTooltipMobile")
+                  svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                    path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+
+              .select-list__wr-search
+                .select-list__search-item(
+                  v-if="answerLink.link!==undefined&&answerLink.link!==''"
+                  :data-link="answerLink.link"
+                  @click="copyLink"
+                )
+                  .select-list__search-item-icon
+                    svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                      g(clip-path='url(#clip0_2191_3622)')
+                        circle(cx='12' cy='12' r='12' fill='#C8C8CB')
+                        path(fill-rule='evenodd' clip-rule='evenodd' d='M14.0455 7.5H8.95455C8.15122 7.5 7.5 8.05103 7.5 8.73077V14.2692C7.5 14.949 8.15122 15.5 8.95455 15.5H14.0455C14.8488 15.5 15.5 14.949 15.5 14.2692V8.73077C15.5 8.05103 14.8488 7.5 14.0455 7.5Z' fill='white')
+                        path(fill-rule='evenodd' clip-rule='evenodd' d='M16.25 9.25V14.5909C16.25 15.4626 15.3665 16.25 14.1667 16.25H9.25V16.75H14.1667C15.5442 16.75 16.75 15.8279 16.75 14.5909V9.25H16.25Z' fill='white')
+                      defs
+                        clippath#clip0_2191_3622
+                          rect(width='24' height='24' fill='white')
+                  p Скопировать ссылку
+                a.select-list__search-item(
+                  :href="answerLink.vk"
+                  v-if="answerLink.vk!==undefined&&answerLink.vk!==''"
+                )
+                  .select-list__search-item-icon
+                    svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                      path(d='M12 0C5.37244 0 0 5.37244 0 12C0 18.6276 5.37244 24 12 24C18.6276 24 24 18.6276 24 12C24 5.37244 18.6276 0 12 0ZM18.4492 16.5538C17.9371 16.8741 15.8561 16.9695 15.3523 16.6035C15.0759 16.4028 14.8232 16.1516 14.5833 15.9125C14.4153 15.7453 14.2248 15.6642 14.0805 15.4828C13.9627 15.3343 13.8819 15.1591 13.7579 15.0125C13.5486 14.7666 13.2265 14.5573 12.9717 14.8578C12.588 15.3099 13.0321 16.1977 12.5204 16.5354C12.3489 16.6487 12.1757 16.6815 11.9613 16.6653L11.4863 16.6869C11.2074 16.6924 10.7654 16.695 10.448 16.6378C10.0939 16.5738 9.80147 16.3804 9.4812 16.2385C8.8734 15.9689 8.29445 15.6016 7.85381 15.0928C6.65459 13.7072 5.04385 11.8016 4.41811 10.0596C4.28943 9.70165 3.94939 8.99272 4.27175 8.6857C4.71005 8.36724 6.86127 8.27756 7.19688 8.76993C7.3331 8.9701 7.41915 9.26283 7.5156 9.48977C7.6357 9.77262 7.70069 10.0391 7.88839 10.2894C8.05451 10.5114 8.17695 10.7347 8.30537 10.9781C8.44965 11.2513 8.58587 11.5133 8.76135 11.7647C8.88042 11.9358 9.19523 12.2761 9.39411 12.3013C9.87972 12.3634 9.84957 11.1834 9.81343 10.8954C9.77886 10.6178 9.77002 10.3232 9.77912 10.0417C9.78691 9.80147 9.80849 9.463 9.66629 9.26698C9.4344 8.94723 8.91785 9.18639 8.87756 8.75667C8.96282 8.63475 8.94489 8.5266 9.51447 8.33891C9.96317 8.19151 10.253 8.19619 10.5489 8.21984C11.152 8.2682 11.7915 8.10494 12.3738 8.30043C12.9302 8.48787 12.8441 9.27842 12.8254 9.75208C12.8002 10.3986 12.8272 11.0298 12.8254 11.6862C12.8246 11.9849 12.8127 12.2758 13.1771 12.2514C13.5187 12.2288 13.5536 11.9412 13.7166 11.7042C13.9432 11.3735 14.1515 11.0381 14.3823 10.7088C14.6935 10.2634 14.7876 9.763 15.0806 9.30676C15.1854 9.14376 15.2756 8.79645 15.437 8.6675C15.5592 8.5695 15.7913 8.62071 15.9393 8.62071H16.291C16.5601 8.62071 16.8346 8.61863 17.1112 8.62825C17.5094 8.64203 17.9555 8.55052 18.3504 8.60641C20.0545 8.84688 16.2086 12.4898 16.4088 13.1402C16.5471 13.5894 17.4244 14.0914 17.7411 14.4593C18.1614 14.9493 19.4555 15.9234 18.4492 16.5538Z' fill='#4C75A3')
+                  p ВКонтакте
+                a.select-list__search-item(
+                  :href="answerLink.tg"
+                  v-if="answerLink.tg!==undefined&&answerLink.tg!==''"
+                )
+                  .select-list__search-item-icon
+                    svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                      path(d='M10.0754 14.8388C10.0667 14.841 10.0581 14.8434 10.0495 14.8458L9.56922 13.3746C9.53731 13.2768 9.50571 13.1789 9.47411 13.081C9.38664 12.8102 9.29924 12.5395 9.20562 12.2706C9.16842 12.1633 9.18666 12.1112 9.28434 12.0498C10.4428 11.3221 11.6002 10.5925 12.7575 9.86293C13.3269 9.50398 13.8964 9.14502 14.4659 8.78627C14.5471 8.73515 14.6332 8.68235 14.7242 8.65883C14.7698 8.64702 14.821 8.65708 14.8723 8.66716C14.8961 8.67182 14.9198 8.67649 14.9431 8.67899C14.9326 8.69801 14.9235 8.71841 14.9144 8.7388C14.8945 8.78323 14.8746 8.82761 14.8415 8.85755C14.1612 9.47593 13.4784 10.0916 12.7955 10.7073C12.6958 10.7973 12.596 10.8873 12.4963 10.9772C12.3155 11.1402 12.1348 11.3033 11.9541 11.4664C11.4281 11.9411 10.9021 12.4159 10.3737 12.8884C10.2842 12.9685 10.2434 13.053 10.2338 13.172C10.2009 13.5811 10.1625 13.9895 10.1242 14.3978C10.1124 14.523 10.1007 14.6481 10.0891 14.7733C10.0877 14.7884 10.084 14.8034 10.0802 14.8185C10.0785 14.8252 10.0769 14.832 10.0754 14.8388Z' fill='#139BD0')
+                      path(fill-rule='evenodd' clip-rule='evenodd' d='M24 12C24 18.6274 18.6274 24 12 24C5.37258 24 0 18.6274 0 12C0 5.37258 5.37258 0 12 0C18.6274 0 24 5.37258 24 12ZM11.3802 14.5181C11.5125 14.3896 11.6451 14.2607 11.7782 14.1311C11.794 14.1422 11.8093 14.1528 11.8241 14.163C11.8487 14.1801 11.8722 14.1963 11.8951 14.2129C12.1388 14.393 12.3826 14.5732 12.6264 14.7534C13.1522 15.1421 13.6781 15.5308 14.2043 15.9186C14.6642 16.2577 15.0566 16.1118 15.1756 15.5531C15.6767 13.1999 16.1757 10.846 16.6742 8.49227C16.6889 8.4226 16.7045 8.35298 16.7201 8.28334C16.7712 8.05503 16.8223 7.8265 16.8446 7.59515C16.8899 7.12307 16.5544 6.88547 16.1179 7.05419C15.0482 7.46712 13.9787 7.87989 12.9092 8.29265C11.683 8.76585 10.4569 9.23904 9.23082 9.71243C9.03575 9.78763 8.84061 9.86269 8.64547 9.93775C7.93572 10.2107 7.22591 10.4838 6.51906 10.7639C6.36402 10.8253 6.21474 10.9218 6.08969 11.0324C5.95434 11.1524 5.97642 11.3192 6.12738 11.4215C6.22506 11.488 6.33906 11.535 6.4521 11.571C7.18674 11.8045 7.92257 12.0349 8.65985 12.26C8.75537 12.2896 8.80002 12.3354 8.83026 12.4297C9.01035 12.9922 9.19254 13.5536 9.37473 14.115C9.50743 14.5239 9.64013 14.9328 9.77202 15.3421C9.81498 15.4748 9.89322 15.5363 10.0331 15.5437C10.2381 15.5545 10.3987 15.4768 10.5415 15.3361C10.8193 15.063 11.0989 14.7914 11.3802 14.5181Z' fill='#139BD0')
+                  p Telegram
+
+                a.select-list__search-item(
+                  :href="answerLink.wp"
+                  v-if="answerLink.wp!==undefined&&answerLink.wp!==''"
+                )
+                  .select-list__search-item-icon
+                    img(src="/dist/img/WhatsApp.svg")
+                  p WhatsApp
+                .select-list__search-item(@click="openModal")
+                  .select-list__search-item-icon
+                    svg(width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg')
+                      rect(width='24' height='24' rx='12' fill='#82BF00')
+                      path(fill-rule='evenodd' clip-rule='evenodd' d='M6.5 9.5C6.5 8.94772 6.94772 8.5 7.5 8.5H16.5C17.0523 8.5 17.5 8.94772 17.5 9.5V12.25C17.5 12.5261 17.2761 12.75 17 12.75C16.7239 12.75 16.5 12.5261 16.5 12.25V10.0403L12.937 12.8907C12.3892 13.3289 11.6108 13.3289 11.063 12.8907L7.5 10.0403V15H12C12.2761 15 12.5 15.2239 12.5 15.5C12.5 15.7761 12.2761 16 12 16H7.5C6.94772 16 6.5 15.5523 6.5 15V9.5ZM8.42539 9.5L11.6877 12.1098C11.8703 12.2559 12.1297 12.2559 12.3123 12.1098L15.5746 9.5H8.42539ZM15.3535 13.0251C15.5488 12.8299 15.8653 12.8299 16.0606 13.0251L17.5104 14.4749C17.7056 14.6701 17.7056 14.9867 17.5104 15.182L16.0606 16.6317C15.8653 16.827 15.5488 16.827 15.3535 16.6317C15.1582 16.4365 15.1582 16.1199 15.3535 15.9246L15.9497 15.3284H13.4999C13.2238 15.3284 12.9999 15.1046 12.9999 14.8284C12.9999 14.5523 13.2238 14.3284 13.4999 14.3284H15.9497L15.3535 13.7322C15.1582 13.537 15.1582 13.2204 15.3535 13.0251Z' fill='white')
+                  p Отправить на e-mail
+      .mor-rep-calculators__input-error.mor-rep-calculators__after-sand-error(v-show="description_after_sand!==null") {{description_after_sand}}
+    .modal.mor-rep-calculators__modal-mail(ref="dataModalMail" @click="closeModalBody")
+      .modal__wrapper.new.js--modal
+          button.modal__closer.outside(@click="closeModal")
+              svg(width='17' height='18' viewBox='0 0 17 18' fill='none' xmlns='http://www.w3.org/2000/svg')
+                  path(fill-rule='evenodd' clip-rule='evenodd' d='M0.357542 15.3637C-0.0329827 15.7543 -0.0329827 16.3874 0.357542 16.778C0.748066 17.1685 1.38123 17.1685 1.77176 16.778L8.13551 10.4142L14.4995 16.7782C14.89 17.1687 15.5232 17.1687 15.9137 16.7782C16.3042 16.3876 16.3042 15.7545 15.9137 15.364L9.54972 8.99999L15.9139 2.63582C16.3044 2.24529 16.3044 1.61213 15.9139 1.2216C15.5234 0.83108 14.8902 0.83108 14.4997 1.2216L8.13551 7.58577L1.77156 1.22182C1.38104 0.8313 0.747871 0.8313 0.357346 1.22182C-0.0331781 1.61235 -0.0331778 2.24551 0.357346 2.63604L6.7213 8.99999L0.357542 15.3637Z')
+
+          .modal__main-content.js--modal-main-content
+              form(action="" novalidate).feedback.js--universal-form
+                  .modal__title Отправить на e-mail
+                  .modal__desc Укажите адрес электронной почты на которую вы хотите отправить расчет
+                  .feedback__form-sand
+                    .feedback__row
+                      label.feed_back__field.feed_back__input(:class="mail_error||error_mail_fill?'input_error':''")
+                          input(
+                            ref="inputMail"
+                            type="text"
+                            inputmode="email"
+                            placeholder="E-mail",
+                            @input="onInputMail"
+                            @blur="onInputMail"
+                          )
+                      .mor-rep-calculators__input-error(v-if="mail_error") Недопустимый формат
+                      .mor-rep-calculators__input-error(v-if="error_mail_fill") Введите полностью почту
+
+                  .modal__bottom-sand
+                    .feed_back__wr-checkbox.modal__bottom-form
+                      .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper(:class="chek_error?'input_error':''")
+                        .personal-office__user-form-subscription-em
+                        .feed_back__user-form-block
+                          input#modal_subscription.js--feedback-check(
+                            type="checkbox" name=""
+                            required
+                            @change="changePersonal"
+                          )
+                          label.feed_back__chek-label(for='modal_subscription')
+                            p Согласен (-на) на обработку
+                            a(href='/user-agreement/#user-agreement-zhsk', target='_blank') персональных данных
+                      .mor-rep-calculators__input-error(v-if="chek_error") Согласитесь с условиями
+                      .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
+                        .personal-office__user-form-subscription-em
+                        .feed_back__user-form-block
+                          input#modal_agree(type="checkbox" name="" @change="changeAgree")
+                          label.feed_back__chek-label(for='modal_agree')
+                            p Согласен (-на) на получение
+                            a(href='/user-agreement/#user-agreement-zhsk', target='_blank') рекламных материалов
+                    button(type="button").btn_s.black.disabled.disabled__can-check(
+                      @click="sendingResultError"
+                      v-if="!check_agree_personal||!mail_fill"
+                    ) Отправить заявку
+                    button(type="button").btn_s.black(
+                      @click="sendingResult('mail',$event)"
+                      v-if="check_agree_personal&&mail_fill"
+
+                    ) Отправить заявку
+
+          .modal__sending-result.success.js--modal-wr-success
+            .modal__sending-result-icon
+            p.modal__sending-result-title Готово!
+            .modal__sending-result-wr-des
+                p Ссылка отправлена
+
+            button.btn_s.black.js--modal-closer(@click="closeModal") Закрыть
+
+
+          //окно появляется после отправки добавлением класса .active
+          .modal__sending-result.failed.js--modal-wr-failed
+            .modal__sending-result-icon
+            p.modal__sending-result-title <span class="highlighting">Ошибка</span>
+            .modal__sending-result-wr-des
+              p {{description_after_sand_mail}}
+            button.btn_s.black.js--modal-closer(@click="closeModal") Закрыть
+    #yandex-captcha-mortgage-calculator.captcha-element
+
+
+
+
+
+
+
+</template>
+<script>
+import ComponentInformationMortgage from './components/v-component-information-mortgage.vue';
+import ComponentMortgageHolidays from './components/v-component-mortgage-holidays.vue';
+import ComponentEarlyRepayment from './components/v-component-early-repayment.vue';
+import ComponentRepaymentData from './components/v-component-repayment-data.vue';
+import ComponentPaymentSchedule from './components/v-component-payment-schedule.vue';
+import ComponentCalendarMobileShedule from './components/v-2-component-calendar-mobile-shedule.vue';
+import numberFormatting from "./mixin/numberFormatting";
+import eventBus from './development-tools/eventBus.vue';
+import axios from 'axios';
+import IMask from 'imask';
+
+export default {
+  name: 'MortgageRepaymentCalculator',
+  mixins: [numberFormatting],
+  props:['answers','limit_mortgage_holidays','period_holidays','tooltip_information','tooltip_holidays','tooltip_early','tooltip_result','html_tooltip','can_share','calculatorId','answersIdProps','answerLinkProps','answers_expired'],
+  data(){
+    return {
+      placeholder:'Размер выплаты',
+      screenWidth : window.innerWidth,
+      screenHeight: window.innerHeight,
+      min_date_mobile:`${new Date().getFullYear() - 30}-01-01`,
+      max_date_mobile:`${new Date().getFullYear() + 99}-12-31`,
+
+      //для отображения блока ипотечные каникулы
+      // limit_mortgage_holidays:15000000, // ИЗ АДМИНКИ!!! лимит для ипотечных каникул, получаю его из админки(пока поставил 15000000)
+      visibility_mortgage_holidays_block:true, //если false блок с каникулами не отображать, зависит превышен или нет лимит
+      result_comparing_holidays_early:[], //массив с объектом месяца, года и id, который формируется если есть совпадения досрочки и каникул,
+      //оющий стэйт с полученными данными из блоков для расчёта
+      state:{
+        payment_type:null,
+        count:0, // чтобы понять сколько месяцев было до досрочного погашения и остановить обычную формулу расчёта
+        // просто массив с названиями месяцев
+        obj_month:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
+        obj_month_holiday:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь","январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
+        loan_registration_date: {//дата оформления кредита
+          'month':null,
+          'year':null
+        },
+        array_month:[],//массив из названий месяцев для графика платежей
+        array_payment_schedule:[], //массив графика платежей
+        array_holiday_schedule:[], //массив c месяцами и годами ипотечных каникул
+        array_final_month_massive:[],
+        n_calculation:0, // количество платежей(срок кредита)
+        n_calculation_constanta:0, // количество платежей(срок кредита)
+        n_calculation_with_holiday:0,
+        n_calculation_constanta_with_holiday:0,
+        array_n_calculation:[],
+        a_calculation:[], //массив исходных ежемесячных платежей
+        a_calculation_constanta:0, //исходный ежемесячный платеж
+        i_calculation:null, //ежемесячная процентная ставка
+        loan_amount:0, //сумма кредита
+        premaining:0, //остаток долга по кредиту(задолженность)
+        array_premaining:[], //массив с остаток долга по кредиту(задолженностями)
+        a_proc:0,//часть ежемесячного платежа, направленная на погашение процентов
+        array_interest_repayment_payments : [], //платежи на погашение процентов (погашение процентов)
+        a_ocn:null, //часть ежемесячного платежа, направленная на погашение основного долга;
+        array_main_debt_repayment_payments : [], //платежи на основоного долга(Погашение основного долга)
+        holidays_term:0, //срок каникул
+        holidays_date: {//дата начала каникул
+          'month':null,
+          'year':null
+        },
+        array_calculate_holiday:[],
+        array_holiday_schedule__2:[],
+        massive_for_obj_2:[], //массив отсроченных месяцев
+
+        //ДОСРОЧНОЕ ПОГАШЕНИЕ
+        periodicity_early_repayment:0, //передичность досрочного погашения 1-единовременно, 2 раз в месяц, 3 раз в год пока временно тут это буду засовыввать в массив ниже
+        array_early_repayment:[],//массив с досрочным погашением вида
+        array_premaining_early_repayment_term:[], //массив задолжностей (задолжность минус досрочное погашение) на весь срок, если её не было, то стоит 0
+        array_monthly_arrears:[], //массив с суммой досрочного погашения на весь срок, если её не было, то стоит 0
+        months_before_early_repayment:0,  //индекс месяца, чтобы можно было определить по его индексу, сколько было платежей до досрочки
+        monthly_payment_before_early_repayment:0,  //последний аануитентный ежемесячный платёж
+        integer_number_months:true, //целое или нет количество месяцев
+      },
+
+      //-------------------Новое-----------------
+
+      //массив месяцев, чтобы формировать названия из их порядкого номера
+      obj_month:["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь","январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
+      loanAmount:0, //сумма кредита
+      loanTerm:0, // срок кредита
+      termMonthOrYear:'',
+      annualInterestRate:0, //годовая ставка
+      startMonth:null, //месяц взфтия кредита
+      startYear:0,//год взятия кредита
+      shedule:[], //окончательный  график платежей, который будет формироваться c досрочками и ипотечными календарями
+      shedule_first:[], // график платежей, который будет формироваться без досрочек и ипотечных каникул
+
+      //КАНИКУЛЫ
+      holidays_term:0, // срок ипотечных каникул
+      holidays_date: [], // массив с началом каникул
+      holidays_date_to_send: [], // массив с началом каникул для отправки на сервер
+
+      array_holidays:[], //окончатедбный масив со всеми каникулами
+      array_early_repayment:[], // массив с досрочными погашениями
+      array_repayment_end:[],
+      array_repayment_main:[],
+      array_repayment_all_period:[],
+      array_repayment_select_period:[],
+      array_repayment_date:[],
+      array_repayment_amount:[],
+      array_repayment_selected_dates:[],
+      array_repayment_what_reduce:[],
+      array_block_requared:[],
+
+      array_early_repayment_to_send:[], // массив с досрочными погашениями
+      //ещё новенькое
+      startMortage:'',
+      startMortageDiff:'',
+      //Даныые о погашении
+      repayment_information:{
+        mortgage_closure_month:null, //Вы закроете ипотеку месяц
+        mortgage_closure_year:null, //Вы закроете ипотеку год
+        if_earlier_month:0, //Раньше на 2 месяца(если раньше)
+        monthly_payment_annuity:null,//Ежемесячный платеж для аннуитентных платежей
+        monthly_payment_min:null,//Ежемесячный платеж
+        monthly_payment_max:null,//Ежемесячный платеж
+        main_debt:0,//Основной долг:
+        percentages:0,//сумма всех Процентов
+        percentages_first:0, //сумма всех Процентов из графика платежей, который будет формироваться без досрочек и ипотечных каникул
+        principal:0,//сумма всех основной долг
+
+        pay_in_total:0,//Всего заплатите
+        savings:0//Экономия
+      },
+      result_button:[],
+      btn_status:false,
+
+      dateLoanReceipt:null,
+
+
+      flag_send_results:true,
+      answersToSand:[],
+      captcha_id:null,
+
+      answerLink:null,
+      answersId:null,
+      description_after_sand:null,
+      description_after_sand_mail:null,
+      answer_code:null,
+      mask_mail:null,
+      check_agree_advertisement:false,
+      check_agree_personal:false,
+      mail_error:false,
+      mail_fill:false,
+
+      error_mail_fill:false,
+      chek_error:false,
+      isAnimatingMobile:false,
+      isAnimatingMobileEarly:false,
+
+      not_field_information:false,
+      not_field_holidays:false,
+      not_field_early:false,
+      not_field_early_period:false,
+
+    }
+  },
+  methods: {
+    async copyLink(event){
+      const link = event.currentTarget.dataset.link;
+      const element = event.currentTarget
+
+      try{
+        if (navigator.clipboard){
+          await navigator.clipboard.writeText(link);
+          element.querySelector('p').textContent='Скопировано';
+          setTimeout(()=>{
+            element.querySelector('p').textContent='Скопировать ссылку';
+          },3000)
+        } else {
+          throw new Error ('not supported')
+        }
+
+      } catch (err) {
+        const texarea = document.createElement('textarea');
+        texarea.value = link;
+        texarea.style.position='fixed';
+        document.body.appendChild(texarea)
+        texarea.select();
+        document.execCommand('copy')
+        document.body.removeChild(texarea)
+        console.log('Ошибка копирования');
+        console.log(err);
+      }
+
+    },
+
+    dropdownAreaMobileShedule(e){
+      const target = e.target
+      const element = e.currentTarget;
+      // console.log(element);
+      const parent = element.closest('.js-accordion-parent-calc');
+      if (parent){
+        if (this.isAnimatingMobile) return
+        this.isAnimatingMobile = true
+
+        if(parent.classList.contains('active')){
+          parent.classList.remove('active-overflow')
+          setTimeout(()=>{
+            parent.classList.remove('active')
+          },300)
+        }
+        else{
+          parent.classList.add('active')
+          setTimeout(()=>{
+            parent.classList.add('active-overflow')
+          },500)
+        }
+      }
+
+    },
+    dropdownAreaMobileSheduleEarly(e){
+      const target = e.target
+      const element = e.currentTarget;
+      // console.log(element);
+      const parent = element.closest('.js-accordion-parent-calc-early');
+      if (parent){
+        if (this.isAnimatingMobileEarly) return
+        this.isAnimatingMobileEarly = true
+
+        if(parent.classList.contains('active-early')){
+          parent.classList.remove('active-overflow')
+          setTimeout(()=>{
+            parent.classList.remove('active-early')
+          },300)
+        }
+        else{
+          parent.classList.add('active-early')
+          setTimeout(()=>{
+            parent.classList.add('active-overflow')
+          },500)
+        }
+      }
+
+    },
+    handleTransitionEnd(event){
+      if (event.propertyName==='grid-template-rows') {
+        this.isAnimatingMobile=false
+      }
+    },
+    handleTransitionEndEarly(event){
+      if (event.propertyName==='grid-template-rows') {
+        this.isAnimatingMobileEarly=false
+      }
+    },
+
+    resultClearCalendarHolidayAll(){
+      this.result_comparing_holidays_early=[]
+    },
+    resultClearCompareWhithHoliday(data) {
+
+      // this.result_comparing_holidays_early = this.result_comparing_holidays_early.filter(obj => obj.id !==parseInt(data))
+
+      for(let i=this.result_comparing_holidays_early.length-1;i>=0;i--) {
+        if (this.result_comparing_holidays_early[i].id === data) {
+          this.result_comparing_holidays_early.splice(i,1)
+        }
+      }
+
+
+      // const index = this.result_comparing_holidays_early.findIndex(obj => obj.id === data);
+      // if (index !== -1) {
+      //   this.result_comparing_holidays_early.splice(index, 1);
+      // }
+    },
+
+    changeAgree(el){
+      const element = el.currentTarget
+      if (element.checked) {
+        this.check_agree_advertisement=true
+      }
+      else {
+        this.check_agree_advertisement=false
+      }
+    },
+    changePersonal(el){
+      const element = el.currentTarget
+      this.chek_error=false
+      if (element.checked) {
+        this.check_agree_personal=true
+      }
+      else {
+        this.check_agree_personal=false
+      }
+    },
+    sendingResultError(){
+      if (this.mail_fill===false) {
+        this.error_mail_fill = true
+      }
+      this.mail_error=false
+      if (this.check_agree_personal===false) {
+        this.chek_error = true
+      }
+
+
+    },
+    onInputMail(e){
+      const element = e.target
+      let char = e.data
+      const reg = e.inputType!=='deleteContentBackward'&&e.inputType!=='deleteContentForward'&&e.inputType!=='insertFromPaste'&&e.inputType!=='historyUndo'
+      if (typeof char != 'undefined' && !/^[a-z0-9@!#$%&'.+-=?^_"\\`{|}~]*$/i.test(char) && reg) {
+        this.mail_error=true
+      }
+      else if(((char&&char!=null)&&typeof char != 'undefined' && /^[a-z0-9@!#$%&'.+-=?^_"\\`{|}~]*$/i.test(char))||e.inputType==='deleteContentBackward'||e.inputType==='deleteContentForward'){
+        this.mail_error=false
+      }
+      if(element.value.match(/^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i)) {
+        this.mail_fill=true
+      } else{
+        this.mail_fill=false
+      }
+      this.error_mail_fill = false
+
+    },
+
+    inputMaskEarly() {
+      const el = this.$refs.inputMail;
+      if (!el) {
+        console.warn('inputMail не найден');
+        return;
+      }
+      this.mask_mail = IMask(el, {
+        mask: /^[a-z0-9@!#$%&'.+-=?^_"`{|}~]*$/i
+      });
+      this.mask_mail.on('accept', () => {
+
+
+      })
+      this.mask_mail.on('reject', () => {
+
+      })
+    },
+
+    //открыл модалку с подсказкой
+    openModal(el) {
+      const element = el.currentTarget
+      this.$refs.dataModalMail.classList.add('open')
+      this.AddClassBody()
+
+    },
+    closeModal(e){
+      this.$refs.dataModalMail.classList.remove('open')
+      this.RemoveClassBody()
+    },
+    closeModalBody(e){
+      if(e.target===this.$refs.dataModalMail){
+        this.$refs.dataModalMail.classList.remove('open')
+        this.RemoveClassBody()
+      }
+    },
+
+    getItemClasses(item) {
+      return {
+        'mortgage-holidays':item.isHoliday===true,
+        'mortgage-early':item.prepayments && item.prepayments.length > 0
+      }
+    },
+
+    //получаю, когда происходит действие непосредственно в компоненте
+    receivedDateMobile([year, month]) {
+      const dateString = `${year}-${month}`;
+      this.$nextTick(()=>{
+        const element = this.$refs.mobileShedule.querySelector(`[data-date="${dateString}"]`)
+        if (element) {
+          element.scrollIntoView({
+            behavior:'smooth',
+            block:'start'
+          })
+        }
+      })
+
+    },
+
+    //получаю сумму кредита, когда меняется поле, чтобы отображать или нет ипотечные каникулы
+    receivedLoanAmountForHolidays(data) {
+      if (data > this.limit_mortgage_holidays) {
+        this.visibility_mortgage_holidays_block = false
+        this.holidays_term = 0
+        this.holidays_date = []
+        this.array_holidays = []
+      } else {
+        this.visibility_mortgage_holidays_block = true
+      }
+
+    },
+
+    //получил клик о стирании поля Сумма кредита
+    receivedClearInputLoanAmount(){
+      this.visibility_mortgage_holidays_block=true
+    },
+
+    //---ТО ЧТО ПОЛУЧАЮ ДЛЯ РАСЧЁТОВ
+
+    //нажата кнопка рассчитать в мобильной версии
+    totalCalculationMobile(){
+      if (this.$el &&  this.$el.querySelector('.js--mor-btn-result')) {
+        // this.$el.querySelector('.js--mor-btn-result').click()
+        eventBus.$emit('mobileTotalCalculation')
+      }
+      if (this.$el && this.$el.querySelector('.js--mobile-calendar-shedule')){
+        this.$el.querySelector('.js--mobile-calendar-shedule').value = ''
+        if (this.$el.querySelector('.js--mobile-calendar-shedule').closest('.js--for-clear-field') && this.$el.querySelector('.js--mobile-calendar-shedule').closest('.js--for-clear-field').querySelector('.js--clear-calc-tax')){
+          this.$el.querySelector('.js--mobile-calendar-shedule').closest('.js--for-clear-field').querySelector('.js--clear-calc-tax').classList.remove('active')
+        }
+      }
+
+
+      // this.$nextTick(()=>{
+
+      setTimeout(()=>{
+        if(this.shedule.length>0){
+          const target = this.$refs.heightBlock
+          if (target) {
+            const offset = 10
+            const position = target.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({
+              top:position - offset,
+              bahavior:'smooth'
+            })
+          }
+        }
+      },500)
+
+      // })
+
+    },
+
+    //полученные данные из компонентов
+
+    //получил от календаря месяц - год даты получения кредита
+    receivedDateLoanReceipt(data){
+
+
+      if (data) {
+        this.dateLoanReceipt = data
+        this.startMonth=data[0] + 1
+        this.startYear=parseInt(data[1])
+        this.startMortage = `${data[1]}-${data[0]+1}`
+        this.startMortageDiff = {month:this.startMonth +1, year:this.startYear}
+        this.min_date_mobile = `${data[1]}-${data[0]}`
+      }
+    },
+
+    //получил тип платежа
+    receivedPaymentType(data){
+      if (data) {
+        this.state.payment_type=data
+      }
+    },
+
+    //указан срок кредита в годах или месяцах
+    resultTermMonthOrYear(data) {
+      this.termMonthOrYear = data
+    },
+
+    //общеее количества ежемесячных платежей
+    receivedMonthlyPayment(data){
+      //
+      this.loanTerm = data
+      // this.state.n_calculation_constanta = data
+    },
+
+    //получаю ежемесячную процентную ставку
+    receivedMonthlyInterestRate(data){
+      this.annualInterestRate = data
+    },
+
+    //получаю сумму кредита
+    receivedLoanAmount(data){
+      this.loanAmount = data
+    },
+
+    //получаю срок каникул
+    receivedHolidaysTerm(data){
+      this.holidays_term = parseInt(data)
+    },
+
+
+    //получил от календаря месяц - год даты начала каникул
+    receivedBeginningHolidays(data){
+      this.holidays_date_to_send = data
+
+      // this.holidays_array_date = date
+      this.holidays_date = []
+      if (data!==undefined && data!==null && this.holidays_date.length===0) {
+        let obj = {//дата начала каникул
+          'month':null,
+          'year':null,
+          'firstMonthHoliday':true
+        }
+        obj.month=data[0] + 1
+        obj.year=parseInt(data[1])
+        this.holidays_date.push(obj)
+      }
+      this.array_holidays = this.addFutureMonths(this.holidays_date,this.holidays_term)
+    },
+
+    //формирую массив с ипотечными каникулами на основе месаца начала каникул и срока каникул
+    addFutureMonths(array,count) {
+      if (array.length ===0 || count<=1) return array;
+
+      const lastEntry = array[array.length -1];
+      let [month, year] = [lastEntry.month, lastEntry.year];
+
+      const newEntries = [];
+      for (let i = 0;i<count-1; i++) {
+        month++;
+        if (month ===13) {
+          month = 1;
+          year++
+        }
+        newEntries.push({month, year})
+      }
+      return array.concat(newEntries)
+    },
+
+    //ДОСРОЧНОЕ ПОГАШЕНИЕ
+
+    //получил массим с данными о досрочном погашении
+    receivedArrayEarlyRepayment(data){
+      this.array_early_repayment=data
+    },
+    receivedRepaymentEnd(data){
+      this.array_repayment_end = data
+    },
+    receivedRepaymentMain(data){
+      this.array_repayment_main = data
+    },
+    receivedRepaymentAllPeriod(data){
+      this.array_repayment_all_period = data
+    },
+    receivedRepaymentSelectPeriod(data){
+      this.array_repayment_select_period = data
+    },
+    receivedRepaymentDate(data){
+      this.array_repayment_date = data
+    },
+    receivedRepaymentAmount(data){
+      this.array_repayment_amount = data
+    },
+    receivedRepaymentSelectedDates(data){
+      this.array_repayment_selected_dates = data
+
+    },
+    receivedRepaymentWhatReduce(data){
+      this.array_repayment_what_reduce = data
+    },
+    receivedBlockRequared(data){
+      this.array_block_requared = data
+    },
+    receivedArrayEarlyRepaymentTotal(data){
+      if(data[0]&&data[0].field_amount!==''){
+        this.array_early_repayment_to_send = data
+      }
+
+    },
+
+
+    //метод, который сравнивает, не совпадают ли даты досрочного погашения с датами ипотечных каникул
+    mergeMatchedData(arr1,arr2) {
+      const monthYearSet = new Set();
+      for (const item of arr2) {
+        monthYearSet.add(`${item.month}-${item.year}`);
+      }
+        const result = [];
+        for (const item of arr1) {
+          const key = `${item.month}-${item.year}`;
+          if (monthYearSet.has(key)) {
+            // console.log('this.array_block_requared fffffff');
+            // console.log(this.array_block_requared);
+            const existingItemsFieldData = this.array_block_requared.find(iteme => iteme.id === item.id);
+            if (existingItemsFieldData&&existingItemsFieldData.date_begin !==false) {
+              result.push({month:item.month, year: item.year, id: item.id});
+            }
+
+          }
+        }
+        return result;
+      },
+
+    //-------------------END ТО ЧТО ПОЛУЧАЮ ДЛЯ РАСЧЁТОВ------------------------------------------------
+
+
+    //-------------------РАСЧЁТ ИТОГОВЫХ РЕЗУЛЬТАТОВ
+
+    calculateAnnuity(P, r ,n){
+      if (r ===  0) return P /n;
+      return (P * r) / (1 - Math.pow(1 + r, -n));
+    },
+
+    calculateMortgageSheduleFirst(
+      loanAmount,
+      annualInterestRate,
+      initialTermMonths,
+      startDate,
+      prepayments = []
     ) {
-      return;
-    }
+      const montlyRate = annualInterestRate /12 /100;
+      let currentBalance = loanAmount;
+      let currentPayment = this.calculateAnnuity(loanAmount, montlyRate, initialTermMonths);
+      let remainingTerm = initialTermMonths;
+      const shedule = [];
 
-    // 🔹 Закрываем меню и кнопку
-    mobileMenu.classList.remove('active');
-    if (btn.classList.contains('open')) {
-      btn.classList.remove('open');
-    }
-    if (header && header.classList.contains('z-ind')) {
-      header.classList.remove('z-ind');
-    }
+      const startDateNew = startDate.replace(/-(\d)$/, '-0$1')
+      const [year,month] = startDateNew.split('-').map(Number)
+      const currentDate = new Date(year, month - 1)
+      currentDate.setMonth(currentDate.getMonth() +1);
 
-    // 🔹 Сворачиваем аккордеоны (ваша логика)
-    const accordions = mobileMenu.querySelectorAll('.header__mobile-menu-item.js-accordion-parent');
-    for (let i = 0; i < accordions.length; i++) {
-      const item = accordions[i];
-      item.classList.remove('active');
-      const bodyEl = item.querySelector('.js-accordion-body');
-      if (bodyEl) {
-        bodyEl.setAttribute('style', 'max-height:0;');
+
+      // const currentDate = new Date(startDate);
+      // currentDate.setMonth(currentDate.getMonth() +1);
+
+      while (currentBalance > 0 && remainingTerm > 0) {
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentYear = currentDate.getFullYear();
+        const interest = currentBalance * montlyRate;
+        let principal = currentPayment - interest;
+        let totalPayment = principal + interest;
+        if (principal > currentBalance) {
+          principal = currentBalance;
+          totalPayment = principal + interest
+        }
+        const remainingBeforePrepayments = currentBalance - principal;
+        const sheduleEntry = {
+          month: currentMonth,
+          year: currentYear,
+          nameMonth:this.obj_month[currentMonth - 1],
+          payment: totalPayment,
+          principal: principal,
+          interest: interest,
+          remainingBalance: remainingBeforePrepayments,
+          prepayments: []
+        };
+        currentBalance = remainingBeforePrepayments;
+        shedule.push(sheduleEntry)
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        remainingTerm--
       }
-    }
+      return shedule
+    },
 
-    // 🔹 Условия для RemoveClassBody — как у вас (два варианта)
-    const hasModalClasses = body.classList.contains('body-modal') && body.classList.contains('body-additional-class');
-    if (hasModalClasses) {
-      // Вариант 1: есть containerYandexSearch, но он не активен
-      if (
-        containerYandexSearch &&
-        !containerYandexSearch.classList.contains('active')
-      ) {
-        safeCallRemoveClassBody();
+    calculateMortgageShedule(
+      loanAmount,
+      annualInterestRate,
+      initialTermMonths,
+      startDate,
+      prepayments = []
+    ) {
+      const montlyRate = annualInterestRate /12 /100;
+      let currentBalance = loanAmount;
+      let currentPayment = this.calculateAnnuity(loanAmount, montlyRate, initialTermMonths);
+      let remainingTerm = initialTermMonths;
+      const shedule = [];
+
+
+      const startDateNew = startDate.replace(/-(\d)$/, '-0$1')
+      const [year,month] = startDateNew.split('-').map(Number)
+      const currentDate = new Date(year, month - 1)
+      currentDate.setMonth(currentDate.getMonth() +1);
+
+
+      // const currentDate = new Date(startDate);
+      // currentDate.setMonth(currentDate.getMonth() +1);
+
+      const sortedPrepayments = [...prepayments].sort((a,b)=>{
+        const aDate = new Date(a.year, a.month - 1);
+        const bDate = new Date(b.year, b.month - 1);
+        return aDate - bDate;
+      });
+
+      let prepaymentIndex = 0;
+      while (currentBalance > 0 && remainingTerm > 0) {
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentYear = currentDate.getFullYear();
+
+        const currentPrepayments = [];
+        while (
+          prepaymentIndex < sortedPrepayments.length &&
+            sortedPrepayments[prepaymentIndex].month ===currentMonth &&
+            sortedPrepayments[prepaymentIndex].year ===currentYear
+          ) {
+          currentPrepayments.push(sortedPrepayments[prepaymentIndex]);
+          prepaymentIndex++;
+        }
+
+        const interest = currentBalance * montlyRate;
+        let principal = currentPayment - interest;
+        let totalPayment = principal + interest;
+
+        if (principal > currentBalance) {
+          principal = currentBalance;
+          totalPayment = principal + interest
+        }
+
+        const remainingBeforePrepayments = currentBalance - principal;
+
+        const sheduleEntry = {
+          month: currentMonth,
+          year: currentYear,
+          nameMonth:this.obj_month[currentMonth - 1],
+          payment: totalPayment,
+          principal: principal,
+          interest: interest,
+          remainingBalance: remainingBeforePrepayments,
+          prepayments: []
+        };
+
+        currentBalance = remainingBeforePrepayments;
+
+        for (const prep of currentPrepayments) {
+          if (currentBalance <=0) break;
+
+          const prepaymentAmount = Math.min(prep.amount, currentBalance);
+          currentBalance -= prepaymentAmount;
+          sheduleEntry.prepayments.push({
+            amount:prepaymentAmount,
+            month: prep.month,
+            nameMonth:this.obj_month[prep.month - 1],
+            year: prep.year,
+            type: prep.type,
+            remainingBalance:currentBalance
+          });
+
+          if(prep.type === 'term') {
+            if (currentPayment <= currentBalance * montlyRate) {
+              remainingTerm = Infinity;
+
+            } else {
+              const numerator = Math.log(currentPayment / (currentPayment - currentBalance * montlyRate));
+              const denominator = Math.log(1 + montlyRate);
+              remainingTerm = Math.ceil(numerator / denominator)
+
+              if (Number.isInteger(numerator / denominator) ===false) {
+                remainingTerm+=1
+              }
+
+            }
+          } else if (prep.type === 'payment') {
+            if (remainingTerm > 1) {
+              currentPayment = this.calculateAnnuity(currentBalance, montlyRate, remainingTerm - 1);
+            } else {
+              currentPayment = currentBalance + currentBalance + montlyRate
+            }
+          }
+        }
+
+        // sheduleEntry.remainingBalance = currentBalance;
+        shedule.push(sheduleEntry)
+
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        remainingTerm--
+
       }
-      // Вариант 2: containerYandexSearch вообще нет
-      else if (!containerYandexSearch) {
-        safeCallRemoveClassBody();
+      return shedule
+    },
+
+    calculateAnnuityDiff(P, r ,n){
+      if (r ===  0) return P /n;
+      return (P * r) / (1 - Math.pow(1 + r, -n));
+    },
+
+    calculateMortgageSheduleDiffFirst(
+      loanAmount,
+      annualInterestRate,
+      initialTermMonths,
+      startDate,
+      prepayments = []
+    ) {
+
+      const montlyRate = annualInterestRate / 12 /100;
+      let currentBalance = loanAmount;
+      let currentPayment = this.calculateAnnuity(loanAmount, montlyRate, initialTermMonths);
+      let remainingTerm = initialTermMonths;
+      let remainingTermTerm = initialTermMonths;
+      const shedule = [];
+
+
+      const startDateNew = startDate.replace(/-(\d)$/, '-0$1')
+      const [year,month] = startDateNew.split('-').map(Number)
+      const currentDate = new Date(year, month - 1)
+      currentDate.setMonth(currentDate.getMonth() +1);
+
+
+
+      // const currentDate = new Date(startDate);
+      // currentDate.setMonth(currentDate.getMonth() +1);
+
+      const sortedPrepayments = [...prepayments].sort((a,b)=>{
+        const aDate = new Date(a.year, a.month - 1);
+        const bDate = new Date(b.year, b.month - 1);
+        return aDate - bDate;
+      });
+      let principal = loanAmount / initialTermMonths;
+      while (currentBalance > 0 && remainingTerm > 0) {
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentYear = currentDate.getFullYear();
+        const interest = currentBalance * montlyRate;
+        let totalPayment = principal + interest;
+        if (principal > currentBalance) {
+          principal = currentBalance;
+          totalPayment = principal + interest
+        }
+        const remainingBeforePrepayments = currentBalance - principal;
+        const sheduleEntry = {
+          month: currentMonth,
+          year: currentYear,
+          nameMonth:this.obj_month[currentMonth - 1],
+          payment: totalPayment,
+          principal: principal,
+          interest: interest,
+          remainingBalance: remainingBeforePrepayments,
+          prepayments: []
+        };
+        currentBalance = remainingBeforePrepayments;
+        shedule.push(sheduleEntry)
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        remainingTerm--
       }
+      return shedule
+    },
+
+    calculateMortgageSheduleDiff(
+      loanAmount,
+      annualInterestRate,
+      initialTermMonths,
+      startDate,
+      prepayments = []
+    ) {
+
+      const montlyRate = annualInterestRate /12 /100;
+      let currentBalance = loanAmount;
+      let currentPayment = this.calculateAnnuity(loanAmount, montlyRate, initialTermMonths);
+      let remainingTerm = initialTermMonths;
+      let remainingTermTerm = initialTermMonths;
+
+      const shedule = [];
+
+      const startDateNew = startDate.replace(/-(\d)$/, '-0$1')
+      const [year,month] = startDateNew.split('-').map(Number)
+      const currentDate = new Date(year, month - 1)
+      currentDate.setMonth(currentDate.getMonth() +1);
+
+      // const currentDate = new Date(startDate);
+      // currentDate.setMonth(currentDate.getMonth() +1);
+
+      const sortedPrepayments = [...prepayments].sort((a,b)=>{
+        const aDate = new Date(a.year, a.month - 1);
+        const bDate = new Date(b.year, b.month - 1);
+        return aDate - bDate;
+      });
+
+      let prepaymentIndex = 0;
+
+      let principal = loanAmount / initialTermMonths;
+
+
+      while (currentBalance > 0 && remainingTerm > 0) {
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentYear = currentDate.getFullYear();
+
+        const currentPrepayments = [];
+        while (
+          prepaymentIndex < sortedPrepayments.length &&
+          sortedPrepayments[prepaymentIndex].month ===currentMonth &&
+          sortedPrepayments[prepaymentIndex].year ===currentYear
+          ) {
+          currentPrepayments.push(sortedPrepayments[prepaymentIndex]);
+          prepaymentIndex++;
+        }
+
+        const interest = currentBalance * montlyRate;
+        // let principal = currentPayment - interest;
+        let totalPayment = principal + interest;
+
+        if (principal > currentBalance) {
+          principal = currentBalance;
+          totalPayment = principal + interest
+        }
+
+        const remainingBeforePrepayments = currentBalance - principal;
+
+        const sheduleEntry = {
+          month: currentMonth,
+          year: currentYear,
+          nameMonth:this.obj_month[currentMonth - 1],
+          payment: totalPayment,
+          principal: principal,
+          interest: interest,
+          remainingBalance: remainingBeforePrepayments,
+          prepayments: []
+        };
+
+        currentBalance = remainingBeforePrepayments;
+
+        for (const prep of currentPrepayments) {
+          if (currentBalance <=0) break;
+
+          const prepaymentAmount = Math.min(prep.amount, currentBalance);
+          currentBalance -= prepaymentAmount;
+          sheduleEntry.prepayments.push({
+            amount:prepaymentAmount,
+            month: prep.month,
+            nameMonth:this.obj_month[prep.month - 1],
+            year: prep.year,
+            type: prep.type,
+            remainingBalance:currentBalance
+          });
+
+          if(prep.type === 'term') {
+            // if (currentPayment <= currentBalance * montlyRate) {
+            //   remainingTerm = Infinity;
+            //
+            // } else {
+            //   const numerator = Math.log(currentPayment / (currentPayment - currentBalance * montlyRate));
+            //   const denominator = Math.log(1 + montlyRate);
+
+            remainingTerm = Math.ceil(currentBalance / principal)
+            remainingTermTerm = remainingTerm
+
+            if (Number.isInteger(currentBalance / principal) ===false) {
+                remainingTerm+=1
+              }
+
+            // }
+          } else if (prep.type === 'payment') {
+            if (remainingTerm > 1) {
+              // currentPayment = this.calculateAnnuity(currentBalance, montlyRate, remainingTerm - 1);
+              principal = currentBalance / (remainingTermTerm - (remainingTermTerm - remainingTerm + 1))
+
+            } else {
+              currentPayment = currentBalance + currentBalance + montlyRate
+            }
+
+
+
+
+          }
+        }
+
+        // sheduleEntry.remainingBalance = currentBalance;
+        shedule.push(sheduleEntry)
+
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        remainingTerm--
+
+      }
+      return shedule
+    },
+
+    //метод, котоороый буду использовать для добавления ипотечных каникул в сформированный график
+    addingMortgageHolidays(sourceArray, dateArray){
+      let obj = {}
+      sourceArray.map(item => {
+        const isHoliday = dateArray.some(
+          d => d.month === item.month && d.year === item.year
+        );
+        if (isHoliday===true){
+
+          //записал данные по этому месяцу в объект и поместил в конец уже сформированного ранее графика платежа
+          obj.nameMonth = item.nameMonth
+          obj.month = 0
+          obj.year = 0
+          obj.remainingBalance = 0 //поставил ноль, так как в задолжности в отложенных месяцах должен стоять именно ноль
+          obj.interest = item.interest
+          obj.principal = item.principal
+          obj.payment = item.payment
+
+          this.shedule.push(obj)
+          obj = {}
+
+          //а тут в месяце, где ипотечные каникулы нужным данным ставлю ноль
+          item.interest=0
+          item.principal=0
+          item.payment=0
+          item.isHoliday=true
+        }
+
+
+
+
+      });
+    },
+    updatePayementsShedule(payments) {
+      let lastEntry = payments.reduce((acc, entry, index) => {
+        if (entry.month > 0 && entry.year >0) return {index, month:entry.month, year: entry.year};
+        return acc;
+      }, {index:-1,month:null, year:null});
+
+      if(lastEntry.index===-1 || lastEntry.index === payments.length -1) return payments
+
+      let currentMonth = lastEntry.month;
+      let currentYear = lastEntry.year;
+
+      let nameMonth
+
+
+      for (let i = lastEntry.index +1; i < payments.length; i++) {
+        currentMonth++;
+
+
+        if (currentMonth!==13) {
+          nameMonth = this.obj_month[currentMonth-1]
+        }
+        else if (currentMonth ===13) {
+          currentMonth = 1
+          currentYear++
+          nameMonth = this.obj_month[0]
+
+        }
+
+        payments[i] = {
+          ...payments[i],
+          month:currentMonth,
+          year:currentYear,
+          nameMonth:nameMonth
+
+        };
+      }
+      return payments
+
+    },
+
+    fieldOccupancy(arrRequiredField,arrFilledRequired){
+      return arrRequiredField - arrFilledRequired
+    },
+
+    resultButtonStatus(){
+
+      const main_container = this.$el
+      const array_required_field_information = main_container.querySelectorAll('.js-mor-required')
+      const array_filled_required_field_information = main_container.querySelectorAll('.js-mor-required.js-filled')
+      const required_compair_information =  this.fieldOccupancy(array_required_field_information.length,array_filled_required_field_information.length)
+
+      const array_required_field_holidays = main_container.querySelectorAll('.js-holidays-required')
+      const array_filled_required_field_holidays = main_container.querySelectorAll('.js-holidays-required.js-filled')
+      const required_compair_holidays =  this.fieldOccupancy(array_required_field_holidays.length,array_filled_required_field_holidays.length)
+
+
+      let flag = []
+      let flag_period = []
+      const array_block_early = main_container.querySelectorAll('.js--container-block-early')
+      for (let i = 0; i<array_block_early.length; i++) {
+        let array_required_field_early = array_block_early[i].querySelectorAll('.js-early-required')
+        let array_filled_required_field_early = array_block_early[i].querySelectorAll('.js-early-required.js-filled')
+        const required_compair_early =  this.fieldOccupancy(array_required_field_early.length,array_filled_required_field_early.length)
+
+        if (array_filled_required_field_early.length !==0 && required_compair_early !==0) {
+          flag.push(false)
+        }
+      }
+
+      //ошибки в календаре переодичности
+      for (let i = 0; i<array_block_early.length; i++) {
+        if(!array_block_early[i].querySelector('.js--period-calendar').classList.contains('not-show')) {
+          let array_required_field_early = array_block_early[i].querySelectorAll('.js-early-period-required')
+          let array_filled_required_field_early = array_block_early[i].querySelectorAll('.js-early-period-required.js-filled')
+          const required_compair_early =  this.fieldOccupancy(array_required_field_early.length,array_filled_required_field_early.length)
+
+          if (array_filled_required_field_early.length !==0 && required_compair_early !==0) {
+            flag_period.push(false)
+          }
+        }
+      }
+
+      // if (required_compair_information===0
+      //   && (array_filled_required_field_holidays.length ===0 || required_compair_holidays ===0) && flag.length===0 && flag_period.length===0) {
+      //   this.receivedTotalCalculation()
+      // }
+      // if (required_compair_information===0 && (array_filled_required_field_holidays.length ===0 || required_compair_holidays ===0) && flag.length===0 && flag_period.length===0) {
+      if (required_compair_information===0 && (array_filled_required_field_holidays.length ===0 || required_compair_holidays ===0)) {
+        this.btn_status=true
+      }
+      else {
+        this.btn_status=false
+      }
+
+    },
+    async checkingBeforeCreatingScheduleAsync(){
+      await this.$nextTick()
+      this.checkingBeforeCreatingSchedule()
+    },
+
+
+    checkingBeforeCreatingSchedule(){
+      this.shedule=[]
+      this.shedule_first=[]
+      this.answersToSand=[]
+      this.repayment_information = {
+        mortgage_closure_month:null,
+        mortgage_closure_year:null,
+        if_earlier_month:0,
+        monthly_payment_annuity:null,
+        monthly_payment_min:null,
+        monthly_payment_max:null,
+        main_debt:0,
+        percentages:0,
+        percentages_first:0,
+        principal:0,
+        pay_in_total:0,
+        savings:0
+      }
+
+
+      //проверка, что заполнены все обязательные поля
+      const main_container = this.$el
+      const array_required_field_information = main_container.querySelectorAll('.js-mor-required')
+      const array_filled_required_field_information = main_container.querySelectorAll('.js-mor-required.js-filled')
+      const required_compair_information =  this.fieldOccupancy(array_required_field_information.length,array_filled_required_field_information.length)
+
+      const array_required_field_holidays = main_container.querySelectorAll('.js-holidays-required')
+      const array_filled_required_field_holidays = main_container.querySelectorAll('.js-holidays-required.js-filled')
+      const required_compair_holidays =  this.fieldOccupancy(array_required_field_holidays.length,array_filled_required_field_holidays.length)
+
+
+      let flag = []
+      let flag_period = []
+      const array_block_early = main_container.querySelectorAll('.js--container-block-early')
+      for (let i = 0; i<array_block_early.length; i++) {
+        let array_required_field_early = array_block_early[i].querySelectorAll('.js-early-required')
+        let array_filled_required_field_early = array_block_early[i].querySelectorAll('.js-early-required.js-filled')
+        const required_compair_early =  this.fieldOccupancy(array_required_field_early.length,array_filled_required_field_early.length)
+
+
+        if (array_filled_required_field_early.length !==0 && required_compair_early !==0) {
+          flag.push(false)
+
+          for (let item of array_required_field_early) {
+            if (!item.classList.contains('js-filled') && item.closest('.js--container-block-required')
+              && item.closest('.js--container-block-required').querySelector('.js--required-error') ) {
+              item.closest('.js--container-block-required').querySelector('.js--required-error').classList.remove('display-none')
+            }
+            if (!item.classList.contains('js-filled') && item.closest('.js--for-clear-field')){
+              item.closest('.js--for-clear-field').classList.add('input_error')
+              item.closest('.js--container-block-early').classList.add('mobile-error')
+              item.closest('.js--container-block-early').querySelector('.js--wrapper-match-alarm').classList.add('display-none-alarm')
+            }
+          }
+
+        }
+
+      }
+      if (flag.length>0) {
+        this.not_field_early=true
+      } else {
+        this.not_field_early=false
+      }
+
+      //ошибки в календаре переодичности
+      for (let i = 0; i<array_block_early.length; i++) {
+        if(!array_block_early[i].querySelector('.js--period-calendar').classList.contains('not-show')) {
+          let array_required_field_early = array_block_early[i].querySelectorAll('.js-early-period-required')
+          let array_filled_required_field_early = array_block_early[i].querySelectorAll('.js-early-period-required.js-filled')
+          const required_compair_early =  this.fieldOccupancy(array_required_field_early.length,array_filled_required_field_early.length)
+
+
+          if (array_filled_required_field_early.length !==0 && required_compair_early !==0) {
+            flag_period.push(false)
+
+            for (let item of array_required_field_early) {
+              if (!item.classList.contains('js-filled') && item.closest('.js--container-block-required')
+                && item.closest('.js--container-block-required').querySelector('.js--required-error') ) {
+                item.closest('.js--container-block-required').querySelector('.js--required-error').classList.remove('display-none')
+              }
+              if (!item.classList.contains('js-filled') && item.closest('.js--for-clear-field')){
+                item.closest('.js--for-clear-field').classList.add('input_error')
+                item.closest('.js--container-block-early').classList.add('mobile-error')
+                item.closest('.js--container-block-early').querySelector('.js--wrapper-match-alarm').classList.add('display-none-alarm')
+              }
+            }
+          }
+        }
+      }
+      if (flag_period.length>0) {
+        this.not_field_early_period=true
+      } else {
+        this.not_field_early_period=false
+      }
+
+      //ошибки, если не заполнены обязательные поля в блоке информация
+      if (required_compair_information>0) {
+        for (let item of array_required_field_information) {
+          if (!item.classList.contains('js-filled') && item.closest('.js--container-block')
+            && item.closest('.js--container-block').querySelector('.js--required-error') ) {
+            item.closest('.js--container-block').querySelector('.js--required-error').classList.remove('display-none')
+          }
+          if (!item.classList.contains('js-filled') && item.closest('.js--for-clear-field')){
+            item.closest('.js--for-clear-field').classList.add('input_error')
+          }
+        }
+        this.not_field_information=true
+
+      }
+      else if (required_compair_information===0) {
+        this.not_field_information=false
+
+      }
+      //ошибки, если не заполнены обязательные поля в блоке каникулы
+      if (array_filled_required_field_holidays.length !==0 && required_compair_holidays !==0) {
+
+        for (let item of array_required_field_holidays) {
+          if (!item.classList.contains('js-filled') && item.closest('.js--container-block')
+            && item.closest('.js--container-block').querySelector('.js--required-error') ) {
+            item.closest('.js--container-block').querySelector('.js--required-error').classList.remove('display-none')
+            eventBus.$emit('emitErrorFieldBlock',true)
+          }
+          if (!item.classList.contains('js-filled') && item.closest('.js--for-clear-field')){
+            item.closest('.js--for-clear-field').classList.add('input_error')
+          }
+        }
+        this.not_field_holidays=true
+      }
+      else {
+        this.not_field_holidays=false
+      }
+
+
+      //проверка, что каникулы не совпадают с досрочкой
+      this.result_comparing_holidays_early=[]
+      if (this.array_early_repayment.length>0&&this.array_holidays.length>0) {
+        this.result_comparing_holidays_early = this.mergeMatchedData(this.array_early_repayment,this.array_holidays)
+      }
+
+      if (this.result_comparing_holidays_early.length === 0 && required_compair_information===0
+        && (array_filled_required_field_holidays.length ===0 || required_compair_holidays ===0) && flag.length===0 && flag_period.length===0) {
+          this.receivedTotalCalculation()
+      }
+
+    },
+
+    //формирование графика платежа по месацам со
+    receivedTotalCalculation(){
+      eventBus.$emit('emitClearAllError')
+
+      if (this.state.payment_type==='annuity') {
+        this.shedule_first = this.calculateMortgageSheduleFirst(
+          this.loanAmount,this.annualInterestRate,this.loanTerm,this.startMortage,this.array_early_repayment
+        )
+        this.shedule = this.calculateMortgageShedule(
+          this.loanAmount,this.annualInterestRate,this.loanTerm,this.startMortage,this.array_early_repayment
+        )
+      }
+      else if (this.state.payment_type==='differentiated') {
+        this.shedule_first = this.calculateMortgageSheduleDiffFirst(
+          this.loanAmount,this.annualInterestRate,this.loanTerm,this.startMortage,this.array_early_repayment
+        )
+        this.shedule = this.calculateMortgageSheduleDiff(
+          this.loanAmount,this.annualInterestRate,this.loanTerm,this.startMortage,this.array_early_repayment
+        )
+      }
+      // ипотечные каникулы
+      if (this.holidays_term!==0){
+        this.addingMortgageHolidays(this.shedule, this.array_holidays)
+        this.updatePayementsShedule(this.shedule)
+      }
+
+      //формирую объект со значениями, которые буду подставлять в данные об ипотеке
+
+      if (this.shedule.length > 0) {
+        this.repayment_information.mortgage_closure_month = this.shedule[this.shedule.length - 1].nameMonth
+        this.repayment_information.mortgage_closure_year = this.shedule[this.shedule.length - 1].year
+        this.repayment_information.if_earlier_month = this.shedule_first.length - this.shedule.length
+
+        //если аннуитентный и досрочек в уменьшение платежа не было
+        if (this.array_early_repayment.length === 0 && this.state.payment_type==='annuity') {
+          this.repayment_information.monthly_payment_annuity = this.shedule[0].payment
+
+        }
+        if (this.array_early_repayment.length === 0 && this.state.payment_type==='differentiated') {
+          const result = this.findMinMax(this.shedule,'payment')
+          this.repayment_information.monthly_payment_min = result.min
+          this.repayment_information.monthly_payment_max = result.max
+
+        }
+        if (this.array_early_repayment.length > 0 && this.state.payment_type === 'annuity') {
+          const availability = this.array_early_repayment.some(obj => obj.hasOwnProperty('type') && (obj['type'] === 'payment'||obj['type'] === 'term') );
+          if (availability === true) {
+            const result = this.findMinMax(this.shedule, 'payment');
+            this.repayment_information.monthly_payment_min = result.min;
+            this.repayment_information.monthly_payment_max = result.max;
+          }
+          else {
+            this.repayment_information.monthly_payment_min = this.shedule[0].payment
+            this.repayment_information.monthly_payment_max = this.shedule[0].payment
+          }
+
+          // const availabilityTerm = this.array_early_repayment.some(obj => obj.hasOwnProperty('type') && obj['type'] === 'term');
+          // if (availabilityTerm === true) {
+          //   const result = this.findMinMax(this.shedule, 'term');
+          //   this.repayment_information.monthly_payment_min = result.min;
+          //   this.repayment_information.monthly_payment_max = result.max;
+          // }
+
+
+        }
+        if (this.array_early_repayment.length > 0 && this.state.payment_type==='differentiated') {
+          const availability = this.array_early_repayment.some(obj => obj.hasOwnProperty('type') && obj['type'] === 'payment')
+          if(availability === true) {
+            const result = this.findMinMax(this.shedule,'payment')
+            this.repayment_information.monthly_payment_min = result.min
+            this.repayment_information.monthly_payment_max = result.max
+          }
+          else {
+            const result = this.findMinMax(this.shedule,'payment')
+            this.repayment_information.monthly_payment_min = result.min
+            this.repayment_information.monthly_payment_max = result.max
+          }
+
+        }
+
+        //проценты
+        this.repayment_information.percentages = this.shedule.reduce((acc,obj) => {
+          return obj.hasOwnProperty('interest') ? acc + obj['interest'] : acc;
+        }, 0)
+
+        //всего заплатите
+        this.repayment_information.principal = this.shedule.reduce((acc,obj) => {
+          return obj.hasOwnProperty('principal') ? acc + obj['principal'] : acc;
+        }, 0)
+        this.repayment_information.pay_in_total = this.repayment_information.percentages + this.loanAmount
+
+        //экономия
+        this.repayment_information.percentages_first = this.shedule_first.reduce((acc,obj) => {
+          return obj.hasOwnProperty('interest') ? acc + obj['interest'] : acc;
+        }, 0)
+
+        this.repayment_information.savings = this.repayment_information.percentages_first - this.repayment_information.percentages
+
+
+      }
+
+      // console.log('Новое this.flag_send_results');
+      // console.log(this.flag_send_results);
+
+      if (this.can_share===1 && this.flag_send_results===true) {
+        // this.sendingResult('result');//для финальной отправки нужно это должно быть !!!расскоментировано!!! !!!БОЕВОЕ!!!!
+        this.sendingResultToApi(888)//это не нужно !!!ДОЛЖНО БЫТЬ ЗАКОММЕНТИРОВАНО!!! !!!ТЕСТОВАЯ!!!
+
+      }
+    },
+
+    //---------ОТПРАВКА------------------------------------
+
+    captchaInit(flag) {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-mortgage-calculator', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (flag==='result'){
+            this.sendingResultToApi(token)
+          }
+          if (flag==='mail') {
+            this.sendingMailToApi(token)
+          }
+        },
+      });
+    },
+    sendingResultToApi(token){
+      this.answersToSand = []
+      const obj_information = {}
+      const obj_holidays = {}
+      const obj_early = []
+      obj_information.loanAmount=`${this.loanAmount}`
+      obj_information.dateReceipt=JSON.stringify(this.dateLoanReceipt)
+      obj_information.bet=`${this.annualInterestRate}`
+      // obj_information.term=this.termMonthOrYear
+      obj_information.term=`${this.termMonthOrYear}`
+      obj_information.loanTerm=`${this.loanTerm}`
+      obj_information.paymentType=this.state.payment_type
+      this.answersToSand.push(obj_information)
+
+      if(this.holidays_term!==0){
+        obj_holidays.termHoliday=`${this.holidays_term}`
+      }
+      if(this.holidays_date_to_send.length!==0){
+        obj_holidays.beginningHolidays=JSON.stringify(this.holidays_date_to_send)
+      }
+      this.answersToSand.push(obj_holidays)
+
+      //досрочка
+      const array2MapEnd = this.array_repayment_end.reduce((map,item) => {
+        map[item.id] =item
+        return map
+      }, {})
+      this.array_early_repayment_to_send.forEach(item => {
+        if (array2MapEnd[item.id]) {
+          item.earlyEnd = array2MapEnd[item.id]
+        }
+      })
+
+      const array2MapMain = this.array_repayment_main.reduce((map,item) => {
+        map[item.id] =item
+        return map
+      }, {})
+      this.array_early_repayment_to_send.forEach(item => {
+        if (array2MapMain[item.id]) {
+          item.earlyMain = array2MapMain[item.id]
+        }
+      })
+
+      const array2MapAllPeriod = this.array_repayment_all_period.reduce((map,item) => {
+        map[item.id] =item
+        return map
+      }, {})
+      this.array_early_repayment_to_send.forEach(item => {
+        if (array2MapAllPeriod[item.id]) {
+          item.earlyAllPeriod = array2MapAllPeriod[item.id]
+        }
+      })
+
+      const array2MapPeriod = this.array_repayment_select_period.reduce((map,item) => {
+        map[item.key] =item
+        return map
+      }, {})
+      this.array_early_repayment_to_send.forEach(item => {
+        if (array2MapPeriod[item.id]) {
+          item.earlySelectPeriod = array2MapPeriod[item.id]
+        }
+      })
+
+      const dateMap = {}
+      this.array_repayment_date.forEach(item => {
+        const id = item[1]
+        dateMap[id] = item
+      })
+      this.array_early_repayment_to_send.forEach(obj => {
+        const dateItem = dateMap[obj.id]
+        if (dateItem) {
+          obj.earlyDate = dateItem
+        }
+      })
+
+      const array2MapAmount = this.array_repayment_amount.reduce((map,item) => {
+        map[item.index] =item
+        return map
+      }, {})
+      this.array_early_repayment_to_send.forEach(item => {
+        if (array2MapAmount[item.id]) {
+          item.earlyAmount = array2MapAmount[item.id]
+        }
+      })
+
+      const array2MapWhatReduce = this.array_repayment_what_reduce.reduce((map,item) => {
+        map[item.index] =item
+        return map
+      }, {})
+      this.array_early_repayment_to_send.forEach(item => {
+        if (array2MapWhatReduce[item.id]) {
+          item.whatReduceArray = array2MapWhatReduce[item.id]
+        }
+      })
+
+      const array2MapBlockRequared = this.array_block_requared.reduce((map,item) => {
+        map[item.id] =item
+        return map
+      }, {})
+      this.array_early_repayment_to_send.forEach(item => {
+        if (array2MapBlockRequared[item.id]) {
+          item.blockRequared = array2MapBlockRequared[item.id]
+        }
+      })
+
+      if (this.array_early_repayment_to_send.length>0) {
+        this.answersToSand.push(this.array_early_repayment_to_send)
+      }
+      console.log(this.answersToSand);
+
+      let data = {
+        "calculatorId": this.calculatorId,
+        "answers": this.answersToSand,
+        "smart-token": token
+      }
+
+
+
+      //это для тестирования
+      //-------------------------------------------------
+
+      // this.answersId = 6
+      // setTimeout(()=>{
+      //   this.answerLink = {"link":"link.ru","vk":'sss.ru', "tg":'dddd.ru', "wp":"rrr.ru"}
+      // },3000)
+
+
+
+
+
+      //-------------------------------------------------------------------------
+
+      axios({
+        method:'post',
+        url:'/api/local/calculator/answers/',
+
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+
+        data:data
+      })
+        .then((res)=>{
+          if(res.data.code===200&&res.data.result){
+            this.answersId = res.data.result.answersId
+            this.answerLink = res.data.result.answerLink
+            this.description_after_sand=null
+          }
+          if (res.data.code!==200) {
+            if (res.data.description) {
+              this.description_after_sand=res.data.description
+            }
+            if (res.data.code) {
+              this.answer_code=res.data.code
+            }
+          }
+          this.answersToSand=[]
+        })
+
+        //Если запрос с ошибкой
+        .catch((error)=> {
+          if(error.response){
+            if (error.response.data!==undefined){
+              console.log(error.response);
+              this.description_after_sand=error.response.data.description
+            }
+          }
+          // state.preload_btn=false
+          console.log(error);
+        });
+
+    },
+    sendingMailToApi(token){
+      const modal_main_content = this.$refs.dataModalMail.querySelector('.js--modal-main-content')
+      const modal_success_content = this.$refs.dataModalMail.querySelector('.js--modal-wr-success')
+      const modal_failed_content = this.$refs.dataModalMail.querySelector('.js--modal-wr-failed')
+      let data = {
+        "userEmail":this.mask_mail.value,
+        "smart-token":token,
+        "answersId":this.answersId,
+        "agree":this.check_agree_advertisement
+      }
+
+      //это для тестирования
+
+      // setTimeout(()=>{
+      //
+      //   if (modal_main_content) {
+      //     modal_main_content.classList.add('unactive')
+      //   }
+      //   if (modal_failed_content) {
+      //     modal_failed_content.classList.add('active')
+      //   }
+      //
+      // },3000)
+
+      // ---------------------------------------
+
+
+      axios({
+        method:'post',
+        url:'/api/local/calculator/answers/sendmail/',
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+        data: data
+      })
+        .then((res)=>{
+          if (modal_main_content) {
+            modal_main_content.classList.add('unactive')
+          }
+          if (modal_success_content) {
+            modal_success_content.classList.add('active')
+          }
+
+        })
+
+        //Если запрос с ошибкой
+        .catch((error)=> {
+          if (error.response.data!==undefined&&error.response.data.description!==undefined){
+            console.log(error.response);
+            this.description_after_sand_mail=error.response.data.description
+          }
+          // state.preload_btn=false
+          console.log(error);
+          if (modal_main_content) {
+            modal_main_content.classList.add('unactive')
+          }
+          if (modal_failed_content) {
+            modal_failed_content.classList.add('active')
+          }
+        });
+
+    },
+
+    sendingResult(flag){
+      //закоментировать
+      // this.sendingMailToApi('8888')
+
+
+      //расскоментировать
+      this.captchaInit(flag);
+      let recaptchaKey = null;
+      if(typeof conf !== 'undefined'){
+        recaptchaKey = conf.smartcaptcha_key
+      }
+      if ((typeof recaptchaKey !== 'undefined') && recaptchaKey!==null) {
+        window.smartCaptcha.execute(this.captcha_id);
+      }
+    },
+
+    //-----------------------------------------------------
+
+    //поиск минимального и максимального значния платежа в сформированнм графике
+    findMinMax(arr, key) {
+      return arr.reduce((acc,obj) => {
+        const value = obj[key];
+
+        if (typeof value !=='undefined' && value!==0) {
+          acc.min = value < acc.min ? value : acc.min;
+          acc.max = value > acc.max ? value : acc.max
+        }
+        return acc;
+      }, {min: Infinity, max: -Infinity})
+
+
+      // let min = Infinity;
+      // let max = Infinity;
+      //
+      // for (const item of arr) {
+      //   const payment = item.payment
+      //   if(payment === 0) continue;
+      //
+      //   if(payment < min) min = payment;
+      //   if(payment > max) max = payment;
+      // }
+      // if(min === Infinity) {
+      //   return {min:undefined, max:undefined}
+      // }
+      // return {min,max}
+
+
+
+
+    },
+
+    updateScreenWidth() {
+      this.screenWidth = window.innerWidth;
+      this.screenHeight = window.innerHeight;
+    },
+
+    //склонение слово месяц
+
+    getMonthDeclension(number) {
+      number = Math.abs(number)
+      const cases = [2,0,1,1,1,2]
+      const word_titl = ['месяц', 'месяца', 'месяцев']
+
+      return word_titl[
+        number % 100 > 4 && number % 100 < 20 ? 2 :cases[number % 10 < 5 ? number % 10 : 5]
+      ]
+
+    }
+  },
+  filters: {
+    capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1)
+    },
+    format_decimal:(val) => {
+      if (val!==undefined && val!==null){
+        return new Intl.NumberFormat("ru-RU").format(Math.abs(val.toFixed(2)));
+      }
+
+    },
+    format_month:(val) => {
+      return val===1?'Январь':
+        val===2?'Февраль':
+          val===3?'Март':
+            val===4?'Апрель':
+              val===5?'Май':
+                val===6?'Июнь':
+                  val===7?'Июль':
+                    val===8?'Август':
+                      val===9?'Сентябрь':
+                        val===10?'Октябрь':
+                          val===11?'Ноябрь':
+                            val===12?'Декабрь':''
+    },
+  },
+  computed: {
+  },
+  watch: {
+    screenWidth() {
+      if (this.screenWidth > 480 && this.error_message === true) {
+        document.body.classList.remove('body-modal')
+        if (document.querySelector('.js--layer-overlay')) {
+          document.querySelector('.js--layer-overlay').classList.remove('active')
+        }
+      }
+      else if (this.screenWidth <= 480 && this.error_message === true) {
+        document.body.classList.add('body-modal')
+        if (document.querySelector('.js--layer-overlay')) {
+          document.querySelector('.js--layer-overlay').classList.add('active')
+        }
+      }
+    },
+    screenHeight(){
+
+    },
+
+
+
+
+  },
+
+  created(){
+    if (this.answers.length>0){
+      this.flag_send_results = false
+
+    }
+  },
+  mounted() {
+    this.$nextTick(()=>{
+      this.inputMaskEarly()
+    })
+
+    this.answerLink=this.answerLinkProps
+    this.answersId=this.answersIdProps
+    window.addEventListener('resize', this.updateScreenWidth);
+    if(this.answers.length>0){
+      this.flag_send_results = false
+      this.$nextTick(()=>{
+
+        if (this.$el.querySelector('.js--mobileButtonResult')) {
+
+          this.$el.querySelector('.js--mobileButtonResult').click();
+          setTimeout(()=>{
+            this.flag_send_results = true
+          },1000)
+
+          // console.log('Нажалась кнопка когда делишься ссылкой');
+        }
+
+      })
+
+
+
     }
 
-    isMobileMenuOpen = false;
-  };
-
-  // Вспомогательная функция — безопасный вызов
-  function safeCallRemoveClassBody() {
-    if (typeof RemoveClassBody === 'function') {
-      RemoveClassBody();
-    } else if (typeof window.RemoveClassBody === 'function') {
-      window.RemoveClassBody();
-    }
-
+  },
+  components:{
+    ComponentInformationMortgage,
+    ComponentMortgageHolidays,
+    ComponentEarlyRepayment,
+    ComponentRepaymentData,
+    ComponentPaymentSchedule,
+    ComponentCalendarMobileShedule
   }
 
-  // === Подписка через matchMedia (эффективно + iOS-safe) ===
-  const mediaQuery = window.matchMedia('(min-width: 1225px)');
+};
+</script>
+<style scoped>
+</style>
 
-  const handleMediaChange = (e) => {
-    if (e.matches) {
-      closeMobileMenuIfOpen();
-    }
-  };
 
-  // Совместимая подписка
-  if (mediaQuery.addEventListener) {
-    mediaQuery.addEventListener('change', handleMediaChange);
-  } else if (mediaQuery.addListener) {
-    mediaQuery.addListener(handleMediaChange); // legacy, но для полной поддержки
-  }
+-----------------------------------------------
 
-  // Инициализация при старте
-  if (mediaQuery.matches) {
-    closeMobileMenuIfOpen();
-  }
-}
+sendingResultToApi()
+
+this.answersToSand - передаю
