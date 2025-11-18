@@ -3,19 +3,8 @@ npm install --save-dev style-loader@3.3.4 --legacy-peer-deps
 
 
 
-npm error code ERESOLVE
-npm error ERESOLVE unable to resolve dependency tree
-npm error
-npm error While resolving: start-webapck-template@2.0.0
-npm error Found: webpack@4.47.0
-npm error node_modules/webpack
-npm error   dev webpack@"^4.38.0" from the root project
-npm error
-npm error Could not resolve dependency:
-npm error peer webpack@"^5.0.0" from style-loader@3.3.4
-npm error node_modules/style-loader
-npm error   dev style-loader@"3.3.4" from the root project
-npm error
-npm error Fix the upstream dependency conflict, or retry
-npm error this command with --force or --legacy-peer-deps
-npm error to accept an incorrect (and potentially broken) dependency resolution.
+ERROR in ./src/scss/style.scss
+Module build failed (from ./node_modules/style-loader/dist/cjs.js):
+TypeError: this.getOptions is not a function
+    at Object.pitch (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\style-loader\dist\index.js:22:24)
+i ｢wdm｣: Failed to compile.
