@@ -3,37 +3,6 @@ npm install --save-dev style-loader@1.3.0 --legacy-peer-deps
 
 
 
-{
-  test: /\.(sass|scss)$/i,
-  include: path.resolve(__dirname, 'src/scss'),
-  use: [
-    // 'cache-loader', // ← временно отключите в dev (можно вернуть позже)
-    isProduction ? MiniCssExtractPlugin.loader : 'style-loader',
-    { loader: 'css-loader', options: { sourceMap: !isProduction, url: false } },
-    {
-      loader: 'postcss-loader',
-      options: {
-        ident: 'postcss',
-        sourceMap: !isProduction,
-        plugins: () => isProduction
-          ? [
-              require('cssnano')({
-                preset: ['default', { discardComments: { removeAll: true } }]
-              })
-            ]
-          : [] // ← никаких плагинов в dev
-      }
-    },
-    {
-      loader: 'sass-loader',
-      options: {
-        sourceMap: !isProduction,
-        implementation: require('sass'),
-        sassOptions: {
-          quietDeps: true,
-          silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
-        }
-      }
-    }
-  ]
-}
+You did not set any plugins, parser, or stringifier. Right now, PostCSS does nothing. Pick plugins for your case on https://www.postcss.parts/ and use them in postcss.config.js.
+i ｢wdm｣:    2092 modules
+i ｢wdm｣: Compiled successfully.
