@@ -1,3 +1,5 @@
+ $scale: 1 + (random(2 * $sizeNoise * 10) / 10 - $sizeNoise) / 100;
+
 const path = require('path');
 const fs = require('fs');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
