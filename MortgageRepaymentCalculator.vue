@@ -75,6 +75,7 @@ module.exports = (env, argv) => {
                 ident: 'postcss',
                 sourceMap: !isProduction,
                 plugins: () => [
+                  // eslint-disable-next-line global-require
                   require('cssnano')({
                     preset: ['default', { discardComments: { removeAll: true } }]
                   })
@@ -85,6 +86,7 @@ module.exports = (env, argv) => {
               loader: 'sass-loader',
               options: {
                 sourceMap: !isProduction,
+                // eslint-disable-next-line global-require
                 implementation: require('sass'),
                 sassOptions: {
                   quietDeps: true,
