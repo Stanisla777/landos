@@ -3,8 +3,9 @@ npm install --save-dev style-loader@1.3.0 --legacy-peer-deps
 
 
 
-ERROR in ./src/scss/style.scss
-Module build failed (from ./node_modules/style-loader/dist/cjs.js):
-TypeError: this.getOptions is not a function
-    at Object.pitch (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\style-loader\dist\index.js:22:24)
-i ｢wdm｣: Failed to compile.
+｢wdm｣:    2092 modules
+i ｢wdm｣: Compiled successfully.
+i ｢wdm｣: Compiling...
+i ｢wdm｣:    2092 modules
+i ｢wdm｣: Compiled successfully.
+
