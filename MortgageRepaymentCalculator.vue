@@ -1,4 +1,35 @@
- $scale: 1 + (random(2 * $sizeNoise * 10) / 10 - $sizeNoise) / 100;
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div(random(2 * $windNoise * 10), 10) or calc(random(2 * $windNoise * 10) / 10)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
+   ╷
+50 │         $deltaLeft: random(2 * $windNoise * 10) / 10 - $windNoise + $windSpeed;
+
+
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div($fontSize, $baseFontSize) or calc($fontSize / $baseFontSize)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
+  ╷
+6 │   @return $fontSize / $baseFontSize;
+  │           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\components\comments\comments.scss 6:11   calculateFontSizeToRem()
+    src\scss\components\comments\comments.scss 13:11  cdr()
+    src\scss\components\comments\comments.scss 16:14  @import
+    src\scss\components\index.scss 123:9              @import
+    stdin 8:9                                         root stylesheet
+
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div(random(2 * $windNoise * 10), 10) or calc(random(2 * $windNoise * 10) / 10)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
 
 const path = require('path');
 const fs = require('fs');
