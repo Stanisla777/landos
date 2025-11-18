@@ -1,168 +1,203 @@
-if (error.response && error.response.data && error.response.data.description) {
-        this.description_after_sand = error.response.data.description;
-      }
-data() {
-  return {
-    // ... остальные поля ...
-    lastSentAnswers: null, // ← добавьте эту строку
-  };
-},
+const path = require('path');
+const fs = require('fs');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+// eslint-disable-next-line no-unused-vars
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
-deepEqual(a, b) {
-  if (a === b) return true;
-
-  if (a == null || b == null) return a === b;
-
-  if (typeof a !== 'object' || typeof b !== 'object') return a === b;
-
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
-
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-
-  for (let key of keysA) {
-    if (!keysB.includes(key)) return false;
-    if (!this.deepEqual(a[key], b[key])) return false;
-  }
-
-  return true;
-},
-
-sendingResultToApi(token) {
-  // ← ← ← ФОРМИРУЕМ answersToSand как раньше:
-  this.answersToSand = [];
-  const obj_information = {};
-  const obj_holidays = {};
-
-  obj_information.loanAmount = `${this.loanAmount}`;
-  obj_information.dateReceipt = JSON.stringify(this.dateLoanReceipt);
-  obj_information.bet = `${this.annualInterestRate}`;
-  obj_information.term = `${this.termMonthOrYear}`;
-  obj_information.loanTerm = `${this.loanTerm}`;
-  obj_information.paymentType = this.state.payment_type;
-  this.answersToSand.push(obj_information);
-
-  if (this.holidays_term !== 0) {
-    obj_holidays.termHoliday = `${this.holidays_term}`;
-  }
-  if (this.holidays_date_to_send.length !== 0) {
-    obj_holidays.beginningHolidays = JSON.stringify(this.holidays_date_to_send);
-  }
-  this.answersToSand.push(obj_holidays);
-
-  // ДОСРОЧНЫЕ ПЛАТЕЖИ — как раньше:
-  const array2MapEnd = this.array_repayment_end.reduce((map, item) => {
-    map[item.id] = item;
-    return map;
-  }, {});
-  this.array_early_repayment_to_send.forEach(item => {
-    if (array2MapEnd[item.id]) item.earlyEnd = array2MapEnd[item.id];
-  });
-
-  const array2MapMain = this.array_repayment_main.reduce((map, item) => {
-    map[item.id] = item;
-    return map;
-  }, {});
-  this.array_early_repayment_to_send.forEach(item => {
-    if (array2MapMain[item.id]) item.earlyMain = array2MapMain[item.id];
-  });
-
-  const array2MapAllPeriod = this.array_repayment_all_period.reduce((map, item) => {
-    map[item.id] = item;
-    return map;
-  }, {});
-  this.array_early_repayment_to_send.forEach(item => {
-    if (array2MapAllPeriod[item.id]) item.earlyAllPeriod = array2MapAllPeriod[item.id];
-  });
-
-  const array2MapPeriod = this.array_repayment_select_period.reduce((map, item) => {
-    map[item.key] = item;
-    return map;
-  }, {});
-  this.array_early_repayment_to_send.forEach(item => {
-    if (array2MapPeriod[item.id]) item.earlySelectPeriod = array2MapPeriod[item.id];
-  });
-
-  const dateMap = {};
-  this.array_repayment_date.forEach(item => {
-    const id = item[1];
-    dateMap[id] = item;
-  });
-  this.array_early_repayment_to_send.forEach(obj => {
-    const dateItem = dateMap[obj.id];
-    if (dateItem) obj.earlyDate = dateItem;
-  });
-
-  const array2MapAmount = this.array_repayment_amount.reduce((map, item) => {
-    map[item.index] = item;
-    return map;
-  }, {});
-  this.array_early_repayment_to_send.forEach(item => {
-    if (array2MapAmount[item.id]) item.earlyAmount = array2MapAmount[item.id];
-  });
-
-  const array2MapWhatReduce = this.array_repayment_what_reduce.reduce((map, item) => {
-    map[item.index] = item;
-    return map;
-  }, {});
-  this.array_early_repayment_to_send.forEach(item => {
-    if (array2MapWhatReduce[item.id]) item.whatReduceArray = array2MapWhatReduce[item.id];
-  });
-
-  const array2MapBlockRequared = this.array_block_requared.reduce((map, item) => {
-    map[item.id] = item;
-    return map;
-  }, {});
-  this.array_early_repayment_to_send.forEach(item => {
-    if (array2MapBlockRequared[item.id]) item.blockRequared = array2MapBlockRequared[item.id];
-  });
-
-  if (this.array_early_repayment_to_send.length > 0) {
-    this.answersToSand.push(this.array_early_repayment_to_send);
-  }
-
-  // ← ← ← СРАВНЕНИЕ: если данные не изменились — НЕ отправляем
-  if (this.lastSentAnswers && this.deepEqual(this.answersToSand, this.lastSentAnswers)) {
-    console.log('Данные не изменились — запрос не отправляется.');
-    return;
-  }
-
-  // ← ← ← ОТПРАВКА:
-  let data = {
-    calculatorId: this.calculatorId,
-    answers: this.answersToSand,
-    "smart-token": token
-  };
-
-  axios({
-    method: 'post',
-    url: '/api/local/calculator/answers/',
-    headers: {
-      "Content-type": "application/json; charset=UTF-8",
-      'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-    },
-    data
-  })
-    .then((res) => {
-      if (res.data.code === 200 && res.data.result) {
-        this.answersId = res.data.result.answersId;
-        this.answerLink = res.data.result.answerLink;
-        this.description_after_sand = null;
-
-        // ← ← ← СОХРАНЯЕМ данные после успешной отправки
-        this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
-      }
-      if (res.data.code !== 200) {
-        if (res.data.description) this.description_after_sand = res.data.description;
-        if (res.data.code) this.answer_code = res.data.code;
-      }
-      this.answersToSand = [];
-    })
-    .catch((error) => {
-      if (error.response?.data?.description) {
-        this.description_after_sand = error.response.data.description;
-      }
-      console.error('Ошибка запроса:', error);
+function generateHtmlPlugins(templateDir) {
+  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return templateFiles.map((item) => {
+    const parts = item.split('.');
+    const name = parts[0];
+    const extension = parts[1];
+    return new HtmlWebpackPlugin({
+      filename: `${name}.html`,
+      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
+      inject: false
     });
-},
+  });
+}
+
+const config = {
+  entry: ['./src/js/index.js', './src/scss/style.scss'],
+  // entry: {
+  //   main: ['./src/js/index.js', './src/scss/style.scss'],
+  //   gamedd: ['./src/js/index_dd', './src/scss/style.scss']
+  // },
+  output: {
+    // filename: './js/[name].bundle.js'
+    filename: './js/bundle.js',
+
+    // 2023-04-25 fix корневого пути  для корректной ленивой подгрузки apexchart и js вообще.
+    // TODO: сделать аналогичный fix корневого пути и для картинок
+    publicPath: '/dist/',
+    // path: path.resolve(__dirname, 'dist'), // с этим тоже работает
+    // filename: 'js/bundle.js' // с этим тоже работает
+  },
+  devtool: 'source-map',
+  mode: 'production',
+  optimization: {
+    minimize: true,
+    // splitChunks: {
+    //   chunks: 'all'
+    // },
+    minimizer: [
+      new TerserPlugin({
+        parallel: true,
+        cache: true
+      })
+      // new TerserPlugin({ parallel: true })
+    ]
+  },
+  performance: {
+    hints: false
+  },
+  module: {
+    rules: [
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader'
+      },
+      {
+        test: /\.(sass|scss)$/,
+        include: path.resolve(__dirname, 'src/scss'),
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {}
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              sourceMap: true,
+              url: false
+            }
+          },
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              sourceMap: true,
+              plugins: () => [
+                // eslint-disable-next-line global-require
+                require('cssnano')({
+                  preset: [
+                    'default',
+                    {
+                      discardComments: {
+                        removeAll: true
+                      }
+                    }
+                  ]
+                }),
+                // включать при сборке продакшен
+                // require('autoprefixer')({
+                //   grid: true
+                // })
+              ]
+            }
+          },
+          {
+            loader: 'sass-loader',
+            options: {
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      {
+        test: /\.pug$/,
+        oneOf: [
+          {
+            include: path.resolve(__dirname, 'src/pug/'),
+            exclude: /\.vue$/,
+            use: ['pug-loader']
+          },
+          {
+            use: ['pug-plain-loader']
+          }
+        ]
+      },
+      {
+        enforce: 'pre',
+        test: /\.js$/,
+        exclude: /node_modules/,
+        loader: 'eslint-loader',
+        options: {
+          // formatter: require("./.eslintrc.js")
+          // cache: true
+        }
+      },
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      },
+      {
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
+      },
+      {
+        test: /\.js$/,
+        use: [{
+          loader: 'cache-loader'
+        }]
+      },
+      {
+        test: /\.(sass|scss)$/,
+        use: [{
+          loader: 'cache-loader'
+        }]
+      },
+      // {
+      //   test: /\.pug$/,
+      //   use: [{
+      //     loader: 'cache-loader'
+      //   }]
+      // }
+    ]
+  },
+  plugins: [
+    new VueLoaderPlugin(),
+    new MiniCssExtractPlugin({
+      filename: './css/all.css'
+    }),
+    new CopyWebpackPlugin([
+      {
+        from: './src/fonts',
+        to: './fonts'
+      },
+      {
+        from: './src/img',
+        to: './img'
+      }
+    ]),
+    // new BundleAnalyzerPlugin()
+  ],
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.js'
+    }
+  }
+};
+
+module.exports = (env, argv) => {
+  if (argv.mode === 'production') {
+    config.plugins.push(new CleanWebpackPlugin());
+    config.resolve.alias.vue = 'vue/dist/vue.min.js';
+    config.devtool = 'eval';
+    // config.publicPath = './';
+    // config.publicPath =  path.resolve(__dirname, 'dist');
+  } else {
+    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
+  }
+  return config;
+};
