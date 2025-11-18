@@ -11,6 +11,6 @@ npm install --save-dev postcss@7 --legacy-peer-deps
 }
 
 npm install --package-lock-only
-npm install
+npm install --no-fund --no-audit --prefer-offline
 
 
