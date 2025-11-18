@@ -14,3 +14,7 @@ npm install
 
 
 npm ls postcss
+
+
+npm error code EOVERRIDE
+npm error Override for postcss@^7.0.39 conflicts with direct dependency
