@@ -12,9 +12,9 @@ npm error node_modules/webpack
 npm error   dev webpack@"^4.38.0" from the root project
 npm error
 npm error Could not resolve dependency:
-npm error peer webpack@"^5.27.0" from style-loader@4.0.0
+npm error peer webpack@"^5.0.0" from style-loader@3.3.4
 npm error node_modules/style-loader
-npm error   dev style-loader@"*" from the root project
+npm error   dev style-loader@"3.3.4" from the root project
 npm error
 npm error Fix the upstream dependency conflict, or retry
 npm error this command with --force or --legacy-peer-deps
