@@ -13,8 +13,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
-// eslint-disable-next-line no-unused-vars
-const cssnano = require('cssnano');
+const cssnano = require('cssnano'); // ← переменная используется
 
 function generateHtmlPlugins(templateDir) {
   const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
@@ -25,8 +24,8 @@ function generateHtmlPlugins(templateDir) {
     return new HtmlWebpackPlugin({
       filename: `${name}.html`,
       template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
-      inject: true, // ← ВРЕМЕННО true для HMR (можно вернуть false в prod)
-      chunks: ['main', 'styles'] // ← явно указываем, какие chunks подключать
+      inject: true,
+      chunks: ['main', 'styles']
     });
   });
 }
@@ -37,7 +36,7 @@ module.exports = (env, argv) => {
   const config = {
     entry: {
       main: './src/js/index.js',
-      styles: './src/scss/style.scss' // ← отдельный entrypoint
+      styles: './src/scss/style.scss'
     },
     output: {
       filename: isProduction ? './js/bundle.js' : './js/[name].bundle.js',
@@ -72,27 +71,29 @@ module.exports = (env, argv) => {
             // 'cache-loader',
             isProduction ? MiniCssExtractPlugin.loader : 'style-loader',
             { loader: 'css-loader', options: { sourceMap: !isProduction, url: false } },
-            {
-              loader: 'postcss-loader',
-              options: {
-                ident: 'postcss', // ← обязательно для v3.0.0
-                sourceMap: !isProduction,
-                plugins() {
-                  return isProduction
-                    ? [
-                      cssnano({
-                        preset: ['default', { discardComments: { removeAll: true } }]
-                      })
-                    ]
-                    : [];
-                }
-              }
-            },
+            // ↓↓↓ ВРЕМЕННО: отключён в dev для ускорения и избежания ошибок ↓↓↓
+            ...(isProduction
+              ? [
+                  {
+                    loader: 'postcss-loader',
+                    options: {
+                      ident: 'postcss',
+                      sourceMap: false,
+                      plugins: () => [
+                        cssnano({
+                          preset: ['default', { discardComments: { removeAll: true } }]
+                        })
+                      ]
+                    }
+                  }
+                ]
+              : []
+            ),
+            // ↑↑↑ в prod — остаётся, в dev — пропускается ↑↑↑
             {
               loader: 'sass-loader',
               options: {
                 sourceMap: !isProduction,
-                // eslint-disable-next-line global-require
                 implementation: require('sass'),
                 sassOptions: {
                   quietDeps: true,
@@ -130,7 +131,7 @@ module.exports = (env, argv) => {
     plugins: [
       new VueLoaderPlugin(),
       new MiniCssExtractPlugin({
-        filename: isProduction ? './css/all.css' : '[name].css' // ← всегда создаёт CSS
+        filename: isProduction ? './css/all.css' : '[name].css'
       }),
       new CopyWebpackPlugin([
         { from: './src/fonts', to: './fonts' },
@@ -147,11 +148,9 @@ module.exports = (env, argv) => {
   if (isProduction) {
     config.plugins.push(new CleanWebpackPlugin());
   } else {
-    config.plugins.push(new webpack.HotModuleReplacementPlugin()); // ← обязательно для HMR
+    config.plugins.push(new webpack.HotModuleReplacementPlugin());
     config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
   }
 
   return config;
 };
-
-
