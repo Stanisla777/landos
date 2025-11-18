@@ -3,40 +3,11 @@ npm install --save-dev style-loader@1.3.0 --legacy-peer-deps
 
 
 
-{
-  test: /\.(sass|scss)$/i,
-  include: path.resolve(__dirname, 'src/scss'),
-  use: [
-    'cache-loader',
-    isProduction
-      ? MiniCssExtractPlugin.loader
-      : {
-          loader: 'style-loader',
-          options: { hmr: true } // ← ключевая настройка для HMR в webpack 4
-        },
-    { loader: 'css-loader', options: { sourceMap: !isProduction, url: false } },
-    {
-      loader: 'postcss-loader',
-      options: {
-        ident: 'postcss',
-        sourceMap: !isProduction,
-        plugins: () => [
-          require('cssnano')({
-            preset: ['default', { discardComments: { removeAll: true } }]
-          })
-        ]
-      }
-    },
-    {
-      loader: 'sass-loader',
-      options: {
-        sourceMap: !isProduction,
-        implementation: require('sass'),
-        sassOptions: {
-          quietDeps: true,
-          silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
-        }
-      }
-    }
-  ]
-}
+ERROR in ./src/scss/style.scss
+Module build failed (from ./node_modules/style-loader/dist/cjs.js):
+ValidationError: Invalid options object. Style Loader has been initialized using an options object that does not match the API schema.
+ - options has an unknown property 'hmr'. These properties are valid:
+   object { injectType?, attributes?, insert?, base?, esModule?, modules? }
+    at validate (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\schema-utils\dist\validate.js:98:11)
+    at Object.loader (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\style-loader\dist\index.js:25:28)
+i ｢wdm｣: Failed to compile.
