@@ -5,14 +5,13 @@ npm install --save-dev style-loader@1.3.0 --legacy-peer-deps
 
 const path = require('path');
 const fs = require('fs');
+const webpack = require('webpack'); // ← добавлено для HMR
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
-// eslint-disable-next-line no-unused-vars
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
 function generateHtmlPlugins(templateDir) {
   const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
@@ -23,177 +22,126 @@ function generateHtmlPlugins(templateDir) {
     return new HtmlWebpackPlugin({
       filename: `${name}.html`,
       template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
-      inject: false
+      inject: true, // ← ВРЕМЕННО true для HMR (можно вернуть false в prod)
+      chunks: ['main', 'styles'] // ← явно указываем, какие chunks подключать
     });
   });
 }
 
-const config = {
-  entry: ['./src/js/index.js', './src/scss/style.scss'],
-  // entry: {
-  //   main: ['./src/js/index.js', './src/scss/style.scss'],
-  //   gamedd: ['./src/js/index_dd', './src/scss/style.scss']
-  // },
-  output: {
-    // filename: './js/[name].bundle.js'
-    filename: './js/bundle.js',
+module.exports = (env, argv) => {
+  const isProduction = argv.mode === 'production';
 
-    // 2023-04-25 fix корневого пути  для корректной ленивой подгрузки apexchart и js вообще.
-    // TODO: сделать аналогичный fix корневого пути и для картинок
-    publicPath: '/dist/',
-    // path: path.resolve(__dirname, 'dist'), // с этим тоже работает
-    // filename: 'js/bundle.js' // с этим тоже работает
-  },
-  devtool: 'source-map',
-  mode: 'production',
-  optimization: {
-    minimize: true,
-    // splitChunks: {
-    //   chunks: 'all'
-    // },
-    minimizer: [
-      new TerserPlugin({
-        parallel: true,
-        cache: true
-      })
-      // new TerserPlugin({ parallel: true })
-    ]
-  },
-  performance: {
-    hints: false
-  },
-  module: {
-    rules: [
-      {
-        test: /\.vue$/,
-        loader: 'vue-loader'
-      },
-      {
-        test: /\.(sass|scss)$/i,
-        include: path.resolve(__dirname, 'src/scss'),
-        use: [
-          'cache-loader',
-          MiniCssExtractPlugin.loader,
-          {
-            loader: 'css-loader',
-            options: { sourceMap: true, url: false }
-          },
-          {
-            loader: 'postcss-loader',
-            options: {
-              ident: 'postcss',
-              sourceMap: true,
-              plugins: () => [
-                // eslint-disable-next-line global-require
-                require('cssnano')({
-                  preset: ['default', { discardComments: { removeAll: true } }]
-                })
-              ]
-            }
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              sourceMap: true,
-              // явно указываем реализацию и опции
-              // eslint-disable-next-line global-require
-              implementation: require('sass'),
-              sassOptions: {
-                quietDeps: true, // ← подавляет warnings из node_modules
-                // verbose: false, // по умолчанию
+  const config = {
+    entry: {
+      main: './src/js/index.js',
+      styles: './src/scss/style.scss' // ← отдельный entrypoint
+    },
+    output: {
+      filename: isProduction ? './js/bundle.js' : './js/[name].bundle.js',
+      publicPath: '/dist/'
+    },
+    devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
+    mode: argv.mode || 'development',
+    optimization: {
+      minimize: isProduction,
+      minimizer: isProduction ? [
+        new TerserPlugin({ parallel: true, cache: true })
+      ] : []
+    },
+    performance: { hints: false },
+    devServer: isProduction ? undefined : {
+      contentBase: path.resolve(__dirname, 'dist'),
+      publicPath: '/dist/',
+      hot: true,
+      inline: true,
+      compress: true,
+      port: 8080,
+      stats: 'minimal',
+      open: true
+    },
+    module: {
+      rules: [
+        { test: /\.vue$/, loader: 'vue-loader' },
+        {
+          test: /\.(sass|scss)$/i,
+          include: path.resolve(__dirname, 'src/scss'),
+          use: [
+            'cache-loader',
+            isProduction ? MiniCssExtractPlugin.loader : 'style-loader',
+            { loader: 'css-loader', options: { sourceMap: !isProduction, url: false } },
+            {
+              loader: 'postcss-loader',
+              options: {
+                ident: 'postcss',
+                sourceMap: !isProduction,
+                plugins: () => [
+                  require('cssnano')({
+                    preset: ['default', { discardComments: { removeAll: true } }]
+                  })
+                ]
+              }
+            },
+            {
+              loader: 'sass-loader',
+              options: {
+                sourceMap: !isProduction,
+                implementation: require('sass'),
+                sassOptions: {
+                  quietDeps: true,
+                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
+                }
               }
             }
-          }
-        ]
-      },
-      {
-        test: /\.pug$/,
-        oneOf: [
-          {
-            include: path.resolve(__dirname, 'src/pug/'),
-            exclude: /\.vue$/,
-            use: ['pug-loader']
-          },
-          {
-            use: ['pug-plain-loader']
-          }
-        ]
-      },
-      {
-        enforce: 'pre',
-        test: /\.js$/,
-        exclude: /node_modules/,
-        loader: 'eslint-loader',
-        options: {
-          // formatter: require("./.eslintrc.js")
-          // cache: true
+          ]
+        },
+        {
+          test: /\.pug$/,
+          oneOf: [
+            { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['pug-loader'] },
+            { use: ['pug-plain-loader'] }
+          ]
+        },
+        {
+          enforce: 'pre',
+          test: /\.js$/,
+          exclude: /node_modules/,
+          loader: 'eslint-loader',
+          options: { cache: true }
+        },
+        {
+          test: /\.js$/,
+          exclude: /node_modules/,
+          use: [
+            'cache-loader',
+            { loader: 'babel-loader', options: { cacheDirectory: true } },
+            'source-map-loader'
+          ]
         }
-      },
-      {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader'
-        }
-      },
-      {
-        test: /\.js$/,
-        enforce: 'pre',
-        use: ['source-map-loader'],
-      },
-      {
-        test: /\.js$/,
-        use: [{
-          loader: 'cache-loader'
-        }]
-      },
-      // {
-      //   test: /\.(sass|scss)$/,
-      //   use: [{
-      //     loader: 'cache-loader'
-      //   }]
-      // },
-      // {
-      //   test: /\.pug$/,
-      //   use: [{
-      //     loader: 'cache-loader'
-      //   }]
-      // }
-    ]
-  },
-  plugins: [
-    new VueLoaderPlugin(),
-    new MiniCssExtractPlugin({
-      filename: './css/all.css'
-    }),
-    new CopyWebpackPlugin([
-      {
-        from: './src/fonts',
-        to: './fonts'
-      },
-      {
-        from: './src/img',
-        to: './img'
+      ]
+    },
+    plugins: [
+      new VueLoaderPlugin(),
+      new MiniCssExtractPlugin({
+        filename: isProduction ? './css/all.css' : '[name].css' // ← всегда создаёт CSS
+      }),
+      new CopyWebpackPlugin([
+        { from: './src/fonts', to: './fonts' },
+        { from: './src/img', to: './img' }
+      ])
+    ],
+    resolve: {
+      alias: {
+        vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js'
       }
-    ]),
-    // new BundleAnalyzerPlugin()
-  ],
-  resolve: {
-    alias: {
-      vue: 'vue/dist/vue.js'
     }
-  }
-};
+  };
 
-module.exports = (env, argv) => {
-  if (argv.mode === 'production') {
+  if (isProduction) {
     config.plugins.push(new CleanWebpackPlugin());
-    config.resolve.alias.vue = 'vue/dist/vue.min.js';
-    config.devtool = 'eval';
-    // config.publicPath = './';
-    // config.publicPath =  path.resolve(__dirname, 'dist');
   } else {
+    config.plugins.push(new webpack.HotModuleReplacementPlugin()); // ← обязательно для HMR
     config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
   }
+
   return config;
 };
