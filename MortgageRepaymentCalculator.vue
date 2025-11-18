@@ -27,36 +27,13 @@ function generateHtmlPlugins(templateDir) {
 }
 
 const config = {
-  entry: ['./src/js/index.js', './src/scss/style.scss'],
-  // entry: {
-  //   main: ['./src/js/index.js', './src/scss/style.scss'],
-  //   gamedd: ['./src/js/index_dd', './src/scss/style.scss']
-  // },
+  // entry будет переопределён ниже в зависимости от режима
   output: {
-    // filename: './js/[name].bundle.js'
     filename: './js/bundle.js',
-
-    // 2023-04-25 fix корневого пути  для корректной ленивой подгрузки apexchart и js вообще.
-    // TODO: сделать аналогичный fix корневого пути и для картинок
-    publicPath: '/dist/',
-    // path: path.resolve(__dirname, 'dist'), // с этим тоже работает
-    // filename: 'js/bundle.js' // с этим тоже работает
+    publicPath: '/dist/'
   },
   devtool: 'source-map',
   mode: 'production',
-  optimization: {
-    minimize: true,
-    // splitChunks: {
-    //   chunks: 'all'
-    // },
-    minimizer: [
-      new TerserPlugin({
-        parallel: true,
-        cache: true
-      })
-      // new TerserPlugin({ parallel: true })
-    ]
-  },
   performance: {
     hints: false
   },
@@ -71,36 +48,7 @@ const config = {
         include: path.resolve(__dirname, 'src/scss'),
         use: [
           'cache-loader',
-          MiniCssExtractPlugin.loader,
-          {
-            loader: 'css-loader',
-            options: { sourceMap: true, url: false }
-          },
-          {
-            loader: 'postcss-loader',
-            options: {
-              ident: 'postcss',
-              sourceMap: true,
-              plugins: () => [
-                // eslint-disable-next-line global-require
-                require('cssnano')({
-                  preset: ['default', { discardComments: { removeAll: true } }]
-                })
-              ]
-            }
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              sourceMap: true,
-              // eslint-disable-next-line global-require
-              implementation: require('sass'),
-              sassOptions: {
-                quietDeps: true,
-                silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
-              }
-            }
-          }
+          // будет заменён в module.exports → MiniCssExtractPlugin.loader или style-loader
         ]
       },
       {
@@ -122,7 +70,7 @@ const config = {
         exclude: /node_modules/,
         loader: 'eslint-loader',
         options: {
-          cache: true // можно раскомментировать, если хотите кэш eslint
+          cache: true
         }
       },
       {
@@ -133,42 +81,20 @@ const config = {
           {
             loader: 'babel-loader',
             options: {
-              cacheDirectory: true // ← включает кэш внутри babel-loader
+              cacheDirectory: true
             }
           },
           'source-map-loader'
         ]
-      },
-      // {
-      //   test: /\.(sass|scss)$/,
-      //   use: [{
-      //     loader: 'cache-loader'
-      //   }]
-      // },
-      // {
-      //   test: /\.pug$/,
-      //   use: [{
-      //     loader: 'cache-loader'
-      //   }]
-      // }
+      }
     ]
   },
   plugins: [
     new VueLoaderPlugin(),
-    new MiniCssExtractPlugin({
-      filename: './css/all.css'
-    }),
     new CopyWebpackPlugin([
-      {
-        from: './src/fonts',
-        to: './fonts'
-      },
-      {
-        from: './src/img',
-        to: './img'
-      }
-    ]),
-    // new BundleAnalyzerPlugin()
+      { from: './src/fonts', to: './fonts' },
+      { from: './src/img', to: './img' }
+    ])
   ],
   resolve: {
     alias: {
@@ -178,15 +104,110 @@ const config = {
 };
 
 module.exports = (env, argv) => {
-  if (argv.mode === 'production') {
-    config.plugins.push(new CleanWebpackPlugin());
+  const isProduction = argv.mode === 'production';
+
+  // ———— Динамическая настройка в зависимости от режима ————
+
+  // entry
+  config.entry = isProduction
+    ? ['./src/js/index.js', './src/scss/style.scss']
+    : {
+        main: './src/js/index.js',
+        styles: './src/scss/style.scss'
+      };
+
+  // output filename
+  config.output.filename = isProduction
+    ? './js/bundle.js'
+    : './js/[name].bundle.js';
+
+  // devtool
+  config.devtool = isProduction ? 'source-map' : 'eval-cheap-module-source-map';
+
+  // optimization
+  config.optimization = {
+    minimize: isProduction,
+    minimizer: isProduction
+      ? [
+          new TerserPlugin({
+            parallel: true,
+            cache: true
+          })
+        ]
+      : []
+  };
+
+  // plugins
+  if (isProduction) {
+    config.plugins.push(
+      new CleanWebpackPlugin(),
+      new MiniCssExtractPlugin({
+        filename: './css/all.css'
+      })
+    );
     config.resolve.alias.vue = 'vue/dist/vue.min.js';
-    config.devtool = 'eval';
-    // config.publicPath = './';
-    // config.publicPath =  path.resolve(__dirname, 'dist');
   } else {
-    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
+    // В dev — подключаем HtmlWebpackPlugin, но с HMR-дружественной схемой
+    config.plugins = config.plugins.concat(
+      generateHtmlPlugins('./src/pug/views')
+    );
   }
+
+  // ———— Обновляем правило SCSS dinamically ————
+  const scssRule = config.module.rules.find(rule =>
+    rule.test && rule.test.toString().includes('sass|scss')
+  );
+
+  scssRule.use = [
+    'cache-loader',
+    isProduction
+      ? MiniCssExtractPlugin.loader
+      : 'style-loader',
+    {
+      loader: 'css-loader',
+      options: {
+        sourceMap: !isProduction,
+        url: false
+      }
+    },
+    {
+      loader: 'postcss-loader',
+      options: {
+        ident: 'postcss',
+        sourceMap: !isProduction,
+        plugins: () => [
+          require('cssnano')({
+            preset: ['default', { discardComments: { removeAll: true } }]
+          })
+        ]
+      }
+    },
+    {
+      loader: 'sass-loader',
+      options: {
+        sourceMap: !isProduction,
+        implementation: require('sass'),
+        sassOptions: {
+          quietDeps: true,
+          silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
+        }
+      }
+    }
+  ];
+
+  // ———— devServer (для npm start) ————
+  if (!isProduction) {
+    config.devServer = {
+      contentBase: path.resolve(__dirname, 'dist'),
+      publicPath: '/dist/',
+      hot: true,
+      compress: true,
+      port: 8080,
+      stats: 'minimal',
+      open: true
+    };
+  }
+
   return config;
 };
 
