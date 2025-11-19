@@ -14,32 +14,6 @@ start-webapck-template@2.0.0 C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf
 2092 modules
 i ｢wdm｣: Compiled successfully.
 
-----------------------------------------------------------
-
-[] webpack is watching the files...
-[]
-[]
-[] ERROR in ./src/scss/style.scss
-[] Module build failed (from ./node_modules/mini-css-extract-plugin/dist/loader.js):
-[] ModuleParseError: Module parse failed: Unexpected character '�' (1:0)
-[] You may need an appropriate loader to handle this file type, currently no loaders are configured to process this file. See https://webpack.js.org/concepts#loaders
-[] (Source code omitted for this binary file)
-[]     at handleParseError (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack\lib\NormalModule.js:469:19)
-[]     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack\lib\NormalModule.js:503:5
-[]     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack\lib\NormalModule.js:358:12
-[]     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\loader-runner\lib\LoaderRunner.js:373:3
-[]     at iterateNormalLoaders (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\loader-runner\lib\LoaderRunner.js:214:10)
-[]     at Array.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\loader-runner\lib\LoaderRunner.js:205:4)
-[]     at Storage.finished (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\enhanced-resolve\lib\CachedInputFileSystem.js:55:16)
-[]     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\enhanced-resolve\lib\CachedInputFileSystem.js:91:9
-[]     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\graceful-fs\graceful-fs.js:123:16
-[]     at FSReqCallback.readFileAfterClose [as oncomplete] (node:internal/fs/read_file_context:68:3)
-[] i ｢wds｣: Project is running at http://localhost:8080/
-[] i ｢wds｣: webpack output is served from /dist/
-[] i ｢wds｣: Content not from webpack is served from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\dist
-[] i ｢wdm｣:    2104 modules
-[] i ｢wdm｣: Compiled successfully.
-
 
 ----------------------------------------------------------
 
@@ -72,21 +46,18 @@ function generateHtmlPlugins(templateDir) {
 }
 
 module.exports = function(env, argv) {
-  // 🔍 Определяем режим запуска
   const isDevServer = process.argv.some(arg => arg.includes('webpack-dev-server'));
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
-  const isDevelopmentBuild = !isProduction && !isDevServer; // npm run dev
-  const isDevServerMode = !isProduction && isDevServer;       // npm run start
+  const isDevServerMode = !isProduction && isDevServer;
 
   const config = {
     entry: {
       main: './src/js/index.js',
-      // styles → только для сборки в файлы (dev и prod), но НЕ для dev-server
+      // styles — ТОЛЬКО для сборки в файлы (npm run dev / build)
       ...(isDevServerMode ? {} : { styles: './src/scss/style.scss' })
     },
     output: {
-      // Без хэшей в dev (для бэкендеров), с хэшами — в prod
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
       publicPath: '/dist/',
     },
@@ -128,7 +99,7 @@ module.exports = function(env, argv) {
       compress: true,
       port: 8080,
       stats: 'minimal',
-      open: true,
+      open: false, // ← отключил автооткрытие (concurrently может дублировать)
       watchOptions: {
         ignored: /node_modules/,
         aggregateTimeout: 50,
@@ -146,53 +117,7 @@ module.exports = function(env, argv) {
             'vue-loader'
           ]
         },
-        {
-          test: /\.(sass|scss)$/i,
-          use: [
-            // В dev-server — style-loader (fallback, если webpack.css.js упадёт)
-            // В dev/prod — MiniCssExtractPlugin.loader
-            isDevServerMode ? 'style-loader' : {
-              loader: MiniCssExtractPlugin.loader,
-              options: { publicPath: '../' }
-            },
-            {
-              loader: 'css-loader',
-              options: {
-                sourceMap: !isProduction,
-                url: false,
-              }
-            },
-            // postcss-loader — только в production
-            isProduction ? {
-              loader: 'postcss-loader',
-              options: {
-                sourceMap: !isProduction,
-                postcssOptions: {
-                  plugins: [
-                    require('autoprefixer')(),
-                    require('cssnano')({
-                      preset: ['default', {
-                        discardComments: { removeAll: true },
-                      }]
-                    })
-                  ]
-                }
-              }
-            } : null,
-            'cache-loader',
-            {
-              loader: 'sass-loader',
-              options: {
-                sourceMap: !isProduction,
-                implementation: require('sass'),
-                sassOptions: {
-                  quietDeps: true,
-                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
-                }
-              }
-            }
-          ].filter(Boolean)
-        },
+        // 🔴 УДАЛЁН весь блок для sass/scss — его обрабатывает webpack.css.js
         {
           test: /\.pug$/,
           oneOf: [
@@ -240,7 +165,7 @@ module.exports = function(env, argv) {
     plugins: [
       new VueLoaderPlugin(),
 
-      // MiniCssExtractPlugin — для dev-сборки и prod, но НЕ для dev-server
+      // MiniCssExtractPlugin — ТОЛЬКО если НЕ dev-server (для dev/build)
       (!isDevServerMode) ? new MiniCssExtractPlugin({
         filename: './css/all.css'
       }) : null,
@@ -346,7 +271,7 @@ npm install concurrently@8.2.2 --save-dev
 
   "scripts": {
   "dev:css": "webpack --config webpack.css.js --watch --mode development",
-  "dev:js": "webpack-dev-server --mode development --hot --open",
+  "dev:js": "webpack-dev-server --mode development --hot",
   "start": "concurrently \"npm run dev:css\" \"npm run dev:js\" --kill-others-on-fail --prefix name",
   "dev": "webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
   "build": "webpack --mode production",
