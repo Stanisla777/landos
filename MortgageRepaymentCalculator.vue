@@ -173,21 +173,25 @@ module.exports = function(env, argv) {
 Создайте webpack.css.js (файл в корне проекта, рядом с webpack.config.js)
 
 // webpack.css.js
+
 // webpack.css.js
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-  mode: 'development',
-  // ✅ entry остаётся
-  entry: './src/scss/style.scss',
-
-  // ✅ output — кладём dummy в безопасное место
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'css/.keep', // ← текстовый файл, не JS
+  // ✅ Добавьте эти 3 строки В САМОЕ НАЧАЛО exports:
+  context: __dirname,
+  cache: {
+    type: 'filesystem',
+    cacheDirectory: path.resolve(__dirname, 'node_modules/.cache/webpack-css')
   },
 
+  mode: 'development',
+  entry: './src/scss/style.scss',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'css/.keep',
+  },
   module: {
     rules: [
       {
@@ -210,18 +214,15 @@ module.exports = {
       }
     ]
   },
-
   plugins: [
     new MiniCssExtractPlugin({
-      filename: 'css/all.css' // ✅ CSS туда, куда нужно
+      filename: 'css/all.css'
     })
   ],
-
   watchOptions: {
     ignored: /node_modules/,
     aggregateTimeout: 50
   },
-
   stats: 'errors-only'
 };
 
