@@ -10,6 +10,21 @@ i ｢wdm｣: Compiled successfully.
 
 ----------------------------------------------------------
 
+{
+  "name": "start-webapck-template",
+  "version": "2.0.0",
+  "description": "Start template for generate css, js and html file",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
+    "build": "webpack --mode production",
+    "start": "webpack-dev-server --mode development --open",
+    "lint": "eslint --ext .js, --ignore-path .gitignore ."
+  },
+  "devDependencies": {
+
+
+
 const path = require('path');
 const fs = require('fs');
 const webpack = require('webpack');
