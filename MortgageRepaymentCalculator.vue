@@ -10,8 +10,14 @@ i ｢wdm｣: Compiled successfully.
 
 ----------------------------------------------------------
 
-[WDS] Hot Module Replacement enabled.
-index.js?http://localhost:8080:52 [WDS] Live Reloading enabled.
+// src/js/style-hmr.js
+import '../scss/style.scss';
+
+if (module.hot) {
+  module.hot.accept('../scss/style.scss', () => {
+    console.log('[HMR] ✅ style.scss updated — no JS rebuild!');
+  });
+}
 
 
 const path = require('path');
@@ -34,27 +40,36 @@ function generateHtmlPlugins(templateDir) {
       filename: `${name}.html`,
       template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
       inject: true,
-      chunks: ['main']
+      chunks: ['main', 'styles'] // ← добавлен чанк 'styles'
     });
   });
 }
 
 module.exports = (env, argv) => {
-  const isProduction = argv.mode === 'production';
-  const isDevelopment = !isProduction;
+  // 🔍 НАДЁЖНОЕ определение режима
+  const mode = argv.mode || 'development';
+  const isProduction = mode === 'production';
+  const isDevelopment = mode === 'development';
+
+  // 🔍 ЛОГ РЕЖИМА
+  console.log('\n🔧 Webpack mode:', mode);
+  console.log('🚀 isDevelopment:', isDevelopment);
+  console.log('📦 isProduction:', isProduction);
+  console.log('');
 
   const config = {
     entry: {
       main: './src/js/index.js',
+      styles: './src/js/style-hmr.js', // ← отдельный entry для стилей
     },
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
       publicPath: '/dist/',
     },
     devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
-    mode: argv.mode || 'development',
+    mode,
 
-    // ВКЛЮЧАЕМ КЭШ ДАЖЕ В PRODUCTION ДЛЯ ПОВТОРНЫХ СБОРОК
+    // ВКЛЮЧАЕМ КЭШ
     cache: {
       type: 'filesystem',
       buildDependencies: {
@@ -74,7 +89,6 @@ module.exports = (env, argv) => {
           },
         })
       ] : [],
-      // ОТКЛЮЧАЕМ SPLIT CHUNKS В DEVELOPMENT ДЛЯ СКОРОСТИ
       splitChunks: isProduction ? {
         chunks: 'all',
         cacheGroups: {
@@ -93,18 +107,17 @@ module.exports = (env, argv) => {
       contentBase: path.resolve(__dirname, 'dist'),
       publicPath: '/dist/',
       hot: true,
+      hotOnly: true, // ← отключает Live Reload, если HMR сломан
       inline: true,
       compress: true,
       port: 8080,
       stats: 'minimal',
       open: true,
-      // КРИТИЧНО ДЛЯ СКОРОСТИ HMR
       watchOptions: {
         ignored: /node_modules/,
-        aggregateTimeout: 200, // Уменьшаем задержку
-        poll: 1000,
+        aggregateTimeout: 50, // ← уменьшено с 200 до 50
+        // poll: 1000 — УДАЛЕНО (критично для Windows!)
       },
-      // УСКОРЯЕМ DEV SERVER
       writeToDisk: false,
       lazy: false,
     },
@@ -117,32 +130,27 @@ module.exports = (env, argv) => {
         },
         {
           test: /\.(sass|scss)$/i,
-          // ИСПОЛЬЗУЕМ УПРОЩЕННУЮ КОНФИГУРАЦИЮ ДЛЯ СКОРОСТИ
-          use: [
-            // В DEVELOPMENT - ТОЛЬКО style-loader ДЛЯ МГНОВЕННОГО HMR
-            isDevelopment ? 'style-loader' : {
-              loader: MiniCssExtractPlugin.loader,
-              options: { publicPath: '../' }
-            },
-            {
-              loader: 'css-loader',
-              options: {
-                sourceMap: !isProduction,
-                url: false,
-                // УБИРАЕМ importLoaders ДЛЯ СКОРОСТИ
-              }
-            },
-            // В DEVELOPMENT - БЕЗ postcss-loader ДЛЯ СКОРОСТИ
-            ...(isProduction ? [
+          use: (() => {
+            const loaders = [
+              isDevelopment ? 'style-loader' : {
+                loader: MiniCssExtractPlugin.loader,
+                options: { publicPath: '../' }
+              },
               {
+                loader: 'css-loader',
+                options: {
+                  sourceMap: !isProduction,
+                  url: false,
+                }
+              },
+              // postcss-loader ТОЛЬКО в production
+              ...(isProduction ? [{
                 loader: 'postcss-loader',
                 options: {
                   sourceMap: !isProduction,
                   postcssOptions: {
                     plugins: [
-                      // eslint-disable-next-line global-require
                       require('autoprefixer')(),
-                      // eslint-disable-next-line global-require
                       require('cssnano')({
                         preset: ['default', {
                           discardComments: { removeAll: true },
@@ -151,23 +159,33 @@ module.exports = (env, argv) => {
                     ]
                   }
                 }
-              }
-            ] : []),
-            {
-              loader: 'sass-loader',
-              options: {
-                sourceMap: !isProduction,
-                // eslint-disable-next-line global-require
-                implementation: require('sass'),
-                sassOptions: {
-                  quietDeps: true,
-                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
-                  // ВКЛЮЧАЕМ КЭШ ДЛЯ SASS
-                  cache: true,
+              }] : []),
+              {
+                loader: 'sass-loader',
+                options: {
+                  sourceMap: !isProduction,
+                  implementation: require('sass'),
+                  sassOptions: {
+                    quietDeps: true,
+                    silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
+                    cache: true,
+                  }
                 }
               }
-            }
-          ]
+            ];
+
+            // 🔍 ЛОГ ЛОАДЕРОВ
+            console.log('🎨 SCSS Loaders:');
+            loaders.forEach((l, i) => {
+              const name = typeof l === 'string'
+                ? l
+                : (l.loader || l.constructor?.name || '[object Object]');
+              console.log(`  ${i + 1}. ${name}`);
+            });
+            console.log('');
+
+            return loaders;
+          })()
         },
         {
           test: /\.pug$/,
@@ -182,7 +200,8 @@ module.exports = (env, argv) => {
             }
           ]
         },
-        {
+        // ESLint отключён в dev (временно)
+        ...(isProduction ? [{
           enforce: 'pre',
           test: /\.js$/,
           exclude: /node_modules/,
@@ -191,7 +210,7 @@ module.exports = (env, argv) => {
             cache: true,
             cacheIdentifier: 'eslint-cache'
           }
-        },
+        }] : []),
         {
           test: /\.js$/,
           exclude: /node_modules/,
@@ -211,7 +230,6 @@ module.exports = (env, argv) => {
     plugins: [
       new VueLoaderPlugin(),
 
-      // MiniCssExtractPlugin ТОЛЬКО ДЛЯ PRODUCTION
       ...(isProduction ? [
         new MiniCssExtractPlugin({
           filename: './css/all.css'
@@ -224,13 +242,10 @@ module.exports = (env, argv) => {
       ]),
 
       new webpack.DefinePlugin({
-        'process.env.NODE_ENV': JSON.stringify(argv.mode || 'development')
+        'process.env.NODE_ENV': JSON.stringify(mode)
       }),
 
-      // ДОБАВЛЯЕМ HOT MODULE REPLACEMENT ДЛЯ DEVELOPMENT
-      ...(isDevelopment ? [
-        new webpack.HotModuleReplacementPlugin(),
-      ] : []),
+      ...(isDevelopment ? [new webpack.HotModuleReplacementPlugin()] : []),
     ],
 
     resolve: {
