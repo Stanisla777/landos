@@ -11,44 +11,224 @@ i ｢wdm｣: Compiled successfully.
 ----------------------------------------------------------
 
 
-C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\copy-webpack-plugin\node_modules\schema-utils\src\validateOptions.js:32
-    throw new ValidationError(ajv.errors, name);
-    ^
+const path = require('path');
+const fs = require('fs');
+const webpack = require('webpack');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
-ValidationError: CopyPlugin Invalid Options
-
-options should be array
-
-    at validateOptions (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\copy-webpack-plugin\node_modules\schema-utils\src\validateOptions.js:32:11)
-    at new CopyPlugin (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\copy-webpack-plugin\dist\index.js:26:30)
-    at module.exports (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\webpack.config.js:195:7)
-    at handleFunction (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack-cli\bin\utils\prepareOptions.js:21:13)
-    at prepareOptions (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack-cli\bin\utils\prepareOptions.js:9:5)
-    at requireConfig (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack-cli\bin\utils\convert-argv.js:117:14)
-    at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack-cli\bin\utils\convert-argv.js:123:17
-    at Array.forEach (<anonymous>)
-    at module.exports (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack-cli\bin\utils\convert-argv.js:121:15)
-    at Object.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack-dev-server\bin\webpack-dev-server.js:84:40)
-    at Module._compile (node:internal/modules/cjs/loader:1364:14)
-    at Module._extensions..js (node:internal/modules/cjs/loader:1422:10)
-    at Module.load (node:internal/modules/cjs/loader:1203:32)
-    at Module._load (node:internal/modules/cjs/loader:1019:12)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:128:12)
-    at node:internal/main/run_main_module:28:49 {
-  errors: [
-    {
-      keyword: 'type',
-      dataPath: '',
-      schemaPath: '#/type',
-      params: { type: 'array' },
-      message: 'should be array'
-    }
-  ]
+function generateHtmlPlugins(templateDir) {
+  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return templateFiles.map((item) => {
+    const parts = item.split('.');
+    const name = parts[0];
+    const extension = parts[1];
+    return new HtmlWebpackPlugin({
+      filename: `${name}.html`,
+      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
+      inject: true,
+      chunks: ['main'] // Убрали styles из chunks - стили инжектятся автоматически
+    });
+  });
 }
 
-Node.js v18.20.4
-npm notice
-npm notice New major version of npm available! 10.7.0 -> 11.6.2
-npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
-npm notice To update run: npm install -g npm@11.6.2
-npm notice
+module.exports = (env, argv) => {
+  const isProduction = argv.mode === 'production';
+  const isDevelopment = !isProduction;
+
+  const config = {
+    entry: {
+      main: './src/js/index.js',
+      // Убрали отдельный entry point для стилей - они импортируются через JS
+    },
+    output: {
+      filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
+      publicPath: '/dist/',
+      chunkFilename: isProduction ? './js/[name].[contenthash:8].chunk.js' : './js/[name].chunk.js',
+    },
+    devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
+    mode: argv.mode || 'development',
+    cache: {
+      type: isDevelopment ? 'filesystem' : false, // Включение кэширования файловой системы
+      buildDependencies: {
+        config: [__filename] // Инвалидация кэша при изменении конфига
+      }
+    },
+    optimization: {
+      minimize: isProduction,
+      minimizer: isProduction ? [
+        new TerserPlugin({
+          parallel: true,
+          terserOptions: {
+            compress: {
+              drop_console: true, // Удаление console.log в production
+            },
+          },
+        })
+      ] : [],
+      splitChunks: {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+        },
+      },
+    },
+    performance: { hints: false },
+    devServer: isProduction ? undefined : {
+      contentBase: path.resolve(__dirname, 'dist'),
+      publicPath: '/dist/',
+      hot: true,
+      inline: true,
+      compress: true,
+      port: 8080,
+      stats: 'minimal',
+      open: true,
+      watchOptions: {
+        ignored: /node_modules/, // Игнорировать node_modules для ускорения
+        aggregateTimeout: 300, // Задержка перед пересборкой
+      }
+    },
+    module: {
+      rules: [
+        {
+          test: /\.vue$/,
+          loader: 'vue-loader',
+        },
+        {
+          test: /\.(sass|scss)$/i,
+          use: [
+            isDevelopment ? {
+              loader: 'style-loader',
+              options: {
+                injectType: 'singletonStyleTag' // Все стили в один тег для HMR
+              }
+            } : {
+              loader: MiniCssExtractPlugin.loader,
+              options: {
+                publicPath: '../' // Корректные пути для изображений/шрифтов
+              }
+            },
+            {
+              loader: 'css-loader',
+              options: {
+                sourceMap: !isProduction,
+                url: false,
+                importLoaders: 2 // Обеспечивает применение postcss и sass к импортам
+              }
+            },
+            ...(isProduction ? [
+              {
+                loader: 'postcss-loader',
+                options: {
+                  sourceMap: !isProduction,
+                  postcssOptions: {
+                    plugins: [
+                      // eslint-disable-next-line global-require
+                      require('autoprefixer')(),
+                      // eslint-disable-next-line global-require
+                      require('cssnano')({
+                        preset: ['default', {
+                          discardComments: { removeAll: true },
+                          normalizeWhitespace: false
+                        }]
+                      })
+                    ]
+                  }
+                }
+              }
+            ] : []),
+            {
+              loader: 'sass-loader',
+              options: {
+                sourceMap: !isProduction,
+                // eslint-disable-next-line global-require
+                implementation: require('sass'),
+                sassOptions: {
+                  quietDeps: true,
+                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
+                }
+              }
+            }
+          ]
+        },
+        {
+          test: /\.pug$/,
+          oneOf: [
+            {
+              include: path.resolve(__dirname, 'src/pug/'),
+              exclude: /\.vue$/,
+              use: ['pug-loader']
+            },
+            {
+              use: ['pug-plain-loader']
+            }
+          ]
+        },
+        {
+          enforce: 'pre',
+          test: /\.js$/,
+          exclude: /node_modules/,
+          loader: 'eslint-loader',
+          options: {
+            cache: true,
+            cacheIdentifier: 'eslint-cache' // Ключ для кэша
+          }
+        },
+        {
+          test: /\.js$/,
+          exclude: /node_modules/,
+          use: [
+            {
+              loader: 'babel-loader',
+              options: {
+                cacheDirectory: true,
+                cacheCompression: false // Ускоряет development
+              }
+            }
+          ]
+        }
+      ]
+    },
+    plugins: [
+      new VueLoaderPlugin(),
+      ...(isProduction ? [
+        new MiniCssExtractPlugin({
+          filename: './css/[name].[contenthash:8].css',
+          chunkFilename: './css/[name].[contenthash:8].chunk.css'
+        })
+      ] : []),
+      new CopyWebpackPlugin({
+        patterns: [
+          { from: './src/fonts', to: './fonts' },
+          { from: './src/img', to: './img' }
+        ]
+      }),
+      new webpack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify(argv.mode || 'development')
+      })
+    ],
+    resolve: {
+      alias: {
+        vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js'
+      },
+      extensions: ['.js', '.vue', '.json']
+    }
+  };
+
+  if (isProduction) {
+    config.plugins.push(new CleanWebpackPlugin());
+  } else {
+    config.plugins.push(new webpack.HotModuleReplacementPlugin());
+    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
+  }
+
+  return config;
+};
