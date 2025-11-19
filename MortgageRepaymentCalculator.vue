@@ -47,16 +47,18 @@ module.exports = (env, argv) => {
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
       publicPath: '/dist/',
-      chunkFilename: isProduction ? './js/[name].[contenthash:8].chunk.js' : './js/[name].chunk.js',
     },
     devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
     mode: argv.mode || 'development',
+    
+    // ВКЛЮЧАЕМ КЭШ ДАЖЕ В PRODUCTION ДЛЯ ПОВТОРНЫХ СБОРОК
     cache: {
-      type: 'filesystem', // Кэш для всех режимов
+      type: 'filesystem',
       buildDependencies: {
         config: [__filename]
       }
     },
+
     optimization: {
       minimize: isProduction,
       minimizer: isProduction ? [
@@ -69,7 +71,8 @@ module.exports = (env, argv) => {
           },
         })
       ] : [],
-      splitChunks: {
+      // ОТКЛЮЧАЕМ SPLIT CHUNKS В DEVELOPMENT ДЛЯ СКОРОСТИ
+      splitChunks: isProduction ? {
         chunks: 'all',
         cacheGroups: {
           vendor: {
@@ -78,14 +81,12 @@ module.exports = (env, argv) => {
             chunks: 'all',
           },
         },
-      },
-      // Ускоряет сборку в development
-      removeAvailableModules: false,
-      removeEmptyChunks: false,
-      splitChunks: false,
+      } : false,
     },
+
     performance: { hints: false },
-    devServer: isProduction ? undefined : {
+    
+    devServer: {
       contentBase: path.resolve(__dirname, 'dist'),
       publicPath: '/dist/',
       hot: true,
@@ -94,13 +95,17 @@ module.exports = (env, argv) => {
       port: 8080,
       stats: 'minimal',
       open: true,
+      // КРИТИЧНО ДЛЯ СКОРОСТИ HMR
       watchOptions: {
         ignored: /node_modules/,
-        aggregateTimeout: 300,
+        aggregateTimeout: 200, // Уменьшаем задержку
+        poll: 1000,
       },
-      // Ускоряет dev server
+      // УСКОРЯЕМ DEV SERVER
       writeToDisk: false,
+      lazy: false,
     },
+
     module: {
       rules: [
         {
@@ -109,28 +114,22 @@ module.exports = (env, argv) => {
         },
         {
           test: /\.(sass|scss)$/i,
+          // ИСПОЛЬЗУЕМ УПРОЩЕННУЮ КОНФИГУРАЦИЮ ДЛЯ СКОРОСТИ
           use: [
-            // Development: быстрый HMR, Production: отдельный файл
-            isDevelopment ? {
-              loader: 'style-loader',
-              options: {
-                injectType: 'singletonStyleTag',
-                attributes: { 'data-hmr': 'true' }
-              }
-            } : {
+            // В DEVELOPMENT - ТОЛЬКО style-loader ДЛЯ МГНОВЕННОГО HMR
+            isDevelopment ? 'style-loader' : {
               loader: MiniCssExtractPlugin.loader,
-              options: {
-                publicPath: '../'
-              }
+              options: { publicPath: '../' }
             },
             {
               loader: 'css-loader',
               options: {
                 sourceMap: !isProduction,
                 url: false,
-                importLoaders: 1 // Только sass-loader для development
+                // УБИРАЕМ importLoaders ДЛЯ СКОРОСТИ
               }
             },
+            // В DEVELOPMENT - БЕЗ postcss-loader ДЛЯ СКОРОСТИ
             ...(isProduction ? [
               {
                 loader: 'postcss-loader',
@@ -142,7 +141,6 @@ module.exports = (env, argv) => {
                       require('cssnano')({
                         preset: ['default', {
                           discardComments: { removeAll: true },
-                          normalizeWhitespace: false
                         }]
                       })
                     ]
@@ -158,8 +156,8 @@ module.exports = (env, argv) => {
                 sassOptions: {
                   quietDeps: true,
                   silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
-                  // Ускоряет компиляцию SASS
-                  outputStyle: isDevelopment ? 'expanded' : 'compressed'
+                  // ВКЛЮЧАЕМ КЭШ ДЛЯ SASS
+                  cache: true,
                 }
               }
             }
@@ -203,38 +201,43 @@ module.exports = (env, argv) => {
         }
       ]
     },
+
     plugins: [
       new VueLoaderPlugin(),
-      // MiniCssExtractPlugin только для production
+      
+      // MiniCssExtractPlugin ТОЛЬКО ДЛЯ PRODUCTION
       ...(isProduction ? [
         new MiniCssExtractPlugin({
           filename: './css/all.css'
         })
       ] : []),
+
       new CopyWebpackPlugin([
         { from: './src/fonts', to: './fonts' },
         { from: './src/img', to: './img' }
       ]),
+
       new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(argv.mode || 'development')
-      })
+      }),
+
+      // ДОБАВЛЯЕМ HOT MODULE REPLACEMENT ДЛЯ DEVELOPMENT
+      ...(isDevelopment ? [
+        new webpack.HotModuleReplacementPlugin(),
+      ] : []),
     ],
+
     resolve: {
       alias: {
         vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js'
       },
       extensions: ['.js', '.vue', '.json']
     },
-    // Игнорировать ненужное для ускорения
-    watchOptions: {
-      ignored: /node_modules/
-    }
   };
 
   if (isProduction) {
     config.plugins.push(new CleanWebpackPlugin());
   } else {
-    config.plugins.push(new webpack.HotModuleReplacementPlugin());
     config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
   }
 
