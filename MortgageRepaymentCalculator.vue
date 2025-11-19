@@ -10,6 +10,9 @@ i ｢wdm｣: Compiled successfully.
 
 ----------------------------------------------------------
 
+[WDS] Hot Module Replacement enabled.
+index.js?http://localhost:8080:52 [WDS] Live Reloading enabled.
+
 
 const path = require('path');
 const fs = require('fs');
