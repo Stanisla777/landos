@@ -10,7 +10,7 @@ npm install concurrently@8.2.2 --save-dev
 start-webapck-template@2.0.0 C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf
 `-- (empty)
 
-
+ModuleParseError: Module parse failed: Unexpected character '�'
 2092 modules
 i ｢wdm｣: Compiled successfully.
 
