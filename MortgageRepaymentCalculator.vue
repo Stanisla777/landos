@@ -31,7 +31,7 @@ function generateHtmlPlugins(templateDir) {
       filename: `${name}.html`,
       template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
       inject: true,
-      chunks: ['main'] // Убрали styles из chunks - стили инжектятся автоматически
+      chunks: ['main']
     });
   });
 }
@@ -43,7 +43,6 @@ module.exports = (env, argv) => {
   const config = {
     entry: {
       main: './src/js/index.js',
-      // Убрали отдельный entry point для стилей - они импортируются через JS
     },
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
@@ -53,9 +52,9 @@ module.exports = (env, argv) => {
     devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
     mode: argv.mode || 'development',
     cache: {
-      type: isDevelopment ? 'filesystem' : false, // Включение кэширования файловой системы
+      type: 'filesystem', // Кэш для всех режимов
       buildDependencies: {
-        config: [__filename] // Инвалидация кэша при изменении конфига
+        config: [__filename]
       }
     },
     optimization: {
@@ -65,7 +64,7 @@ module.exports = (env, argv) => {
           parallel: true,
           terserOptions: {
             compress: {
-              drop_console: true, // Удаление console.log в production
+              drop_console: true,
             },
           },
         })
@@ -80,6 +79,10 @@ module.exports = (env, argv) => {
           },
         },
       },
+      // Ускоряет сборку в development
+      removeAvailableModules: false,
+      removeEmptyChunks: false,
+      splitChunks: false,
     },
     performance: { hints: false },
     devServer: isProduction ? undefined : {
@@ -92,9 +95,11 @@ module.exports = (env, argv) => {
       stats: 'minimal',
       open: true,
       watchOptions: {
-        ignored: /node_modules/, // Игнорировать node_modules для ускорения
-        aggregateTimeout: 300, // Задержка перед пересборкой
-      }
+        ignored: /node_modules/,
+        aggregateTimeout: 300,
+      },
+      // Ускоряет dev server
+      writeToDisk: false,
     },
     module: {
       rules: [
@@ -105,15 +110,17 @@ module.exports = (env, argv) => {
         {
           test: /\.(sass|scss)$/i,
           use: [
+            // Development: быстрый HMR, Production: отдельный файл
             isDevelopment ? {
               loader: 'style-loader',
               options: {
-                injectType: 'singletonStyleTag' // Все стили в один тег для HMR
+                injectType: 'singletonStyleTag',
+                attributes: { 'data-hmr': 'true' }
               }
             } : {
               loader: MiniCssExtractPlugin.loader,
               options: {
-                publicPath: '../' // Корректные пути для изображений/шрифтов
+                publicPath: '../'
               }
             },
             {
@@ -121,7 +128,7 @@ module.exports = (env, argv) => {
               options: {
                 sourceMap: !isProduction,
                 url: false,
-                importLoaders: 2 // Обеспечивает применение postcss и sass к импортам
+                importLoaders: 1 // Только sass-loader для development
               }
             },
             ...(isProduction ? [
@@ -131,9 +138,7 @@ module.exports = (env, argv) => {
                   sourceMap: !isProduction,
                   postcssOptions: {
                     plugins: [
-                      // eslint-disable-next-line global-require
                       require('autoprefixer')(),
-                      // eslint-disable-next-line global-require
                       require('cssnano')({
                         preset: ['default', {
                           discardComments: { removeAll: true },
@@ -149,11 +154,12 @@ module.exports = (env, argv) => {
               loader: 'sass-loader',
               options: {
                 sourceMap: !isProduction,
-                // eslint-disable-next-line global-require
                 implementation: require('sass'),
                 sassOptions: {
                   quietDeps: true,
-                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
+                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
+                  // Ускоряет компиляцию SASS
+                  outputStyle: isDevelopment ? 'expanded' : 'compressed'
                 }
               }
             }
@@ -179,7 +185,7 @@ module.exports = (env, argv) => {
           loader: 'eslint-loader',
           options: {
             cache: true,
-            cacheIdentifier: 'eslint-cache' // Ключ для кэша
+            cacheIdentifier: 'eslint-cache'
           }
         },
         {
@@ -190,7 +196,7 @@ module.exports = (env, argv) => {
               loader: 'babel-loader',
               options: {
                 cacheDirectory: true,
-                cacheCompression: false // Ускоряет development
+                cacheCompression: false
               }
             }
           ]
@@ -199,10 +205,10 @@ module.exports = (env, argv) => {
     },
     plugins: [
       new VueLoaderPlugin(),
+      // MiniCssExtractPlugin только для production
       ...(isProduction ? [
         new MiniCssExtractPlugin({
-          filename: './css/[name].[contenthash:8].css',
-          chunkFilename: './css/[name].[contenthash:8].chunk.css'
+          filename: './css/all.css'
         })
       ] : []),
       new CopyWebpackPlugin([
@@ -218,6 +224,10 @@ module.exports = (env, argv) => {
         vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js'
       },
       extensions: ['.js', '.vue', '.json']
+    },
+    // Игнорировать ненужное для ускорения
+    watchOptions: {
+      ignored: /node_modules/
     }
   };
 
@@ -230,6 +240,3 @@ module.exports = (env, argv) => {
 
   return config;
 };
-
-
-
