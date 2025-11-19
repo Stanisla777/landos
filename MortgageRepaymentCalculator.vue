@@ -50,7 +50,7 @@ module.exports = (env, argv) => {
     },
     devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
     mode: argv.mode || 'development',
-    
+
     // ВКЛЮЧАЕМ КЭШ ДАЖЕ В PRODUCTION ДЛЯ ПОВТОРНЫХ СБОРОК
     cache: {
       type: 'filesystem',
@@ -85,7 +85,7 @@ module.exports = (env, argv) => {
     },
 
     performance: { hints: false },
-    
+
     devServer: {
       contentBase: path.resolve(__dirname, 'dist'),
       publicPath: '/dist/',
@@ -137,7 +137,9 @@ module.exports = (env, argv) => {
                   sourceMap: !isProduction,
                   postcssOptions: {
                     plugins: [
+                      // eslint-disable-next-line global-require
                       require('autoprefixer')(),
+                      // eslint-disable-next-line global-require
                       require('cssnano')({
                         preset: ['default', {
                           discardComments: { removeAll: true },
@@ -152,6 +154,7 @@ module.exports = (env, argv) => {
               loader: 'sass-loader',
               options: {
                 sourceMap: !isProduction,
+                // eslint-disable-next-line global-require
                 implementation: require('sass'),
                 sassOptions: {
                   quietDeps: true,
@@ -204,7 +207,7 @@ module.exports = (env, argv) => {
 
     plugins: [
       new VueLoaderPlugin(),
-      
+
       // MiniCssExtractPlugin ТОЛЬКО ДЛЯ PRODUCTION
       ...(isProduction ? [
         new MiniCssExtractPlugin({
