@@ -179,15 +179,8 @@ const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-  // ✅ Добавьте эти 3 строки В САМОЕ НАЧАЛО exports:
-  context: __dirname,
-  cache: {
-    type: 'filesystem',
-    cacheDirectory: path.resolve(__dirname, 'node_modules/.cache/webpack-css')
-  },
-
   mode: 'development',
-  entry: './src/scss/style.scss',
+  entry: './src/scss/main.scss', // или style.scss
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'css/.keep',
@@ -197,11 +190,11 @@ module.exports = {
       {
         test: /\.(sass|scss)$/i,
         use: [
-          MiniCssExtractPlugin.loader,
-          'css-loader',
-          'cache-loader',
+          MiniCssExtractPlugin.loader, // 1. Извлекает CSS в файл
+          'css-loader',                 // 2. Обрабатывает @import, url()
+          'cache-loader',               // 3. Кеширует результат css-loader
           {
-            loader: 'sass-loader',
+            loader: 'sass-loader',      // 4. Компилирует Sass → CSS
             options: {
               implementation: require('sass'),
               sassOptions: {
