@@ -6,6 +6,18 @@ npm install --save-dev cross-env
 npm install concurrently@8.2.2 --save-dev
 
 
+
+npm notice
+npm notice New major version of npm available! 10.7.0 -> 11.6.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+npm notice To update run: npm install -g npm@11.6.2
+npm notice
+npm error code ETARGET
+npm error notarget No matching version found for @vkid/captcha@^1.0.4.
+npm error notarget In most cases you or one of your dependencies are requesting
+npm error notarget a package version that doesn't exist.
+
+
 2092 modules
 i ｢wdm｣: Compiled successfully.
 
