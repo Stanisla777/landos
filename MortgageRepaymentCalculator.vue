@@ -38,23 +38,31 @@ function generateHtmlPlugins(templateDir) {
       filename: name + '.html',
       template: path.resolve(__dirname, templateDir + '/' + name + '.' + extension),
       inject: true,
-      chunks: ['main'] // ← только main (CSS подключается отдельно)
+      chunks: ['main'] // ← только main
     });
   });
 }
 
-// ✅ Определяем, запущен ли dev-server — нужно ТОЛЬКО для HMR
+// 🔍 Отладка: покажем, какие аргументы получает конфиг
+console.log('\n🔍 [DEBUG] process.argv:', process.argv);
+
+// ✅ Определяем dev-server — только для HMR
 const isDevServer = process.argv.some(arg => /webpack-dev-server/.test(arg));
+console.log('🔍 [DEBUG] isDevServer:', isDevServer);
 
 module.exports = function(env, argv) {
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
+  console.log('🔍 [DEBUG] mode:', mode, '| isProduction:', isProduction);
 
-  return {
-    entry: {
-      main: './src/js/index.js'
-      // ← styles УДАЛЁН — его обрабатывает webpack.css.js
-    },
+  const entry = {
+    main: './src/js/index.js'
+    // ← ВНИМАНИЕ: styles НЕТ здесь
+  };
+  console.log('🔍 [DEBUG] Final entry:', entry);
+
+  const config = {
+    entry: entry,
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
       publicPath: '/dist/',
@@ -129,7 +137,7 @@ module.exports = function(env, argv) {
       new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
       new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development') }),
 
-      // ✅ Единственное применение isDevServer
+      // HMR — только для dev-server
       isDevServer && new webpack.HotModuleReplacementPlugin(),
       
       isProduction && new CleanWebpackPlugin()
@@ -140,6 +148,22 @@ module.exports = function(env, argv) {
       extensions: ['.js', '.vue', '.json']
     },
   };
+
+  // ✅ Генерация HTML для дев-режима
+  if (!isProduction) {
+    const htmlPlugins = generateHtmlPlugins('./src/pug/views');
+    console.log('🔍 [DEBUG] HTML plugins added:', htmlPlugins.length, 'files');
+    config.plugins.push(...htmlPlugins);
+  }
+
+  // 🚨 Доп. отладка: покажем все entry points из HtmlWebpackPlugin
+  config.plugins.forEach((plugin, idx) => {
+    if (plugin.constructor.name === 'HtmlWebpackPlugin') {
+      console.log(`🔍 [DEBUG] HtmlWebpackPlugin[${idx}].chunks:`, plugin.options.chunks);
+    }
+  });
+
+  return config;
 };
 
 
