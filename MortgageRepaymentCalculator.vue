@@ -22,50 +22,41 @@ const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 function generateHtmlPlugins(templateDir) {
   const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
-  return templateFiles.map((item) => {
+  return templateFiles.map(function(item) {
     const parts = item.split('.');
     const name = parts[0];
     const extension = parts[1];
     return new HtmlWebpackPlugin({
-      filename: `${name}.html`,
-      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
+      filename: name + '.html',
+      template: path.resolve(__dirname, templateDir + '/' + name + '.' + extension),
       inject: true,
-      chunks: ['main', 'styles'] // ← добавлен чанк 'styles'
+      chunks: ['main', 'styles']
     });
   });
 }
 
-module.exports = (env, argv) => {
-  // 🔍 НАДЁЖНОЕ определение режима
+module.exports = function(env, argv) {
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
   const isDevelopment = mode === 'development';
 
-  // 🔍 ЛОГ РЕЖИМА
-  console.log('\n🔧 Webpack mode:', mode);
-  console.log('🚀 isDevelopment:', isDevelopment);
-  console.log('📦 isProduction:', isProduction);
-  console.log('');
+  // 🔍 (Опционально) Раскомментируйте для отладки:
+  // console.log('\n🔧 Webpack mode:', mode);
+  // console.log('🚀 isDevelopment:', isDevelopment);
+  // console.log('📦 isProduction:', isProduction);
+  // console.log('');
 
   const config = {
     entry: {
       main: './src/js/index.js',
-      styles: './src/js/style-hmr.js', // ← отдельный entry для стилей
+      styles: './src/js/style-hmr.js',
     },
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
       publicPath: '/dist/',
     },
     devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
-    mode,
-
-    // ВКЛЮЧАЕМ КЭШ
-    cache: {
-      type: 'filesystem',
-      buildDependencies: {
-        config: [__filename]
-      }
-    },
+    mode: mode,
 
     optimization: {
       minimize: isProduction,
@@ -97,7 +88,7 @@ module.exports = (env, argv) => {
       contentBase: path.resolve(__dirname, 'dist'),
       publicPath: '/dist/',
       hot: true,
-      hotOnly: true, // ← отключает Live Reload, если HMR сломан
+      hotOnly: true,
       inline: true,
       compress: true,
       port: 8080,
@@ -105,8 +96,8 @@ module.exports = (env, argv) => {
       open: true,
       watchOptions: {
         ignored: /node_modules/,
-        aggregateTimeout: 50, // ← уменьшено с 200 до 50
-        // poll: 1000 — УДАЛЕНО (критично для Windows!)
+        aggregateTimeout: 50,
+        // poll: 1000 — УДАЛЕНО
       },
       writeToDisk: false,
       lazy: false,
@@ -116,66 +107,56 @@ module.exports = (env, argv) => {
       rules: [
         {
           test: /\.vue$/,
-          loader: 'vue-loader',
+          use: [
+            'cache-loader',
+            'vue-loader'
+          ]
         },
         {
           test: /\.(sass|scss)$/i,
-          use: (() => {
-            const loaders = [
-              isDevelopment ? 'style-loader' : {
-                loader: MiniCssExtractPlugin.loader,
-                options: { publicPath: '../' }
-              },
-              {
-                loader: 'css-loader',
-                options: {
-                  sourceMap: !isProduction,
-                  url: false,
-                }
-              },
-              // postcss-loader ТОЛЬКО в production
-              ...(isProduction ? [{
-                loader: 'postcss-loader',
-                options: {
-                  sourceMap: !isProduction,
-                  postcssOptions: {
-                    plugins: [
-                      require('autoprefixer')(),
-                      require('cssnano')({
-                        preset: ['default', {
-                          discardComments: { removeAll: true },
-                        }]
-                      })
-                    ]
-                  }
-                }
-              }] : []),
-              {
-                loader: 'sass-loader',
-                options: {
-                  sourceMap: !isProduction,
-                  implementation: require('sass'),
-                  sassOptions: {
-                    quietDeps: true,
-                    silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
-                    cache: true,
-                  }
+          use: [
+            isDevelopment ? 'style-loader' : {
+              loader: MiniCssExtractPlugin.loader,
+              options: { publicPath: '../' }
+            },
+            {
+              loader: 'css-loader',
+              options: {
+                sourceMap: !isProduction,
+                url: false,
+              }
+            },
+            // postcss-loader только в production
+            isProduction ? {
+              loader: 'postcss-loader',
+              options: {
+                sourceMap: !isProduction,
+                postcssOptions: {
+                  plugins: [
+                    require('autoprefixer')(),
+                    require('cssnano')({
+                      preset: ['default', {
+                        discardComments: { removeAll: true },
+                      }]
+                    })
+                  ]
                 }
               }
-            ];
-
-            // 🔍 ЛОГ ЛОАДЕРОВ
-            console.log('🎨 SCSS Loaders:');
-            loaders.forEach((l, i) => {
-              const name = typeof l === 'string'
-                ? l
-                : (l.loader || l.constructor?.name || '[object Object]');
-              console.log(`  ${i + 1}. ${name}`);
-            });
-            console.log('');
-
-            return loaders;
-          })()
+            } : null,
+            'cache-loader',
+            {
+              loader: 'sass-loader',
+              options: {
+                sourceMap: !isProduction,
+                implementation: require('sass'),
+                sassOptions: {
+                  quietDeps: true,
+                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
+                  // cache: true — УДАЛЕНО: не работает в sass-loader (только CLI)
+                }
+              }
+            }
+          ].filter(Boolean) // удаляет null (когда postcss-loader отключён)
         },
         {
           test: /\.pug$/,
@@ -183,15 +164,18 @@ module.exports = (env, argv) => {
             {
               include: path.resolve(__dirname, 'src/pug/'),
               exclude: /\.vue$/,
-              use: ['pug-loader']
+              use: [
+                'cache-loader',
+                'pug-loader'
+              ]
             },
             {
               use: ['pug-plain-loader']
             }
           ]
         },
-        // ESLint отключён в dev (временно)
-        ...(isProduction ? [{
+        // ESLint только в production
+        isProduction ? {
           enforce: 'pre',
           test: /\.js$/,
           exclude: /node_modules/,
@@ -200,11 +184,12 @@ module.exports = (env, argv) => {
             cache: true,
             cacheIdentifier: 'eslint-cache'
           }
-        }] : []),
+        } : null,
         {
           test: /\.js$/,
           exclude: /node_modules/,
           use: [
+            'cache-loader',
             {
               loader: 'babel-loader',
               options: {
@@ -214,17 +199,15 @@ module.exports = (env, argv) => {
             }
           ]
         }
-      ]
+      ].filter(Boolean)
     },
 
     plugins: [
       new VueLoaderPlugin(),
 
-      ...(isProduction ? [
-        new MiniCssExtractPlugin({
-          filename: './css/all.css'
-        })
-      ] : []),
+      isProduction ? new MiniCssExtractPlugin({
+        filename: './css/all.css'
+      }) : null,
 
       new CopyWebpackPlugin([
         { from: './src/fonts', to: './fonts' },
@@ -235,8 +218,8 @@ module.exports = (env, argv) => {
         'process.env.NODE_ENV': JSON.stringify(mode)
       }),
 
-      ...(isDevelopment ? [new webpack.HotModuleReplacementPlugin()] : []),
-    ],
+      isDevelopment ? new webpack.HotModuleReplacementPlugin() : null
+    ].filter(Boolean),
 
     resolve: {
       alias: {
