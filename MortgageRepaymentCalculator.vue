@@ -25,7 +25,6 @@ const webpack = require('webpack');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
@@ -39,23 +38,22 @@ function generateHtmlPlugins(templateDir) {
       filename: name + '.html',
       template: path.resolve(__dirname, templateDir + '/' + name + '.' + extension),
       inject: true,
-      // styles — только если НЕ dev-server
-      chunks: ['main', ...(process.argv.some(arg => arg.includes('webpack-dev-server')) ? [] : ['styles'])]
+      chunks: ['main'] // ← только main (CSS подключается отдельно)
     });
   });
 }
 
+// ✅ Определяем, запущен ли dev-server — нужно ТОЛЬКО для HMR
+const isDevServer = process.argv.some(arg => /webpack-dev-server/.test(arg));
+
 module.exports = function(env, argv) {
-  const isDevServer = process.argv.some(arg => arg.includes('webpack-dev-server'));
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
-  const isDevServerMode = !isProduction && isDevServer;
 
-  const config = {
+  return {
     entry: {
-      main: './src/js/index.js',
-      // styles — ТОЛЬКО для сборки в файлы (npm run dev / build)
-      ...(isDevServerMode ? {} : { styles: './src/scss/style.scss' })
+      main: './src/js/index.js'
+      // ← styles УДАЛЁН — его обрабатывает webpack.css.js
     },
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
@@ -69,21 +67,13 @@ module.exports = function(env, argv) {
       minimizer: isProduction ? [
         new TerserPlugin({
           parallel: true,
-          terserOptions: {
-            compress: {
-              drop_console: true,
-            },
-          },
+          terserOptions: { compress: { drop_console: true } },
         })
       ] : [],
       splitChunks: isProduction ? {
         chunks: 'all',
         cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'all',
-          },
+          vendor: { test: /[\\/]node_modules[\\/]/, name: 'vendors', chunks: 'all' },
         },
       } : false,
     },
@@ -99,105 +89,57 @@ module.exports = function(env, argv) {
       compress: true,
       port: 8080,
       stats: 'minimal',
-      open: false, // ← отключил автооткрытие (concurrently может дублировать)
-      watchOptions: {
-        ignored: /node_modules/,
-        aggregateTimeout: 50,
-      },
+      open: false,
+      watchOptions: { ignored: /node_modules/, aggregateTimeout: 50 },
       writeToDisk: false,
       lazy: false,
     },
 
     module: {
       rules: [
-        {
-          test: /\.vue$/,
-          use: [
-            'cache-loader',
-            'vue-loader'
-          ]
-        },
-        // 🔴 УДАЛЁН весь блок для sass/scss — его обрабатывает webpack.css.js
+        { test: /\.vue$/, use: ['cache-loader', 'vue-loader'] },
         {
           test: /\.pug$/,
           oneOf: [
-            {
-              include: path.resolve(__dirname, 'src/pug/'),
-              exclude: /\.vue$/,
-              use: [
-                'cache-loader',
-                'pug-loader'
-              ]
-            },
-            {
-              use: ['pug-plain-loader']
-            }
+            { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['cache-loader', 'pug-loader'] },
+            { use: ['pug-plain-loader'] }
           ]
         },
-        // ESLint — только в production
-        isProduction ? {
+        { 
+          test: /\.js$/, 
+          exclude: /node_modules/, 
+          use: [
+            'cache-loader',
+            { loader: 'babel-loader', options: { cacheDirectory: true, cacheCompression: false } }
+          ]
+        },
+        // ESLint — только в prod
+        isProduction && {
           enforce: 'pre',
           test: /\.js$/,
           exclude: /node_modules/,
           loader: 'eslint-loader',
-          options: {
-            cache: true,
-            cacheIdentifier: 'eslint-cache'
-          }
-        } : null,
-        {
-          test: /\.js$/,
-          exclude: /node_modules/,
-          use: [
-            'cache-loader',
-            {
-              loader: 'babel-loader',
-              options: {
-                cacheDirectory: true,
-                cacheCompression: false
-              }
-            }
-          ]
+          options: { cache: true, cacheIdentifier: 'eslint-cache' }
         }
       ].filter(Boolean)
     },
 
     plugins: [
       new VueLoaderPlugin(),
+      new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
+      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development') }),
 
-      // MiniCssExtractPlugin — ТОЛЬКО если НЕ dev-server (для dev/build)
-      (!isDevServerMode) ? new MiniCssExtractPlugin({
-        filename: './css/all.css'
-      }) : null,
-
-      new CopyWebpackPlugin([
-        { from: './src/fonts', to: './fonts' },
-        { from: './src/img', to: './img' }
-      ]),
-
-      new webpack.DefinePlugin({
-        'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development')
-      }),
-
-      // HMR — только для dev-server
-      isDevServerMode ? new webpack.HotModuleReplacementPlugin() : null
+      // ✅ Единственное применение isDevServer
+      isDevServer && new webpack.HotModuleReplacementPlugin(),
+      
+      isProduction && new CleanWebpackPlugin()
     ].filter(Boolean),
 
     resolve: {
-      alias: {
-        vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js'
-      },
+      alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
       extensions: ['.js', '.vue', '.json']
     },
   };
-
-  if (isProduction) {
-    config.plugins.push(new CleanWebpackPlugin());
-  } else {
-    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
-  }
-
-  return config;
 };
 
 
@@ -273,8 +215,11 @@ npm install concurrently@8.2.2 --save-dev
   "dev:css": "webpack --config webpack.css.js --watch --mode development",
   "dev:js": "webpack-dev-server --mode development --hot",
   "start": "concurrently \"npm run dev:css\" \"npm run dev:js\" --kill-others-on-fail --prefix name",
-  "dev": "webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
-  "build": "webpack --mode production",
+
+  "build:css": "webpack --config webpack.css.js --mode development",
+  "dev": "npm run build:css && webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
+
+  "build": "npm run build:css && webpack --mode production",
   "lint": "eslint --ext .js, --ignore-path .gitignore ."
 }
   
