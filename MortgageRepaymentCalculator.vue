@@ -4,6 +4,10 @@ npm install --save-dev postcss@7 --legacy-peer-deps
 npm install --save-dev css-loader@4.3.0 --legacy-peer-deps
 
 
+2092 modules
+i ｢wdm｣: Compiled successfully.
+
+
 const path = require('path');
 const fs = require('fs');
 const webpack = require('webpack'); // ← добавлено для HMR
