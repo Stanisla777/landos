@@ -3,63 +3,13 @@ npx webpack --config webpack.css.js --watch --mode development
 npx webpack-dev-server --mode development --hot --config webpack.config.js
 
 
-// webpack.css.dev.js
-const path = require('path');
+"scripts": {
+  "dev:css": "webpack --config webpack.css.dev.js --watch --mode development",
+  "dev:js": "webpack-dev-server --mode development --hot",
+  "start": "concurrently \"npm run dev:css\" \"npm run dev:js\" --kill-others-on-fail --prefix name",
 
-module.exports = {
-  mode: 'development',
-  entry: './src/scss/style.scss',
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'css/.keep',
-    publicPath: '/'
-  },
-  module: {
-    rules: [
-      {
-        test: /\.(sass|scss)$/i,
-        use: [
-          'style-loader',
-          'css-loader',
-          'cache-loader',
-          {
-            loader: 'sass-loader',
-            options: {
-              implementation: require('sass'),
-              sassOptions: {
-                quietDeps: true,
-                silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
-              }
-            }
-          }
-        ]
-      },
-      // ✅ Заменено на file-loader (Webpack 4)
-      {
-        test: /\.(png|jpe?g|gif|svg|webp)$/i,
-        loader: 'file-loader',
-        options: {
-          name: 'img/[name].[ext]',
-          publicPath: '/dist/'
-        }
-      },
-      {
-        test: /\.(woff2?|eot|ttf|otf)$/i,
-        loader: 'file-loader',
-        options: {
-          name: 'fonts/[name].[ext]',
-          publicPath: '/dist/'
-        }
-      }
-    ]
-  },
-  watchOptions: {
-    ignored: /node_modules/,
-    aggregateTimeout: 50
-  },
-  stats: 'errors-only'
-};
-
-
-npm install file-loader --save-dev
-
+  "build:css": "webpack --config webpack.css.prod.js --mode production",
+  "dev": "npm run build:css && webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
+  "build": "npm run build:css && webpack --mode production",
+  "lint": "eslint --ext .js, --ignore-path .gitignore ."
+}
