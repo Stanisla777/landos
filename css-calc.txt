@@ -3,31 +3,110 @@ npx webpack --config webpack.css.js --watch --mode development
 npx webpack-dev-server --mode development --hot --config webpack.config.js
 
 
-ERROR in ./src/scss/main.scss
-Module build failed (from ./node_modules/mini-css-extract-plugin/dist/loader.js):
-ModuleParseError: Module parse failed: Unexpected character '�' (1:0)
-You may need an appropriate loader to handle this file type, currently no loaders are configured to process this file. See https://webpack.js.org/concepts#loaders
-(Source code omitted for this binary file)
-    at handleParseError (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack\lib\NormalModule.js:469:19)
-    at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack\lib\NormalModule.js:503:5
-    at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack\lib\NormalModule.js:358:12
-    at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\loader-runner\lib\LoaderRunner.js:373:3
-    at iterateNormalLoaders (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\loader-runner\lib\LoaderRunner.js:214:10)
-    at Array.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\loader-runner\lib\LoaderRunner.js:205:4)
-    at Storage.finished (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\enhanced-resolve\lib\CachedInputFileSystem.js:55:16)
-    at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\enhanced-resolve\lib\CachedInputFileSystem.js:91:9
+// webpack.css.dev.js
+const path = require('path');
 
-start-webapck-template@2.0.0 C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf
-`-- mini-css-extract-plugin@0.8.2
+module.exports = {
+  mode: 'development',
+  entry: './src/scss/style.scss',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'css/.keep',
+    publicPath: '/'
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(sass|scss)$/i,
+        use: [
+          'style-loader',          // ← для dev: встраивает в <style>
+          'css-loader',
+          'cache-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              implementation: require('sass'),
+              sassOptions: {
+                quietDeps: true,
+                silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
+              }
+            }
+          }
+        ]
+      },
+      // 🔥 ДОБАВЬТЕ loader для изображений (чтобы не было ошибок с url())
+      {
+        test: /\.(png|jpe?g|gif|svg|webp)$/i,
+        type: 'asset/resource',
+        generator: {
+          filename: 'img/[name][ext]'
+        }
+      },
+      {
+        test: /\.(woff2?|eot|ttf|otf)$/i,
+        type: 'asset/resource',
+        generator: {
+          filename: 'fonts/[name][ext]'
+        }
+      }
+    ]
+  },
+  watchOptions: {
+    ignored: /node_modules/,
+    aggregateTimeout: 50
+  },
+  stats: 'errors-only'
+};
 
-ERROR in ./src/img/border-dotted.png 1:0
-Module parse failed: Unexpected character '�' (1:0)
-You may need an appropriate loader to handle this file type, currently no loaders are configured to process this file. See https://webpack.js.org/concepts#loaders
-(Source code omitted for this binary file)
- @ ./src/scss/main.scss (./node_modules/css-loader/dist/cjs.js!./node_modules/cache-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js??ref--4-3!./src/scss/main.scss) 6:36-71
- @ ./src/scss/main.scss
+-----------------------------------------------
 
+// webpack.css.prod.js
+const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
+module.exports = {
+  mode: 'production',
+  entry: './src/scss/style.scss',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'css/.keep',
+    publicPath: './'
+  },
+  module: {
+    rules: [
+      {
+        test: /\.(sass|scss)$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              implementation: require('sass')
+            }
+          }
+        ]
+      }
+    ]
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: 'css/all.css'
+    })
+  ]
+};
+
+-------------------------------------------
+
+"scripts": {
+  "dev:css": "webpack --config webpack.css.dev.js --watch --mode development",
+  "dev:js": "webpack-dev-server --mode development --hot",
+  "start": "concurrently \"npm run dev:css\" \"npm run dev:js\" --kill-others-on-fail --prefix name",
+
+  "build:css": "webpack --config webpack.css.prod.js --mode production",
+  "dev": "npm run build:css && webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
+  "build": "npm run build:css && webpack --mode production"
+}
 
 
 
