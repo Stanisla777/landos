@@ -34,15 +34,10 @@ module.exports = {
 {
   loader: 'postcss-loader',
   options: {
-    ident: 'postcss', // ← обязательно для v3.0.0
+    ident: 'postcss',
     sourceMap: !isProduction
-    // plugins — НЕ нужно, берётся из postcss.config.js
   }
 }
 
 
-(node:11668) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
-(Use `node --trace-warnings ...` to show where the warning was created)
 
-> start-webapck-template@2.0.0 start
-> node -e "process.env.NODE_ENV='development'; require('child_process').spawnSync('webpack-dev-server', ['--mode','development','--open'], {stdio:'inherit'});"
