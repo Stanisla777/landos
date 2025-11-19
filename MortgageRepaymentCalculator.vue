@@ -13,9 +13,9 @@ i ｢wdm｣: Compiled successfully.
 npm install --save-dev cross-env
 
 "scripts": {
-  "dev": "cross-env NODE_ENV=development webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
-  "build": "cross-env NODE_ENV=production webpack --mode production",
-  "start": "cross-env NODE_ENV=development webpack-dev-server --mode development --open",
+  "dev": "node -e \"process.env.NODE_ENV='development'; require('child_process').spawnSync('webpack', ['--mode','development'], {stdio:'inherit'});\" && prettier --print-width=120 --parser html --write dist/*.html",
+  "build": "node -e \"process.env.NODE_ENV='production'; require('child_process').spawnSync('webpack', ['--mode','production'], {stdio:'inherit'});\"",
+  "start": "node -e \"process.env.NODE_ENV='development'; require('child_process').spawnSync('webpack-dev-server', ['--mode','development','--open'], {stdio:'inherit'});\"",
   "lint": "eslint --ext .js, --ignore-path .gitignore ."
 }
 
