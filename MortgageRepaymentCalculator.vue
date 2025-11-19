@@ -7,7 +7,7 @@ npm install concurrently@8.2.2 --save-dev
 
 
 
-npm install concurrently@8.2.2 --save-dev --no-fund --no-audit --legacy-peer-deps --force
+npm ls @vkid/captcha
 
 
 2092 modules
