@@ -3,137 +3,153 @@ npx webpack --config webpack.css.js --watch --mode development
 npx webpack-dev-server --mode development --hot --config webpack.config.js
 
 
-// webpack.css.dev.js
 const path = require('path');
+const fs = require('fs');
+const webpack = require('webpack');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
-module.exports = {
-  mode: 'development',
-  entry: './src/scss/style.scss',
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'css/.keep',
-    publicPath: '/'
-  },
-  module: {
-    rules: [
-      {
-        test: /\.(sass|scss)$/i,
-        use: [
-          'style-loader',          // ← для dev: встраивает в <style>
-          'css-loader',
-          'cache-loader',
-          {
-            loader: 'sass-loader',
-            options: {
-              implementation: require('sass'),
-              sassOptions: {
-                quietDeps: true,
-                silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
-              }
-            }
-          }
-        ]
-      },
-      // 🔥 ДОБАВЬТЕ loader для изображений (чтобы не было ошибок с url())
-      {
-        test: /\.(png|jpe?g|gif|svg|webp)$/i,
-        type: 'asset/resource',
-        generator: {
-          filename: 'img/[name][ext]'
-        }
-      },
-      {
-        test: /\.(woff2?|eot|ttf|otf)$/i,
-        type: 'asset/resource',
-        generator: {
-          filename: 'fonts/[name][ext]'
-        }
-      }
-    ]
-  },
-  watchOptions: {
-    ignored: /node_modules/,
-    aggregateTimeout: 50
-  },
-  stats: 'errors-only'
-};
-
------------------------------------------------
-
-// webpack.css.prod.js
-const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-
-module.exports = {
-  mode: 'production',
-  entry: './src/scss/style.scss',
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'css/.keep',
-    publicPath: './'
-  },
-  module: {
-    rules: [
-      {
-        test: /\.(sass|scss)$/i,
-        use: [
-          MiniCssExtractPlugin.loader,
-          'css-loader',
-          {
-            loader: 'sass-loader',
-            options: {
-              implementation: require('sass')
-            }
-          }
-        ]
-      }
-    ]
-  },
-  plugins: [
-    new MiniCssExtractPlugin({
-      filename: 'css/all.css'
-    })
-  ]
-};
-
--------------------------------------------
-
-"scripts": {
-  "dev:css": "webpack --config webpack.css.dev.js --watch --mode development",
-  "dev:js": "webpack-dev-server --mode development --hot",
-  "start": "concurrently \"npm run dev:css\" \"npm run dev:js\" --kill-others-on-fail --prefix name",
-
-  "build:css": "webpack --config webpack.css.prod.js --mode production",
-  "dev": "npm run build:css && webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
-  "build": "npm run build:css && webpack --mode production"
+function generateHtmlPlugins(templateDir) {
+  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return templateFiles.map(function(item) {
+    const parts = item.split('.');
+    const name = parts[0];
+    const extension = parts[1];
+    return new HtmlWebpackPlugin({
+      filename: name + '.html',
+      template: path.resolve(__dirname, templateDir + '/' + name + '.' + extension),
+      inject: true,
+      chunks: ['main'] // ← только main
+    });
+  });
 }
 
- Invalid configuration object. Webpack has been initialised using a configuration object that does not match the API schema.
-[]  - configuration.module.rules[2].type should be one of these:
-[]    "javascript/auto" | "javascript/dynamic" | "javascript/esm" | "json" | "webassembly/experimental"
-[]    -> Module type to use for the module
-[] npm notice
-[] npm notice New major version of npm available! 10.7.0 -> 11.6.3
-[] npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.3
-[] npm notice To update run: npm install -g npm@11.6.3
-[] npm notice
-[] npm run dev:css exited with code 1
---> Sending SIGTERM to other processes..
-[]
-[] 🔍 [DEBUG] process.argv: [
-[]   'C:\\Program Files\\nodejs\\node.exe',
-[]   'C:\\Users\\sshchegolev\\PhpstormProjects\\sprosi.dom.rf\\node_modules\\webpack-dev-server\\bin\\webpack-dev-server.js',
-[]   '--mode',
-[]   'development',
-[]   '--hot'
-[] ]
-[] 🔍 [DEBUG] isDevServer: true
-[] 🔍 [DEBUG] mode: development | isProduction: false
+// 🔍 Отладка: покажем, какие аргументы получает конфиг
+console.log('\n🔍 [DEBUG] process.argv:', process.argv);
 
+// ✅ Определяем dev-server — только для HMR
+const isDevServer = process.argv.some(arg => /webpack-dev-server/.test(arg));
+console.log('🔍 [DEBUG] isDevServer:', isDevServer);
 
+module.exports = function(env, argv) {
+  const mode = argv.mode || 'development';
+  const isProduction = mode === 'production';
+  console.log('🔍 [DEBUG] mode:', mode, '| isProduction:', isProduction);
 
+  const entry = {
+    main: './src/js/index.js'
+    // ← ВНИМАНИЕ: styles НЕТ здесь
+  };
+  console.log('🔍 [DEBUG] Final entry:', entry);
 
+  const config = {
+    entry: entry,
+    output: {
+      filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
+      publicPath: '/dist/',
+    },
+    devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
+    mode: mode,
 
+    optimization: {
+      minimize: isProduction,
+      minimizer: isProduction ? [
+        new TerserPlugin({
+          parallel: true,
+          terserOptions: { compress: { drop_console: true } },
+        })
+      ] : [],
+      splitChunks: isProduction ? {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: { test: /[\\/]node_modules[\\/]/, name: 'vendors', chunks: 'all' },
+        },
+      } : false,
+    },
 
+    performance: { hints: false },
 
+    devServer: {
+      contentBase: path.resolve(__dirname, 'dist'),
+      publicPath: '/dist/',
+      hot: true,
+      hotOnly: true,
+      inline: true,
+      compress: true,
+      port: 8080,
+      stats: 'minimal',
+      open: false,
+      watchOptions: { ignored: /node_modules/, aggregateTimeout: 50 },
+      writeToDisk: false,
+      lazy: false,
+    },
 
+    module: {
+      rules: [
+        { test: /\.vue$/, use: ['cache-loader', 'vue-loader'] },
+        {
+          test: /\.pug$/,
+          oneOf: [
+            { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['cache-loader', 'pug-loader'] },
+            { use: ['pug-plain-loader'] }
+          ]
+        },
+        {
+          test: /\.js$/,
+          exclude: /node_modules/,
+          use: [
+            'cache-loader',
+            { loader: 'babel-loader', options: { cacheDirectory: true, cacheCompression: false } }
+          ]
+        },
+        // ESLint — только в prod
+        isProduction && {
+          enforce: 'pre',
+          test: /\.js$/,
+          exclude: /node_modules/,
+          loader: 'eslint-loader',
+          options: { cache: true, cacheIdentifier: 'eslint-cache' }
+        },
+        {
+          test: /\.scss$/,
+          loader: 'ignore-loader'
+        }
+      ].filter(Boolean)
+    },
+
+    plugins: [
+      new VueLoaderPlugin(),
+      new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
+      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development') }),
+
+      // HMR — только для dev-server
+      isDevServer && new webpack.HotModuleReplacementPlugin(),
+
+      isProduction && new CleanWebpackPlugin()
+    ].filter(Boolean),
+
+    resolve: {
+      alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
+      extensions: ['.js', '.vue', '.json']
+    },
+  };
+
+  // ✅ Генерация HTML для дев-режима
+  if (!isProduction) {
+    const htmlPlugins = generateHtmlPlugins('./src/pug/views');
+    console.log('🔍 [DEBUG] HTML plugins added:', htmlPlugins.length, 'files');
+    config.plugins.push(...htmlPlugins);
+  }
+
+  // 🚨 Доп. отладка: покажем все entry points из HtmlWebpackPlugin
+  config.plugins.forEach((plugin, idx) => {
+    if (plugin.constructor.name === 'HtmlWebpackPlugin') {
+      console.log(`🔍 [DEBUG] HtmlWebpackPlugin[${idx}].chunks:`, plugin.options.chunks);
+    }
+  });
+
+  return config;
+};
