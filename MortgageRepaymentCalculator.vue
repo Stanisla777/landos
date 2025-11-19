@@ -7,7 +7,8 @@ npm install concurrently@8.2.2 --save-dev
 
 
 
-npm ls @vkid/captcha
+start-webapck-template@2.0.0 C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf
+`-- (empty)
 
 
 2092 modules
