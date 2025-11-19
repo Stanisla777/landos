@@ -39,3 +39,9 @@ module.exports = {
     // plugins — НЕ нужно, берётся из postcss.config.js
   }
 }
+
+
+npm error code ETARGET
+npm error notarget No matching version found for @vkid/captcha@^1.0.4.
+npm error notarget In most cases you or one of your dependencies are requesting
+npm error notarget a package version that doesn't exist.
