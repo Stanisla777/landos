@@ -41,5 +41,8 @@ module.exports = {
 }
 
 
-npm install --save-dev cross-env --legacy-peer-deps
-npm install --save-dev cross-env --force
+(node:11668) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> start-webapck-template@2.0.0 start
+> node -e "process.env.NODE_ENV='development'; require('child_process').spawnSync('webpack-dev-server', ['--mode','development','--open'], {stdio:'inherit'});"
