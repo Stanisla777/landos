@@ -1,177 +1,229 @@
-.btn_s.black.btn-icon-download-left(@click="exportToPDF" :class="isPdfLoading?'submitting disabled':''") Скачать расчет
+const path = require('path');
+const fs = require('fs');
+const webpack = require('webpack');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
-data(){
-    return {
-      isPdfLoading: false,
+function generateHtmlPlugins(templateDir) {
+  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return templateFiles.map(function(item) {
+    const parts = item.split('.');
+    const name = parts[0];
+    const extension = parts[1];
+    return new HtmlWebpackPlugin({
+      filename: name + '.html',
+      template: path.resolve(__dirname, templateDir + '/' + name + '.' + extension),
+      inject: true,
+      // styles — только если НЕ dev-server
+      chunks: ['main', ...(process.argv.some(arg => arg.includes('webpack-dev-server')) ? [] : ['styles'])]
+    });
+  });
+}
 
-exportToPDF() {
-      const px = (value) => value *0.75;
-      this.isPdfLoading = true;
-      registerGilroy(pdfMake)
-      const ri = this.repayment_information;
-      const hasEarlierMonth = this.repayment_information&&this.repayment_information.if_earlier_month > 0;
-      // Подбираем высоту для блока данные о кредите в зависмости от того есть предложене раньше на или нет
-      const repaymentHeight = hasEarlierMonth ? 250 : 236;
+module.exports = function(env, argv) {
+  // 🔍 Определяем режим запуска
+  const isDevServer = process.argv.some(arg => arg.includes('webpack-dev-server'));
+  const mode = argv.mode || 'development';
+  const isProduction = mode === 'production';
+  const isDevelopmentBuild = !isProduction && !isDevServer; // npm run dev
+  const isDevServerMode = !isProduction && isDevServer;       // npm run start
 
-      setTimeout(() => {
-        const docDefinition = {
-          pageSize: 'A4',
-          pageMargins: [40, 30, 40, 40], //// [left, top, right, bottom]
-          content: [
+  const config = {
+    entry: {
+      main: './src/js/index.js',
+      // styles → только для сборки в файлы (dev и prod), но НЕ для dev-server
+      ...(isDevServerMode ? {} : { styles: './src/scss/style.scss' })
+    },
+    output: {
+      // Без хэшей в dev (для бэкендеров), с хэшами — в prod
+      filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
+      publicPath: '/dist/',
+    },
+    devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
+    mode: mode,
+
+    optimization: {
+      minimize: isProduction,
+      minimizer: isProduction ? [
+        new TerserPlugin({
+          parallel: true,
+          terserOptions: {
+            compress: {
+              drop_console: true,
+            },
+          },
+        })
+      ] : [],
+      splitChunks: isProduction ? {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+        },
+      } : false,
+    },
+
+    performance: { hints: false },
+
+    devServer: {
+      contentBase: path.resolve(__dirname, 'dist'),
+      publicPath: '/dist/',
+      hot: true,
+      hotOnly: true,
+      inline: true,
+      compress: true,
+      port: 8080,
+      stats: 'minimal',
+      open: true,
+      watchOptions: {
+        ignored: /node_modules/,
+        aggregateTimeout: 50,
+      },
+      writeToDisk: false,
+      lazy: false,
+    },
+
+    module: {
+      rules: [
+        {
+          test: /\.vue$/,
+          use: [
+            'cache-loader',
+            'vue-loader'
+          ]
+        },
+        {
+          test: /\.(sass|scss)$/i,
+          use: [
+            // В dev-server — style-loader (fallback, если webpack.css.js упадёт)
+            // В dev/prod — MiniCssExtractPlugin.loader
+            isDevServerMode ? 'style-loader' : {
+              loader: MiniCssExtractPlugin.loader,
+              options: { publicPath: '../' }
+            },
             {
-              columns: [
-                {
-                  stack: [
-                    { text: 'Калькулятор', style: 'headerTitle' },
-                    {
-                      text: 'досрочного погашения',
-                      background: '#daff01',
-                      style: 'headerTitleHighlighted'
-                    },
-                    { text: 'ипотеки', style: 'headerTitle' }
+              loader: 'css-loader',
+              options: {
+                sourceMap: !isProduction,
+                url: false,
+              }
+            },
+            // postcss-loader — только в production
+            isProduction ? {
+              loader: 'postcss-loader',
+              options: {
+                sourceMap: !isProduction,
+                postcssOptions: {
+                  plugins: [
+                    require('autoprefixer')(),
+                    require('cssnano')({
+                      preset: ['default', {
+                        discardComments: { removeAll: true },
+                      }]
+                    })
                   ]
-                },
-                {
-                  stack:[
-                    {
-                      image: 'logo',
-                      width: 104,
-                      link:'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/',
-                      decoration:'none'
-                    }
-                  ],
-                  alignment: 'right'
                 }
-
-              ],
-              margin: [0, 0, 0, this.converPx(15)]
+              }
+            } : null,
+            'cache-loader',
+            {
+              loader: 'sass-loader',
+              options: {
+                sourceMap: !isProduction,
+                implementation: require('sass'),
+                sassOptions: {
+                  quietDeps: true,
+                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
+                }
+              }
+            }
+          ].filter(Boolean)
+        },
+        {
+          test: /\.pug$/,
+          oneOf: [
+            {
+              include: path.resolve(__dirname, 'src/pug/'),
+              exclude: /\.vue$/,
+              use: [
+                'cache-loader',
+                'pug-loader'
+              ]
             },
             {
-              columns: [
-                {
-                  text: `Расчет платежей от ${this.currentDate}`,
-                  style: 'metaText',
-                  width: '*'
-                },
-                {
-                  text: 'Сделать новый расчет',
-                  link: 'https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/kalkulyator-dosrochnogo-pogasheniya-ipoteki/',
-                  style: 'link',
-                  width: 'auto',
-                  alignment: 'right'
-                }
-              ],
-              margin: [0, 0, 0, this.converPx(16)]
-            },
-
-            this.createInfoBlock('Расчет носит справочный характер и не может быть основанием для совершения юридически значимых действий'),
-
-            this.createSectionBox(this.createMortgageSection(), 278),
-            this.createSectionBox(this.createRepaymentSection(), repaymentHeight),
-            (this.holidays_term && this.holidays_term !== 0)
-              ? this.createSectionBox(this.createHolidaysSection(), 155)
-              : {},
-
-            // Отступ после каникул
-            (this.holidays_term && this.holidays_term !== 0)
-              ? { text: '', margin: [0, 0, 0, 50] }
-              : {},
-
-            // График платежей
-            {
-              stack: [
-                { text: 'График платежей', style: 'sheduleTitle' },
-                this.createSheduleBlocks()
-              ],
-              margin: [this.converPx(16), this.converPx(32 - 16), 0, 16]
+              use: ['pug-plain-loader']
             }
-          ],
-
-
-          images: {
-            logo: logoBase64,
-            iconSymbol: iconSymbolBase64
-          },
-
-          styles: {
-            headerTitle: { fontSize: this.converPx(22), bold: true, color: '#252628' },
-            headerTitleHighlighted: { fontSize: this.converPx(22), bold: true, color: '#252628' },
-            metaText: { fontSize: this.converPx(16),bold: true, color: '#252628' },
-            link: { fontSize: this.converPx(14), color: '#252628', decoration: 'underline' },
-            infoText: { fontSize: this.converPx(14), color: '#252628',lineHeight:1.4 },
-            sectionTitle: { fontSize: this.converPx(20), bold: true, color: '#252628', margin: [0, 0, 0, this.converPx(24)] },
-            sectionTitleRepayment: { fontSize: this.converPx(20), bold: true, color: '#252628', margin: [0, 0, 0, this.converPx(16)] },
-            label: { fontSize: this.converPx(16), bold: true, color: '#252628', margin: [0, 0, 0, this.converPx(8)] },
-            labelGrey: { fontSize: this.converPx(14), bold: true, color: '#6d6d6d', margin: [0, 0, 0, this.converPx(8)] },
-            mortgageValue: { fontSize: this.converPx(14), bold: true, color: '#252628' },
-            repaymentValue: { fontSize: this.converPx(16), bold: true, color: '#252628', margin: [0, 0, 0, 0] },
-            repaymentValueGreen: { fontSize: this.converPx(12), color: '#699b12', margin: [0, 0, 0, 0] },
-            repaymentValueGreenKey: { fontSize: this.converPx(16), bold: true, color: '#699b12', margin: [0, 0, 0, 0] },
-            valueInline: { fontSize: this.converPx(14), color: '#252628' },
-            valueNoMargin: { fontSize: this.converPx(16), bold: true, color: '#252628', margin: [0, 0, 0, 2] },
-
-            // Стили для графика платежей
-            sheduleTitle: {
-              fontSize: this.converPx(20),
-              bold: true,
-              color: '#252628',
-              margin: [0, 0, 0, this.converPx(16)]
-            },
-            sheduleItemLabel: {
-              fontSize: this.converPx(12),
-              color: '#6d6d6d',
-              margin: [0, 0, 0, 5]
-            },
-            sheduleItemLabelGreen: {
-              fontSize: this.converPx(12),
-              color: '#699b12',
-              margin: [0, 0, 0, 5]
-            },
-
-            sheduleItemValue: {
-              fontSize: this.converPx(14),
-              color: '#252628'
-            },
-            sheduleItemValueGreen: {
-              fontSize: this.converPx(14),
-              color: '#699b12'
-            },
-
-            sheduleItemValueDate: {
-              fontSize: this.converPx(16),
-              color: '#252628',
-              bold: true,
-            },
-
-            holidayBadge: {
-              fontSize: 10,
-              color: '#fff',
-              background: '#252628',
-              padding: [2, 8, 2, 8],
-              margin: [0, 0, 12, 0]
-            },
-            holidayValue: {
-              fontSize: this.converPx(14),
-              color: '#252628',
-              margin: [0, 3, 0, 0]
-            },
-            holidayBadgeText: {
-              fontSize: this.converPx(12),
-              color: '#fff',
-              margin: [0, 0, 0, 0] // отступы задаются вручную
-            }
-          },
-
-          defaultStyle: {
-            font: 'Gilroy',
-            fontSize: 10,
+          ]
+        },
+        // ESLint — только в production
+        isProduction ? {
+          enforce: 'pre',
+          test: /\.js$/,
+          exclude: /node_modules/,
+          loader: 'eslint-loader',
+          options: {
+            cache: true,
+            cacheIdentifier: 'eslint-cache'
           }
-        };
-        const pdfDoc = pdfMake.createPdf(docDefinition);
+        } : null,
+        {
+          test: /\.js$/,
+          exclude: /node_modules/,
+          use: [
+            'cache-loader',
+            {
+              loader: 'babel-loader',
+              options: {
+                cacheDirectory: true,
+                cacheCompression: false
+              }
+            }
+          ]
+        }
+      ].filter(Boolean)
+    },
 
-        pdfDoc.download(`СПРОСИ.ДОМ.РФ.Расчет платежей от ${this.currentDate}.pdf`, () => {
-          this.isPdfLoading = false;
-        });
-      }, 300);
+    plugins: [
+      new VueLoaderPlugin(),
 
-    }
+      // MiniCssExtractPlugin — для dev-сборки и prod, но НЕ для dev-server
+      (!isDevServerMode) ? new MiniCssExtractPlugin({
+        filename: './css/all.css'
+      }) : null,
+
+      new CopyWebpackPlugin([
+        { from: './src/fonts', to: './fonts' },
+        { from: './src/img', to: './img' }
+      ]),
+
+      new webpack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development')
+      }),
+
+      // HMR — только для dev-server
+      isDevServerMode ? new webpack.HotModuleReplacementPlugin() : null
+    ].filter(Boolean),
+
+    resolve: {
+      alias: {
+        vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js'
+      },
+      extensions: ['.js', '.vue', '.json']
+    },
+  };
+
+  if (isProduction) {
+    config.plugins.push(new CleanWebpackPlugin());
+  } else {
+    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
+  }
+
+  return config;
+};
