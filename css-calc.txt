@@ -45,175 +45,20 @@ if (module.hot) {
 ----------------------------------------------
 
 
-const path = require('path');
-const fs = require('fs');
-const webpack = require('webpack');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const TerserPlugin = require('terser-webpack-plugin');
-const VueLoaderPlugin = require('vue-loader/lib/plugin');
+// src/js/style-hmr.js
+import '../scss/style.scss';
 
-function generateHtmlPlugins(templateDir) {
-  const files = fs.readdirSync(path.resolve(__dirname, templateDir));
-  return files.map(item => {
-    const [name, ext] = item.split('.');
-    return new HtmlWebpackPlugin({
-      filename: `${name}.html`,
-      template: path.resolve(__dirname, `${templateDir}/${name}.${ext}`),
-      inject: true,
-      chunks: ['main', 'styles']
-    });
+if (module.hot) {
+  module.hot.accept('../scss/style.scss', () => {
+    console.log('[HMR] ✅ CSS updated');
   });
 }
 
-module.exports = (env, argv) => {
-  const mode = argv.mode || 'development';
-  const isProduction = mode === 'production';
-  const isDev = mode === 'development';
+entry: {
+  main: './src/js/index.js',
+  styles: './src/js/style-hmr.js' // ← JS-обёртка, а не напрямую SCSS
+},
 
-  console.log('\n🚀 [CONFIG] mode:', mode);
-
-  return {
-    entry: {
-      main: './src/js/index.js',
-      styles: './src/scss/style.scss' // ← отдельный entry
-    },
-    output: {
-      filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
-      publicPath: '/dist/'
-    },
-    devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
-    mode,
-
-    optimization: {
-      minimize: isProduction,
-      minimizer: isProduction ? [
-        new TerserPlugin({ parallel: true, terserOptions: { compress: { drop_console: true } } })
-      ] : [],
-      splitChunks: isProduction ? {
-        chunks: 'all',
-        cacheGroups: {
-          vendor: { test: /[\\/]node_modules[\\/]/, name: 'vendors', chunks: 'all' }
-        }
-      } : false
-    },
-
-    devServer: {
-      contentBase: path.resolve(__dirname, 'dist'),
-      publicPath: '/dist/',
-      hot: true,
-      port: 8080,
-      open: true,
-      watchOptions: {
-        ignored: /node_modules/,
-        aggregateTimeout: 10,
-        poll: 200 // ← критично для Windows
-      }
-    },
-
-    module: {
-      rules: [
-        { test: /\.vue$/, use: ['cache-loader', 'vue-loader'] },
-        {
-          test: /\.pug$/,
-          oneOf: [
-            {
-              include: path.resolve(__dirname, 'src/pug/'),
-              exclude: /\.vue$/,
-              use: ['cache-loader', {
-                loader: 'pug-loader',
-                options: { quiet: true }
-              }]
-            },
-            { use: ['pug-plain-loader'] }
-          ]
-        },
-        {
-          test: /\.js$/,
-          exclude: /node_modules/,
-          use: ['cache-loader', {
-            loader: 'babel-loader',
-            options: { cacheDirectory: true }
-          }]
-        },
-        {
-          test: /\.(sass|scss)$/i,
-          use: [
-            {
-              loader: 'style-loader',
-              options: {
-                injectType: 'lazyStyleTag',
-                attributes: { 'data-webpack': 'styles' }
-              }
-            },
-            'css-loader',
-            'cache-loader',
-            {
-              loader: 'sass-loader',
-              options: {
-                implementation: require('sass'),
-                sassOptions: {
-                  quietDeps: true,
-                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
-                },
-                // 🔥 Добавляем HMR-хендлер прямо в SCSS
-                additionalData: (content, loaderContext) => {
-                  if (isDev) {
-                    return `${content}\nif (module.hot) module.hot.accept();`;
-                  }
-                  return content;
-                }
-              }
-            }
-          ]
-        },
-        {
-          test: /\.(png|jpe?g|gif|svg|webp)$/i,
-          loader: 'file-loader',
-          options: { name: 'img/[name].[ext]', publicPath: '/dist/' }
-        },
-        {
-          test: /\.(woff2?|eot|ttf|otf)$/i,
-          loader: 'file-loader',
-          options: { name: 'fonts/[name].[ext]', publicPath: '/dist/' }
-        }
-      ]
-    },
-
-    plugins: [
-      new VueLoaderPlugin(),
-      isProduction && new MiniCssExtractPlugin({ filename: './css/all.css' }),
-      new CopyWebpackPlugin([
-        { from: './src/fonts', to: './fonts' },
-        { from: './src/img', to: './img' }
-      ]),
-      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
-      isDev && new webpack.HotModuleReplacementPlugin()
-    ].filter(Boolean),
-
-    resolve: {
-      alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
-      extensions: ['.js', '.vue', '.json']
-    }
-  };
-};
-
-
-
-
-
-ERROR in ./src/scss/style.scss (./node_modules/css-loader/dist/cjs.js!./node_modules/cache-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js??ref--3-3!./src/scss/style.scss)
-Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-SassError: expected "{".
-  ╷
-2 │ if (module.hot) module.hot.accept();
-  │                                    ^
-  ╵
-  C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\src\scss\style.scss 2:36  root stylesheet
- @ ./src/scss/style.scss 2:26-190 70:4-89:5 73:18-182
-i ｢wdm｣: Failed to compile.
 
 
 
