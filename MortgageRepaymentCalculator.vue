@@ -34,44 +34,25 @@ function generateHtmlPlugins(templateDir) {
       filename: `${name}.html`,
       template: path.resolve(__dirname, `${templateDir}/${name}.${ext}`),
       inject: true,
-      chunks: ['main', 'styles']
+      chunks: ['main']
     });
   });
 }
 
 module.exports = (env, argv) => {
-  const mode = argv.mode || 'development';
-  const isProduction = mode === 'production';
-  // ✅ Фикс: проверяем argv.env.outputCSS напрямую
-  const outputCSS = argv.env && argv.env.outputCSS;
-
-  const plugins = [
-    new VueLoaderPlugin(),
-    // ✅ Создаём all.css при сборке (dev и prod)
-    outputCSS && new MiniCssExtractPlugin({ filename: './css/all.css' }),
-    new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
-    new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
-    // HMR — только если НЕ сборка (т.е. start)
-    !outputCSS && mode === 'development' && new webpack.HotModuleReplacementPlugin(),
-    isProduction && new CleanWebpackPlugin()
-  ].filter(Boolean);
-
-  // Генерация HTML — для всех, кроме production (там CleanPlugin удаляет)
-  if (!isProduction) {
-    plugins.push(...generateHtmlPlugins('./src/pug/views'));
-  }
+  const isProduction = argv.mode === 'production';
+  const isDevServer = process.argv.some(a => a.includes('webpack-dev-server'));
 
   return {
     entry: {
-      main: './src/js/index.js',
-      styles: './src/scss/style.scss'
+      main: ['./src/js/index.js', './src/scss/style.scss'] // ← массив, как в старом
     },
     output: {
-      filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
+      filename: isProduction ? './js/[name].[contenthash:8].bundle.js' : './js/bundle.js',
       publicPath: '/dist/'
     },
     devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
-    mode,
+    mode: argv.mode || 'development',
 
     optimization: {
       minimize: isProduction,
@@ -113,8 +94,8 @@ module.exports = (env, argv) => {
         {
           test: /\.(sass|scss)$/i,
           use: [
-            // ✅ Если outputCSS — MiniCssExtractPlugin.loader, иначе — style-loader (для HMR)
-            outputCSS ? MiniCssExtractPlugin.loader : 'style-loader',
+            // В dev-server — style-loader (HMR), в остальных — MiniCssExtractPlugin.loader
+            isDevServer ? 'style-loader' : MiniCssExtractPlugin.loader,
             'css-loader',
             'cache-loader',
             {
@@ -142,7 +123,14 @@ module.exports = (env, argv) => {
       ]
     },
 
-    plugins,
+    plugins: [
+      new VueLoaderPlugin(),
+      new MiniCssExtractPlugin({ filename: './css/all.css' }), // ← ВСЕГДА, как в старом
+      new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
+      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(argv.mode || 'development') }),
+      !isProduction && !isDevServer && new CleanWebpackPlugin(),
+      isDevServer && new webpack.HotModuleReplacementPlugin()
+    ].filter(Boolean),
 
     resolve: {
       alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
