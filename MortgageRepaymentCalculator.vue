@@ -8,27 +8,12 @@ npm install concurrently@8.2.2 --save-dev
 
 
 "scripts": {
-    "start": "webpack-dev-server --mode development --hot --open",
-    "dev": "webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
-    "build": "webpack --mode production",
-    "lint": "eslint --ext .js, --ignore-path .gitignore ."
-  },
-
-import '../scss/style.scss';
-
-
-if (module.hot) {
-  module.hot.accept('../scss/style.scss', () => {
-    console.log('[HMR] ✅ CSS updated');
-  });
+  "start": "webpack-dev-server --mode development --hot --open",
+  "dev": "webpack --mode development --env devOutput && prettier --print-width=120 --parser html --write dist/*.html",
+  "build": "webpack --mode production"
 }
 
-<link rel="stylesheet" href="/dist/css/all.css">
-
-
-----------------------------------------------------------
-
-webpack.config.js
+----------------------------------
 
 const path = require('path');
 const fs = require('fs');
@@ -56,6 +41,7 @@ function generateHtmlPlugins(templateDir) {
 module.exports = (env, argv) => {
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
+  const isDevOutput = argv.env && argv.env.devOutput; // ← true при npm run dev
 
   return {
     entry: {
@@ -97,22 +83,7 @@ module.exports = (env, argv) => {
         {
           test: /\.pug$/,
           oneOf: [
-            {
-              include: path.resolve(__dirname, 'src/pug/'),
-              exclude: /\.vue$/,
-              use: ['cache-loader', {
-                loader: 'pug-loader',
-                options: {
-                  quiet: true,
-                  compiler: {
-                    // 🔥 Подавляем warning о multiple attributes
-                    onwarn: (warning, parser) => {
-                      if (warning.code !== 'multiple-attributes') parser.warn(warning);
-                    }
-                  }
-                }
-              }]
-            },
+            { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['cache-loader', 'pug-loader'] },
             { use: ['pug-plain-loader'] }
           ]
         },
@@ -124,7 +95,8 @@ module.exports = (env, argv) => {
         {
           test: /\.(sass|scss)$/i,
           use: [
-            mode === 'development' ? 'style-loader' : MiniCssExtractPlugin.loader, // ✅ исправлено
+            // ✅ В dev-server — style-loader (HMR), в dev/prod — MiniCssExtractPlugin.loader
+            (isDevOutput || isProduction) ? MiniCssExtractPlugin.loader : 'style-loader',
             'css-loader',
             'cache-loader',
             {
@@ -142,42 +114,24 @@ module.exports = (env, argv) => {
         {
           test: /\.(png|jpe?g|gif|svg|webp)$/i,
           loader: 'file-loader',
-          options: {
-            name: 'img/[name].[ext]',
-            publicPath: '/dist/'
-          }
+          options: { name: 'img/[name].[ext]', publicPath: '/dist/' }
         },
         {
           test: /\.(woff2?|eot|ttf|otf)$/i,
           loader: 'file-loader',
-          options: {
-            name: 'fonts/[name].[ext]',
-            publicPath: '/dist/'
-          }
+          options: { name: 'fonts/[name].[ext]', publicPath: '/dist/' }
         }
       ]
     },
 
-    plugins: (function () {
-      const plugins = [
-        new VueLoaderPlugin(),
-        isProduction && new MiniCssExtractPlugin({ filename: './css/all.css' }), // ✅ только в prod
-        new CopyWebpackPlugin([
-          { from: './src/fonts', to: './fonts' },
-          { from: './src/img', to: './img' }
-        ]),
-        new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) })
-      ];
-
-      if (mode === 'development') plugins.push(new webpack.HotModuleReplacementPlugin());
-      if (isProduction) plugins.push(new CleanWebpackPlugin());
-
-      if (!isProduction) {
-        plugins.push(...generateHtmlPlugins('./src/pug/views'));
-      }
-
-      return plugins.filter(Boolean);
-    }()),
+    plugins: [
+      new VueLoaderPlugin(),
+      (isProduction || isDevOutput) && new MiniCssExtractPlugin({ filename: './css/all.css' }), // ✅
+      new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
+      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
+      mode === 'development' && !isDevOutput && new webpack.HotModuleReplacementPlugin(), // только для start
+      isProduction && new CleanWebpackPlugin()
+    ].filter(Boolean),
 
     resolve: {
       alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
@@ -185,5 +139,3 @@ module.exports = (env, argv) => {
     }
   };
 };
-
-
