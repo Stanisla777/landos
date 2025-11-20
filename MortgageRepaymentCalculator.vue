@@ -43,9 +43,9 @@ module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
   const isDevServer = process.argv.some(a => a.includes('webpack-dev-server'));
 
-  return {
+  const config = {
     entry: {
-      main: ['./src/js/index.js', './src/scss/style.scss'] // ← массив, как в старом
+      main: ['./src/js/index.js', './src/scss/style.scss']
     },
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].bundle.js' : './js/bundle.js',
@@ -94,7 +94,6 @@ module.exports = (env, argv) => {
         {
           test: /\.(sass|scss)$/i,
           use: [
-            // В dev-server — style-loader (HMR), в остальных — MiniCssExtractPlugin.loader
             isDevServer ? 'style-loader' : MiniCssExtractPlugin.loader,
             'css-loader',
             'cache-loader',
@@ -125,7 +124,7 @@ module.exports = (env, argv) => {
 
     plugins: [
       new VueLoaderPlugin(),
-      new MiniCssExtractPlugin({ filename: './css/all.css' }), // ← ВСЕГДА, как в старом
+      new MiniCssExtractPlugin({ filename: './css/all.css' }), // ← всегда
       new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
       new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(argv.mode || 'development') }),
       !isProduction && !isDevServer && new CleanWebpackPlugin(),
@@ -137,4 +136,11 @@ module.exports = (env, argv) => {
       extensions: ['.js', '.vue', '.json']
     }
   };
+
+  // ✅ ГЛАВНОЕ: вызываем generateHtmlPlugins для dev-режима
+  if (!isProduction) {
+    config.plugins.push(...generateHtmlPlugins('./src/pug/views'));
+  }
+
+  return config;
 };
