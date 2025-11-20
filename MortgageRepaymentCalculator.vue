@@ -27,12 +27,12 @@ const TerserPlugin = require('terser-webpack-plugin');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 function generateHtmlPlugins(templateDir) {
-  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
-  return templateFiles.map(item => {
-    const [name, extension] = item.split('.');
+  const files = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return files.map(item => {
+    const [name, ext] = item.split('.');
     return new HtmlWebpackPlugin({
       filename: `${name}.html`,
-      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
+      template: path.resolve(__dirname, `${templateDir}/${name}.${ext}`),
       inject: true,
       chunks: ['main', 'styles']
     });
@@ -42,9 +42,9 @@ function generateHtmlPlugins(templateDir) {
 module.exports = (env, argv) => {
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
-  const isDevOutput = argv.env && argv.env.devOutput; // ← true при npm run dev
+  const isDevOutput = argv.env && argv.env.devOutput;
 
-  return {
+  const config = {
     entry: {
       main: './src/js/index.js',
       styles: './src/scss/style.scss'
@@ -96,7 +96,6 @@ module.exports = (env, argv) => {
         {
           test: /\.(sass|scss)$/i,
           use: [
-            // ✅ В dev-server — style-loader (HMR), в dev/prod — MiniCssExtractPlugin.loader
             (isDevOutput || isProduction) ? MiniCssExtractPlugin.loader : 'style-loader',
             'css-loader',
             'cache-loader',
@@ -127,10 +126,10 @@ module.exports = (env, argv) => {
 
     plugins: [
       new VueLoaderPlugin(),
-      (isProduction || isDevOutput) && new MiniCssExtractPlugin({ filename: './css/all.css' }), // ✅
+      (isProduction || isDevOutput) && new MiniCssExtractPlugin({ filename: './css/all.css' }),
       new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
       new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
-      mode === 'development' && !isDevOutput && new webpack.HotModuleReplacementPlugin(), // только для start
+      mode === 'development' && !isDevOutput && new webpack.HotModuleReplacementPlugin(),
       isProduction && new CleanWebpackPlugin()
     ].filter(Boolean),
 
@@ -139,4 +138,11 @@ module.exports = (env, argv) => {
       extensions: ['.js', '.vue', '.json']
     }
   };
+
+  // ✅ ГЛАВНОЕ: вызываем generateHtmlPlugins при НЕ production
+  if (!isProduction) {
+    config.plugins.push(...generateHtmlPlugins('./src/pug/views'));
+  }
+
+  return config;
 };
