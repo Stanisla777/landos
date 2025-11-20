@@ -58,31 +58,69 @@ You should not have pug tags with multiple attributes.
 
 
 module: {
-  rules: [
-    // ... другие правила (vue, pug, js, scss) ...
+      rules: [
+        { test: /\.vue$/, use: ['cache-loader', 'vue-loader'] },
+        {
+          test: /\.pug$/,
+          oneOf: [
+            {
+              include: path.resolve(__dirname, 'src/pug/'),
+              exclude: /\.vue$/,
+              use: ['cache-loader', {
+                loader: 'pug-loader',
+                options: {
+                  quiet: true
+                }
+              }]
+            },
+            { use: ['pug-plain-loader'] }
+          ]
+        },
+        {
+          test: /\.js$/,
+          exclude: /node_modules/,
+          use: ['cache-loader', { loader: 'babel-loader', options: { cacheDirectory: true } }]
+        },
+        {
+          test: /\.(sass|scss)$/i,
+          use: [
+            // В dev-server — style-loader (быстрый HMR)
+            // В dev/prod — MiniCssExtractPlugin.loader (файл all.css)
+            isDevServer ? 'style-loader' : MiniCssExtractPlugin.loader,
+            'css-loader',
+            'cache-loader',
+            {
+              loader: 'sass-loader',
+              options: {
+                implementation: require('sass'),
+                sassOptions: {
+                  quietDeps: true,
+                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
+                }
+              }
+            }
+          ]
+        },
+        {
+          test: /\.(png|jpe?g|gif|svg|webp)$/i,
+          loader: 'file-loader',
+          options: {
+            name: 'img/[name].[ext]',
+            publicPath: '/dist/'
+          }
+        },
 
-    // ✅ Для изображений
-    {
-      test: /\.(png|jpe?g|gif|svg|webp)$/i,
-      loader: 'file-loader',
-      options: {
-        name: 'img/[name].[ext]',
-        publicPath: '/dist/'
-      }
+        // ✅ Для шрифтов
+        {
+          test: /\.(woff2?|eot|ttf|otf)$/i,
+          loader: 'file-loader',
+          options: {
+            name: 'fonts/[name].[ext]',
+            publicPath: '/dist/'
+          }
+        }
+      ]
     },
-
-    // ✅ Для шрифтов
-    {
-      test: /\.(woff2?|eot|ttf|otf)$/i,
-      loader: 'file-loader',
-      options: {
-        name: 'fonts/[name].[ext]',
-        publicPath: '/dist/'
-      }
-    }
-  ]
-}
-
 
 
 
