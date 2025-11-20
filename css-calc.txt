@@ -32,10 +32,29 @@ module.exports = (env, argv) => {
 
   console.log('\n🚀 [CONFIG] mode:', mode);
 
+  // ✅ ДОБАВЛЕНО: формируем plugins с генерацией HTML
+  const plugins = [
+    new VueLoaderPlugin(),
+    isProduction && new MiniCssExtractPlugin({ filename: './css/all.css' }),
+    new CopyWebpackPlugin([
+      { from: './src/fonts', to: './fonts' },
+      { from: './src/img', to: './img' }
+    ]),
+    new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
+    isDev && new webpack.HotModuleReplacementPlugin()
+  ].filter(Boolean);
+
+  // ✅ ДОБАВЛЕНО: генерация HTML-файлов из Pug в dev-режиме
+  if (isDev) {
+    const htmlPlugins = generateHtmlPlugins('./src/pug/views');
+    console.log(`✅ Generated ${htmlPlugins.length} HTML files from Pug`);
+    plugins.push(...htmlPlugins);
+  }
+
   return {
     entry: {
       main: './src/js/index.js',
-      styles: './src/js/style-hmr.js' // ← JS-обёртка, а не напрямую SCSS
+      styles: './src/js/style-hmr.js' // ← JS-обёртка
     },
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
@@ -66,7 +85,7 @@ module.exports = (env, argv) => {
       watchOptions: {
         ignored: /node_modules/,
         aggregateTimeout: 10,
-        poll: 200 // ← критично для Windows
+        poll: 200
       }
     },
 
@@ -114,9 +133,8 @@ module.exports = (env, argv) => {
                 sassOptions: {
                   quietDeps: true,
                   silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
-                },
-                // 🔥 Добавляем HMR-хендлер прямо в SCSS
-                // prependData: isDev ? '\nif (module.hot) module.hot.accept();\n' : ''
+                }
+                // prependData удалён — HMR теперь в style-hmr.js
               }
             }
           ]
@@ -134,16 +152,7 @@ module.exports = (env, argv) => {
       ]
     },
 
-    plugins: [
-      new VueLoaderPlugin(),
-      isProduction && new MiniCssExtractPlugin({ filename: './css/all.css' }),
-      new CopyWebpackPlugin([
-        { from: './src/fonts', to: './fonts' },
-        { from: './src/img', to: './img' }
-      ]),
-      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
-      isDev && new webpack.HotModuleReplacementPlugin()
-    ].filter(Boolean),
+    plugins, // ✅ ДОБАВЛЕНО: используем собранный массив plugins
 
     resolve: {
       alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
@@ -151,6 +160,7 @@ module.exports = (env, argv) => {
     }
   };
 };
+
 
 
 
