@@ -56,12 +56,12 @@ const TerserPlugin = require('terser-webpack-plugin');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 function generateHtmlPlugins(templateDir) {
-  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
-  return templateFiles.map(item => {
-    const [name, extension] = item.split('.');
+  const files = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return files.map(item => {
+    const [name, ext] = item.split('.');
     return new HtmlWebpackPlugin({
       filename: `${name}.html`,
-      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
+      template: path.resolve(__dirname, `${templateDir}/${name}.${ext}`),
       inject: true,
       chunks: ['main', 'styles']
     });
@@ -71,11 +71,14 @@ function generateHtmlPlugins(templateDir) {
 module.exports = (env, argv) => {
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
+  const isDev = mode === 'development';
+
+  console.log('\n🚀 [CONFIG] mode:', mode);
 
   return {
     entry: {
       main: './src/js/index.js',
-      styles: './src/scss/style.scss'
+      styles: './src/scss/style.scss' // ← отдельный entry
     },
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
@@ -103,7 +106,11 @@ module.exports = (env, argv) => {
       hot: true,
       port: 8080,
       open: true,
-      watchOptions: { ignored: /node_modules/, aggregateTimeout: 50 }
+      watchOptions: {
+        ignored: /node_modules/,
+        aggregateTimeout: 10,
+        poll: 200 // ← критично для Windows
+      }
     },
 
     module: {
@@ -117,15 +124,7 @@ module.exports = (env, argv) => {
               exclude: /\.vue$/,
               use: ['cache-loader', {
                 loader: 'pug-loader',
-                options: {
-                  quiet: true,
-                  compiler: {
-                    // 🔥 Подавляем warning о multiple attributes
-                    onwarn: (warning, parser) => {
-                      if (warning.code !== 'multiple-attributes') parser.warn(warning);
-                    }
-                  }
-                }
+                options: { quiet: true }
               }]
             },
             { use: ['pug-plain-loader'] }
@@ -134,12 +133,21 @@ module.exports = (env, argv) => {
         {
           test: /\.js$/,
           exclude: /node_modules/,
-          use: ['cache-loader', { loader: 'babel-loader', options: { cacheDirectory: true } }]
+          use: ['cache-loader', {
+            loader: 'babel-loader',
+            options: { cacheDirectory: true }
+          }]
         },
         {
           test: /\.(sass|scss)$/i,
           use: [
-            mode === 'development' ? 'style-loader' : MiniCssExtractPlugin.loader, // ✅ исправлено
+            {
+              loader: 'style-loader',
+              options: {
+                injectType: 'lazyStyleTag',
+                attributes: { 'data-webpack': 'styles' }
+              }
+            },
             'css-loader',
             'cache-loader',
             {
@@ -149,6 +157,13 @@ module.exports = (env, argv) => {
                 sassOptions: {
                   quietDeps: true,
                   silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
+                },
+                // 🔥 Добавляем HMR-хендлер прямо в SCSS
+                additionalData: (content, loaderContext) => {
+                  if (isDev) {
+                    return `${content}\nif (module.hot) module.hot.accept();`;
+                  }
+                  return content;
                 }
               }
             }
@@ -157,42 +172,26 @@ module.exports = (env, argv) => {
         {
           test: /\.(png|jpe?g|gif|svg|webp)$/i,
           loader: 'file-loader',
-          options: {
-            name: 'img/[name].[ext]',
-            publicPath: '/dist/'
-          }
+          options: { name: 'img/[name].[ext]', publicPath: '/dist/' }
         },
         {
           test: /\.(woff2?|eot|ttf|otf)$/i,
           loader: 'file-loader',
-          options: {
-            name: 'fonts/[name].[ext]',
-            publicPath: '/dist/'
-          }
+          options: { name: 'fonts/[name].[ext]', publicPath: '/dist/' }
         }
       ]
     },
 
-    plugins: (function () {
-      const plugins = [
-        new VueLoaderPlugin(),
-        isProduction && new MiniCssExtractPlugin({ filename: './css/all.css' }), // ✅ только в prod
-        new CopyWebpackPlugin([
-          { from: './src/fonts', to: './fonts' },
-          { from: './src/img', to: './img' }
-        ]),
-        new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) })
-      ];
-
-      if (mode === 'development') plugins.push(new webpack.HotModuleReplacementPlugin());
-      if (isProduction) plugins.push(new CleanWebpackPlugin());
-
-      if (!isProduction) {
-        plugins.push(...generateHtmlPlugins('./src/pug/views'));
-      }
-
-      return plugins.filter(Boolean);
-    }()),
+    plugins: [
+      new VueLoaderPlugin(),
+      isProduction && new MiniCssExtractPlugin({ filename: './css/all.css' }),
+      new CopyWebpackPlugin([
+        { from: './src/fonts', to: './fonts' },
+        { from: './src/img', to: './img' }
+      ]),
+      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
+      isDev && new webpack.HotModuleReplacementPlugin()
+    ].filter(Boolean),
 
     resolve: {
       alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
