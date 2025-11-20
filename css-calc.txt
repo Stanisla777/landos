@@ -2,11 +2,40 @@ npx webpack --config webpack.css.js --watch --mode development
 
 npx webpack-dev-server --mode development --hot --config webpack.config.js
 
- ERROR in ./src/img/die-new-img.png 1:0
-    Module parse failed: Unexpected character '�' (1:0)
-    You may need an appropriate loader to handle this file type, currently no loaders are configured to process this file. See https://webpack.js.org/concepts#loaders
-    (Source code omitted for this binary file)
-     @ ./src/scss/style.scss (./node_modules/css-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js??ref--4-2!./src/scss/style.scss) 7:36-69
+ // src/js/index.js
+import '../scss/style.scss';
+
+if (module.hot) {
+  module.hot.accept('../scss/style.scss', () => {
+    console.log('[HMR] ✅ CSS updated');
+  });
+}
+
+{
+  test: /\.(sass|scss)$/i,
+  use: [
+    'style-loader',       // ← для dev: быстрый HMR
+    'css-loader',
+    'cache-loader',
+    {
+      loader: 'sass-loader',
+      options: {
+        implementation: require('sass'),
+        sassOptions: {
+          quietDeps: true,
+          silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
+        }
+      }
+    }
+  ]
+}
+
+"scripts": {
+  "start": "webpack-dev-server --mode development --hot --open",
+  "dev": "webpack --mode development && prettier ...",
+  "build": "webpack --mode production"
+}
+
 
 
 
