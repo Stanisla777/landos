@@ -64,15 +64,22 @@ function generateHtmlPlugins(templateDir) {
   });
 }
 
+// 🔍 Отладка: аргументы запуска
+console.log('\n🔍 [INIT] process.argv:', process.argv.join(' '));
+const isDevServer = process.argv.some(arg => /webpack-dev-server/.test(arg));
+console.log('🔍 [INIT] isDevServer:', isDevServer);
+
 module.exports = function(env, argv) {
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
-  const isDevServer = process.argv.some(arg => /webpack-dev-server/.test(arg));
+  console.log('🔍 [CONFIG] mode:', mode, '| isProduction:', isProduction);
 
-  return {
-    entry: {
-      main: './src/js/index.js'
-    },
+  // ✅ Entry — только main
+  const entry = { main: './src/js/index.js' };
+  console.log('🔍 [CONFIG] entry:', Object.keys(entry));
+
+  const config = {
+    entry: entry,
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
       publicPath: '/dist/',
@@ -83,10 +90,7 @@ module.exports = function(env, argv) {
     optimization: {
       minimize: isProduction,
       minimizer: isProduction ? [
-        new TerserPlugin({
-          parallel: true,
-          terserOptions: { compress: { drop_console: true } },
-        })
+        new TerserPlugin({ parallel: true, terserOptions: { compress: { drop_console: true } } })
       ] : [],
       splitChunks: isProduction ? {
         chunks: 'all',
@@ -103,14 +107,10 @@ module.exports = function(env, argv) {
       publicPath: '/dist/',
       hot: true,
       hotOnly: true,
-      inline: true,
-      compress: true,
       port: 8080,
       stats: 'minimal',
-      open: false,
       watchOptions: { ignored: /node_modules/, aggregateTimeout: 50 },
       writeToDisk: false,
-      lazy: false,
     },
 
     module: {
@@ -128,7 +128,7 @@ module.exports = function(env, argv) {
           exclude: /node_modules/,
           use: [
             'cache-loader',
-            { loader: 'babel-loader', options: { cacheDirectory: true, cacheCompression: false } }
+            { loader: 'babel-loader', options: { cacheDirectory: true } }
           ]
         },
         // ESLint — только в prod
@@ -137,9 +137,9 @@ module.exports = function(env, argv) {
           test: /\.js$/,
           exclude: /node_modules/,
           loader: 'eslint-loader',
-          options: { cache: true, cacheIdentifier: 'eslint-cache' }
+          options: { cache: true }
         },
-        // ✅ НОВОЕ: обработка .scss через style-loader (для быстрого HMR в dev)
+        // ✅ SCSS — через style-loader для быстрого HMR
         {
           test: /\.(sass|scss)$/i,
           use: [
@@ -158,7 +158,6 @@ module.exports = function(env, argv) {
             }
           ]
         }
-        // ← ignore-loader УДАЛЁН
       ].filter(Boolean)
     },
 
@@ -175,7 +174,25 @@ module.exports = function(env, argv) {
       extensions: ['.js', '.vue', '.json']
     },
   };
+
+  // ✅ ГАРАНТИРОВАННЫЙ вызов генерации HTML в dev-режиме
+  if (isDevServer) {
+    console.log('✅ [HTML] Generating plugins for dev-server...');
+    const htmlPlugins = generateHtmlPlugins('./src/pug/views');
+    console.log(`✅ [HTML] Added ${htmlPlugins.length} HTML files`);
+    config.plugins.push(...htmlPlugins);
+  }
+
+  // 🔍 Отладка: лог чанков для каждого HtmlWebpackPlugin
+  config.plugins.forEach((plugin, idx) => {
+    if (plugin.constructor.name === 'HtmlWebpackPlugin') {
+      console.log(`🔍 [PLUGIN] HtmlWebpackPlugin[${idx}].chunks:`, plugin.options.chunks);
+    }
+  });
+
+  return config;
 };
+
 
 
 
