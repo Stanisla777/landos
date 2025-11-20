@@ -25,82 +25,59 @@ const webpack = require('webpack');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 function generateHtmlPlugins(templateDir) {
   const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
-  return templateFiles.map(function(item) {
-    const parts = item.split('.');
-    const name = parts[0];
-    const extension = parts[1];
+  return templateFiles.map(item => {
+    const [name, extension] = item.split('.');
     return new HtmlWebpackPlugin({
-      filename: name + '.html',
-      template: path.resolve(__dirname, templateDir + '/' + name + '.' + extension),
+      filename: `${name}.html`,
+      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
       inject: true,
-      chunks: ['main'] // ← только main
+      chunks: ['main', 'styles']
     });
   });
 }
 
-// 🔍 Отладка: покажем, какие аргументы получает конфиг
-console.log('\n🔍 [DEBUG] process.argv:', process.argv);
-
-// ✅ Определяем dev-server — только для HMR
-const isDevServer = process.argv.some(arg => /webpack-dev-server/.test(arg));
-console.log('🔍 [DEBUG] isDevServer:', isDevServer);
-
-module.exports = function(env, argv) {
+module.exports = (env, argv) => {
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
-  console.log('🔍 [DEBUG] mode:', mode, '| isProduction:', isProduction);
 
-  const entry = {
-    main: './src/js/index.js'
-    // ← ВНИМАНИЕ: styles НЕТ здесь
-  };
-  console.log('🔍 [DEBUG] Final entry:', entry);
-
-  const config = {
-    entry: entry,
+  return {
+    entry: {
+      main: './src/js/index.js',
+      styles: './src/scss/style.scss'
+    },
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
-      publicPath: '/dist/',
+      publicPath: '/dist/'
     },
     devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
-    mode: mode,
+    mode,
 
     optimization: {
       minimize: isProduction,
       minimizer: isProduction ? [
-        new TerserPlugin({
-          parallel: true,
-          terserOptions: { compress: { drop_console: true } },
-        })
+        new TerserPlugin({ parallel: true, terserOptions: { compress: { drop_console: true } } })
       ] : [],
       splitChunks: isProduction ? {
         chunks: 'all',
         cacheGroups: {
-          vendor: { test: /[\\/]node_modules[\\/]/, name: 'vendors', chunks: 'all' },
-        },
-      } : false,
+          vendor: { test: /[\\/]node_modules[\\/]/, name: 'vendors', chunks: 'all' }
+        }
+      } : false
     },
-
-    performance: { hints: false },
 
     devServer: {
       contentBase: path.resolve(__dirname, 'dist'),
       publicPath: '/dist/',
       hot: true,
-      hotOnly: true,
-      inline: true,
-      compress: true,
       port: 8080,
-      stats: 'minimal',
-      open: false,
-      watchOptions: { ignored: /node_modules/, aggregateTimeout: 50 },
-      writeToDisk: false,
-      lazy: false,
+      open: true,
+      watchOptions: { ignored: /node_modules/, aggregateTimeout: 50 }
     },
 
     module: {
@@ -109,143 +86,92 @@ module.exports = function(env, argv) {
         {
           test: /\.pug$/,
           oneOf: [
-            { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['cache-loader', 'pug-loader'] },
+            {
+              include: path.resolve(__dirname, 'src/pug/'),
+              exclude: /\.vue$/,
+              use: ['cache-loader', {
+                loader: 'pug-loader',
+                options: {
+                  quiet: true,
+                  compiler: {
+                    // 🔥 Подавляем warning о multiple attributes
+                    onwarn: (warning, parser) => {
+                      if (warning.code !== 'multiple-attributes') parser.warn(warning);
+                    }
+                  }
+                }
+              }]
+            },
             { use: ['pug-plain-loader'] }
           ]
         },
-        { 
-          test: /\.js$/, 
-          exclude: /node_modules/, 
-          use: [
-            'cache-loader',
-            { loader: 'babel-loader', options: { cacheDirectory: true, cacheCompression: false } }
-          ]
-        },
-        // ESLint — только в prod
-        isProduction && {
-          enforce: 'pre',
+        {
           test: /\.js$/,
           exclude: /node_modules/,
-          loader: 'eslint-loader',
-          options: { cache: true, cacheIdentifier: 'eslint-cache' }
+          use: ['cache-loader', { loader: 'babel-loader', options: { cacheDirectory: true } }]
+        },
+        {
+          test: /\.(sass|scss)$/i,
+          use: [
+            mode === 'development' ? 'style-loader' : MiniCssExtractPlugin.loader, // ✅ исправлено
+            'css-loader',
+            'cache-loader',
+            {
+              loader: 'sass-loader',
+              options: {
+                implementation: require('sass'),
+                sassOptions: {
+                  quietDeps: true,
+                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
+                }
+              }
+            }
+          ]
+        },
+        {
+          test: /\.(png|jpe?g|gif|svg|webp)$/i,
+          loader: 'file-loader',
+          options: {
+            name: 'img/[name].[ext]',
+            publicPath: '/dist/'
+          }
+        },
+        {
+          test: /\.(woff2?|eot|ttf|otf)$/i,
+          loader: 'file-loader',
+          options: {
+            name: 'fonts/[name].[ext]',
+            publicPath: '/dist/'
+          }
         }
-      ].filter(Boolean)
+      ]
     },
 
-    plugins: [
-      new VueLoaderPlugin(),
-      new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
-      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development') }),
+    plugins: (function () {
+      const plugins = [
+        new VueLoaderPlugin(),
+        isProduction && new MiniCssExtractPlugin({ filename: './css/all.css' }), // ✅ только в prod
+        new CopyWebpackPlugin([
+          { from: './src/fonts', to: './fonts' },
+          { from: './src/img', to: './img' }
+        ]),
+        new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) })
+      ];
 
-      // HMR — только для dev-server
-      isDevServer && new webpack.HotModuleReplacementPlugin(),
-      
-      isProduction && new CleanWebpackPlugin()
-    ].filter(Boolean),
+      if (mode === 'development') plugins.push(new webpack.HotModuleReplacementPlugin());
+      if (isProduction) plugins.push(new CleanWebpackPlugin());
+
+      if (!isProduction) {
+        plugins.push(...generateHtmlPlugins('./src/pug/views'));
+      }
+
+      return plugins.filter(Boolean);
+    }()),
 
     resolve: {
       alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
       extensions: ['.js', '.vue', '.json']
-    },
-  };
-
-  // ✅ Генерация HTML для дев-режима
-  if (!isProduction) {
-    const htmlPlugins = generateHtmlPlugins('./src/pug/views');
-    console.log('🔍 [DEBUG] HTML plugins added:', htmlPlugins.length, 'files');
-    config.plugins.push(...htmlPlugins);
-  }
-
-  // 🚨 Доп. отладка: покажем все entry points из HtmlWebpackPlugin
-  config.plugins.forEach((plugin, idx) => {
-    if (plugin.constructor.name === 'HtmlWebpackPlugin') {
-      console.log(`🔍 [DEBUG] HtmlWebpackPlugin[${idx}].chunks:`, plugin.options.chunks);
     }
-  });
-
-  return config;
+  };
 };
 
-
-
---------------------------------------------------------------------
-
-Создайте webpack.css.js (файл в корне проекта, рядом с webpack.config.js)
-
-// webpack.css.js
-
-// webpack.css.js
-const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-
-module.exports = {
-  mode: 'development',
-  entry: './src/scss/main.scss', // или style.scss
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'css/.keep',
-  },
-  module: {
-    rules: [
-      {
-        test: /\.(sass|scss)$/i,
-        use: [
-          MiniCssExtractPlugin.loader, // 1. Извлекает CSS в файл
-          'css-loader',                 // 2. Обрабатывает @import, url()
-          'cache-loader',               // 3. Кеширует результат css-loader
-          {
-            loader: 'sass-loader',      // 4. Компилирует Sass → CSS
-            options: {
-              implementation: require('sass'),
-              sassOptions: {
-                quietDeps: true,
-                silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
-              }
-            }
-          }
-        ]
-      }
-    ]
-  },
-  plugins: [
-    new MiniCssExtractPlugin({
-      filename: 'css/all.css'
-    })
-  ],
-  watchOptions: {
-    ignored: /node_modules/,
-    aggregateTimeout: 50
-  },
-  stats: 'errors-only'
-};
-
-----------------------------------------------------------------------
-
-Удалите (или переименуйте) src/js/style-hmr.js
-
--------------------------------------------------------------------
-В Pug-шаблонах подключите CSS вручную в <head>
-  head
-  meta(charset="utf-8")
-  meta(name="viewport" content="width=device-width, initial-scale=1")
-  title= title || 'My App'
-  // ← ЕДИНСТВЕННОЕ подключение CSS:
-  link(rel="stylesheet" href="/dist/css/all.css")
-
-  Установите concurrently
-npm install concurrently@8.2.2 --save-dev
-
-------------------------------------------------------------------
-
-  "scripts": {
-  "dev:css": "webpack --config webpack.css.js --watch --mode development",
-  "dev:js": "webpack-dev-server --mode development --hot",
-  "start": "concurrently \"npm run dev:css\" \"npm run dev:js\" --kill-others-on-fail --prefix name",
-
-  "build:css": "webpack --config webpack.css.js --mode development",
-  "dev": "npm run build:css && webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
-
-  "build": "npm run build:css && webpack --mode production",
-  "lint": "eslint --ext .js, --ignore-path .gitignore ."
-}
-  
