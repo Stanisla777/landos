@@ -10,7 +10,8 @@ npm install concurrently@8.2.2 --save-dev
 "scripts": {
   "start": "webpack-dev-server --mode development --hot --open",
   "dev": "webpack --mode development --env devOutput && prettier --print-width=120 --parser html --write dist/*.html",
-  "build": "webpack --mode production"
+  "build": "webpack --mode production",
+"lint": "eslint --ext .js --ignore-path .gitignore ."
 }
 
 ----------------------------------
