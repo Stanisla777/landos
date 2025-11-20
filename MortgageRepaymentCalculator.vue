@@ -8,10 +8,10 @@ npm install concurrently@8.2.2 --save-dev
 
 
 "scripts": {
+  "dev": "webpack --mode development --env outputCSS && prettier --print-width=120 --parser html --write dist/*.html",
   "start": "webpack-dev-server --mode development --hot --open",
-  "dev": "webpack --mode development --env devOutput && prettier --print-width=120 --parser html --write dist/*.html",
   "build": "webpack --mode production",
-"lint": "eslint --ext .js --ignore-path .gitignore ."
+  "lint": "eslint --ext .js --ignore-path .gitignore ."
 }
 
 ----------------------------------
@@ -42,9 +42,26 @@ function generateHtmlPlugins(templateDir) {
 module.exports = (env, argv) => {
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
-  const isDevOutput = argv.env && argv.env.devOutput;
+  // ✅ Фикс: проверяем argv.env.outputCSS напрямую
+  const outputCSS = argv.env && argv.env.outputCSS;
 
-  const config = {
+  const plugins = [
+    new VueLoaderPlugin(),
+    // ✅ Создаём all.css при сборке (dev и prod)
+    outputCSS && new MiniCssExtractPlugin({ filename: './css/all.css' }),
+    new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
+    new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
+    // HMR — только если НЕ сборка (т.е. start)
+    !outputCSS && mode === 'development' && new webpack.HotModuleReplacementPlugin(),
+    isProduction && new CleanWebpackPlugin()
+  ].filter(Boolean);
+
+  // Генерация HTML — для всех, кроме production (там CleanPlugin удаляет)
+  if (!isProduction) {
+    plugins.push(...generateHtmlPlugins('./src/pug/views'));
+  }
+
+  return {
     entry: {
       main: './src/js/index.js',
       styles: './src/scss/style.scss'
@@ -96,7 +113,8 @@ module.exports = (env, argv) => {
         {
           test: /\.(sass|scss)$/i,
           use: [
-            (isDevOutput || isProduction) ? MiniCssExtractPlugin.loader : 'style-loader',
+            // ✅ Если outputCSS — MiniCssExtractPlugin.loader, иначе — style-loader (для HMR)
+            outputCSS ? MiniCssExtractPlugin.loader : 'style-loader',
             'css-loader',
             'cache-loader',
             {
@@ -124,25 +142,11 @@ module.exports = (env, argv) => {
       ]
     },
 
-    plugins: [
-      new VueLoaderPlugin(),
-      (isProduction || isDevOutput) && new MiniCssExtractPlugin({ filename: './css/all.css' }),
-      new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
-      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
-      mode === 'development' && !isDevOutput && new webpack.HotModuleReplacementPlugin(),
-      isProduction && new CleanWebpackPlugin()
-    ].filter(Boolean),
+    plugins,
 
     resolve: {
       alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
       extensions: ['.js', '.vue', '.json']
     }
   };
-
-  // ✅ ГЛАВНОЕ: вызываем generateHtmlPlugins при НЕ production
-  if (!isProduction) {
-    config.plugins.push(...generateHtmlPlugins('./src/pug/views'));
-  }
-
-  return config;
 };
