@@ -2,53 +2,157 @@ npx webpack --config webpack.css.js --watch --mode development
 
 npx webpack-dev-server --mode development --hot --config webpack.config.js
 
-link(rel="stylesheet" href='/dist/css/all.css')
+const path = require('path');
+const fs = require('fs');
+const webpack = require('webpack');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
- // src/js/index.js
-import '../scss/style.scss';
-
-if (module.hot) {
-  module.hot.accept('../scss/style.scss', () => {
-    console.log('[HMR] ✅ CSS updated');
+function generateHtmlPlugins(templateDir) {
+  const files = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return files.map(item => {
+    const [name, ext] = item.split('.');
+    return new HtmlWebpackPlugin({
+      filename: `${name}.html`,
+      template: path.resolve(__dirname, `${templateDir}/${name}.${ext}`),
+      inject: true,
+      chunks: ['main', 'styles']
+    });
   });
 }
 
-{
-  test: /\.(sass|scss)$/i,
-  use: [
-    'style-loader',       // ← для dev: быстрый HMR
-    'css-loader',
-    'cache-loader',
-    {
-      loader: 'sass-loader',
-      options: {
-        implementation: require('sass'),
-        sassOptions: {
-          quietDeps: true,
-          silenceDeprecations: ['slash-div', 'import', 'legacy-js-api'],
+module.exports = (env, argv) => {
+  const mode = argv.mode || 'development';
+  const isProduction = mode === 'production';
+  const isDev = mode === 'development';
+
+  console.log('\n🚀 [CONFIG] mode:', mode);
+
+  return {
+    entry: {
+      main: './src/js/index.js',
+      styles: './src/js/style-hmr.js' // ← JS-обёртка, а не напрямую SCSS
+    },
+    output: {
+      filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
+      publicPath: '/dist/'
+    },
+    devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
+    mode,
+
+    optimization: {
+      minimize: isProduction,
+      minimizer: isProduction ? [
+        new TerserPlugin({ parallel: true, terserOptions: { compress: { drop_console: true } } })
+      ] : [],
+      splitChunks: isProduction ? {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: { test: /[\\/]node_modules[\\/]/, name: 'vendors', chunks: 'all' }
         }
+      } : false
+    },
+
+    devServer: {
+      contentBase: path.resolve(__dirname, 'dist'),
+      publicPath: '/dist/',
+      hot: true,
+      port: 8080,
+      open: true,
+      watchOptions: {
+        ignored: /node_modules/,
+        aggregateTimeout: 10,
+        poll: 200 // ← критично для Windows
       }
+    },
+
+    module: {
+      rules: [
+        { test: /\.vue$/, use: ['cache-loader', 'vue-loader'] },
+        {
+          test: /\.pug$/,
+          oneOf: [
+            {
+              include: path.resolve(__dirname, 'src/pug/'),
+              exclude: /\.vue$/,
+              use: ['cache-loader', {
+                loader: 'pug-loader',
+                options: { quiet: true }
+              }]
+            },
+            { use: ['pug-plain-loader'] }
+          ]
+        },
+        {
+          test: /\.js$/,
+          exclude: /node_modules/,
+          use: ['cache-loader', {
+            loader: 'babel-loader',
+            options: { cacheDirectory: true }
+          }]
+        },
+        {
+          test: /\.(sass|scss)$/i,
+          use: [
+            {
+              loader: 'style-loader',
+              options: {
+                injectType: 'lazyStyleTag',
+                attributes: { 'data-webpack': 'styles' }
+              }
+            },
+            'css-loader',
+            'cache-loader',
+            {
+              loader: 'sass-loader',
+              options: {
+                implementation: require('sass'),
+                sassOptions: {
+                  quietDeps: true,
+                  silenceDeprecations: ['slash-div', 'import', 'legacy-js-api']
+                },
+                // 🔥 Добавляем HMR-хендлер прямо в SCSS
+                // prependData: isDev ? '\nif (module.hot) module.hot.accept();\n' : ''
+              }
+            }
+          ]
+        },
+        {
+          test: /\.(png|jpe?g|gif|svg|webp)$/i,
+          loader: 'file-loader',
+          options: { name: 'img/[name].[ext]', publicPath: '/dist/' }
+        },
+        {
+          test: /\.(woff2?|eot|ttf|otf)$/i,
+          loader: 'file-loader',
+          options: { name: 'fonts/[name].[ext]', publicPath: '/dist/' }
+        }
+      ]
+    },
+
+    plugins: [
+      new VueLoaderPlugin(),
+      isProduction && new MiniCssExtractPlugin({ filename: './css/all.css' }),
+      new CopyWebpackPlugin([
+        { from: './src/fonts', to: './fonts' },
+        { from: './src/img', to: './img' }
+      ]),
+      new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) }),
+      isDev && new webpack.HotModuleReplacementPlugin()
+    ].filter(Boolean),
+
+    resolve: {
+      alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
+      extensions: ['.js', '.vue', '.json']
     }
-  ]
-}
-
-{
-  "scripts": {
-    "start": "webpack-dev-server --mode development --hot --open",
-    "dev": "webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
-    "build": "webpack --mode production",
-    "lint": "eslint --ext .js, --ignore-path .gitignore ."
-  }
-}
+  };
+};
 
 
-----------------------------------------------
-
-[CONFIG] mode: development
-i ｢wds｣: Project is running at http://localhost:8080/
-i ｢wds｣: webpack output is served from /dist/
-i ｢wds｣: Content not from webpack is served from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\dist
-i ｢wdm｣: Hash: aea57e8f7260285320fc
 
 
 
