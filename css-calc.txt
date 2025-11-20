@@ -71,12 +71,11 @@ function generateHtmlPlugins(templateDir) {
 module.exports = (env, argv) => {
   const mode = argv.mode || 'development';
   const isProduction = mode === 'production';
-  const isDevServer = process.argv.some(arg => /webpack-dev-server/.test(arg));
 
   return {
     entry: {
       main: './src/js/index.js',
-      styles: './src/scss/style.scss' // ← единый entry для CSS
+      styles: './src/scss/style.scss'
     },
     output: {
       filename: isProduction ? './js/[name].[contenthash:8].js' : './js/[name].js',
@@ -119,7 +118,13 @@ module.exports = (env, argv) => {
               use: ['cache-loader', {
                 loader: 'pug-loader',
                 options: {
-                  quiet: true
+                  quiet: true,
+                  compiler: {
+                    // 🔥 Подавляем warning о multiple attributes
+                    onwarn: (warning, parser) => {
+                      if (warning.code !== 'multiple-attributes') parser.warn(warning);
+                    }
+                  }
                 }
               }]
             },
@@ -134,9 +139,7 @@ module.exports = (env, argv) => {
         {
           test: /\.(sass|scss)$/i,
           use: [
-            // В dev-server — style-loader (быстрый HMR)
-            // В dev/prod — MiniCssExtractPlugin.loader (файл all.css)
-            isDevServer ? 'style-loader' : MiniCssExtractPlugin.loader,
+            mode === 'development' ? 'style-loader' : MiniCssExtractPlugin.loader, // ✅ исправлено
             'css-loader',
             'cache-loader',
             {
@@ -159,8 +162,6 @@ module.exports = (env, argv) => {
             publicPath: '/dist/'
           }
         },
-
-        // ✅ Для шрифтов
         {
           test: /\.(woff2?|eot|ttf|otf)$/i,
           loader: 'file-loader',
@@ -172,47 +173,34 @@ module.exports = (env, argv) => {
       ]
     },
 
-    plugins: [
-      new VueLoaderPlugin(),
-      new MiniCssExtractPlugin({ filename: './css/all.css' }), // ← работает везде
-      new CopyWebpackPlugin([
-        { from: './src/fonts', to: './fonts' },
-        { from: './src/img', to: './img' }
-      ]),
-      new webpack.DefinePlugin({
-        'process.env.NODE_ENV': JSON.stringify(mode)
-      }),
-      isDevServer && new webpack.HotModuleReplacementPlugin(),
-      isProduction && new CleanWebpackPlugin()
-    ].filter(Boolean),
-
-    resolve: {
-      alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
-      extensions: ['.js', '.vue', '.json']
-    },
-
-    // ✅ Генерация HTML
-    // eslint-disable-next-line no-dupe-keys,func-names
     plugins: (function () {
       const plugins = [
         new VueLoaderPlugin(),
-        new MiniCssExtractPlugin({ filename: './css/all.css' }),
-        new CopyWebpackPlugin([{ from: './src/fonts', to: './fonts' }, { from: './src/img', to: './img' }]),
+        isProduction && new MiniCssExtractPlugin({ filename: './css/all.css' }), // ✅ только в prod
+        new CopyWebpackPlugin([
+          { from: './src/fonts', to: './fonts' },
+          { from: './src/img', to: './img' }
+        ]),
         new webpack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify(mode) })
       ];
 
-      if (isDevServer) plugins.push(new webpack.HotModuleReplacementPlugin());
+      if (mode === 'development') plugins.push(new webpack.HotModuleReplacementPlugin());
       if (isProduction) plugins.push(new CleanWebpackPlugin());
 
-      // HTML — всегда, кроме production (там CleanWebpackPlugin удаляет)
       if (!isProduction) {
         plugins.push(...generateHtmlPlugins('./src/pug/views'));
       }
 
-      return plugins;
-    }())
+      return plugins.filter(Boolean);
+    }()),
+
+    resolve: {
+      alias: { vue: isProduction ? 'vue/dist/vue.min.js' : 'vue/dist/vue.js' },
+      extensions: ['.js', '.vue', '.json']
+    }
   };
 };
+
 
 
 
