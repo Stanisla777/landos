@@ -2,10 +2,74 @@ npx webpack --config webpack.css.js --watch --mode development
 
 npx webpack-dev-server --mode development --hot --config webpack.config.js
 
-output: {
-  path: path.resolve(__dirname, 'dist'), // ← нужен!
-  filename: isProduction ? 'js/[name].[contenthash:8].bundle.js' : 'js/bundle.js', // ← без ./ 
-  publicPath: '/dist/'
+function modals() {
+  const modalWindows = document.querySelectorAll('.modal');
+  const modalOpeners = document.querySelectorAll('.js--modal-opener');
+  const modalOpenersOnLanding = document.querySelectorAll("[href$='modalcall']");
+
+  for (let i = 0; i < modalOpeners.length; i++) {
+    modalOpeners[i].addEventListener('click', () => {
+      console.log('modals');
+      if (modalOpeners[i].getAttribute('data-program')) {
+        document.querySelector('label.prog input').value = modalOpeners[i].getAttribute('data-program');
+      }
+
+      //основная часть открытия модалок
+      if (document.querySelector(modalOpeners[i].dataset.modal)) {
+        document.querySelector(modalOpeners[i].dataset.modal).classList.add('open');
+        if(document.querySelector(modalOpeners[i].dataset.modal).querySelector('.select-list__selection-window')){
+          setTimeout(() => {
+            document.querySelector(modalOpeners[i].dataset.modal).querySelector('.select-list__selection-window').classList.add('opacity')
+          },400)
+        }
+        document.body.classList.add('modal-opened');
+        // eslint-disable-next-line no-unused-vars
+        document.body.classList.add('body-modal-not-remove-else')
+        // if (document.body.classList.contains('body-modal')) {
+          document.body.classList.add('body-modal-not-remove')
+        // }
+        AddClassBody();
+      }
+    });
+  }
+
+  for (let i = 0; i < modalOpenersOnLanding.length; i++) {
+    modalOpenersOnLanding[i].addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (modalOpenersOnLanding[i].getAttribute('data-program')) {
+        document.querySelector('label.prog input').value = modalOpeners[i].getAttribute('data-program');
+      }
+      document.querySelector('#modalcall').classList.add('open');
+      document.body.classList.add('modal-opened');
+      return false;
+    });
+  }
+
+  for (let j = 0; j < modalWindows.length; j++) {
+    // eslint-disable-next-line func-names
+    const modalWindowCloser = modalWindows[j].querySelectorAll('.js--modal-closer');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const item of modalWindowCloser) {
+      // eslint-disable-next-line func-names
+      item.onclick = function () {
+        closeModal(modalWindows[j].id);
+      };
+    }
+    const modalWindowWrapper = modalWindows[j].querySelector('.modal__wrapper');
+    if (modalWindowWrapper) {
+      modalWindowWrapper.onclick = function (w) {
+        w.stopPropagation();
+      };
+    }
+    modalWindows[j].onclick = function (e) {
+      if (!e.target.classList.contains('.js--modal')){
+        closeModal(modalWindows[j].id);
+      }
+
+    };
+  }
 }
+
 
 
