@@ -61,12 +61,23 @@ function modals() {
 //делегирование
 
 // modals.js
-export function initModals() {
-  // Защита от повторного вызова (на случай, если initModals() вызовут дважды)
-  if (document.body.hasAttribute('data-modals-initialized')) {
-    return;
-  }
+// modals.js
+// Совместимость: можно вызывать modals() сколько угодно раз — безопасно
+
+// Защита от повторной инициализации (глобальная переменная + DOM-атрибут)
+function isInitialized() {
+  return window.__modalsInitialized || document.body.hasAttribute('data-modals-initialized');
+}
+
+function markAsInitialized() {
+  window.__modalsInitialized = true;
   document.body.setAttribute('data-modals-initialized', 'true');
+}
+
+// --- Основная логика (взята из initModals, но внутри modals) ---
+export default function modals() {
+  if (isInitialized()) return;
+  markAsInitialized();
 
   // === 1. Открытие модалок ===
   document.addEventListener('click', (e) => {
@@ -83,14 +94,14 @@ export function initModals() {
       return;
     }
 
-    // Подстановка программы, если есть
+    // Подстановка программы
     const program = opener.dataset.program;
     if (program) {
       const input = document.querySelector('label.prog input');
       if (input) input.value = program;
     }
 
-    // Открываем модалку
+    // Открытие
     modal.classList.add('open');
 
     // Анимация select-list (если есть)
@@ -99,14 +110,18 @@ export function initModals() {
       setTimeout(() => selectWindow.classList.add('opacity'), 400);
     }
 
-    // Блокируем скролл и фиксируем позицию
-    document.body.classList.add('modal-opened', 'body-modal-not-remove-else', 'body-modal-not-remove');
+    // Блокировка скролла
+    document.body.classList.add(
+      'modal-opened',
+      'body-modal-not-remove-else',
+      'body-modal-not-remove'
+    );
     addClassBody();
   });
 
   // === 2. Закрытие модалок ===
   document.addEventListener('click', (e) => {
-    // Закрытие по кнопке .js--modal-closer
+    // По кнопке закрытия
     const closer = e.target.closest('.js--modal-closer');
     if (closer) {
       e.stopPropagation();
@@ -115,38 +130,44 @@ export function initModals() {
       return;
     }
 
-    // Закрытие по клику вне .modal__wrapper
+    // По клику вне модалки
     const modal = e.target.closest('.modal');
     if (modal && !e.target.closest('.modal__wrapper')) {
       closeModal(modal.id);
     }
   });
 
-  // === 3. Предотвращаем закрытие при клике внутри модалки ===
+  // === 3. Защита от закрытия при клике внутри модалки ===
   document.addEventListener('click', (e) => {
     if (e.target.closest('.modal__wrapper')) {
       e.stopPropagation();
     }
-  }, true); // useCapture = true — важно для всплытия
+  }, true);
 }
 
-// --- Вспомогательные функции ---
+// --- Вспомогательные функции (те же самые) ---
 
 function addClassBody() {
   const scrollY = window.scrollY;
   document.body.classList.add('body-modal', 'body-additional-class');
-  document.body.style.cssText += `; top: -${scrollY}px; position: fixed; width: 100%;`;
+  // Используем setProperty — безопаснее, чем cssText +=
+  document.body.style.setProperty('--modal-scroll-y', `-${scrollY}px`);
+  document.body.style.position = 'fixed';
+  document.body.style.width = '100%';
   document.ontouchmove = (e) => e.preventDefault();
 }
 
-export function closeModal(modalId) {
+function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
 
   modal.classList.remove('open');
 
-  // Восстанавливаем скролл
-  const scrollY = parseInt(document.body.style.top || '0', 10) * -1;
+  // Восстановление скролла
+  const style = getComputedStyle(document.body);
+  const top = style.getPropertyValue('--modal-scroll-y') || '0px';
+  const scrollY = Math.abs(parseInt(top, 10)) || 0;
+
   document.body.classList.remove(
     'modal-opened',
     'body-modal',
@@ -154,14 +175,12 @@ export function closeModal(modalId) {
     'body-modal-not-remove-else',
     'body-modal-not-remove'
   );
-  document.body.style.cssText = document.body.style.cssText
-    .replace(/top:.*?;?/g, '')
-    .replace(/position:\s*fixed;?/g, '')
-    .replace(/width:\s*100%;?/g, '');
-  window.scrollTo(0, scrollY);
-
-  // Восстанавливаем скролл на мобильных
+  document.body.style.removeProperty('--modal-scroll-y');
+  document.body.style.position = '';
+  document.body.style.width = '';
   document.ontouchmove = null;
+
+  window.scrollTo(0, scrollY);
 }
 
 
