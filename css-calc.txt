@@ -2,24 +2,168 @@ npx webpack --config webpack.css.js --watch --mode development
 
 npx webpack-dev-server --mode development --hot --config webpack.config.js
 
-C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf>npx @lhci/cli upload
-\(node:105200) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
-(Use `node --trace-warnings ...` to show where the warning was created)
-Error: Must provide token for LHCI target
-    at runLHCITarget (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@lhci\cli\src\upload\upload.js:394:29)
-    at Object.runCommand (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@lhci\cli\src\upload\upload.js:592:22)
-    at run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@lhci\cli\src\cli.js:106:23)
-    at Object.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@lhci\cli\src\cli.js:134:1)
-    at Module._compile (node:internal/modules/cjs/loader:1364:14)
-    at Module._extensions..js (node:internal/modules/cjs/loader:1422:10)
-    at Module.load (node:internal/modules/cjs/loader:1203:32)
-    at Module._load (node:internal/modules/cjs/loader:1019:12)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:128:12)
-npm notice
-npm notice New major version of npm available! 10.7.0 -> 11.6.3
-npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.3
-npm notice To update run: npm install -g npm@11.6.3
-npm notice
+function modals() {
+  const modalWindows = document.querySelectorAll('.modal');
+  const modalOpeners = document.querySelectorAll('.js--modal-opener');
+
+  // === Только новые кнопки ===
+  for (let i = 0; i < modalOpeners.length; i++) {
+    const opener = modalOpeners[i];
+    if (opener.hasAttribute('data-modal-bound')) continue; // ← защита
+
+    opener.addEventListener('click', (e) => {
+      console.log('>>> scrollY:', window.scrollY);
+      e.preventDefault?.();
+      e.stopPropagation?.();
+
+      if (opener.getAttribute('data-program')) {
+        document.querySelector('label.prog input')?.value = opener.getAttribute('data-program');
+      }
+
+      const modal = document.querySelector(opener.dataset.modal);
+      if (!modal) return;
+
+      modal.classList.add('open');
+      if (modal.querySelector('.select-list__selection-window')) {
+        setTimeout(() => {
+          modal.querySelector('.select-list__selection-window').classList.add('opacity');
+        }, 400);
+      }
+
+      document.body.classList.add('modal-opened', 'body-modal-not-remove-else', 'body-modal-not-remove');
+      AddClassBody();
+    });
+
+    opener.setAttribute('data-modal-bound', 'true'); // ← пометили
+  }
+
+  // === Закрытие — тоже защищаем (если modalWindows могут дублироваться) ===
+  for (let j = 0; j < modalWindows.length; j++) {
+    const modal = modalWindows[j];
+    if (modal.hasAttribute('data-closers-bound')) continue;
+
+    const closers = modal.querySelectorAll('.js--modal-closer');
+    closers.forEach(closer => {
+      closer.addEventListener('click', () => closeModal(modal.id));
+    });
+
+    const wrapper = modal.querySelector('.modal__wrapper');
+    wrapper?.addEventListener('click', e => e.stopPropagation());
+
+    modal.addEventListener('click', e => {
+      if (!e.target.closest('.js--modal')) closeModal(modal.id);
+    });
+
+    modal.setAttribute('data-closers-bound', 'true');
+  }
+}
+
+//делегирование
+
+// modals.js
+export function initModals() {
+  // Защита от повторного вызова (на случай, если initModals() вызовут дважды)
+  if (document.body.hasAttribute('data-modals-initialized')) {
+    return;
+  }
+  document.body.setAttribute('data-modals-initialized', 'true');
+
+  // === 1. Открытие модалок ===
+  document.addEventListener('click', (e) => {
+    const opener = e.target.closest('.js--modal-opener[data-modal]');
+    if (!opener) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const modalSelector = opener.dataset.modal;
+    const modal = document.querySelector(modalSelector);
+    if (!modal) {
+      console.warn(`Модалка не найдена: ${modalSelector}`);
+      return;
+    }
+
+    // Подстановка программы, если есть
+    const program = opener.dataset.program;
+    if (program) {
+      const input = document.querySelector('label.prog input');
+      if (input) input.value = program;
+    }
+
+    // Открываем модалку
+    modal.classList.add('open');
+
+    // Анимация select-list (если есть)
+    const selectWindow = modal.querySelector('.select-list__selection-window');
+    if (selectWindow) {
+      setTimeout(() => selectWindow.classList.add('opacity'), 400);
+    }
+
+    // Блокируем скролл и фиксируем позицию
+    document.body.classList.add('modal-opened', 'body-modal-not-remove-else', 'body-modal-not-remove');
+    addClassBody();
+  });
+
+  // === 2. Закрытие модалок ===
+  document.addEventListener('click', (e) => {
+    // Закрытие по кнопке .js--modal-closer
+    const closer = e.target.closest('.js--modal-closer');
+    if (closer) {
+      e.stopPropagation();
+      const modal = closer.closest('.modal');
+      if (modal) closeModal(modal.id);
+      return;
+    }
+
+    // Закрытие по клику вне .modal__wrapper
+    const modal = e.target.closest('.modal');
+    if (modal && !e.target.closest('.modal__wrapper')) {
+      closeModal(modal.id);
+    }
+  });
+
+  // === 3. Предотвращаем закрытие при клике внутри модалки ===
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.modal__wrapper')) {
+      e.stopPropagation();
+    }
+  }, true); // useCapture = true — важно для всплытия
+}
+
+// --- Вспомогательные функции ---
+
+function addClassBody() {
+  const scrollY = window.scrollY;
+  document.body.classList.add('body-modal', 'body-additional-class');
+  document.body.style.cssText += `; top: -${scrollY}px; position: fixed; width: 100%;`;
+  document.ontouchmove = (e) => e.preventDefault();
+}
+
+export function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+
+  modal.classList.remove('open');
+
+  // Восстанавливаем скролл
+  const scrollY = parseInt(document.body.style.top || '0', 10) * -1;
+  document.body.classList.remove(
+    'modal-opened',
+    'body-modal',
+    'body-additional-class',
+    'body-modal-not-remove-else',
+    'body-modal-not-remove'
+  );
+  document.body.style.cssText = document.body.style.cssText
+    .replace(/top:.*?;?/g, '')
+    .replace(/position:\s*fixed;?/g, '')
+    .replace(/width:\s*100%;?/g, '');
+  window.scrollTo(0, scrollY);
+
+  // Восстанавливаем скролл на мобильных
+  document.ontouchmove = null;
+}
+
 
 
 
