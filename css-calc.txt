@@ -18,74 +18,85 @@ npm error 404 tarball, folder, http url, or git url.
 
 
 
-npm install -D vite @vitejs/plugin-vue2 @popeindustries/vite-plugin-pug sass
+-----------------------------------------
 
+npx npm install -D vite@latest @vitejs/plugin-vue2@latest
+
+Создайте plugins/vite-pug.js (без внешних зависимостей)
+
+// plugins/vite-pug.js
+import { compileFile } from 'pug';
+import { resolve } from 'path';
+
+export default function vitePugPlugin(options = {}) {
+  const { basedir = 'src/pug' } = options;
+
+  return {
+    name: 'vite-pug',
+    enforce: 'pre',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        const pathname = ctx.path;
+        // Поддержка: / → index.pug, /about.html → about.pug
+        if (pathname === '/' || pathname.endsWith('.html')) {
+          const name = pathname === '/' ? 'index' : pathname.slice(1, -5);
+          const pugPath = resolve(__dirname, `src/pug/views/${name}.pug`);
+          try {
+            const fn = compileFile(pugPath, {
+              basedir: resolve(__dirname, basedir),
+              pretty: false,
+            });
+            return fn(); // → HTML
+          } catch (err) {
+            return `<h2> Pug Error: ${name}.pug</h2><pre>${err.message}</pre>`;
+          }
+        }
+        return html;
+      }
+    }
+  };
+}
+
+------------------------
 
 // vite.config.js
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue2';
-import pug from '@popeindustries/vite-plugin-pug';
-import { resolve } from 'path';
+import vitePugPlugin from './plugins/vite-pug.js';
 
 export default defineConfig({
   plugins: [
     vue(),
-    pug({
-      // Опции Pug — те же, что в pug-loader
-      pretty: false,
-      basedir: resolve(__dirname, 'src/pug'),
-    }),
+    vitePugPlugin({ basedir: 'src/pug' })
   ],
-
   resolve: {
     alias: {
-      // Поддержка Vue 2
       vue: 'vue/dist/vue.esm.js',
-    },
+      '@scss': 'src/scss',
+      '@pug': 'src/pug'
+    }
   },
-
   css: {
     preprocessorOptions: {
       scss: {
-        // Поддержка @import в SCSS без node_modules/
-        additionalData: `@import "@/scss/variables.scss";` // ← если нужно глобальное
+        // Если у вас глобальные @import (например, variables.scss), раскомментируйте:
+        // additionalData: `@import "@/scss/variables.scss";`
       }
     }
   },
-
-  build: {
-    // НЕ используется при dev, но на случай `vite build`
-    outDir: 'dist-vite', // ← отдельная папка, чтобы не конфликтовать с Webpack
-    rollupOptions: {
-      input: {
-        // Динамически генерируем входы из Pug
-        ...Object.fromEntries(
-          fs.readdirSync('src/pug/views')
-            .filter(f => f.endsWith('.pug'))
-            .map(f => [f.replace(/\.pug$/, ''), `src/pug/views/${f}`])
-        )
-      }
-    }
-  },
-
   server: {
     port: 5173,
-    open: true,
-    // Сервим статику как в Webpack
+    open: true, // откроет /
     fs: {
       allow: ['src', 'node_modules']
     }
   }
 });
 
------------------------------------------------
-"scripts": {
-  "dev": "webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
-  "build": "webpack --mode production",
-  "start": "webpack-dev-server --mode development --open",
-  "dev:vite": "vite",
-  "lint": "eslint --ext .js --ignore-path .gitignore ."
-}
+-------------------------------------------------
+
+Создайте index.html в корне
 
 <!-- index.html -->
 <!DOCTYPE html>
@@ -93,17 +104,20 @@ export default defineConfig({
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vite Dev</title>
+  <title>Dev</title>
 </head>
 <body>
-  <!-- Pug-страницы будут рендериться сюда -->
   <div id="app"></div>
-  <!-- Vite автоматически вставит скрипты -->
   <script type="module" src="/src/js/index.js"></script>
 </body>
 </html>
 
-------------------------
+---------------------------------------
 
-npm run dev:vite
-
+"scripts": {
+  "dev": "webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
+  "build": "webpack --mode production",
+  "start": "webpack-dev-server --mode development --open",
+  "dev:vite": "vite",
+  "lint": "eslint --ext .js --ignore-path .gitignore ."
+}
