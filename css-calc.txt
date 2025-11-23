@@ -2,213 +2,93 @@ npx webpack --config webpack.css.js --watch --mode development
 
 npx webpack-dev-server --mode development --hot --config webpack.config.js
 
-const path = require('path');
-const fs = require('fs');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const TerserPlugin = require('terser-webpack-plugin');
-const VueLoaderPlugin = require('vue-loader/lib/plugin');
-// eslint-disable-next-line no-unused-vars
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
-function generateHtmlPlugins(templateDir) {
-  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
-  return templateFiles.map((item) => {
-    const parts = item.split('.');
-    const name = parts[0];
-    const extension = parts[1];
-    return new HtmlWebpackPlugin({
-      filename: `${name}.html`,
-      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
-      inject: false
-    });
-  });
-}
 
-const config = {
-  entry: ['./src/js/index.js', './src/scss/style.scss'],
-  // entry: {
-  //   main: ['./src/js/index.js', './src/scss/style.scss'],
-  //   gamedd: ['./src/js/index_dd', './src/scss/style.scss']
-  // },
-  output: {
-    // filename: './js/[name].bundle.js'
-    filename: './js/bundle.js',
+npm install -D vite @vitejs/plugin-vue2 @popeindustries/vite-plugin-pug sass
 
-    // 2023-04-25 fix корневого пути  для корректной ленивой подгрузки apexchart и js вообще.
-    // TODO: сделать аналогичный fix корневого пути и для картинок
-    publicPath: '/dist/',
-    // path: path.resolve(__dirname, 'dist'), // с этим тоже работает
-    // filename: 'js/bundle.js' // с этим тоже работает
-  },
-  devtool: 'source-map',
-  mode: 'production',
-  optimization: {
-    minimize: true,
-    // splitChunks: {
-    //   chunks: 'all'
-    // },
-    minimizer: [
-      new TerserPlugin({
-        parallel: true,
-        cache: true
-      })
-      // new TerserPlugin({ parallel: true })
-    ]
-  },
-  performance: {
-    hints: false
-  },
-  module: {
-    rules: [
-      {
-        test: /\.vue$/,
-        loader: 'vue-loader'
-      },
-      {
-        test: /\.(sass|scss)$/,
-        include: path.resolve(__dirname, 'src/scss'),
-        use: [
-          {
-            loader: MiniCssExtractPlugin.loader,
-            options: {}
-          },
-          {
-            loader: 'css-loader',
-            options: {
-              sourceMap: true,
-              url: false
-            }
-          },
-          {
-            loader: 'postcss-loader',
-            options: {
-              ident: 'postcss',
-              sourceMap: true,
-              plugins: () => [
-                // eslint-disable-next-line global-require
-                require('cssnano')({
-                  preset: [
-                    'default',
-                    {
-                      discardComments: {
-                        removeAll: true
-                      }
-                    }
-                  ]
-                }),
-                // включать при сборке продакшен
-                // require('autoprefixer')({
-                //   grid: true
-                // })
-              ]
-            }
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              sourceMap: true
-            }
-          }
-        ]
-      },
-      {
-        test: /\.pug$/,
-        oneOf: [
-          {
-            include: path.resolve(__dirname, 'src/pug/'),
-            exclude: /\.vue$/,
-            use: ['pug-loader']
-          },
-          {
-            use: ['pug-plain-loader']
-          }
-        ]
-      },
-      {
-        enforce: 'pre',
-        test: /\.js$/,
-        exclude: /node_modules/,
-        loader: 'eslint-loader',
-        options: {
-          // formatter: require("./.eslintrc.js")
-          // cache: true
-        }
-      },
-      {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader'
-        }
-      },
-      {
-        test: /\.js$/,
-        enforce: 'pre',
-        use: ['source-map-loader'],
-      },
-      {
-        test: /\.js$/,
-        use: [{
-          loader: 'cache-loader'
-        }]
-      },
-      {
-        test: /\.(sass|scss)$/,
-        use: [{
-          loader: 'cache-loader'
-        }]
-      },
-      // {
-      //   test: /\.pug$/,
-      //   use: [{
-      //     loader: 'cache-loader'
-      //   }]
-      // }
-    ]
-  },
+
+// vite.config.js
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue2';
+import pug from '@popeindustries/vite-plugin-pug';
+import { resolve } from 'path';
+
+export default defineConfig({
   plugins: [
-    new VueLoaderPlugin(),
-    new MiniCssExtractPlugin({
-      filename: './css/all.css'
+    vue(),
+    pug({
+      // Опции Pug — те же, что в pug-loader
+      pretty: false,
+      basedir: resolve(__dirname, 'src/pug'),
     }),
-    new CopyWebpackPlugin([
-      {
-        from: './src/fonts',
-        to: './fonts'
-      },
-      {
-        from: './src/img',
-        to: './img'
-      }
-    ]),
-    // new BundleAnalyzerPlugin()
   ],
+
   resolve: {
     alias: {
-      vue: 'vue/dist/vue.js'
+      // Поддержка Vue 2
+      vue: 'vue/dist/vue.esm.js',
+    },
+  },
+
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // Поддержка @import в SCSS без node_modules/
+        additionalData: `@import "@/scss/variables.scss";` // ← если нужно глобальное
+      }
+    }
+  },
+
+  build: {
+    // НЕ используется при dev, но на случай `vite build`
+    outDir: 'dist-vite', // ← отдельная папка, чтобы не конфликтовать с Webpack
+    rollupOptions: {
+      input: {
+        // Динамически генерируем входы из Pug
+        ...Object.fromEntries(
+          fs.readdirSync('src/pug/views')
+            .filter(f => f.endsWith('.pug'))
+            .map(f => [f.replace(/\.pug$/, ''), `src/pug/views/${f}`])
+        )
+      }
+    }
+  },
+
+  server: {
+    port: 5173,
+    open: true,
+    // Сервим статику как в Webpack
+    fs: {
+      allow: ['src', 'node_modules']
     }
   }
-};
+});
 
-module.exports = (env, argv) => {
-  if (argv.mode === 'production') {
-    config.plugins.push(new CleanWebpackPlugin());
-    config.resolve.alias.vue = 'vue/dist/vue.min.js';
-    config.devtool = 'eval';
-    // config.publicPath = './';
-    // config.publicPath =  path.resolve(__dirname, 'dist');
-  } else {
-    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
-  }
-  return config;
-};
+-----------------------------------------------
+"scripts": {
+  "dev": "webpack --mode development && prettier --print-width=120 --parser html --write dist/*.html",
+  "build": "webpack --mode production",
+  "start": "webpack-dev-server --mode development --open",
+  "dev:vite": "vite",
+  "lint": "eslint --ext .js --ignore-path .gitignore ."
+}
 
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vite Dev</title>
+</head>
+<body>
+  <!-- Pug-страницы будут рендериться сюда -->
+  <div id="app"></div>
+  <!-- Vite автоматически вставит скрипты -->
+  <script type="module" src="/src/js/index.js"></script>
+</body>
+</html>
 
+------------------------
 
-
-
-
-
+npm run dev:vite
