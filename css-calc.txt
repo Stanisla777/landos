@@ -2,207 +2,212 @@ npx webpack --config webpack.css.js --watch --mode development
 
 npx webpack-dev-server --mode development --hot --config webpack.config.js
 
-function modals() {
-  const modalWindows = document.querySelectorAll('.modal');
-  const modalOpeners = document.querySelectorAll('.js--modal-opener');
+const path = require('path');
+const fs = require('fs');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+// eslint-disable-next-line no-unused-vars
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
-  // === Только новые кнопки ===
-  for (let i = 0; i < modalOpeners.length; i++) {
-    const opener = modalOpeners[i];
-    if (opener.hasAttribute('data-modal-bound')) continue; // ← защита
-
-    opener.addEventListener('click', (e) => {
-      console.log('>>> scrollY:', window.scrollY);
-      e.preventDefault?.();
-      e.stopPropagation?.();
-
-      if (opener.getAttribute('data-program')) {
-        document.querySelector('label.prog input')?.value = opener.getAttribute('data-program');
-      }
-
-      const modal = document.querySelector(opener.dataset.modal);
-      if (!modal) return;
-
-      modal.classList.add('open');
-      if (modal.querySelector('.select-list__selection-window')) {
-        setTimeout(() => {
-          modal.querySelector('.select-list__selection-window').classList.add('opacity');
-        }, 400);
-      }
-
-      document.body.classList.add('modal-opened', 'body-modal-not-remove-else', 'body-modal-not-remove');
-      AddClassBody();
+function generateHtmlPlugins(templateDir) {
+  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return templateFiles.map((item) => {
+    const parts = item.split('.');
+    const name = parts[0];
+    const extension = parts[1];
+    return new HtmlWebpackPlugin({
+      filename: `${name}.html`,
+      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
+      inject: false
     });
-
-    opener.setAttribute('data-modal-bound', 'true'); // ← пометили
-  }
-
-  // === Закрытие — тоже защищаем (если modalWindows могут дублироваться) ===
-  for (let j = 0; j < modalWindows.length; j++) {
-    const modal = modalWindows[j];
-    if (modal.hasAttribute('data-closers-bound')) continue;
-
-    const closers = modal.querySelectorAll('.js--modal-closer');
-    closers.forEach(closer => {
-      closer.addEventListener('click', () => closeModal(modal.id));
-    });
-
-    const wrapper = modal.querySelector('.modal__wrapper');
-    wrapper?.addEventListener('click', e => e.stopPropagation());
-
-    modal.addEventListener('click', e => {
-      if (!e.target.closest('.js--modal')) closeModal(modal.id);
-    });
-
-    modal.setAttribute('data-closers-bound', 'true');
-  }
-}
-
-//делегирование
-
-// modals.js
-// modals.js
-// Совместимость: можно вызывать modals() сколько угодно раз — безопасно
-
-// Защита от повторной инициализации (глобальная переменная + DOM-атрибут)
-function isInitialized() {
-  return window.__modalsInitialized || document.body.hasAttribute('data-modals-initialized');
-}
-
-function markAsInitialized() {
-  window.__modalsInitialized = true;
-  document.body.setAttribute('data-modals-initialized', 'true');
-}
-
-// --- Основная логика (взята из initModals, но внутри modals) ---
-export default function modals() {
-  if (isInitialized()) return;
-  markAsInitialized();
-
-  // === 1. Открытие модалок ===
-  document.addEventListener('click', (e) => {
-    const opener = e.target.closest('.js--modal-opener[data-modal]');
-    if (!opener) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const modalSelector = opener.dataset.modal;
-    const modal = document.querySelector(modalSelector);
-    if (!modal) {
-      console.warn(`Модалка не найдена: ${modalSelector}`);
-      return;
-    }
-
-    // Подстановка программы
-    const program = opener.dataset.program;
-    if (program) {
-      const input = document.querySelector('label.prog input');
-      if (input) input.value = program;
-    }
-
-    // Открытие
-    modal.classList.add('open');
-
-    // Анимация select-list (если есть)
-    const selectWindow = modal.querySelector('.select-list__selection-window');
-    if (selectWindow) {
-      setTimeout(() => selectWindow.classList.add('opacity'), 400);
-    }
-
-    // Блокировка скролла
-    document.body.classList.add(
-      'modal-opened',
-      'body-modal-not-remove-else',
-      'body-modal-not-remove'
-    );
-    addClassBody();
   });
-
-const input = document.querySelector('label.prog input');
-if (input) {
-  input.value = opener.getAttribute('data-program');
 }
-  // === 2. Закрытие модалок ===
-  document.addEventListener('click', (e) => {
-    // По кнопке закрытия
-    const closer = e.target.closest('.js--modal-closer');
-    if (closer) {
-      e.stopPropagation();
-      const modal = closer.closest('.modal');
-      if (modal) closeModal(modal.id);
-      return;
+
+const config = {
+  entry: ['./src/js/index.js', './src/scss/style.scss'],
+  // entry: {
+  //   main: ['./src/js/index.js', './src/scss/style.scss'],
+  //   gamedd: ['./src/js/index_dd', './src/scss/style.scss']
+  // },
+  output: {
+    // filename: './js/[name].bundle.js'
+    filename: './js/bundle.js',
+
+    // 2023-04-25 fix корневого пути  для корректной ленивой подгрузки apexchart и js вообще.
+    // TODO: сделать аналогичный fix корневого пути и для картинок
+    publicPath: '/dist/',
+    // path: path.resolve(__dirname, 'dist'), // с этим тоже работает
+    // filename: 'js/bundle.js' // с этим тоже работает
+  },
+  devtool: 'source-map',
+  mode: 'production',
+  optimization: {
+    minimize: true,
+    // splitChunks: {
+    //   chunks: 'all'
+    // },
+    minimizer: [
+      new TerserPlugin({
+        parallel: true,
+        cache: true
+      })
+      // new TerserPlugin({ parallel: true })
+    ]
+  },
+  performance: {
+    hints: false
+  },
+  module: {
+    rules: [
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader'
+      },
+      {
+        test: /\.(sass|scss)$/,
+        include: path.resolve(__dirname, 'src/scss'),
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {}
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              sourceMap: true,
+              url: false
+            }
+          },
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              sourceMap: true,
+              plugins: () => [
+                // eslint-disable-next-line global-require
+                require('cssnano')({
+                  preset: [
+                    'default',
+                    {
+                      discardComments: {
+                        removeAll: true
+                      }
+                    }
+                  ]
+                }),
+                // включать при сборке продакшен
+                // require('autoprefixer')({
+                //   grid: true
+                // })
+              ]
+            }
+          },
+          {
+            loader: 'sass-loader',
+            options: {
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      {
+        test: /\.pug$/,
+        oneOf: [
+          {
+            include: path.resolve(__dirname, 'src/pug/'),
+            exclude: /\.vue$/,
+            use: ['pug-loader']
+          },
+          {
+            use: ['pug-plain-loader']
+          }
+        ]
+      },
+      {
+        enforce: 'pre',
+        test: /\.js$/,
+        exclude: /node_modules/,
+        loader: 'eslint-loader',
+        options: {
+          // formatter: require("./.eslintrc.js")
+          // cache: true
+        }
+      },
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      },
+      {
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
+      },
+      {
+        test: /\.js$/,
+        use: [{
+          loader: 'cache-loader'
+        }]
+      },
+      {
+        test: /\.(sass|scss)$/,
+        use: [{
+          loader: 'cache-loader'
+        }]
+      },
+      // {
+      //   test: /\.pug$/,
+      //   use: [{
+      //     loader: 'cache-loader'
+      //   }]
+      // }
+    ]
+  },
+  plugins: [
+    new VueLoaderPlugin(),
+    new MiniCssExtractPlugin({
+      filename: './css/all.css'
+    }),
+    new CopyWebpackPlugin([
+      {
+        from: './src/fonts',
+        to: './fonts'
+      },
+      {
+        from: './src/img',
+        to: './img'
+      }
+    ]),
+    // new BundleAnalyzerPlugin()
+  ],
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.js'
     }
+  }
+};
 
-    // По клику вне модалки
-    const modal = e.target.closest('.modal');
-    if (modal && !e.target.closest('.modal__wrapper')) {
-      closeModal(modal.id);
-    }
-  });
-
-  // === 3. Защита от закрытия при клике внутри модалки ===
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('.modal__wrapper')) {
-      e.stopPropagation();
-    }
-  }, true);
-}
-
-// --- Вспомогательные функции (те же самые) ---
-
-function addClassBody() {
-  const scrollY = window.scrollY;
-  document.body.classList.add('body-modal', 'body-additional-class');
-  // Используем setProperty — безопаснее, чем cssText +=
-  document.body.style.setProperty('--modal-scroll-y', `-${scrollY}px`);
-  document.body.style.position = 'fixed';
-  document.body.style.width = '100%';
-  document.ontouchmove = (e) => e.preventDefault();
-}
-
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (!modal) return;
-
-  modal.classList.remove('open');
-
-  // Восстановление скролла
-  const style = getComputedStyle(document.body);
-  const top = style.getPropertyValue('--modal-scroll-y') || '0px';
-  const scrollY = Math.abs(parseInt(top, 10)) || 0;
-
-  document.body.classList.remove(
-    'modal-opened',
-    'body-modal',
-    'body-additional-class',
-    'body-modal-not-remove-else',
-    'body-modal-not-remove'
-  );
-  document.body.style.removeProperty('--modal-scroll-y');
-  document.body.style.position = '';
-  document.body.style.width = '';
-  document.ontouchmove = null;
-
-  window.scrollTo(0, scrollY);
-}
+module.exports = (env, argv) => {
+  if (argv.mode === 'production') {
+    config.plugins.push(new CleanWebpackPlugin());
+    config.resolve.alias.vue = 'vue/dist/vue.min.js';
+    config.devtool = 'eval';
+    // config.publicPath = './';
+    // config.publicPath =  path.resolve(__dirname, 'dist');
+  } else {
+    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
+  }
+  return config;
+};
 
 
-if (e && typeof e.preventDefault === 'function') {
-  e.preventDefault();
-}
-if (e && typeof e.stopPropagation === 'function') {
-  e.stopPropagation();
-}
 
-
-const input = document.querySelector('label.prog input');
-if (input) {
-  input.value = opener.getAttribute('data-program');
-}
-if (wrapper) {
-  wrapper.addEventListener('click', e => e.stopPropagation());
-}
 
 
 
