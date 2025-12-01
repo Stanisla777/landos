@@ -7,3 +7,50 @@ https://rssprosi-3100.sprosi.dev.ringsites.ahml.ru/education/video/testovoe-vide
 https://rssprosi-3100.sprosi.dev.ringsites.ahml.ru/education/video/sberezhenie-sredstv-v-krizisnoy-situatsii/
 
 https://rssprosi-3100.sprosi.dev.ringsites.ahml.ru/education/video/keshbek-dlya-zhizni-kak-vernut-potrachennye-dengi/
+
+
+container.addEventListener('click', function (e) {
+    // Предотвратим всплытие, если нужно — опционально
+    // e.stopPropagation();
+
+    // Убираем заглушку (подставьте ваш класс/логику)
+    const placeholder = this.querySelector('.card-video__placeholder');
+    if (placeholder) placeholder.remove();
+
+    const iframe = this.querySelector('iframe');
+    if (!iframe || iframe.hasAttribute('data-autoplay-applied')) return;
+
+    const src = new URL(iframe.src);
+
+    // Добавляем параметры для автозапуска
+    // YouTube, Rutube и vkvideo.ru поддерживают autoplay=1&muted=1
+    src.searchParams.set('autoplay', '1');
+    src.searchParams.set('mute', '1'); // или 'muted=1' — зависит от платформы, но многие понимают оба
+    src.searchParams.set('muted', '1'); // явно для надёжности
+    // Для iOS — playsinline (чтобы видео не открывалось в fullscreen)
+    src.searchParams.set('playsinline', '1');
+
+    // Особенности по хостам:
+    const hostname = src.hostname;
+
+    if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+      // YouTube: `mute=1` не работает, нужен `mute=1` + `autoplay=1`
+      // Но YouTube требует `mute=1` (не `muted`)
+      // playsinline=1 уже добавлен
+    } else if (hostname.includes('rutube.ru')) {
+      // Rutube: autoplay=1&muted=1 работает
+    } else if (hostname.includes('vkvideo.ru')) {
+      // VK: поддерживает autoplay=1 и muted=1 (проверено)
+      // Иногда требуется ещё &loop=0, но не обязательно
+    }
+
+    // Применяем новый src
+    iframe.src = src.toString();
+
+    // Метка, чтобы не повторять
+    iframe.setAttribute('data-autoplay-applied', 'true');
+
+    // Дополнительно: программно фокусируем iframe (иногда помогает на iOS)
+    iframe.focus();
+  }, { once: true }); // {once: true} — если нужно срабатывание только один раз
+
