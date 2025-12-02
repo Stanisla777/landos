@@ -49,92 +49,55 @@ if (beforeLoadEl) {
 }
 
 videos[i].querySelector('.card-video__prev').onclick = function () {
-  const container = videos[i];
-  const type_video = container.getAttribute('for-category');
+  const type_video = videos[i].getAttribute('for-category');
+  
+  // Убираем заглушку
+  videos[i].querySelector('picture')?.style.display = 'none';
+  videos[i].querySelector('.card-video__icon-play')?.style.display = 'none';
 
-  // Убираем заглушку (с защитой от ошибок)
-  const picture = container.querySelector('picture');
-  const playIcon = container.querySelector('.card-video__icon-play');
-  if (picture) picture.style.display = 'none';
-  if (playIcon) playIcon.style.display = 'none';
-
-  // —————————————————————————————————————————————
-  // Случай 1: локальное видео (<video>)
-  // —————————————————————————————————————————————
+  // Для file — уже работает
   if (type_video === 'file') {
-    const videoEl = container.querySelector('video');
-    const sourceEl = container.querySelector('video source');
-    const id_video = /* у вас должно быть определено где-то выше */ /* например: */ container.getAttribute('data-video-src');
-
-    if (!sourceEl && videoEl && id_video) {
-      const source = document.createElement('source');
-      source.src = id_video;
-      source.type = 'video/mp4';
-      videoEl.appendChild(source);
-    }
-
-    if (videoEl) {
-      videoEl.style.display = 'block';
-      container.querySelector('.before-load')?.style.display = 'none';
-
-      // Пробуем воспроизвести — в рамках user gesture (onclick), должно сработать
-      videoEl.muted = true; // для надёжности на iOS
-      videoEl.play().catch(err => {
-        console.warn('Video play prevented:', err);
-        // Можно показать кнопку "Play", если autoplay заблокирован
-      });
-    }
+    // ... ваш существующий код для <video> — оставьте как есть
     return;
   }
 
-  // —————————————————————————————————————————————
-  // Случай 2: iframe (YouTube, VK, Rutube и др.)
-  // —————————————————————————————————————————————
-  const iframe = container.querySelector('iframe');
+  // Для iframe (YouTube, VK, Rutube и др.)
+  const iframe = videos[i].querySelector('iframe');
   if (!iframe || iframe.hasAttribute('data-autoplay-applied')) return;
 
-  try {
-    const srcUrl = new URL(iframe.src);
-    const hostname = srcUrl.hostname;
+  const src = new URL(iframe.src);
+  const hostname = src.hostname;
 
-    // ———— Общие параметры ————
-    srcUrl.searchParams.set('autoplay', '1');
-    srcUrl.searchParams.set('muted', '1');      // Rutube и VK
-    srcUrl.searchParams.set('mute', '1');       // YouTube понимает `mute`, не `muted`
-    srcUrl.searchParams.set('playsinline', '1'); // критично для iOS
+  // ———— ОБЩИЕ ПАРАМЕТРЫ ————
+  src.searchParams.set('autoplay', '1');
+  src.searchParams.set('muted', '1');  // Rutube и VK понимают `muted`
+  src.searchParams.set('playsinline', '1');
 
-    // ———— Платформо-специфика ————
-    if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
-      // YouTube: нужен enablejsapi для postMessage (опционально), но autoplay + mute достаточно
-      srcUrl.searchParams.set('enablejsapi', '1');
-    } else if (hostname.includes('rutube.ru')) {
-      // Rutube: embed-ссылка должна быть вида `/play/embed/ID/`
-      // Если у вас `/video/ID/` — замените на embed вручную при вставке
-      srcUrl.searchParams.set('start', '0');
-    } else if (hostname.includes('vkvideo.ru')) {
-      // VK: параметры уже подходят, но убедимся, что нет `hd=0` и т.п.
-      srcUrl.searchParams.set('hd', '2');
-    }
-
-    // 🔁 Пересоздаём iframe — обязательно для Rutube!
-    const newIframe = document.createElement('iframe');
-    newIframe.src = srcUrl.toString();
-    newIframe.setAttribute('frameborder', '0');
-    newIframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media; microphone');
-    newIframe.setAttribute('allowfullscreen', 'true');
-    newIframe.setAttribute('data-autoplay-applied', 'true');
-
-    // Копируем размеры, если заданы инлайново
-    if (iframe.style.width)  newIframe.style.width  = iframe.style.width;
-    if (iframe.style.height) newIframe.style.height = iframe.style.height;
-    // Или, если размеры заданы в data-атрибутах или CSS — можно не трогать
-
-    // Заменяем старый iframe
-    iframe.replaceWith(newIframe);
-
-  } catch (err) {
-    console.error('Ошибка при подготовке iframe к autoplay:', err);
+  // ———— ПЛАТФОРМО-СПЕЦИФИЧЕСКИЕ ПАРАМЕТРЫ ————
+  if (hostname.includes('rutube.ru')) {
+    // Rutube требует `autoplay=1` + `muted=1` — и iframe должен быть НОВЫМ!
+    // Также: `start=0` иногда помогает
+    src.searchParams.set('start', '0');
+  } else if (hostname.includes('vkvideo.ru')) {
+    // VK работает и с подменой src — но для единообразия лучше тоже пересоздавать
   }
+
+  // 🔁 Пересоздаём iframe для надёжности (особенно для Rutube)
+  const newIframe = iframe.cloneNode(false); // без дочерних узлов
+  newIframe.src = src.toString();
+  newIframe.setAttribute('frameborder', '0');
+  newIframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media');
+  newIframe.setAttribute('allowfullscreen', 'true');
+
+  // Сохраняем размеры, если заданы
+  if (iframe.style.width) newIframe.style.width = iframe.style.width;
+  if (iframe.style.height) newIframe.style.height = iframe.style.height;
+
+  // Заменяем старый iframe на новый
+  iframe.replaceWith(newIframe);
+
+  // Метка, чтобы избежать повторного срабатывания (на случай делегирования)
+  newIframe.setAttribute('data-autoplay-applied', 'true');
 };
 
 
