@@ -51,150 +51,162 @@ if (beforeLoadEl) {
 
 
 videos[i].querySelector('.card-video__prev').onclick = function () {
-  const container = videos[i];
-  const type_video = container.getAttribute('for-category');
-
-  // Скрываем заглушку
-  const picture = container.querySelector('picture');
-  const playIcon = container.querySelector('.card-video__icon-play');
-  if (picture) picture.style.display = 'none';
-  if (playIcon) playIcon.style.display = 'none';
-
-  // ——————————————————————————————
-  // Локальное видео (<video>)
-  // ——————————————————————————————
-  if (type_video === 'file') {
-    const videoEl = container.querySelector('video');
-    if (videoEl) {
-      videoEl.style.display = 'block';
-      const beforeLoadEl = container.querySelector('.before-load');
-      if (beforeLoadEl) beforeLoadEl.style.display = 'none';
-
-      videoEl.muted = true; // критично для iOS
-      videoEl.play().catch(function (err) {
-        console.warn('Видео не проигралось автоматически:', err);
-        // Можно показать fallback-кнопку Play
-      });
-    }
-    return;
-  }
-
-  // ——————————————————————————————
-  // iframe: YouTube / VK / Rutube / Vimeo / другие
-  // ——————————————————————————————
-  const oldIframe = container.querySelector('iframe');
-  // Защита от повторного запуска и отсутствия iframe
-  if (!oldIframe || oldIframe.hasAttribute('data-loaded')) return;
-
-  try {
-    // Сохраняем данные из старого iframe
-    const rawSrc = oldIframe.getAttribute('src') || oldIframe.getAttribute('data-src') || '';
-    const width = oldIframe.width || '100%';
-    const height = oldIframe.height || '480';
-    const allowAttr = oldIframe.getAttribute('allow') || '';
-
-    if (!rawSrc.trim()) {
-      console.warn('iframe без src/data-src — пропускаем');
-      return;
-    }
-
-    let srcUrl = new URL(rawSrc.trim());
-    const hostname = srcUrl.hostname.toLowerCase();
-
-    // ————— Rutube: приводим к embed-формату —————
-    if (hostname.includes('rutube.ru')) {
-      let videoId = null;
-
-      // Пытаемся извлечь ID из разных форматов
-      if (srcUrl.searchParams.has('pl_video')) {
-        videoId = srcUrl.searchParams.get('pl_video');
-      } else if (srcUrl.pathname.includes('/video/')) {
-        const match = srcUrl.pathname.match(/\/video\/([a-f0-9]{32})/);
-        videoId = match ? match[1] : null;
-      } else if (srcUrl.pathname.includes('/play/embed/')) {
-        const match = srcUrl.pathname.match(/\/play\/embed\/([a-f0-9]{32})/);
-        videoId = match ? match[1] : null;
-      } else {
-        // Просто пытаемся найти 32-символьный hex ID
-        const match = rawSrc.match(/([a-f0-9]{32})/);
-        videoId = match ? match[1] : null;
+      // eslint-disable-next-line camelcase,no-unused-vars
+      const type_video = videos[i].getAttribute('for-category');// получаю тип видео
+      videos[i].querySelector('picture').setAttribute('style', 'display:none');
+      videos[i].querySelector('.card-video__icon-play').setAttribute('style', 'display:none');
+      // создаем iframe со включенной опцией autoplay
+      // eslint-disable-next-line camelcase
+      if (type_video === 'youtube') {
+        //  const iframe = document.createElement('iframe');
+        //  // eslint-disable-next-line camelcase
+        //  let iframeUrl = `https://www.youtube.com/embed/${id_video}?autoplay=1&amp;loop=1&amp;playlist=${id_video}`;
+        //  if (videos[i].getAttribute('data-params')) iframeUrl += `&${videos[i].getAttribute('data-params')}`;
+        //  iframe.setAttribute('src', iframeUrl);
+        //  iframe.setAttribute('frameborder', '0');
+        //  iframe.setAttribute('allow', 'autoplay');
+        //  iframe.style.width = videos[i].style.width;
+        //  iframe.style.height = videos[i].style.height;
+        //  // Заменяем миниатюру плеером с YouTube
+        // videos[i].querySelector('.card-video__content').append(iframe);
+        // eslint-disable-next-line camelcase
+      } else if (type_video === 'vimeo') {
+        //  const iframe = document.createElement('iframe');
+        //  // eslint-disable-next-line camelcase
+        //  let iframeUrl = `https://player.vimeo.com/video/${id_video}?autoplay=1&loop=1&autopause=0&amp;mute=1&amp;playlist=${id_video}`;
+        //  if (videos[i].getAttribute('data-params')) iframeUrl += `&${videos[i].getAttribute('data-params')}`;
+        //  iframe.setAttribute('src', iframeUrl);
+        //  iframe.setAttribute('frameborder', '0');
+        //  iframe.setAttribute('allow', 'autoplay');
+        //  iframe.style.width = videos[i].style.width;
+        //  iframe.style.height = videos[i].style.height;
+        //  // Заменяем миниатюру плеером с YouTube
+        // videos[i].querySelector('.card-video__content').append(iframe);
+        // eslint-disable-next-line no-empty,camelcase
       }
-
-      if (videoId) {
-        srcUrl = new URL(`https://rutube.ru/play/embed/${videoId}/`);
-      } else {
-        console.warn('Rutube: не удалось извлечь video ID из', rawSrc);
+      else if (type_video === 'file') {
+        // eslint-disable-next-line no-unused-vars,camelcase
+        const source_video = document.createElement('source');
+        // eslint-disable-next-line camelcase
+        source_video.setAttribute('src', `${id_video}`);
+        source_video.setAttribute('type', 'video/mp4');
+        // eslint-disable-next-line no-unused-vars
+        const len = videos[i].querySelectorAll('video source').length;
+        if (len === 0) {
+          videos[i].querySelector('.card-video__content video').append(source_video);
+        }
+        videos[i].querySelector('video').setAttribute('style', 'display:block');
+        setTimeout(() => {
+          videos[i].querySelector('.before-load').setAttribute('style', 'display:none');
+        }, 1000);
+        videos[i].querySelector('video').play();
       }
-    }
+      const srcImg = videos[i].querySelector('.card-video__prev picture img').getAttribute('src'); // получаю путь к видео
+      if (srcImg !== '' || srcImg !== 'img/') {
 
-    // ————— YouTube: к embed —————
-    else if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
-      let v = null;
-      if (hostname.includes('youtu.be')) {
-        v = srcUrl.pathname.substring(1);
-      } else if (srcUrl.pathname === '/watch') {
-        v = srcUrl.searchParams.get('v');
-      } else if (srcUrl.pathname.startsWith('/embed/')) {
-        v = srcUrl.pathname.split('/')[2];
+        // Для iframe (YouTube, VK, Rutube и др.)
+        const oldIframe = videos[i].querySelector('iframe');
+        // Защита от повторного запуска и отсутствия iframe
+        if (!oldIframe || oldIframe.hasAttribute('data-loaded')) return;
+
+        try {
+          // Сохраняем данные из старого iframe
+          const rawSrc = oldIframe.getAttribute('src') || oldIframe.getAttribute('data-src') || '';
+          const width = oldIframe.width || '100%';
+          const height = oldIframe.height || '480';
+          const allowAttr = oldIframe.getAttribute('allow') || '';
+
+          if (!rawSrc.trim()) {
+            console.warn('iframe без src/data-src — пропускаем');
+            return;
+          }
+
+          let srcUrl = new URL(rawSrc.trim());
+          const hostname = srcUrl.hostname.toLowerCase();
+
+          // ————— Rutube: приводим к embed-формату —————
+          if (hostname.includes('rutube.ru')) {
+            let videoId = null;
+
+            // Пытаемся извлечь ID из разных форматов
+            if (srcUrl.searchParams.has('pl_video')) {
+              videoId = srcUrl.searchParams.get('pl_video');
+            } else if (srcUrl.pathname.includes('/video/')) {
+              const match = srcUrl.pathname.match(/\/video\/([a-f0-9]{32})/);
+              videoId = match ? match[1] : null;
+            } else if (srcUrl.pathname.includes('/play/embed/')) {
+              const match = srcUrl.pathname.match(/\/play\/embed\/([a-f0-9]{32})/);
+              videoId = match ? match[1] : null;
+            } else {
+              // Просто пытаемся найти 32-символьный hex ID
+              const match = rawSrc.match(/([a-f0-9]{32})/);
+              videoId = match ? match[1] : null;
+            }
+
+            if (videoId) {
+              srcUrl = new URL(`https://rutube.ru/play/embed/${videoId}/`);
+            } else {
+              console.warn('Rutube: не удалось извлечь video ID из', rawSrc);
+            }
+          }
+
+          // ————— YouTube: к embed —————
+          else if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+            let v = null;
+            if (hostname.includes('youtu.be')) {
+              v = srcUrl.pathname.substring(1);
+            } else if (srcUrl.pathname === '/watch') {
+              v = srcUrl.searchParams.get('v');
+            } else if (srcUrl.pathname.startsWith('/embed/')) {
+              v = srcUrl.pathname.split('/')[2];
+            }
+            if (v) {
+              srcUrl = new URL(`https://www.youtube.com/embed/${v}`);
+            }
+          }
+
+          // ————— Параметры автозапуска —————
+          const sp = srcUrl.searchParams;
+          sp.set('autoplay', '1');
+          sp.set('muted', '1');
+          sp.set('playsinline', '1');
+          if (hostname.includes('youtube.com')) {
+            sp.set('mute', '1'); // YouTube читает `mute`, а не `muted`
+            sp.set('enablejsapi', '1');
+          }
+
+          // Формируем финальный URL и очищаем &amp;
+          let finalSrc = srcUrl.toString().replace(/&amp;/g, '&');
+
+          // ————— Создаём НОВЫЙ iframe —————
+          const newIframe = document.createElement('iframe');
+          newIframe.src = finalSrc; // ← присваиваем напрямую, не через setAttribute
+          newIframe.width = width;
+          newIframe.height = height;
+          newIframe.setAttribute('frameborder', '0');
+          newIframe.setAttribute('allowfullscreen', 'true');
+
+          // Объединяем allow-права (без дублей)
+          const requiredAllow = 'autoplay; fullscreen; picture-in-picture; encrypted-media';
+          const allowSet = new Set(
+            (allowAttr + ';' + requiredAllow)
+              .split(';')
+              .map(function (s) { return s.trim(); })
+              .filter(Boolean)
+          );
+          newIframe.setAttribute('allow', Array.from(allowSet).join('; '));
+
+          // ————— Замена —————
+          oldIframe.parentNode.replaceChild(newIframe, oldIframe);
+
+          // ————— Помечаем, чтобы не запускать повторно —————
+          newIframe.setAttribute('data-loaded', 'true');
+
+        } catch (err) {
+          console.error('Ошибка при создании iframe:', err);
+          // Можно показать fallback: кнопку "Загрузить видео"
+        }
+
+
       }
-      if (v) {
-        srcUrl = new URL(`https://www.youtube.com/embed/${v}`);
-      }
-    }
-
-    // ————— Параметры автозапуска —————
-    const sp = srcUrl.searchParams;
-    sp.set('autoplay', '1');
-    sp.set('muted', '1');
-    sp.set('playsinline', '1');
-    if (hostname.includes('youtube.com')) {
-      sp.set('mute', '1'); // YouTube читает `mute`, а не `muted`
-      sp.set('enablejsapi', '1');
-    }
-
-    // Формируем финальный URL и очищаем &amp;
-    let finalSrc = srcUrl.toString().replace(/&amp;/g, '&');
-
-    // ————— Создаём НОВЫЙ iframe —————
-    const newIframe = document.createElement('iframe');
-    newIframe.src = finalSrc; // ← присваиваем напрямую, не через setAttribute
-    newIframe.width = width;
-    newIframe.height = height;
-    newIframe.setAttribute('frameborder', '0');
-    newIframe.setAttribute('allowfullscreen', 'true');
-
-    // Объединяем allow-права (без дублей)
-    const requiredAllow = 'autoplay; fullscreen; picture-in-picture; encrypted-media';
-    const allowSet = new Set(
-      (allowAttr + ';' + requiredAllow)
-        .split(';')
-        .map(function (s) { return s.trim(); })
-        .filter(Boolean)
-    );
-    newIframe.setAttribute('allow', Array.from(allowSet).join('; '));
-
-    // ————— Замена —————
-    oldIframe.parentNode.replaceChild(newIframe, oldIframe);
-
-    // ————— Помечаем, чтобы не запускать повторно —————
-    newIframe.setAttribute('data-loaded', 'true');
-
-  } catch (err) {
-    console.error('Ошибка при создании iframe:', err);
-    // Можно показать fallback: кнопку "Загрузить видео"
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    };
