@@ -45,95 +45,57 @@ https://rssprosi-3100.sprosi.dev.ringsites.ahml.ru/education/video/keshbek-dlya-
 
 
 videos[i].querySelector('.card-video__prev').onclick = function () {
-      // eslint-disable-next-line camelcase,no-unused-vars
-      const type_video = videos[i].getAttribute('for-category');// получаю тип видео
-     videos[i].querySelector('picture').setAttribute('style', 'display:none');
-     videos[i].querySelector('.card-video__icon-play').setAttribute('style', 'display:none');
-      // создаем iframe со включенной опцией autoplay
-      // eslint-disable-next-line camelcase
-      if (type_video === 'youtube') {
-       //  const iframe = document.createElement('iframe');
-       //  // eslint-disable-next-line camelcase
-       //  let iframeUrl = `https://www.youtube.com/embed/${id_video}?autoplay=1&amp;loop=1&amp;playlist=${id_video}`;
-       //  if (videos[i].getAttribute('data-params')) iframeUrl += `&${videos[i].getAttribute('data-params')}`;
-       //  iframe.setAttribute('src', iframeUrl);
-       //  iframe.setAttribute('frameborder', '0');
-       //  iframe.setAttribute('allow', 'autoplay');
-       //  iframe.style.width = videos[i].style.width;
-       //  iframe.style.height = videos[i].style.height;
-       //  // Заменяем миниатюру плеером с YouTube
-       // videos[i].querySelector('.card-video__content').append(iframe);
-        // eslint-disable-next-line camelcase
-      } else if (type_video === 'vimeo') {
-       //  const iframe = document.createElement('iframe');
-       //  // eslint-disable-next-line camelcase
-       //  let iframeUrl = `https://player.vimeo.com/video/${id_video}?autoplay=1&loop=1&autopause=0&amp;mute=1&amp;playlist=${id_video}`;
-       //  if (videos[i].getAttribute('data-params')) iframeUrl += `&${videos[i].getAttribute('data-params')}`;
-       //  iframe.setAttribute('src', iframeUrl);
-       //  iframe.setAttribute('frameborder', '0');
-       //  iframe.setAttribute('allow', 'autoplay');
-       //  iframe.style.width = videos[i].style.width;
-       //  iframe.style.height = videos[i].style.height;
-       //  // Заменяем миниатюру плеером с YouTube
-       // videos[i].querySelector('.card-video__content').append(iframe);
-        // eslint-disable-next-line no-empty,camelcase
-      }
-      else if (type_video === 'file') {
-        // eslint-disable-next-line no-unused-vars,camelcase
-        const source_video = document.createElement('source');
-        // eslint-disable-next-line camelcase
-        source_video.setAttribute('src', `${id_video}`);
-        source_video.setAttribute('type', 'video/mp4');
-        // eslint-disable-next-line no-unused-vars
-        const len = videos[i].querySelectorAll('video source').length;
-        if (len === 0) {
-          videos[i].querySelector('.card-video__content video').append(source_video);
-        }
-        videos[i].querySelector('video').setAttribute('style', 'display:block');
-        setTimeout(() => {
-          videos[i].querySelector('.before-load').setAttribute('style', 'display:none');
-        }, 1000);
-        videos[i].querySelector('video').play();
-      }
-      const srcImg = videos[i].querySelector('.card-video__prev picture img').getAttribute('src'); // получаю путь к видео
-      if (srcImg !== '' || srcImg !== 'img/') {
-        const iframe = this.querySelector('iframe');
-        if (!iframe || iframe.hasAttribute('data-autoplay-applied')) return;
+  const type_video = videos[i].getAttribute('for-category');
+  
+  // Убираем заглушку
+  videos[i].querySelector('picture')?.style.display = 'none';
+  videos[i].querySelector('.card-video__icon-play')?.style.display = 'none';
 
-        const src = new URL(iframe.src);
+  // Для file — уже работает
+  if (type_video === 'file') {
+    // ... ваш существующий код для <video> — оставьте как есть
+    return;
+  }
 
-        // Добавляем параметры для автозапуска
-        // YouTube, Rutube и vkvideo.ru поддерживают autoplay=1&muted=1
-        src.searchParams.set('autoplay', '1');
-        src.searchParams.set('mute', '1'); // или 'muted=1' — зависит от платформы, но многие понимают оба
-        src.searchParams.set('muted', '1'); // явно для надёжности
-        // Для iOS — playsinline (чтобы видео не открывалось в fullscreen)
-        src.searchParams.set('playsinline', '1');
+  // Для iframe (YouTube, VK, Rutube и др.)
+  const iframe = videos[i].querySelector('iframe');
+  if (!iframe || iframe.hasAttribute('data-autoplay-applied')) return;
 
-        // Особенности по хостам:
-        const hostname = src.hostname;
+  const src = new URL(iframe.src);
+  const hostname = src.hostname;
 
-        if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
-          // YouTube: `mute=1` не работает, нужен `mute=1` + `autoplay=1`
-          // Но YouTube требует `mute=1` (не `muted`)
-          // playsinline=1 уже добавлен
-        } else if (hostname.includes('rutube.ru')) {
-          // Rutube: autoplay=1&muted=1 работает
-        } else if (hostname.includes('vkvideo.ru')) {
-          // VK: поддерживает autoplay=1 и muted=1 (проверено)
-          // Иногда требуется ещё &loop=0, но не обязательно
-        }
+  // ———— ОБЩИЕ ПАРАМЕТРЫ ————
+  src.searchParams.set('autoplay', '1');
+  src.searchParams.set('muted', '1');  // Rutube и VK понимают `muted`
+  src.searchParams.set('playsinline', '1');
 
-        // Применяем новый src
-        iframe.src = src.toString();
+  // ———— ПЛАТФОРМО-СПЕЦИФИЧЕСКИЕ ПАРАМЕТРЫ ————
+  if (hostname.includes('rutube.ru')) {
+    // Rutube требует `autoplay=1` + `muted=1` — и iframe должен быть НОВЫМ!
+    // Также: `start=0` иногда помогает
+    src.searchParams.set('start', '0');
+  } else if (hostname.includes('vkvideo.ru')) {
+    // VK работает и с подменой src — но для единообразия лучше тоже пересоздавать
+  }
 
-        // Метка, чтобы не повторять
-        iframe.setAttribute('data-autoplay-applied', 'true');
+  //  Пересоздаём iframe для надёжности (особенно для Rutube)
+  const newIframe = iframe.cloneNode(false); // без дочерних узлов
+  newIframe.src = src.toString();
+  newIframe.setAttribute('frameborder', '0');
+  newIframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media');
+  newIframe.setAttribute('allowfullscreen', 'true');
 
-        // Дополнительно: программно фокусируем iframe (иногда помогает на iOS)
-        iframe.focus();
-      }
-    };
+  // Сохраняем размеры, если заданы
+  if (iframe.style.width) newIframe.style.width = iframe.style.width;
+  if (iframe.style.height) newIframe.style.height = iframe.style.height;
+
+  // Заменяем старый iframe на новый
+  iframe.replaceWith(newIframe);
+
+  // Метка, чтобы избежать повторного срабатывания (на случай делегирования)
+  newIframe.setAttribute('data-autoplay-applied', 'true');
+};
+
 
 
 
