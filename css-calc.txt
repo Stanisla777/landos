@@ -10,19 +10,21 @@ https://rssprosi-3100.sprosi.dev.ringsites.ahml.ru/education/video/keshbek-dlya-
 
 
 
-if (servicesStr) {
-  try {
-    // 1. JSON: ["a","b"]
-    services = JSON.parse(servicesStr);
-  } catch (_) {
-    // 2. [a,b] или a,b → приводим к единому виду
-    let cleaned = servicesStr.trim();
-    if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
-      cleaned = cleaned.slice(1, -1).trim();
-    }
-    services = cleaned
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean);
+// Функция копирования
+const copy = () => {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    return navigator.clipboard.writeText(rawUrl);
+  } else {
+    const textarea = document.createElement('textarea');
+    textarea.value = rawUrl;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'absolute';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
   }
-}
+};
+
