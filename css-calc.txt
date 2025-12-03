@@ -12,125 +12,131 @@ https://rssprosi-3100.sprosi.dev.ringsites.ahml.ru/education/video/keshbek-dlya-
 
 document.addEventListener('DOMContentLoaded', initShareBlocks);
 
+/**
+ * Инициализация всех кнопок "Поделиться"
+ */
 function initShareBlocks() {
-  const shareTriggers = document.querySelectorAll('.js--soc-list-share');
-  shareTriggers.forEach(trigger => {
+  const triggers = document.querySelectorAll('.js--soc-list-share:not([data-initialized])');
+  triggers.forEach(trigger => {
+    trigger.dataset.initialized = 'true';
     trigger.addEventListener('click', handleShareClick);
   });
 }
 
+/**
+ * Обработчик клика по кнопке "Поделиться"
+ */
 function handleShareClick(e) {
   e.preventDefault();
   const trigger = e.currentTarget;
   const wrapper = trigger.closest('.js--soc-list-wrapper-share');
   if (!wrapper) return;
 
-  // Получаем/кэшируем dropdown
   let dropdown = wrapper.querySelector('.soc-list__share');
   if (!dropdown) {
     dropdown = createShareDropdown(wrapper);
     wrapper.appendChild(dropdown);
   }
 
-  // Пересчитываем позицию при каждом открытии (на случай скролла/динамики)
+  // Позиционируем и показываем
   positionDropdown(trigger, dropdown);
-
-  // Показываем
   dropdown.style.display = 'block';
-
-  // Добавляем обработчик закрытия (один раз)
-  if (!dropdown.dataset.bound) {
-    dropdown.dataset.bound = 'true';
-    // Закрытие по клику на любой пункт
-    dropdown.addEventListener('click', (ev) => {
-      if (ev.target.closest('a, div[data-copy-link]')) {
-        dropdown.style.display = 'none';
-      }
-    });
-
-    // Закрытие по клику вне dropdown или trigger
-    document.addEventListener('click', function onClickOutside(ev) {
-      if (!dropdown.contains(ev.target) && !trigger.contains(ev.target)) {
-        dropdown.style.display = 'none';
-        // Можно отвязать, но лучше не делать — вдруг dropdown переиспользуется
-        // document.removeEventListener('click', onClickOutside);
-      }
-    });
-  }
 }
 
+/**
+ * Позиционирование dropdown под кнопкой
+ */
+function positionDropdown(trigger, dropdown) {
+  const rect = trigger.getBoundingClientRect();
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+  const top = rect.top + rect.height + scrollTop;
+  const left = rect.left + scrollLeft;
+
+  dropdown.style.top = `${top}px`;
+  dropdown.style.left = `${left}px`;
+}
+
+/**
+ * Создаёт dropdown "Поделиться"
+ */
 function createShareDropdown(wrapper) {
-  const servicesStr = wrapper.dataset.services || '[]';
-  let services;
-  try {
-    // Заменяем возможные кавычки/без кавычек на JSON-совместимый вид
-    const normalized = servicesStr
-      .replace(/[\[\]']/g, '"')
-      .replace(/,\s*}/g, '}')
-      .replace(/\s+/g, ' ')
-      .trim();
-    services = JSON.parse(normalized);
-  } catch (e) {
-    console.error('Некорректный data-services:', servicesStr, e);
-    services = [];
+  // === 1. Парсинг data-services (поддержка всех форматов) ===
+  const servicesStr = (wrapper.dataset.services || '').trim();
+  let services = [];
+
+  if (servicesStr) {
+    try {
+      // 1. JSON: ["a","b"]
+      services = JSON.parse(servicesStr);
+    } catch {
+      try {
+        // 2. [a,b]
+        const cleaned = servicesStr
+          .replace(/^\[/, '')
+          .replace(/\]$/, '')
+          .trim();
+        if (cleaned) {
+          services = cleaned.split(',').map(s => s.trim()).filter(Boolean);
+        }
+      } catch {
+        // 3. a,b
+        services = servicesStr.split(',').map(s => s.trim()).filter(Boolean);
+      }
+    }
   }
 
-  const url = encodeURIComponent(wrapper.dataset.url || location.href);
-  const text = encodeURIComponent(wrapper.dataset.text || document.title);
-  const imageUrl = encodeURIComponent(wrapper.dataset.image || '');
+  if (!Array.isArray(services)) services = [];
 
+  // === 2. Данные для шаринга ===
+  const rawUrl = wrapper.dataset.url || location.href;
+  const rawText = wrapper.dataset.text || document.title;
+  const rawImage = wrapper.dataset.image || '';
+
+  const url = encodeURIComponent(rawUrl);
+  const text = encodeURIComponent(rawText);
+  const imageUrl = encodeURIComponent(rawImage);
+
+  // === 3. Создание DOM ===
   const dropdown = document.createElement('div');
   dropdown.className = 'soc-list__share';
-  dropdown.style.display = 'none'; // initially hidden
+  dropdown.style.display = 'none';
 
   const ul = document.createElement('ul');
 
-  const serviceNames = {
+  const serviceTitles = {
     whatsapp: 'WhatsApp',
     telegram: 'Telegram',
     vkontakte: 'ВКонтакте',
     odnoklassniki: 'Одноклассники',
   };
 
+  // Сервисы
   services.forEach(service => {
-    if (!serviceNames[service]) return;
+    const title = serviceTitles[service];
+    if (!title) return;
 
     const li = document.createElement('li');
     const a = document.createElement('a');
     const icon = document.createElement('div');
-    const title = document.createElement('span');
+    const span = document.createElement('span');
 
     icon.className = `soc-list__share-icon ${service}`;
-    title.className = 'soc-list__share-title';
-    title.textContent = serviceNames[service];
+    span.className = 'soc-list__share-title';
+    span.textContent = title;
 
-    let shareUrl = '#';
-    switch (service) {
-      case 'whatsapp':
-        shareUrl = `https://wa.me/?text=${text}%20${url}`;
-        break;
-      case 'telegram':
-        shareUrl = `https://t.me/share/url?url=${url}&text=${text}`;
-        break;
-      case 'vkontakte':
-        // Поддержка image (ограничение: image должен быть публичным URL)
-        shareUrl = `https://vk.com/share.php?url=${url}&title=${text}&image=${imageUrl}&noparse=true`;
-        break;
-      case 'odnoklassniki':
-        shareUrl = `https://connect.ok.ru/offer?url=${url}&title=${text}&imageUrl=${imageUrl}`;
-        break;
-    }
-
-    a.href = shareUrl;
+    a.href = getShareUrl(service, { url, text, imageUrl });
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.appendChild(icon);
-    a.appendChild(title);
+    a.appendChild(span);
+
     li.appendChild(a);
     ul.appendChild(li);
   });
 
-  // Всегда добавляем "Скопировать ссылку"
+  // === 4. Копирование ссылки ===
   const copyLi = document.createElement('li');
   const copyDiv = document.createElement('div');
   copyDiv.dataset.copyLink = '';
@@ -149,47 +155,102 @@ function createShareDropdown(wrapper) {
 
   dropdown.appendChild(ul);
 
-  // Обработчик копирования
-  copyDiv.addEventListener('click', (ev) => {
+  // === 5. Обработчик копирования (с обратной связью) ===
+  copyDiv.addEventListener('click', function (ev) {
     ev.stopPropagation();
-    const textToCopy = wrapper.dataset.url || location.href;
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        alert('Ссылка скопирована!');
-      }).catch(err => {
-        console.error('Не удалось скопировать:', err);
-      });
-    } else {
-      // fallback для HTTP или старых браузеров
-      const textarea = document.createElement('textarea');
-      textarea.value = textToCopy;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      try {
-        document.execCommand('copy');
-        alert('Ссылка скопирована!');
-      } catch (err) {
-        console.error('Не удалось скопировать:', err);
+    const titleEl = copyTitle;
+    if (!titleEl) return;
+
+    const originalText = 'Скопировать ссылку';
+    const successText = 'Скопировано';
+
+    // Очистка предыдущего таймера
+    if (copyDiv.dataset.timeoutId) {
+      clearTimeout(parseInt(copyDiv.dataset.timeoutId, 10));
+      delete copyDiv.dataset.timeoutId;
+    }
+
+    // Функция копирования
+    const copy = () => {
+      if (navigator.clipboard?.writeText) {
+        return navigator.clipboard.writeText(rawUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = rawUrl;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
       }
-      document.body.removeChild(textarea);
+    };
+
+    copy()
+      .then(() => {
+        titleEl.textContent = successText;
+
+        const tid = setTimeout(() => {
+          titleEl.textContent = originalText;
+          delete copyDiv.dataset.timeoutId;
+        }, 3000);
+        copyDiv.dataset.timeoutId = String(tid);
+      })
+      .catch(err => {
+        console.warn('Не удалось скопировать ссылку:', err);
+        // При ошибке — не меняем текст (или можно на 1.5с поставить "Ошибка", если нужно)
+      });
+  });
+
+  // === 6. Закрытие по клику на любой пункт ===
+  dropdown.addEventListener('click', (ev) => {
+    const clickedOnItem = ev.target.closest('a, div[data-copy-link]');
+    if (clickedOnItem && !clickedOnItem.closest('.soc-list__share-icon.copy-link')) {
+      // Закрываем, кроме копирования (оно уже обрабатывается отдельно)
+      dropdown.style.display = 'none';
+    }
+  });
+
+  // === 7. Закрытие по клику вне dropdown ===
+  document.addEventListener('click', function closeOnClickOutside(ev) {
+    if (
+      dropdown.style.display === 'block' &&
+      !dropdown.contains(ev.target) &&
+      !triggerContainsAnyShareButton(ev.target)
+    ) {
+      dropdown.style.display = 'none';
     }
   });
 
   return dropdown;
 }
 
-function positionDropdown(trigger, dropdown) {
-  const rect = trigger.getBoundingClientRect();
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-  const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-
-  // Позиционируем **под** кнопкой share (с отступом вниз)
-  const top = rect.top + rect.height + scrollTop;
-  const left = rect.left + scrollLeft;
-
-  dropdown.style.top = `${top}px`;
-  dropdown.style.left = `${left}px`;
+/**
+ * Вспомогательная: есть ли в цепочке target кнопка share?
+ */
+function triggerContainsAnyShareButton(target) {
+  const triggers = document.querySelectorAll('.js--soc-list-share');
+  return Array.from(triggers).some(t => t.contains(target) || t === target);
 }
+
+/**
+ * Генерация share-ссылки
+ */
+function getShareUrl(service, { url, text, imageUrl }) {
+  switch (service) {
+    case 'whatsapp':
+      return `https://wa.me/?text=${text}%20${url}`;
+    case 'telegram':
+      return `https://t.me/share/url?url=${url}&text=${text}`;
+    case 'vkontakte':
+      return `https://vk.com/share.php?url=${url}&title=${text}&image=${imageUrl}&noparse=true`;
+    case 'odnoklassniki':
+      return `https://connect.ok.ru/offer?url=${url}&title=${text}&imageUrl=${imageUrl}`;
+    default:
+      return '#';
+  }
+}
+
 
