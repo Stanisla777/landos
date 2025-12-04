@@ -10,11 +10,32 @@ https://rssprosi-3100.sprosi.dev.ringsites.ahml.ru/education/video/keshbek-dlya-
 
 
 
+// Глобальные переменные
 let activeDropdown = null;
 let activeTrigger = null;
-let scrollRAF = null;
+let popupContainer = null;
 
-function initShareBlocks() {
+// Создаём общий контейнер один раз
+function ensurePopupContainer() {
+  if (!popupContainer) {
+    popupContainer = document.createElement('div');
+    popupContainer.className = 'soc-share-popup-container';
+    Object.assign(popupContainer.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+      zIndex: '2147483647', // как у Яндекса — максимальный
+    });
+    document.body.appendChild(popupContainer);
+  }
+  return popupContainer;
+}
+
+// Инициализация кнопок
+export default function shareSocList() {
   const triggers = document.querySelectorAll('.js--soc-list-share:not([data-initialized])');
   triggers.forEach(trigger => {
     trigger.dataset.initialized = 'true';
@@ -22,80 +43,92 @@ function initShareBlocks() {
   });
 }
 
+// Обработчик клика
 function handleShareClick(e) {
   e.preventDefault();
   const trigger = e.currentTarget;
   const wrapper = trigger.closest('.js--soc-list-wrapper-share');
   if (!wrapper) return;
 
-  // Закрываем предыдущий dropdown
+  // Закрываем текущий popup (если есть)
   if (activeDropdown) {
-    cleanupDropdown();
+    hideDropdown(activeDropdown);
   }
 
+  // Создаём или находим popup для этого wrapper’а
   let dropdown = wrapper.querySelector('.soc-list__share');
   if (!dropdown) {
     dropdown = createShareDropdown(wrapper);
-    wrapper.appendChild(dropdown);
+    // Вставляем в глобальный контейнер, а не в wrapper!
+    ensurePopupContainer().appendChild(dropdown);
   }
 
-  dropdown.style.display = 'block';
-  // Добавляем opacity для плавного появления
-  dropdown.style.opacity = '0';
-  dropdown.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+  // Показываем
+  showDropdown(dropdown, trigger);
+}
 
+// Показ popup’а
+function showDropdown(dropdown, trigger) {
+  // Подготавливаем: скрыт, но позиционируем
+  dropdown.style.opacity = '0';
+  dropdown.style.pointerEvents = 'none';
+
+  // Мгновенно позиционируем (без анимации!)
+  positionDropdown(trigger, dropdown);
+
+  // Плавно показываем
   requestAnimationFrame(() => {
-    positionDropdown(trigger, dropdown);
-    // Плавное появление
+    dropdown.style.transition = 'opacity 0.2s ease';
     dropdown.style.opacity = '1';
+    dropdown.style.pointerEvents = 'auto';
   });
 
-  // Активируем прилипание
+  // Активируем "прилипание"
   activeDropdown = dropdown;
   activeTrigger = trigger;
   window.addEventListener('scroll', onScroll, { passive: true });
 }
 
-function onScroll() {
-  if (scrollRAF) return;
-  scrollRAF = requestAnimationFrame(() => {
-    if (activeDropdown && activeTrigger) {
-      positionDropdown(activeTrigger, activeDropdown);
-    }
-    scrollRAF = null;
-  });
-}
+// Скрытие popup’а
+function hideDropdown(dropdown) {
+  if (!dropdown) return;
 
-function positionDropdown(trigger, dropdown) {
-  const rect = trigger.getBoundingClientRect();
-  const top = rect.top + rect.height + 10; // отступ 10px
-  const left = rect.left;
+  dropdown.style.transition = 'opacity 0.2s ease';
+  dropdown.style.opacity = '0';
+  dropdown.style.pointerEvents = 'none';
 
-  // Плавное перемещение через transform (лучше, чем top/left)
-  dropdown.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
-}
+  setTimeout(() => {
+    dropdown.style.display = 'none';
+    dropdown.style.transform = ''; // сброс
+  }, 200);
 
-function cleanupDropdown() {
-  if (activeDropdown) {
-    // Плавное исчезновение перед скрытием
-    activeDropdown.style.opacity = '0';
-    setTimeout(() => {
-      if (activeDropdown) {
-        activeDropdown.style.display = 'none';
-        activeDropdown.style.transform = '';
-      }
-    }, 200);
-  }
   activeDropdown = null;
   activeTrigger = null;
   window.removeEventListener('scroll', onScroll);
 }
 
+// Позиционирование popup’а (мгновенно, без transition!)
+function positionDropdown(trigger, dropdown) {
+  const rect = trigger.getBoundingClientRect();
+  const top = rect.top + rect.height + 10; // отступ 10px
+  const left = rect.left;
+
+  // 🔑 Только transform — без top/left, без transition
+  dropdown.style.transform = `translate(${left}px, ${top}px)`;
+}
+
+// Обработчик скролла — мгновенный, как у Яндекса
+function onScroll() {
+  if (activeDropdown && activeTrigger) {
+    positionDropdown(activeTrigger, activeDropdown);
+  }
+}
+
+// Создание popup’а (внутри fixed-контейнера)
 function createShareDropdown(wrapper) {
   // === Парсинг data-services ===
   const servicesStr = (wrapper.dataset.services || '').trim();
   let services = [];
-
   if (servicesStr) {
     try {
       services = JSON.parse(servicesStr);
@@ -107,10 +140,9 @@ function createShareDropdown(wrapper) {
       services = cleaned.split(',').map(s => s.trim()).filter(Boolean);
     }
   }
-
   if (!Array.isArray(services)) services = [];
 
-  // === Данные для шаринга ===
+  // === Данные ===
   const rawUrl = wrapper.dataset.url || location.href;
   const rawText = wrapper.dataset.text || document.title;
   const rawImage = wrapper.dataset.image || '';
@@ -119,18 +151,22 @@ function createShareDropdown(wrapper) {
   const text = encodeURIComponent(rawText);
   const imageUrl = encodeURIComponent(rawImage);
 
-  // === Создание DOM ===
+  // === DOM ===
   const dropdown = document.createElement('div');
   dropdown.className = 'soc-list__share';
-  dropdown.style.display = 'none';
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = '0';
-  dropdown.style.left = '0';
-  dropdown.style.opacity = '0';
-  dropdown.style.pointerEvents = 'none'; // предотвращаем клики во время анимации
-  dropdown.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+  Object.assign(dropdown.style, {
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    opacity: '0',
+    pointerEvents: 'none',
+    // transition — только для opacity, не для transform!
+  });
 
   const ul = document.createElement('ul');
+  ul.style.margin = '0';
+  ul.style.padding = '0';
+  ul.style.listStyle = 'none';
 
   const serviceTitles = {
     whatsapp: 'WhatsApp',
@@ -144,32 +180,57 @@ function createShareDropdown(wrapper) {
     if (!title) return;
 
     const li = document.createElement('li');
+    li.style.margin = '2px 0';
+
     const a = document.createElement('a');
-    const icon = document.createElement('div');
-    const span = document.createElement('span');
-
-    icon.className = `soc-list__share-icon ${service}-icon-share`;
-    span.className = 'soc-list__share-title';
-    span.textContent = title;
-
     a.href = getShareUrl(service, { url, text, imageUrl });
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
+    a.style.display = 'flex';
+    a.style.alignItems = 'center';
+    a.style.gap = '10px';
+    a.style.padding = '6px 12px';
+    a.style.textDecoration = 'none';
+    a.style.color = 'inherit';
+
+    const icon = document.createElement('div');
+    icon.className = `soc-list__share-icon ${service}-icon-share`;
+    icon.style.width = '24px';
+    icon.style.height = '24px';
+    icon.style.backgroundSize = 'contain';
+    icon.style.backgroundRepeat = 'no-repeat';
+    icon.style.backgroundPosition = 'center';
+
+    const span = document.createElement('span');
+    span.className = 'soc-list__share-title';
+    span.textContent = title;
+
     a.appendChild(icon);
     a.appendChild(span);
-
     li.appendChild(a);
     ul.appendChild(li);
   });
 
   // === Копирование ссылки ===
   const copyLi = document.createElement('li');
+  copyLi.style.margin = '2px 0';
+
   const copyDiv = document.createElement('div');
   copyDiv.className = 'soc-list__copy-link';
   copyDiv.dataset.copyLink = '';
+  copyDiv.style.display = 'flex';
+  copyDiv.style.alignItems = 'center';
+  copyDiv.style.gap = '10px';
+  copyDiv.style.padding = '6px 12px';
+  copyDiv.style.cursor = 'pointer';
 
   const copyIcon = document.createElement('div');
   copyIcon.className = 'soc-list__share-icon copy-link';
+  copyIcon.style.width = '24px';
+  copyIcon.style.height = '24px';
+  copyIcon.style.backgroundSize = 'contain';
+  copyIcon.style.backgroundRepeat = 'no-repeat';
+  copyIcon.style.backgroundPosition = 'center';
 
   const copyTitle = document.createElement('span');
   copyTitle.className = 'soc-list__share-title';
@@ -185,9 +246,6 @@ function createShareDropdown(wrapper) {
   // === Обработчик копирования ===
   copyDiv.addEventListener('click', function (ev) {
     ev.stopPropagation();
-
-    const titleEl = copyTitle;
-    if (!titleEl) return;
 
     const copy = () => {
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
@@ -208,42 +266,41 @@ function createShareDropdown(wrapper) {
 
     copy()
       .then(() => {
-        // ✅ Меняем текст и ЗАКРЫВАЕМ окно
-        titleEl.textContent = 'Скопировано';
-        // Небольшая пауза для визуального подтверждения
+        copyTitle.textContent = 'Скопировано';
+        // Закрываем через 500 мс — пользователь успевает прочитать
         setTimeout(() => {
-          cleanupDropdown();
-        }, 500); // 0.5с — достаточно, чтобы прочитать
+          if (activeDropdown === dropdown) {
+            hideDropdown(dropdown);
+          }
+        }, 500);
       })
       .catch(err => {
-        console.warn('Не удалось скопировать ссылку:', err);
-        titleEl.textContent = 'Ошибка';
+        console.warn('Не удалось скопировать:', err);
+        copyTitle.textContent = 'Ошибка';
         setTimeout(() => {
-          titleEl.textContent = 'Скопировать ссылку';
+          if (copyTitle.textContent === 'Ошибка') {
+            copyTitle.textContent = 'Скопировать ссылку';
+          }
         }, 1500);
       });
   });
 
-  // === Закрытие по клику на любой пункт (соцсети) ===
+  // === Закрытие по клику на соцсеть ===
   dropdown.addEventListener('click', (ev) => {
     if (ev.target.closest('a')) {
-      cleanupDropdown();
+      hideDropdown(dropdown);
     }
   });
 
   // === Закрытие по клику вне ===
   const onClickOutside = (ev) => {
-    if (
-      activeDropdown === dropdown &&
-      !dropdown.contains(ev.target) &&
-      !ev.target.closest('.js--soc-list-share')
-    ) {
-      cleanupDropdown();
+    if (activeDropdown === dropdown && !dropdown.contains(ev.target) && !ev.target.closest('.js--soc-list-share')) {
+      hideDropdown(dropdown);
     }
   };
   document.addEventListener('click', onClickOutside);
 
-  // Отписка при удалении dropdown (на всякий)
+  // Отписка при уничтожении (на всякий)
   dropdown._cleanup = () => {
     document.removeEventListener('click', onClickOutside);
   };
@@ -251,8 +308,8 @@ function createShareDropdown(wrapper) {
   return dropdown;
 }
 
+// Генерация share-ссылок
 function getShareUrl(service, { url, text, imageUrl }) {
-  // 🔔 Исправлены лишние пробелы в URL (были `url=  ${url}`)
   switch (service) {
     case 'whatsapp':
       return `https://wa.me/?text=${text}%20${url}`;
@@ -267,18 +324,24 @@ function getShareUrl(service, { url, text, imageUrl }) {
   }
 }
 
-export default function shareSocList() {
-  initShareBlocks();
+
+--------------------------------------------------------------------------------------
+
+.soc-share-popup-container {
+  pointer-events: none;
 }
 
 .soc-list__share {
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: absolute;
   opacity: 0;
-  pointer-events: none; // важно — пока не появился
-  transform: translate(0, 0);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 0 4px rgba(0, 0, 0, 0.1);
+  padding: 8px 0;
+  min-width: 200px;
+  z-index: 2147483647;
 
   &.active {
     opacity: 1;
@@ -286,16 +349,45 @@ export default function shareSocList() {
   }
 
   ul {
+    list-style: none;
     margin: 0;
     padding: 0;
-    list-style: none;
+
+    li {
+      margin: 2px 0;
+    }
   }
 
-  li {
-    margin: 2px 0;
+  a, .soc-list__copy-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    text-decoration: none;
+    color: #000;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+
+  &-icon {
+    width: 24px;
+    height: 24px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    // Укажите свои иконки, например:
+    // &.whatsapp-icon-share   { background-image: url('whatsapp.svg'); }
+  }
+
+  &-title {
+    font-family: $ff-semi-bold, sans-serif;
+    font-size: 14px;
+    line-height: 20px;
   }
 }
-
 
 
 
