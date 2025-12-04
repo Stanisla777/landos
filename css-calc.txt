@@ -10,64 +10,219 @@ https://rssprosi-3100.sprosi.dev.ringsites.ahml.ru/education/video/keshbek-dlya-
 
 
 
-document.querySelector('.js--soc-list-wrapper-share').getBoundingClientRect()
-{
-    "x": 587.796875,
-    "y": 598.953125,
-    "width": 39.140625,
-    "height": 16,
-    "top": 598.953125,
-    "right": 626.9375,
-    "bottom": 614.953125,
-    "left": 587.796875
+function initShareBlocks() {
+  const triggers = document.querySelectorAll('.js--soc-list-share:not([data-initialized])');
+  triggers.forEach(trigger => {
+    trigger.dataset.initialized = 'true';
+    trigger.addEventListener('click', handleShareClick);
+  });
 }
 
-document.querySelector('.js--soc-list-share').getBoundingClientRect()
+function handleShareClick(e) {
+  e.preventDefault();
+  const trigger = e.currentTarget;
+  const wrapper = trigger.closest('.js--soc-list-wrapper-share');
+  if (!wrapper) return;
 
-{
-    "x": 587.796875,
-    "y": 598.953125,
-    "width": 16,
-    "height": 16,
-    "top": 598.953125,
-    "right": 603.796875,
-    "bottom": 614.953125,
-    "left": 587.796875
+  let dropdown = wrapper.querySelector('.soc-list__share');
+  if (!dropdown) {
+    dropdown = createShareDropdown(wrapper);
+    wrapper.appendChild(dropdown);
+  }
+
+  // Сначала показываем, потом — позиционируем в следующем фрейме
+  dropdown.style.display = 'block';
+  requestAnimationFrame(() => {
+    positionDropdown(trigger, dropdown);
+  });
 }
-
-// 1. Найдём кнопку
-Вбил в консоли
-const btn = document.querySelector('.js--soc-list-share');
-const rect = btn.getBoundingClientRect();
-const top = rect.top + rect.height + window.scrollY;
-const left = rect.left + window.scrollX;
-
-// 2. Создадим div
-const d = document.createElement('div');
-d.textContent = 'ТЕСТ';
-d.style.position = 'fixed';
-d.style.top = top + 'px';
-d.style.left = left + 'px';
-d.style.background = 'red';
-d.style.color = 'white';
-d.style.padding = '4px 8px';
-d.style.zIndex = '9999';
-
-document.body.appendChild(d);
-получаю такую ошибку
 
 function positionDropdown(trigger, dropdown) {
   const rect = trigger.getBoundingClientRect();
 
   // Для position: fixed — координаты БЕЗ scrollTop/Left!
-  const top = rect.top + rect.height;   // под кнопкой
+  const top = rect.top + rect.height + 10;   // под кнопкой
   const left = rect.left;               // по левому краю кнопки
 
   dropdown.style.top = `${top}px`;
   dropdown.style.left = `${left}px`;
 
   // Для отладки:
-  // console.log('🎯 rect.top:', rect.top, '→ dropdown top:', top);
+  console.log('🎯 rect.top:', rect.top, '→ dropdown top:', top);
+}
+
+function createShareDropdown(wrapper) {
+  // === Парсинг data-services (совместимо, без вложенных try/catch) ===
+  const servicesStr = (wrapper.dataset.services || '').trim();
+  let services = [];
+
+  if (servicesStr) {
+    try {
+      services = JSON.parse(servicesStr);
+    } catch (_) {
+      let cleaned = servicesStr.trim();
+      if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+        cleaned = cleaned.slice(1, -1).trim();
+      }
+      services = cleaned.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+
+  if (!Array.isArray(services)) services = [];
+
+  // === Данные для шаринга ===
+  const rawUrl = wrapper.dataset.url || location.href;
+  const rawText = wrapper.dataset.text || document.title;
+  const rawImage = wrapper.dataset.image || '';
+
+  const url = encodeURIComponent(rawUrl);
+  const text = encodeURIComponent(rawText);
+  const imageUrl = encodeURIComponent(rawImage);
+
+  // === Создание DOM ===
+  const dropdown = document.createElement('div');
+  dropdown.className = 'soc-list__share';
+  dropdown.style.display = 'none';
+
+  const ul = document.createElement('ul');
+
+  const serviceTitles = {
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram',
+    vkontakte: 'ВКонтакте',
+    odnoklassniki: 'Одноклассники',
+  };
+
+  // Сервисы
+  services.forEach(service => {
+    const title = serviceTitles[service];
+    if (!title) return;
+
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    const icon = document.createElement('div');
+    const span = document.createElement('span');
+
+    // ✅ Классы вида "whatsapp-icon-share"
+    icon.className = `soc-list__share-icon ${service}-icon-share`;
+    span.className = 'soc-list__share-title';
+    span.textContent = title;
+
+    a.href = getShareUrl(service, { url, text, imageUrl });
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.appendChild(icon);
+    a.appendChild(span);
+
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+
+  // === Копирование ссылки ===
+  const copyLi = document.createElement('li');
+  const copyDiv = document.createElement('div');
+  copyDiv.className = 'soc-list__copy-link';
+  copyDiv.dataset.copyLink = '';
+
+  const copyIcon = document.createElement('div');
+  copyIcon.className = 'soc-list__share-icon copy-link';
+
+  const copyTitle = document.createElement('span');
+  copyTitle.className = 'soc-list__share-title';
+  copyTitle.textContent = 'Скопировать ссылку';
+
+  copyDiv.appendChild(copyIcon);
+  copyDiv.appendChild(copyTitle);
+  copyLi.appendChild(copyDiv);
+  ul.appendChild(copyLi);
+
+  dropdown.appendChild(ul);
+
+  // === Обработчик копирования ===
+  copyDiv.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    const titleEl = copyTitle;
+    if (!titleEl) return;
+
+    const originalText = 'Скопировать ссылку';
+    const successText = 'Скопировано';
+
+    if (copyDiv.dataset.timeoutId) {
+      clearTimeout(parseInt(copyDiv.dataset.timeoutId, 10));
+      delete copyDiv.dataset.timeoutId;
+    }
+
+    const copy = () => {
+      // ✅ Совместимая проверка
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        return navigator.clipboard.writeText(rawUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = rawUrl;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+      }
+    };
+
+    copy()
+      .then(() => {
+        titleEl.textContent = successText;
+        const tid = setTimeout(() => {
+          titleEl.textContent = originalText;
+          delete copyDiv.dataset.timeoutId;
+        }, 3000);
+        copyDiv.dataset.timeoutId = String(tid);
+      })
+      .catch(err => {
+        console.warn('Не удалось скопировать ссылку:', err);
+      });
+  });
+
+  // === Закрытие по клику на пункт (кроме копирования) ===
+  dropdown.addEventListener('click', (ev) => {
+    const clickedOnItem = ev.target.closest('a');
+    if (clickedOnItem) {
+      dropdown.style.display = 'none';
+    }
+  });
+
+  // === Закрытие по клику вне dropdown и кнопок share ===
+  document.addEventListener('click', function closeOnClickOutside(ev) {
+    if (
+      dropdown.style.display === 'block' &&
+      !dropdown.contains(ev.target) &&
+      !ev.target.closest('.js--soc-list-share')
+    ) {
+      dropdown.style.display = 'none';
+    }
+  });
+
+  return dropdown;
+}
+
+function getShareUrl(service, { url, text, imageUrl }) {
+  switch (service) {
+    case 'whatsapp':
+      return `https://wa.me/?text=${text}%20${url}`;
+    case 'telegram':
+      return `https://t.me/share/url?url=${url}&text=${text}`;
+    case 'vkontakte':
+      return `https://vk.com/share.php?url=${url}&title=${text}&image=${imageUrl}&noparse=true`;
+    case 'odnoklassniki':
+      return `https://connect.ok.ru/offer?url=${url}&title=${text}&imageUrl=${imageUrl}`;
+    default:
+      return '#';
+  }
+}
+
+export default function shareSocList() {
+  initShareBlocks();
 }
 
 
