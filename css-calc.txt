@@ -10,6 +10,10 @@ https://rssprosi-3100.sprosi.dev.ringsites.ahml.ru/education/video/keshbek-dlya-
 
 
 
+let activeDropdown = null;
+let activeTrigger = null;
+let scrollRAF = null;
+
 function initShareBlocks() {
   const triggers = document.querySelectorAll('.js--soc-list-share:not([data-initialized])');
   triggers.forEach(trigger => {
@@ -24,35 +28,71 @@ function handleShareClick(e) {
   const wrapper = trigger.closest('.js--soc-list-wrapper-share');
   if (!wrapper) return;
 
+  // Закрываем предыдущий dropdown
+  if (activeDropdown) {
+    cleanupDropdown();
+  }
+
   let dropdown = wrapper.querySelector('.soc-list__share');
   if (!dropdown) {
     dropdown = createShareDropdown(wrapper);
     wrapper.appendChild(dropdown);
   }
 
-  // Сначала показываем, потом — позиционируем в следующем фрейме
   dropdown.style.display = 'block';
+  // Добавляем opacity для плавного появления
+  dropdown.style.opacity = '0';
+  dropdown.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+
   requestAnimationFrame(() => {
     positionDropdown(trigger, dropdown);
+    // Плавное появление
+    dropdown.style.opacity = '1';
+  });
+
+  // Активируем прилипание
+  activeDropdown = dropdown;
+  activeTrigger = trigger;
+  window.addEventListener('scroll', onScroll, { passive: true });
+}
+
+function onScroll() {
+  if (scrollRAF) return;
+  scrollRAF = requestAnimationFrame(() => {
+    if (activeDropdown && activeTrigger) {
+      positionDropdown(activeTrigger, activeDropdown);
+    }
+    scrollRAF = null;
   });
 }
 
 function positionDropdown(trigger, dropdown) {
   const rect = trigger.getBoundingClientRect();
+  const top = rect.top + rect.height + 10; // отступ 10px
+  const left = rect.left;
 
-  // Для position: fixed — координаты БЕЗ scrollTop/Left!
-  const top = rect.top + rect.height + 10;   // под кнопкой
-  const left = rect.left;               // по левому краю кнопки
+  // Плавное перемещение через transform (лучше, чем top/left)
+  dropdown.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+}
 
-  dropdown.style.top = `${top}px`;
-  dropdown.style.left = `${left}px`;
-
-  // Для отладки:
-  console.log('🎯 rect.top:', rect.top, '→ dropdown top:', top);
+function cleanupDropdown() {
+  if (activeDropdown) {
+    // Плавное исчезновение перед скрытием
+    activeDropdown.style.opacity = '0';
+    setTimeout(() => {
+      if (activeDropdown) {
+        activeDropdown.style.display = 'none';
+        activeDropdown.style.transform = '';
+      }
+    }, 200);
+  }
+  activeDropdown = null;
+  activeTrigger = null;
+  window.removeEventListener('scroll', onScroll);
 }
 
 function createShareDropdown(wrapper) {
-  // === Парсинг data-services (совместимо, без вложенных try/catch) ===
+  // === Парсинг data-services ===
   const servicesStr = (wrapper.dataset.services || '').trim();
   let services = [];
 
@@ -83,6 +123,12 @@ function createShareDropdown(wrapper) {
   const dropdown = document.createElement('div');
   dropdown.className = 'soc-list__share';
   dropdown.style.display = 'none';
+  dropdown.style.position = 'fixed';
+  dropdown.style.top = '0';
+  dropdown.style.left = '0';
+  dropdown.style.opacity = '0';
+  dropdown.style.pointerEvents = 'none'; // предотвращаем клики во время анимации
+  dropdown.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
 
   const ul = document.createElement('ul');
 
@@ -93,7 +139,6 @@ function createShareDropdown(wrapper) {
     odnoklassniki: 'Одноклассники',
   };
 
-  // Сервисы
   services.forEach(service => {
     const title = serviceTitles[service];
     if (!title) return;
@@ -103,7 +148,6 @@ function createShareDropdown(wrapper) {
     const icon = document.createElement('div');
     const span = document.createElement('span');
 
-    // ✅ Классы вида "whatsapp-icon-share"
     icon.className = `soc-list__share-icon ${service}-icon-share`;
     span.className = 'soc-list__share-title';
     span.textContent = title;
@@ -141,19 +185,11 @@ function createShareDropdown(wrapper) {
   // === Обработчик копирования ===
   copyDiv.addEventListener('click', function (ev) {
     ev.stopPropagation();
+
     const titleEl = copyTitle;
     if (!titleEl) return;
 
-    const originalText = 'Скопировать ссылку';
-    const successText = 'Скопировано';
-
-    if (copyDiv.dataset.timeoutId) {
-      clearTimeout(parseInt(copyDiv.dataset.timeoutId, 10));
-      delete copyDiv.dataset.timeoutId;
-    }
-
     const copy = () => {
-      // ✅ Совместимая проверка
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         return navigator.clipboard.writeText(rawUrl);
       } else {
@@ -172,41 +208,51 @@ function createShareDropdown(wrapper) {
 
     copy()
       .then(() => {
-        titleEl.textContent = successText;
-        const tid = setTimeout(() => {
-          titleEl.textContent = originalText;
-          delete copyDiv.dataset.timeoutId;
-        }, 3000);
-        copyDiv.dataset.timeoutId = String(tid);
+        // ✅ Меняем текст и ЗАКРЫВАЕМ окно
+        titleEl.textContent = 'Скопировано';
+        // Небольшая пауза для визуального подтверждения
+        setTimeout(() => {
+          cleanupDropdown();
+        }, 500); // 0.5с — достаточно, чтобы прочитать
       })
       .catch(err => {
         console.warn('Не удалось скопировать ссылку:', err);
+        titleEl.textContent = 'Ошибка';
+        setTimeout(() => {
+          titleEl.textContent = 'Скопировать ссылку';
+        }, 1500);
       });
   });
 
-  // === Закрытие по клику на пункт (кроме копирования) ===
+  // === Закрытие по клику на любой пункт (соцсети) ===
   dropdown.addEventListener('click', (ev) => {
-    const clickedOnItem = ev.target.closest('a');
-    if (clickedOnItem) {
-      dropdown.style.display = 'none';
+    if (ev.target.closest('a')) {
+      cleanupDropdown();
     }
   });
 
-  // === Закрытие по клику вне dropdown и кнопок share ===
-  document.addEventListener('click', function closeOnClickOutside(ev) {
+  // === Закрытие по клику вне ===
+  const onClickOutside = (ev) => {
     if (
-      dropdown.style.display === 'block' &&
+      activeDropdown === dropdown &&
       !dropdown.contains(ev.target) &&
       !ev.target.closest('.js--soc-list-share')
     ) {
-      dropdown.style.display = 'none';
+      cleanupDropdown();
     }
-  });
+  };
+  document.addEventListener('click', onClickOutside);
+
+  // Отписка при удалении dropdown (на всякий)
+  dropdown._cleanup = () => {
+    document.removeEventListener('click', onClickOutside);
+  };
 
   return dropdown;
 }
 
 function getShareUrl(service, { url, text, imageUrl }) {
+  // 🔔 Исправлены лишние пробелы в URL (были `url=  ${url}`)
   switch (service) {
     case 'whatsapp':
       return `https://wa.me/?text=${text}%20${url}`;
@@ -224,6 +270,32 @@ function getShareUrl(service, { url, text, imageUrl }) {
 export default function shareSocList() {
   initShareBlocks();
 }
+
+.soc-list__share {
+  position: fixed;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none; // важно — пока не появился
+  transform: translate(0, 0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+
+  &.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    margin: 2px 0;
+  }
+}
+
 
 
 
