@@ -17,22 +17,58 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 ------------------------------------------------------------------------------------------------------------------
 
 
-createShareDropdown
+function showDropdown(dropdown, trigger) {
+  dropdown.style.display = 'block';
+  dropdown.style.opacity = '0';
+  dropdown.style.pointerEvents = 'none';
 
+  positionDropdown(trigger, dropdown);
 
-// === Закрытие по клику вне ===
-const onClickOutside = (ev) => {
-  if (activeDropdown === dropdown && !dropdown.contains(ev.target) && !ev.target.closest('.js--soc-list-share')) {
-    // ✅ Определяем: мобилка или десктоп
-    const isMobile = window.matchMedia('(max-width: 480px)').matches;
-
-    hideDropdown(dropdown);
-
-    // ✅ На мобилке — останавливаем всплытие и действие по умолчанию
-    if (isMobile) {
-      ev.stopPropagation();
-      ev.preventDefault();
+  requestAnimationFrame(() => {
+    if (popupContainer) {
+      popupContainer.classList.add('active');
     }
+    dropdown.classList.add('active');
+
+    // ✅ Блокировка скролла на мобилке
+    if (window.matchMedia('(max-width: 480px)').matches) {
+      AddClassBody();
+    }
+
+    dropdown.style.opacity = '1';
+    dropdown.style.pointerEvents = 'auto';
+  });
+
+  activeDropdown = dropdown;
+  activeTrigger = trigger;
+  if (!window.matchMedia('(max-width: 480px)').matches) {
+    window.addEventListener('scroll', onScroll, { passive: true });
   }
-};
-document.addEventListener('click', onClickOutside);
+}
+
+function hideDropdown(dropdown) {
+  if (!dropdown) return;
+
+  dropdown.style.opacity = '0';
+  dropdown.style.pointerEvents = 'none';
+
+  setTimeout(() => {
+    dropdown.style.display = 'none';
+    dropdown.style.transform = '';
+
+    if (popupContainer) {
+      popupContainer.classList.remove('active');
+    }
+    dropdown.classList.remove('active');
+
+    // ✅ Разблокировка скролла на мобилке
+    if (window.matchMedia('(max-width: 480px)').matches) {
+      RemoveClassBody();
+    }
+  }, 200);
+
+  activeDropdown = null;
+  activeTrigger = null;
+  window.removeEventListener('scroll', onScroll);
+}
+
