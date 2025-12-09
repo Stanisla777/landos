@@ -17,22 +17,16 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 ------------------------------------------------------------------------------------------------------------------
 
 /* eslint-disable */
-// Ваши функции блокировки скролла (должны быть доступны в scope)
-// function AddClassBody() { ... }
-// function RemoveClassBody() { ... }
 
-// === Глобальные переменные ===
+// Глобальные переменные
 let activeDropdown = null;
 let activeTrigger = null;
 let popupContainer = null;
+
 const dropdownCache = new WeakMap();
 
-// === Вспомогательные функции ===
-function isMobile() {
-  return window.matchMedia('(max-width: 480px)').matches;
-}
 
-// Создаём контейнер один раз
+// Создаём общий контейнер один раз
 function ensurePopupContainer() {
   if (!popupContainer) {
     popupContainer = document.createElement('div');
@@ -44,113 +38,103 @@ function ensurePopupContainer() {
       width: '100%',
       height: '100%',
       pointerEvents: 'none',
-      zIndex: '2147483647',
+      zIndex: '2147483647', // как у Яндекса — максимальный
     });
     document.body.appendChild(popupContainer);
   }
   return popupContainer;
 }
 
-// === Основные методы ===
-function handleShareClick(trigger, e) {
+
+// Обработчик клика
+function handleShareClick(trigger,e) {
+  if (!trigger || typeof trigger.closest !== 'function') {
+    console.warn('Некорректный триггер:', trigger);
+    return;
+  }
   e.preventDefault();
   const wrapper = trigger.closest('.js--soc-list-wrapper-share');
   if (!wrapper) return;
 
+  // Закрываем текущий активный popup (если есть)
   if (activeDropdown) {
     hideDropdown(activeDropdown);
   }
 
+  // ✅ Ищем popup в кэше по wrapper
   let dropdown = dropdownCache.get(wrapper);
   if (!dropdown) {
+    // Создаём popup впервые для этой кнопки
     dropdown = createShareDropdown(wrapper);
+    // Вставляем в глобальный контейнер
     ensurePopupContainer().appendChild(dropdown);
+    // Сохраняем в кэш (WeakMap — безопасно)
     dropdownCache.set(wrapper, dropdown);
   }
 
+  // Показываем popup под текущей кнопкой
   showDropdown(dropdown, trigger);
 }
 
+// Показ popup’а
 function showDropdown(dropdown, trigger) {
-  dropdown.style.display = 'block';
+  dropdown.style.display='block'
+
+  // Подготавливаем: скрыт, но позиционируем
   dropdown.style.opacity = '0';
   dropdown.style.pointerEvents = 'none';
 
-  if (isMobile()) {
-    dropdown.style.transform = 'translateY(100%)';
-  }
-
+  // Мгновенно позиционируем (без анимации!)
   positionDropdown(trigger, dropdown);
 
+  // Плавно показываем
   requestAnimationFrame(() => {
-    if (popupContainer) popupContainer.classList.add('active');
-    if (isMobile()) {
-      AddClassBody();
-      dropdown.style.transition = 'transform 0.3s ease, opacity 0.2s ease';
-      dropdown.style.transform = 'translateY(0)';
-    } else {
-      dropdown.style.transition = 'opacity 0.2s ease';
-    }
     dropdown.style.opacity = '1';
     dropdown.style.pointerEvents = 'auto';
   });
 
+  // Активируем "прилипание"
   activeDropdown = dropdown;
   activeTrigger = trigger;
-  if (!isMobile()) {
-    window.addEventListener('scroll', onScroll, { passive: true });
-  }
+  window.addEventListener('scroll', onScroll, { passive: true });
 }
 
+// Скрытие popup’а
 function hideDropdown(dropdown) {
   if (!dropdown) return;
-
+  dropdown.style.opacity = '0';
   dropdown.style.pointerEvents = 'none';
 
-  if (isMobile()) {
-    dropdown.style.transition = 'transform 0.3s ease, opacity 0.2s ease';
-    dropdown.style.transform = 'translateY(100%)';
-    dropdown.style.opacity = '0';
-
-    setTimeout(() => {
-      dropdown.style.display = 'none';
-      RemoveClassBody();
-      if (popupContainer) popupContainer.classList.remove('active');
-    }, 300);
-  } else {
-    dropdown.style.transition = 'opacity 0.2s ease';
-    dropdown.style.opacity = '0';
-
-    setTimeout(() => {
-      dropdown.style.display = 'none';
-      dropdown.style.transform = '';
-      if (popupContainer) popupContainer.classList.remove('active');
-    }, 200);
-  }
+  setTimeout(() => {
+    dropdown.style.display = 'none';
+    dropdown.style.transform = ''; // сброс
+  }, 200);
 
   activeDropdown = null;
   activeTrigger = null;
   window.removeEventListener('scroll', onScroll);
 }
 
+// Позиционирование popup’а (мгновенно, без transition!)
 function positionDropdown(trigger, dropdown) {
-  if (isMobile()) return;
-
   const rect = trigger.getBoundingClientRect();
-  const top = rect.top + rect.height + 10;
+  const top = rect.top + rect.height + 10; // отступ 10px
   const left = rect.left;
 
+  // 🔑 Только transform — без top/left, без transition
   dropdown.style.transform = `translate(${left}px, ${top}px)`;
 }
 
+// Обработчик скролла — мгновенный, как у Яндекса
 function onScroll() {
   if (activeDropdown && activeTrigger) {
     positionDropdown(activeTrigger, activeDropdown);
   }
 }
 
-// === Создание popup’а ===
+// Создание popup’а (внутри fixed-контейнера)
 function createShareDropdown(wrapper) {
+  // === Парсинг data-services ===
   const servicesStr = (wrapper.dataset.services || '').trim();
   let services = [];
   if (servicesStr) {
@@ -166,32 +150,19 @@ function createShareDropdown(wrapper) {
   }
   if (!Array.isArray(services)) services = [];
 
+  // === Данные (сырые — кодируем внутри getShareUrl) ===
   const rawUrl = wrapper.dataset.url || location.href;
   const rawText = wrapper.dataset.text || document.title;
   const rawImage = wrapper.dataset.image || '';
 
+  // === DOM ===
   const dropdown = document.createElement('div');
   dropdown.className = 'soc-list__share';
-
-  // ✅ Мобильный хедер
-  const mobileHeader = document.createElement('div');
-  mobileHeader.className = 'soc-list__mobile-header';
-  const urlText = document.createElement('p');
-  urlText.textContent = rawUrl;
-  const closeBtn = document.createElement('div');
-  closeBtn.className = 'soc-list__mobile-header-close js--soc-list-mobile-header-close';
-  const closeIcon = document.createElement('div');
-  closeIcon.className = 'soc-list__mobile-header-close-icon';
-  closeBtn.appendChild(closeIcon);
-  mobileHeader.appendChild(urlText);
-  mobileHeader.appendChild(closeBtn);
-  closeBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    hideDropdown(dropdown);
+  Object.assign(dropdown.style, {
+    opacity: '0',
+    pointerEvents: 'none',
   });
-  dropdown.appendChild(mobileHeader);
 
-  // Список
   const ul = document.createElement('ul');
   const serviceTitles = {
     whatsapp: 'WhatsApp',
@@ -200,6 +171,7 @@ function createShareDropdown(wrapper) {
     odnoklassniki: 'Одноклассники',
   };
 
+  // === Пункты соцсетей ===
   services.forEach(service => {
     const title = serviceTitles[service];
     if (!title) return;
@@ -207,8 +179,14 @@ function createShareDropdown(wrapper) {
     const li = document.createElement('li');
     const item = document.createElement('div');
     item.className = 'soc-list__share-item';
+    Object.assign(item.style, {
+    });
+
     const icon = document.createElement('div');
     icon.className = `soc-list__share-icon ${service}-icon-share`;
+    Object.assign(icon.style, {
+    });
+
     const span = document.createElement('span');
     span.className = 'soc-list__share-title';
     span.textContent = title;
@@ -217,9 +195,11 @@ function createShareDropdown(wrapper) {
     item.appendChild(span);
     li.appendChild(item);
 
-    item.addEventListener('click', ev => {
+    // ✅ Клик — popup, не ссылка
+    item.addEventListener('click', (ev) => {
       ev.stopPropagation();
       const shareUrl = getShareUrl(service, { rawUrl, rawText, rawImage });
+      // Как у Яндекса: окно 600×500
       window.open(shareUrl, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
       hideDropdown(dropdown);
     });
@@ -227,12 +207,19 @@ function createShareDropdown(wrapper) {
     ul.appendChild(li);
   });
 
-  // Копирование
+  // === Копирование ссылки (остаётся как <div>) ===
   const copyLi = document.createElement('li');
+
   const copyDiv = document.createElement('div');
   copyDiv.className = 'soc-list__copy-link';
+  Object.assign(copyDiv.style, {
+  });
+
   const copyIcon = document.createElement('div');
   copyIcon.className = 'soc-list__share-icon copy-link';
+  Object.assign(copyIcon.style, {
+  });
+
   const copyTitle = document.createElement('span');
   copyTitle.className = 'soc-list__share-title';
   copyTitle.textContent = 'Скопировать ссылку';
@@ -244,9 +231,10 @@ function createShareDropdown(wrapper) {
 
   dropdown.appendChild(ul);
 
-  // Обработчик копирования
+  // === Обработчик копирования ===
   copyDiv.addEventListener('click', function (ev) {
     ev.stopPropagation();
+
     const copy = () => {
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         return navigator.clipboard.writeText(rawUrl);
@@ -268,7 +256,9 @@ function createShareDropdown(wrapper) {
       .then(() => {
         copyTitle.textContent = 'Скопировано';
         setTimeout(() => {
-          if (activeDropdown === dropdown) hideDropdown(dropdown);
+          if (activeDropdown === dropdown) {
+            hideDropdown(dropdown);
+          }
         }, 500);
       })
       .catch(err => {
@@ -282,19 +272,22 @@ function createShareDropdown(wrapper) {
       });
   });
 
-  // Закрытие по клику вне
+  // === Закрытие по клику вне ===
   const onClickOutside = (ev) => {
     if (activeDropdown === dropdown && !dropdown.contains(ev.target) && !ev.target.closest('.js--soc-list-share')) {
       hideDropdown(dropdown);
     }
   };
   document.addEventListener('click', onClickOutside);
-  dropdown._cleanup = () => document.removeEventListener('click', onClickOutside);
+
+  dropdown._cleanup = () => {
+    document.removeEventListener('click', onClickOutside);
+  };
 
   return dropdown;
 }
 
-// ✅ Исправленные URL — без лишних пробелов!
+// Генерация share-ссылок
 function getShareUrl(service, { rawUrl, rawText, rawImage }) {
   const url = encodeURIComponent(rawUrl);
   const text = encodeURIComponent(rawText);
@@ -302,7 +295,7 @@ function getShareUrl(service, { rawUrl, rawText, rawImage }) {
 
   switch (service) {
     case 'whatsapp':
-      return `https://api.whatsapp.com/send?text=${text}%20${url}&utm_source=share2`;
+      return `https://api.whatsapp.com/send?text=${text} ${url}&utm_source=share2`;
     case 'telegram':
       return `https://t.me/share/url?url=${url}&text=${text}&utm_source=share2`;
     case 'vkontakte':
@@ -314,44 +307,10 @@ function getShareUrl(service, { rawUrl, rawText, rawImage }) {
   }
 }
 
-// === Делегирование — работает для динамических блоков ===
 document.addEventListener('click', function (e) {
   const trigger = e.target.closest('.js--soc-list-share');
   if (trigger) {
     handleShareClick(trigger, e);
   }
 }, true);
-
-// Экспорт
-export default function shareSocList() {}
-
-------------------------------------------------------------------
-
-function AddClassBody() {
-  document.body.classList.add('body-modal');
-  document.body.classList.add('body-additional-class');
-  document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
-  document.ontouchmove = (e) => {
-    e.preventDefault();
-  };
-}
-function RemoveClassBody() {
-  if (!document.body.classList.contains('body-modal-modals')) {
-    document.body.classList.remove('body-modal');
-    document.body.classList.remove('body-additional-class');
-  }
-  const scrollY = document.body.style.top;
-  document.body.style.position = '';
-  document.body.style.top = '';
-  window.scrollTo(0, parseInt(scrollY || '0') * -1);
-}
-
-
-
-
-
-
-
-
-
 
