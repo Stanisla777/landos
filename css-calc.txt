@@ -17,6 +17,86 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 ------------------------------------------------------------------------------------------------------------------
 
 
+/* eslint-disable */
+
+// Глобальные переменные
+function RemoveClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal');
+    document.body.classList.remove('body-additional-class');
+  }
+  const scrollY = document.body.style.top;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  window.scrollTo(0, parseInt(scrollY || '0') * -1);
+}
+function AddClassBody() {
+  document.body.classList.add('body-modal');
+  document.body.classList.add('body-additional-class');
+  document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+  document.ontouchmove = (e) => {
+    e.preventDefault();
+  };
+}
+
+let activeDropdown = null;
+let activeTrigger = null;
+let popupContainer = null;
+
+const dropdownCache = new WeakMap();
+
+
+// Создаём общий контейнер один раз
+function ensurePopupContainer() {
+  if (!popupContainer) {
+    popupContainer = document.createElement('div');
+    popupContainer.className = 'soc-share-popup-container';
+    Object.assign(popupContainer.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+      zIndex: '2147483647', // как у Яндекса — максимальный
+    });
+    document.body.appendChild(popupContainer);
+  }
+  return popupContainer;
+}
+
+
+// Обработчик клика
+function handleShareClick(trigger,e) {
+  if (!trigger || typeof trigger.closest !== 'function') {
+    console.warn('Некорректный триггер:', trigger);
+    return;
+  }
+  e.preventDefault();
+  const wrapper = trigger.closest('.js--soc-list-wrapper-share');
+  if (!wrapper) return;
+
+  // Закрываем текущий активный popup (если есть)
+  if (activeDropdown) {
+    hideDropdown(activeDropdown);
+  }
+
+  // ✅ Ищем popup в кэше по wrapper
+  let dropdown = dropdownCache.get(wrapper);
+  if (!dropdown) {
+    // Создаём popup впервые для этой кнопки
+    dropdown = createShareDropdown(wrapper);
+    // Вставляем в глобальный контейнер
+    ensurePopupContainer().appendChild(dropdown);
+    // Сохраняем в кэш (WeakMap — безопасно)
+    dropdownCache.set(wrapper, dropdown);
+  }
+
+  // Показываем popup под текущей кнопкой
+  showDropdown(dropdown, trigger);
+}
+
+// Показ popup’а
 function showDropdown(dropdown, trigger) {
   dropdown.style.display = 'block';
   dropdown.style.opacity = '0';
@@ -46,6 +126,7 @@ function showDropdown(dropdown, trigger) {
   }
 }
 
+// Скрытие popup’а
 function hideDropdown(dropdown) {
   if (!dropdown) return;
 
@@ -72,3 +153,214 @@ function hideDropdown(dropdown) {
   window.removeEventListener('scroll', onScroll);
 }
 
+// Позиционирование popup’а (мгновенно, без transition!)
+function positionDropdown(trigger, dropdown) {
+  const rect = trigger.getBoundingClientRect();
+  const top = rect.top + rect.height + 10; // отступ 10px
+  const left = rect.left;
+
+  // 🔑 Только transform — без top/left, без transition
+  dropdown.style.transform = `translate(${left}px, ${top}px)`;
+}
+
+// Обработчик скролла — мгновенный, как у Яндекса
+function onScroll() {
+  if (activeDropdown && activeTrigger) {
+    positionDropdown(activeTrigger, activeDropdown);
+  }
+}
+
+// Создание popup’а (внутри fixed-контейнера)
+function createShareDropdown(wrapper) {
+  // === Парсинг data-services ===
+  const servicesStr = (wrapper.dataset.services || '').trim();
+  let services = [];
+  if (servicesStr) {
+    try {
+      services = JSON.parse(servicesStr);
+    } catch (_) {
+      let cleaned = servicesStr.trim();
+      if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+        cleaned = cleaned.slice(1, -1).trim();
+      }
+      services = cleaned.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  if (!Array.isArray(services)) services = [];
+
+  // === Данные (сырые) ===
+  const rawUrl = wrapper.dataset.url || location.href;
+  const rawText = wrapper.dataset.text || document.title;
+  const rawImage = wrapper.dataset.image || '';
+
+  // === DOM ===
+  const dropdown = document.createElement('div');
+  dropdown.className = 'soc-list__share';
+  Object.assign(dropdown.style, {
+    opacity: '0',
+    pointerEvents: 'none',
+  });
+
+  // ✅ Мобильный хедер (всегда создаём, для десктопа display: none в CSS)
+  const mobileHeader = document.createElement('div');
+  mobileHeader.className = 'soc-list__mobile-header';
+
+  const urlText = document.createElement('p');
+  urlText.textContent = rawText; // ← сюда подставляется URL
+
+  const closeBtn = document.createElement('div');
+  closeBtn.className = 'soc-list__mobile-header-close js--soc-list-mobile-header-close';
+
+  const closeIcon = document.createElement('div');
+  closeIcon.className = 'soc-list__mobile-header-close-icon';
+
+  closeBtn.appendChild(closeIcon);
+  mobileHeader.appendChild(urlText);
+  mobileHeader.appendChild(closeBtn);
+
+  // ✅ Закрытие по клику на крестик
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideDropdown(dropdown);
+  });
+
+  dropdown.appendChild(mobileHeader);
+
+  // === Список сервисов ===
+  const ul = document.createElement('ul');
+  const serviceTitles = {
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram',
+    vkontakte: 'ВКонтакте',
+    odnoklassniki: 'Одноклассники',
+  };
+
+  services.forEach(service => {
+    const title = serviceTitles[service];
+    if (!title) return;
+
+    const li = document.createElement('li');
+    const item = document.createElement('div');
+    item.className = 'soc-list__share-item';
+
+    const icon = document.createElement('div');
+    icon.className = `soc-list__share-icon ${service}-icon-share`;
+
+    const span = document.createElement('span');
+    span.className = 'soc-list__share-title';
+    span.textContent = title;
+
+    item.appendChild(icon);
+    item.appendChild(span);
+    li.appendChild(item);
+
+    item.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const shareUrl = getShareUrl(service, { rawUrl, rawText, rawImage });
+      window.open(shareUrl, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
+      hideDropdown(dropdown);
+    });
+
+    ul.appendChild(li);
+  });
+
+  // === Копирование ===
+  const copyLi = document.createElement('li');
+  const copyDiv = document.createElement('div');
+  copyDiv.className = 'soc-list__copy-link';
+
+  const copyIcon = document.createElement('div');
+  copyIcon.className = 'soc-list__share-icon copy-link';
+
+  const copyTitle = document.createElement('span');
+  copyTitle.className = 'soc-list__share-title';
+  copyTitle.textContent = 'Скопировать ссылку';
+
+  copyDiv.appendChild(copyIcon);
+  copyDiv.appendChild(copyTitle);
+  copyLi.appendChild(copyDiv);
+  ul.appendChild(copyLi);
+
+  dropdown.appendChild(ul);
+
+  // === Обработчик копирования (без изменений) ===
+  copyDiv.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    const copy = () => {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        return navigator.clipboard.writeText(rawUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = rawUrl;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+      }
+    };
+
+    copy()
+      .then(() => {
+        copyTitle.textContent = 'Скопировано';
+        setTimeout(() => {
+          if (activeDropdown === dropdown) {
+            hideDropdown(dropdown);
+          }
+        }, 500);
+      })
+      .catch(err => {
+        console.warn('Не удалось скопировать:', err);
+        copyTitle.textContent = 'Ошибка';
+        setTimeout(() => {
+          if (copyTitle.textContent === 'Ошибка') {
+            copyTitle.textContent = 'Скопировать ссылку';
+          }
+        }, 1500);
+      });
+  });
+
+  // === Закрытие по клику вне ===
+  const onClickOutside = (ev) => {
+    if (activeDropdown === dropdown && !dropdown.contains(ev.target) && !ev.target.closest('.js--soc-list-share')) {
+      hideDropdown(dropdown);
+    }
+  };
+  document.addEventListener('click', onClickOutside);
+
+  dropdown._cleanup = () => {
+    document.removeEventListener('click', onClickOutside);
+  };
+
+  return dropdown;
+}
+
+// Генерация share-ссылок
+function getShareUrl(service, { rawUrl, rawText, rawImage }) {
+  const url = encodeURIComponent(rawUrl);
+  const text = encodeURIComponent(rawText);
+  const image = encodeURIComponent(rawImage);
+
+  switch (service) {
+    case 'whatsapp':
+      return `https://api.whatsapp.com/send?text=${text} ${url}&utm_source=share2`;
+    case 'telegram':
+      return `https://t.me/share/url?url=${url}&text=${text}&utm_source=share2`;
+    case 'vkontakte':
+      return `https://vk.com/share.php?url=${url}&title=${text}&image=${image}&noparse=true&utm_source=share2`;
+    case 'odnoklassniki':
+      return `https://connect.ok.ru/offer?url=${url}&title=${text}&imageUrl=${image}&utm_source=share2`;
+    default:
+      return '#';
+  }
+}
+
+document.addEventListener('click', function (e) {
+  const trigger = e.target.closest('.js--soc-list-share');
+  if (trigger) {
+    handleShareClick(trigger, e);
+  }
+}, true);
