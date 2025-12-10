@@ -16,34 +16,35 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 ------------------------------------------------------------------------------------------------------------------
 
-<a class="header__logo-new-year" href="/"><div class="header-logo__left-side header-logo__left-side-2025"></div><div class="header-logo__right-side"></div></a>
+// 1. Убираем preserve-3d — он избыточен для простого flip
+//    (вы не используете вложенные 3D-элементы внутри ::before/::after)
+.header-logo {
+  &__left-side-2025 {
+    // БЫЛО:
+    // transform-style: preserve-3d;
+    // СТАЛО:
+    transform-style: flat; // 👈 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
 
+    // Добавляем will-change — но только если анимация реально играет
+    // (браузер выделит GPU-слой заранее, но не перестроит его в самый неподходящий момент)
+    will-change: transform;
 
-.header__logo-new-year {
-    display: flex;
-    column-gap: 15px;
-}
-.header-logo{
-  &__left-side{
-    height: 44px; /* своя высота лого */
-    width: 44px; /* своя ширина лого */
-    display: block;
-    position: relative;
-    @include respondTo(mobile) {
-      width: 32px;
-      height: 32px;
-    }
-  }
-  &__left-side-2025{
+    // Необязательно, но для надёжности на iOS:
+    backface-visibility: hidden; // уже есть у ::before/::after, но дублируем на родителе
+
+    // Убираем perspective — он может усугублять артефакты при композитинге
+    // perspective: 100px; → закомментировано/удалено
+
+    // Остальное без изменений:
     animation-name: new-year-logo-2025;
     animation-duration: 3.25s;
-    animation-iteration-count: infinite; /* проигрываем постоянно */
-    animation-direction: reverse; /* разворот обратно */
+    animation-iteration-count: infinite;
+    animation-direction: reverse;
     animation-timing-function: linear;
-    animation-delay: 3s; /* задержка на старте */
-    transform-style: preserve-3d;
-    //perspective: 100px;
-    &::before,&::after {
+    animation-delay: 3s;
+
+    &::before,
+    &::after {
       content: "";
       display: block;
       height: 100%;
@@ -51,104 +52,36 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
       background-repeat: no-repeat;
       background-size: cover;
       position: absolute;
-      transition: .3s linear transform;
-      backface-visibility: hidden;
+      backface-visibility: hidden; // ✅ остаётся
+      // transition лучше убрать — он конфликтует с animation и может вызывать repaint
+      // transition: .3s linear transform; → ❌ уберите
     }
+
     &::before {
       background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDQiIGhlaWdodD0iNDQ...");
       @include respondTo(mobile) {
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='33' height='32' ....");
       }
     }
+
     &::after {
       background-image: url("data:image/svg+xml,%3Csvg width='44' height='44' ....");
       transform: rotateY(180deg) translateZ(1px);
     }
   }
-  &__right-side{
-    width: 79px;
-    height: 44px;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='79' height='44' .....");
 
-    @include respondTo(mobile) {
-      width: 52px;
-      height: 32px;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='69' height='44' ...");
-    }
-
-  }
+  // 2. Убираем 3D-эффект в :hover — он бесполезен на тач-устройствах и вреден для композитинга
   &:hover {
-    transform: rotateY(180deg);
+    // БЫЛО:
+    // transform: rotateY(180deg);
+    // СТАЛО:
+    // → уберите или замените на 2D-эффект (например, scale или opacity), если нужен feedback
+    // transform: rotateY(180deg); → ❌ удалите или закомментируйте
+
+    // Альтернатива (если хочется оставить интерактив):
+    // transform: scale(1.05);
+    // transition: transform 0.2s ease;
   }
 }
 
-
-//-----------------Анимация------------------
-
-//--Анимация к новому годы 2025-2026
-@keyframes new-year-logo-2025 {
-  /* поворот примерно 15% норм смотрится */
-  0% {
-    transform: rotateY(0deg);
-  }
-  /* поворачиваем */
-  15% {
-    transform: rotateY(180deg);
-  }
-  /* ожидание в перевёрнутом виде */
-  45% {
-    transform: rotateY(180deg);
-  }
-  /* поворот обратно */
-  60% {
-    transform: rotateY(0deg);
-  }
-  /* ожидание до нового поворота */
-  to {
-    transform: rotateY(0deg);
-  }
-}
-
-.modal#modal-back-call.open
-        .modal__wrapper.new
-            button.modal__closer.outside
-            //После успешной отправки этот блок скрыть добавив класс .unactive
-            .modal__main-content
-                form(action="" novalidate).feedback
-
-
-.modal.open, .modal.show {
-    background: rgba(28, 27, 40, .4);
-    visibility: visible;
-    display: block;
-}
-.modal {
-    left: 0;
-    height: 100vh;
-    height: calc(var(--vh, 1vh) * 100);
-    position: fixed;
-    top: 0;
-    transition: all .3s ease-in-out;
-    width: 100vw;
-    z-index: 1111;
-}
-.modal__wrapper {
-    background-color: #fff;
-    box-shadow: 0 10px 30px rgba(202, 204, 223, .5);
-    visibility: visible;
-    padding: 64px 10px 59px;
-    max-width: 616px;
-    top: 50%;
-    position: fixed;
-    left: 50%;
-    top: -520px;
-    transform: translate(-50%, -50%);
-    max-height: calc(100vh - 2rem);
-    transition: all .3s ease-in-out;
-    width: calc(100% - 2.5rem);
-    z-index: 1002;
-}
 
