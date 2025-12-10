@@ -16,11 +16,76 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 ------------------------------------------------------------------------------------------------------------------
 
+<script>
+  // Только для iPad + Safari 16.0–16.4
+  if (
+    /iPad/.test(navigator.userAgent) &&
+    /Safari/.test(navigator.userAgent) &&
+    !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent) // исключаем другие браузеры
+  ) {
+    const verMatch = navigator.userAgent.match(/Version\/(\d+(?:\.\d+)?)/);
+    if (verMatch) {
+      const version = parseFloat(verMatch[1]);
+      if (version >= 16.0 && version < 16.5) {
+        document.documentElement.classList.add('safari-16-ipad');
+      }
+    }
+  }
+</script>
+
+// ——— ОСНОВНАЯ АНИМАЦИЯ (для ВСЕХ) ———
 .header-logo__left-side-2025 {
-  isolation: isolate;
-  z-index: 1;
-  contain: layout style paint;
+  /* ... ваш текущий код с preserve-3d, will-change и т.д. ... */
+  animation-name: new-year-logo-2025;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform;
+
+  &::after {
+    transform: rotateY(180deg) translateZ(1px);
+  }
 }
+
+// ——— FALLBACK ДЛЯ Safari 16.0–16.4 на iPad ———
+.safari-16-ipad {
+  .header-logo__left-side-2025 {
+    // Отключаем 3D-режим
+    transform-style: flat !important;
+    backface-visibility: hidden !important;
+    animation-name: new-year-logo-2025-2d !important;
+    // убираем всё, что может триггерить 3D-слои:
+    will-change: auto !important;
+    // и фиксируем положение ::after
+    &::after {
+      transform: none !important; // ← никакого rotateY
+      opacity: 0;
+    }
+  }
+
+  // ✅ 2D-анимация: плавный "флип" через opacity (визуально очень близко к 3D)
+  @keyframes new-year-logo-2025-2d {
+    // 0% → 15%: плавно исчезает логотип
+    0%, 14% {
+      &::before { opacity: 1; }
+      &::after  { opacity: 0; }
+    }
+    15%, 44% {
+      &::before { opacity: 0; }
+      &::after  { opacity: 0; } // пауза — "пустой кадр"
+    }
+    // 45% → 60%: появляется ёлочка
+    45%, 59% {
+      &::before { opacity: 0; }
+      &::after  { opacity: 1; }
+    }
+    // 60% → 100%: возврат к логотипу
+    60%, 100% {
+      &::before { opacity: 1; }
+      &::after  { opacity: 0; }
+    }
+  }
+}
+
 
 
 
