@@ -16,72 +16,29 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 ------------------------------------------------------------------------------------------------------------------
 
-// 1. Убираем preserve-3d — он избыточен для простого flip
-//    (вы не используете вложенные 3D-элементы внутри ::before/::after)
-.header-logo {
-  &__left-side-2025 {
-    // БЫЛО:
-    // transform-style: preserve-3d;
-    // СТАЛО:
-    transform-style: flat; // 👈 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
+<div class="sidebar-directions active"></div>
 
-    // Добавляем will-change — но только если анимация реально играет
-    // (браузер выделит GPU-слой заранее, но не перестроит его в самый неподходящий момент)
+.sidebar-directions {
+    position: fixed;
+    z-index: 1001;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100%;
+    max-width: 62.5rem;
+    padding: 1.938rem .625rem 3.75rem 9vw;
+    background-color: #fff;
+    transition-duration: .8s;
+    transform: translateX(-100%);
     will-change: transform;
-
-    // Необязательно, но для надёжности на iOS:
-    backface-visibility: hidden; // уже есть у ::before/::after, но дублируем на родителе
-
-    // Убираем perspective — он может усугублять артефакты при композитинге
-    // perspective: 100px; → закомментировано/удалено
-
-    // Остальное без изменений:
-    animation-name: new-year-logo-2025;
-    animation-duration: 3.25s;
-    animation-iteration-count: infinite;
-    animation-direction: reverse;
-    animation-timing-function: linear;
-    animation-delay: 3s;
-
-    &::before,
-    &::after {
-      content: "";
-      display: block;
-      height: 100%;
-      width: 100%;
-      background-repeat: no-repeat;
-      background-size: cover;
-      position: absolute;
-      backface-visibility: hidden; // ✅ остаётся
-      // transition лучше убрать — он конфликтует с animation и может вызывать repaint
-      // transition: .3s linear transform; → ❌ уберите
-    }
-
-    &::before {
-      background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDQiIGhlaWdodD0iNDQ...");
-      @include respondTo(mobile) {
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='33' height='32' ....");
-      }
-    }
-
-    &::after {
-      background-image: url("data:image/svg+xml,%3Csvg width='44' height='44' ....");
-      transform: rotateY(180deg) translateZ(1px);
-    }
-  }
-
-  // 2. Убираем 3D-эффект в :hover — он бесполезен на тач-устройствах и вреден для композитинга
-  &:hover {
-    // БЫЛО:
-    // transform: rotateY(180deg);
-    // СТАЛО:
-    // → уберите или замените на 2D-эффект (например, scale или opacity), если нужен feedback
-    // transform: rotateY(180deg); → ❌ удалите или закомментируйте
-
-    // Альтернатива (если хочется оставить интерактив):
-    // transform: scale(1.05);
-    // transition: transform 0.2s ease;
-  }
+    overflow-y: auto;
+    scrollbar-color: #8bc540 #caccdf;
+    scrollbar-width: thin;
 }
+
+.sidebar-directions.active {
+    transform: translateX(0);
+}
+
 
 
