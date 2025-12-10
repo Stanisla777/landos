@@ -17,24 +17,26 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 ------------------------------------------------------------------------------------------------------------------
 
 <script>
-  // Только для iPad + Safari 16.0–16.4
+  // Определяем: iPad + WebKit 605.x (Safari 16.x) — вне зависимости от браузера
   if (
     /iPad/.test(navigator.userAgent) &&
-    /Safari/.test(navigator.userAgent) &&
-    !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent) // исключаем другие браузеры
+    /AppleWebKit\/605\.\d+/.test(navigator.userAgent) // ← WebKit 605.x = Safari 16.x
   ) {
-    const verMatch = navigator.userAgent.match(/Version\/(\d+(?:\.\d+)?)/);
-    if (verMatch) {
-      const version = parseFloat(verMatch[1]);
+    // Доп. проверка: не macOS, не iPhone
+    if (!/iPhone|Macintosh/.test(navigator.userAgent)) {
+      // Парсим версию Safari из "Version/16.3"
+      const verMatch = navigator.userAgent.match(/Version\/(\d+(?:\.\d+)?)/);
+      const version = verMatch ? parseFloat(verMatch[1]) : 0;
+      
       if (version >= 16.0 && version < 16.5) {
-        document.documentElement.classList.add('safari-16-ipad');
+        document.documentElement.classList.add('webkit-16-ipad');
       }
     }
   }
 </script>
 
 // ——— ОСНОВНАЯ АНИМАЦИЯ (для ВСЕХ) ———
-.safari-16-ipad {
+.webkit-16-ipad {
   .header-logo__left-side-2025 {
     transform-style: flat !important;
     backface-visibility: hidden !important;
@@ -75,6 +77,7 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
   45%, 59%            { opacity: 1; }
   15%, 44%            { opacity: 0; } // пауза между
 }
+
 
 
 
