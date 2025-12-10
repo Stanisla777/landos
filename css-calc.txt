@@ -34,57 +34,35 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 </script>
 
 // ——— ОСНОВНАЯ АНИМАЦИЯ (для ВСЕХ) ———
-.header-logo__left-side-2025 {
-  /* ... ваш текущий код с preserve-3d, will-change и т.д. ... */
-  animation-name: new-year-logo-2025;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-  will-change: transform;
-
-  &::after {
-    transform: rotateY(180deg) translateZ(1px);
-  }
-}
-
-// ——— FALLBACK ДЛЯ Safari 16.0–16.4 на iPad ———
 .safari-16-ipad {
   .header-logo__left-side-2025 {
-    // Отключаем 3D-режим
     transform-style: flat !important;
     backface-visibility: hidden !important;
-    animation-name: new-year-logo-2025-2d !important;
-    // убираем всё, что может триггерить 3D-слои:
     will-change: auto !important;
-    // и фиксируем положение ::after
-    &::after {
-      transform: none !important; // ← никакого rotateY
-      opacity: 0;
-    }
-  }
 
-  // ✅ 2D-анимация: плавный "флип" через opacity (визуально очень близко к 3D)
-  @keyframes new-year-logo-2025-2d {
-    // 0% → 15%: плавно исчезает логотип
-    0%, 14% {
-      &::before { opacity: 1; }
-      &::after  { opacity: 0; }
+    // Убираем анимацию с самого блока — она теперь на псевдоэлементах
+    animation: none !important;
+
+    &::before,
+    &::after {
+      // Сохраняем исходные стили (background-image и т.д.)
+      backface-visibility: hidden;
     }
-    15%, 44% {
-      &::before { opacity: 0; }
-      &::after  { opacity: 0; } // пауза — "пустой кадр"
+
+    &::before {
+      animation: new-year-logo-2025-2d-before 3.25s infinite linear;
+      animation-delay: 3s;
     }
-    // 45% → 60%: появляется ёлочка
-    45%, 59% {
-      &::before { opacity: 0; }
-      &::after  { opacity: 1; }
-    }
-    // 60% → 100%: возврат к логотипу
-    60%, 100% {
-      &::before { opacity: 1; }
-      &::after  { opacity: 0; }
+
+    &::after {
+      animation: new-year-logo-2025-2d-after 3.25s infinite linear;
+      animation-delay: 3s;
+      transform: none !important; // ← никакого rotateY
+      opacity: 0; // ← начальное состояние
     }
   }
 }
+
 
 
 
