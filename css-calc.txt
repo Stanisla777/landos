@@ -16,7 +16,66 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 ------------------------------------------------------------------------------------------------------------------
 
+.webkit-16-ipad {
+  .header-logo__left-side-2025 {
+    transform-style: flat !important;
+    backface-visibility: hidden !important;
+    will-change: auto !important;
+    animation: none !important;
 
+    &::before,
+    &::after {
+      backface-visibility: hidden;
+      // Убираем transition — он конфликтует с animation
+      // transition: none; // ← лучше явно отключить
+    }
+
+    &::before {
+      animation: new-year-logo-2025-2d-before 3.25s infinite linear;
+      animation-delay: 3s;
+    }
+
+    &::after {
+      animation: new-year-logo-2025-2d-after 3.25s infinite linear;
+      animation-delay: 3s;
+      transform: none !important;
+      opacity: 0;
+    }
+  }
+}
+
+// ::before — логотип (виден в начале и конце)
+@keyframes new-year-logo-2025-2d-before {
+  // 0% → 15%: плавно исчезает (как поворот в 3D)
+  0%   { opacity: 1; }
+  7.5% { opacity: 1; }    // небольшая задержка (как в 3D: инерция перед поворотом)
+  15%  { opacity: 0; }
+
+  // 15% → 60%: остаётся скрытым (пока видна ёлочка или "пусто")
+  45%  { opacity: 0; }
+
+  // 45% → 60%: плавно появляется (возврат)
+  52.5% { opacity: 0; }   // задержка перед возвратом
+  60%   { opacity: 1; }
+
+  // 60% → 100%: остаётся
+  100% { opacity: 1; }
+}
+
+// ::after — ёлочка (видна только в "перевёрнутом" состоянии)
+@keyframes new-year-logo-2025-2d-after {
+  // 0% → 15%: скрыта (пока поворачивается логотип)
+  0%, 15% { opacity: 0; }
+
+  // 15% → 45%: плавно появляется → пауза → плавно исчезает
+  15%   { opacity: 0; }
+  22.5% { opacity: 1; }   // появляется за 7.5% (половина поворота)
+  37.5% { opacity: 1; }   // пауза в развёрнутом состоянии
+  45%   { opacity: 0; }   // исчезает за 7.5%
+
+  // 45% → 100%: остаётся скрытой
+  100% { opacity: 0; }
+}
 
 <script>
   // iPadOS 16.3 — фикс артефактов 3D-анимации
@@ -94,6 +153,7 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
   45%, 59%            { opacity: 1; }
   15%, 44%            { opacity: 0; } // пауза между
 }
+
 
 
 
