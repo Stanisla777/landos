@@ -16,192 +16,6 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 ------------------------------------------------------------------------------------------------------------------
 
-// Создание popup’а (внутри fixed-контейнера)
-function createShareDropdown(wrapper) {
-  const servicesStr = (wrapper.dataset.services || '').trim();
-  let services = [];
-  if (servicesStr) {
-    try {
-      services = JSON.parse(servicesStr);
-    } catch (_) {
-      let cleaned = servicesStr.trim();
-      if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
-        cleaned = cleaned.slice(1, -1).trim();
-      }
-      services = cleaned.split(',').map(s => s.trim()).filter(Boolean);
-    }
-  }
-  if (!Array.isArray(services)) services = [];
-
-  const rawUrl = wrapper.dataset.url || location.href;
-  const rawText = wrapper.dataset.text || document.title;
-  const rawImage = wrapper.dataset.image || '';
-
-  const dropdown = document.createElement('div');
-  dropdown.className = 'soc-list__share';
-  Object.assign(dropdown.style, {
-    opacity: '0',
-    pointerEvents: 'none',
-  });
-
-  // ✅ Мобильный хедер
-  const mobileHeader = document.createElement('div');
-  mobileHeader.className = 'soc-list__mobile-header';
-
-  const urlText = document.createElement('p');
-  urlText.textContent = rawUrl;
-
-  const closeBtn = document.createElement('div');
-  closeBtn.className = 'soc-list__mobile-header-close js--soc-list-mobile-header-close';
-
-  const closeIcon = document.createElement('div');
-  closeIcon.className = 'soc-list__mobile-header-close-icon';
-
-  closeBtn.appendChild(closeIcon);
-  mobileHeader.appendChild(urlText);
-  mobileHeader.appendChild(closeBtn);
-
-  closeBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    hideDropdown(dropdown);
-  });
-
-  dropdown.appendChild(mobileHeader);
-
-  // Список сервисов
-  const ul = document.createElement('ul');
-  const serviceTitles = {
-    whatsapp: 'WhatsApp',
-    telegram: 'Telegram',
-    vkontakte: 'ВКонтакте',
-    odnoklassniki: 'Одноклассники',
-  };
-
-  services.forEach(service => {
-    const title = serviceTitles[service];
-    if (!title) return;
-
-    const li = document.createElement('li');
-    const item = document.createElement('div');
-    item.className = 'soc-list__share-item';
-
-    const icon = document.createElement('div');
-    icon.className = `soc-list__share-icon ${service}-icon-share`;
-
-    const span = document.createElement('span');
-    span.className = 'soc-list__share-title';
-    span.textContent = title;
-
-    item.appendChild(icon);
-    item.appendChild(span);
-    li.appendChild(item);
-
-    item.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const shareUrl = getShareUrl(service, { rawUrl, rawText, rawImage });
-      window.open(shareUrl, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
-      hideDropdown(dropdown);
-    });
-
-    ul.appendChild(li);
-  });
-
-  // Копирование
-  const copyLi = document.createElement('li');
-  const copyDiv = document.createElement('div');
-  copyDiv.className = 'soc-list__copy-link';
-
-  const copyIcon = document.createElement('div');
-  copyIcon.className = 'soc-list__share-icon copy-link';
-
-  const copyTitle = document.createElement('span');
-  copyTitle.className = 'soc-list__share-title';
-  copyTitle.textContent = 'Скопировать ссылку';
-
-  copyDiv.appendChild(copyIcon);
-  copyDiv.appendChild(copyTitle);
-  copyLi.appendChild(copyDiv);
-  ul.appendChild(copyLi);
-
-  dropdown.appendChild(ul);
-
-  // Обработчик копирования
-  copyDiv.addEventListener('click', function (ev) {
-    ev.stopPropagation();
-    const copy = () => {
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        return navigator.clipboard.writeText(rawUrl);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = rawUrl;
-        textarea.setAttribute('readonly', '');
-        textarea.style.position = 'absolute';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        const ok = document.execCommand('copy');
-        document.body.removeChild(textarea);
-        return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
-      }
-    };
-
-    copy()
-      .then(() => {
-        copyTitle.textContent = 'Скопировано';
-        setTimeout(() => {
-          if (activeDropdown === dropdown) {
-            hideDropdown(dropdown);
-          }
-        }, 500);
-      })
-      .catch(err => {
-        console.warn('Не удалось скопировать:', err);
-        copyTitle.textContent = 'Ошибка';
-        setTimeout(() => {
-          if (copyTitle.textContent === 'Ошибка') {
-            copyTitle.textContent = 'Скопировать ссылку';
-          }
-        }, 1500);
-      });
-  });
-
-  // Закрытие по клику вне
-  const onClickOutside = (ev) => {
-    if (!activeDropdown || activeDropdown !== dropdown) return;
-    const clickedInside = dropdown.contains(ev.target) || ev.target.closest('.js--soc-list-share');
-    if (clickedInside) return;
-    hideDropdown(dropdown);
-    const clickedOnLink = ev.target.closest('a[href]');
-    if (clickedOnLink) {
-      ev.stopPropagation();
-      ev.preventDefault();
-    }
-  };
-  document.addEventListener('click', onClickOutside);
-  dropdown._cleanup = () => document.removeEventListener('click', onClickOutside);
-
-  // ✅ Измеряем и сохраняем ширину popup (без мигания)
-  setTimeout(() => {
-    const temp = document.createElement('div');
-    Object.assign(temp.style, {
-      position: 'absolute',
-      visibility: 'hidden',
-      pointerEvents: 'none',
-      width: 'max-content',
-      opacity: '0',
-    });
-    temp.innerHTML = dropdown.innerHTML;
-    document.body.appendChild(temp);
-    const width = temp.getBoundingClientRect().width;
-    dropdown.dataset.popupWidth = width;
-    document.body.removeChild(temp);
-  }, 0);
-
-  return dropdown;
-}
-
--------------------------------
-
 function positionDropdown(trigger, dropdown) {
   const rect = trigger.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
@@ -210,99 +24,23 @@ function positionDropdown(trigger, dropdown) {
   const isNarrow = window.matchMedia('(max-width: 480px)').matches;
   const isMobileShare = dropdown.classList.contains('mobile-share');
 
-  // На мобилке/планшете — позиционирование управляется CSS
   if (isMobileOrTablet || isNarrow || isMobileShare) {
     return;
   }
 
-  // Берём кэшированную ширину
   const dropdownWidth = parseFloat(dropdown.dataset.popupWidth) || 240;
+  const top = rect.top + rect.height + 10;
 
-  let top = rect.top + rect.height + 10;
+  // ✅ Позиционирование: по умолчанию — слева от кнопки (как сейчас)
   let left = rect.left;
 
-  // Если не помещается справа — сдвигаем влево
+  // ✅ Если не помещается справа — выравниваем ПО ПРАВОМУ КРАЮ кнопки
   if (left + dropdownWidth > viewportWidth - 10) {
     left = rect.right - dropdownWidth;
-    if (left < 10) left = 10;
   }
+
+  // ✅ Доп. защита: не уходим за левый край
+  if (left < 0) left = 0;
 
   dropdown.style.transform = `translate(${left}px, ${top}px)`;
-}
-
---------------------------
-
-function showDropdown(dropdown, trigger) {
-  dropdown.style.display = 'block';
-  dropdown.style.opacity = '0';
-  dropdown.style.pointerEvents = 'none';
-
-  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
-
-  positionDropdown(trigger, dropdown);
-
-  requestAnimationFrame(() => {
-    if (popupContainer) popupContainer.classList.add('active');
-
-    dropdown.classList.remove('active');
-
-    requestAnimationFrame(() => {
-      if (isMobilePortrait) {
-        dropdown.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      } else {
-        dropdown.style.transition = 'opacity 0.2s ease';
-      }
-
-      dropdown.classList.add('active');
-
-      if (isMobileDevice()) {
-        AddClassBody();
-        if (popupContainer) popupContainer.classList.add('mobile-share');
-        dropdown.classList.add('mobile-share');
-      }
-
-      dropdown.style.opacity = '1';
-      dropdown.style.pointerEvents = 'auto';
-    });
-  });
-
-  activeDropdown = dropdown;
-  activeTrigger = trigger;
-  if (!isMobileDevice()) {
-    window.addEventListener('scroll', onScroll, { passive: true });
-  }
-}
-
------------------------------
-
-function hideDropdown(dropdown) {
-  if (!dropdown) return;
-
-  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
-
-  dropdown.style.pointerEvents = 'none';
-
-  if (isMobilePortrait) {
-    dropdown.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-  } else {
-    dropdown.style.transition = 'opacity 0.2s ease';
-  }
-
-  dropdown.classList.remove('active');
-
-  setTimeout(() => {
-    dropdown.style.display = 'none';
-    dropdown.style.transition = '';
-
-    if (popupContainer) popupContainer.classList.remove('active');
-    if (dropdown.classList.contains('mobile-share')) {
-      RemoveClassBody();
-      if (popupContainer) popupContainer.classList.remove('mobile-share');
-      dropdown.classList.remove('mobile-share');
-    }
-  }, 300); // ← 300 мс — гарантирует завершение анимации
-
-  activeDropdown = null;
-  activeTrigger = null;
-  window.removeEventListener('scroll', onScroll);
 }
