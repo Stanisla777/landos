@@ -18,15 +18,27 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 
 <script>
-  // iPadOS 16.0–16.3: фикс артефактов 3D-анимации
+  // Точный детектор iPad (даже в режиме Mac)
+  const isIPad = 
+    /iPad/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && 
+     navigator.maxTouchPoints > 1 && 
+     'ontouchstart' in window);
+
   if (
-    navigator.platform === 'iPad' &&
+    isIPad &&
     /OS 16_[0-3]/.test(navigator.userAgent) &&
     /AppleWebKit\/605/.test(navigator.userAgent)
   ) {
-    document.documentElement.classList.add('webkit-16-ipad');
+    // Попробуем добавить к <html>, если не получится — к <body>
+    try {
+      document.documentElement.classList.add('webkit-16-ipad');
+    } catch (e) {
+      document.body.classList.add('webkit-16-ipad');
+    }
   }
 </script>
+
 
 
 
