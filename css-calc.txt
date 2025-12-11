@@ -18,26 +18,38 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 
 <script>
-  // Точный детектор iPad (даже в режиме Mac)
-  const isIPad = 
-    /iPad/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && 
-     navigator.maxTouchPoints > 1 && 
-     'ontouchstart' in window);
+  try {
+    // Только если navigator существует (защита от SSR / старых браузеров)
+    if (typeof navigator !== 'undefined') {
+      // Аккуратное определение iPad
+      var ua = navigator.userAgent || '';
+      var platform = navigator.platform || '';
+      var maxTouchPoints = navigator.maxTouchPoints || 0;
 
-  if (
-    isIPad &&
-    /OS 16_[0-3]/.test(navigator.userAgent) &&
-    /AppleWebKit\/605/.test(navigator.userAgent)
-  ) {
-    // Попробуем добавить к <html>, если не получится — к <body>
-    try {
-      document.documentElement.classList.add('webkit-16-ipad');
-    } catch (e) {
-      document.body.classList.add('webkit-16-ipad');
+      // iPad: либо в UA, либо Mac + касания
+      var isIPad = 
+        ua.indexOf('iPad') >= 0 ||
+        (platform === 'MacIntel' && maxTouchPoints > 1 && 'ontouchstart' in window);
+
+      // Точная версия: только 16.0–16.3
+      var isOS16_0to16_3 = /OS 16_[0-3]/.test(ua);
+      var isWebKit605 = ua.indexOf('AppleWebKit/605') >= 0;
+
+      // Применяем только если ВСЁ совпадает
+      if (isIPad && isOS16_0to16_3 && isWebKit605) {
+        // Добавляем класс — с двойной страховкой
+        var root = document.documentElement || document.body;
+        if (root && root.classList) {
+          root.classList.add('webkit-16-ipad');
+        }
+      }
     }
+  } catch (e) {
+    // Полная тишина — даже если что-то пошло не так
+    // (на iPad без консоли — это критично)
   }
 </script>
+
 
 
 
