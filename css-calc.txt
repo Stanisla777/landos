@@ -18,91 +18,41 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 
 
-function showDropdown(dropdown, trigger) {
-  dropdown.style.display = 'block';
-  dropdown.style.opacity = '0';
-  dropdown.style.pointerEvents = 'none';
-
-  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
-
-  // Позиционируем (для десктопа — под кнопкой)
-  positionDropdown(trigger, dropdown);
-
-  requestAnimationFrame(() => {
-    // Добавляем глобальный active
-    if (popupContainer) {
-      popupContainer.classList.add('active');
-    }
-
-    // ✅ Сначала снимаем .active — уходим в начальное положение (за экраном)
-    dropdown.classList.remove('active');
-
-    requestAnimationFrame(() => {
-      // ✅ Теперь включаем transition и активируем
-      if (isMobilePortrait) {
-        dropdown.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      } else {
-        dropdown.style.transition = 'opacity 0.2s ease';
-      }
-
-      // Добавляем классы
-      dropdown.classList.add('active');
-
-      if (isMobileDevice()) {
-        AddClassBody();
-        if (popupContainer) popupContainer.classList.add('mobile-share');
-        dropdown.classList.add('mobile-share');
-      }
-
-      // Показываем
-      dropdown.style.opacity = '1';
-      dropdown.style.pointerEvents = 'auto';
-    });
-  });
-
-  activeDropdown = dropdown;
-  activeTrigger = trigger;
-  if (!isMobileDevice()) {
-    window.addEventListener('scroll', onScroll, { passive: true });
-  }
-}
-
----------------
-
 function hideDropdown(dropdown) {
   if (!dropdown) return;
 
+  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
+
+  // ✅ 1. Сначала разрешаем анимацию
   dropdown.style.pointerEvents = 'none';
   dropdown.style.opacity = '0';
 
-  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
-
   if (isMobilePortrait) {
+    // ✅ Включаем transition ДО изменения класса
     dropdown.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
   } else {
     dropdown.style.transition = 'opacity 0.2s ease';
   }
 
-  // ✅ Убираем .active — CSS применит transform: translate(-50%, 101%) с анимацией
+  // ✅ 2. Убираем .active → CSS применит transform: translate(-50%, 101%)
   dropdown.classList.remove('active');
 
+  // ✅ 3. Ждём окончания анимации, ТОЛЬКО потом скрываем
   setTimeout(() => {
     dropdown.style.display = 'none';
-    dropdown.style.transform = '';
-    dropdown.style.transition = '';
+    dropdown.style.transition = ''; // сброс
 
-    if (popupContainer) {
-      popupContainer.classList.remove('active');
-    }
-
+    // Очистка классов
+    if (popupContainer) popupContainer.classList.remove('active');
     if (dropdown.classList.contains('mobile-share')) {
       RemoveClassBody();
       if (popupContainer) popupContainer.classList.remove('mobile-share');
       dropdown.classList.remove('mobile-share');
     }
-  }, isMobilePortrait ? 300 : 200);
+  }, isMobilePortrait ? 250 : 200); // ≈ длительность transition
 
   activeDropdown = null;
   activeTrigger = null;
   window.removeEventListener('scroll', onScroll);
 }
+
