@@ -18,205 +18,91 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 
 
-     .soc-list{
-  &__share{
-    min-width: 208px;
-    background-color: #fff;
-    top: 0;
-    left: 0;
-    padding: 8px 0;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 0 4px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    pointer-events: none; // важно — пока не появился
-    transform: translate(0, 0);
-    position: absolute;
-    transition: opacity 0.2s ease;
-    z-index: 2147483647;
-    &.mobile-share{
-      @media screen and (min-width: 481px) {
-        padding: 26px 0 9px;
-        transform: translate(-50%, -50%)!important;
-        top:50%;
-        left: 50%;
-        width: max-content;
-        max-width: 60%;
-        .soc-list__mobile-header{
-          display: flex;
-        }
-        ul{
-          display: flex;
-          flex-wrap:wrap;
-          justify-content: center;
-          column-gap: 15px;
-          row-gap:15px;
-          padding: 23px 30px!important;
-          li:last-child{
-            flex-basis: 100%;
-          }
-        }
-        .soc-list__mobile-header{
-          padding-left: 30px;
-          padding-bottom: 26px;
-        }
-        .soc-list__share-item{
-          flex-direction:column;
-        }
-        .soc-list__share-icon{
-          width: 35px;
-          height: 35px;
-        }
-        .soc-list__copy-link{
-          column-gap:4px;
-          border: 1px solid #e6e6e6;
-          width: max-content;
-          border-radius: 11px;
-          padding: 8px 7px 8px 5px;
-          position: relative;
-          left: 50%;
-          transform: translateX(-50%);
-        }
-        .soc-list__share-icon.copy-link{
-          background-color:transparent;
-          width: 20px;
-          height: 20px;
-        }
-      }
+function showDropdown(dropdown, trigger) {
+  dropdown.style.display = 'block';
+  dropdown.style.opacity = '0';
+  dropdown.style.pointerEvents = 'none';
 
-    }
-    @include respondTo(small) {
-      bottom: 0;
-      top:unset!important;
-      left: 50%;
-      transform: translate(-50%, 101%)!important;
-      padding-top: 16px;
-      height: max-content;
-      width: 101%;
-      border-top-left-radius:16px;
-      border-top-right-radius:16px;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
-      &.active{
-        transform: translate(-50%, 0px)!important;
-      }
-    }
+  // ✅ Определяем: нужна ли шторка?
+  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
 
-
-    &.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    ul{
-      padding-left: 0!important;
-      list-style-position: unset!important;
-      list-style-type: none!important;
-      word-break: unset!important;
-      margin-bottom: unset!important;
-      li{
-        cursor: pointer;
-        padding: 4px 8px;
-        font-family: unset!important;
-        font-size: unset!important;
-        line-height: unset!important;
-        color: unset!important;
-        &:hover{
-          background-color:#f7f7f7;
-        }
-        @include respondTo(small) {
-          padding: 16px 16px;
-        }
-
-
-      }
-    }
-
-
-
+  if (isMobilePortrait) {
+    // Мобилка в portrait: начинаем за экраном (как в CSS)
+    dropdown.style.transform = 'translate(-50%, 101%)';
   }
-  &__share-item{
-    display: flex;
-    align-items: center;
-    column-gap:10px;
-    row-gap:15px;
-  }
-  &__copy-link{
-    display: flex;
-    align-items: center;
-    column-gap:10px;
-  }
-  &__share-icon{
-    flex-shrink: 0;
-    width: 24px;
-    height: 24px;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
-    //background-color: #bcb9b9;
-    &.whatsapp-icon-share{
-      background-image: url("data:image/svg+xml;....");
-    }
-    &.telegram-icon-share{
-      background-image: url("data:image/svg+xml....");
-    }
-    &.vkontakte-icon-share{
-      background-image: url("data:image/svg+xml.....");
-    }
-    &.odnoklassniki-icon-share{
-      background-image: url("data:image/svg+xml....");
-    }
-    &.copy-link{
-      border-radius: 50%;
-      background-color: rgba(0, 0, 0, 0.03);
-      background-size: 64%;
-      background-image: url("data:image/svg+xml.....");
-    }
-  }
-  &__share-title{
-    font-family: $ff-medium;
-    line-height: 20px;
-    font-size: 14px;
-  }
-  &__mobile-header{
-    display: none;
-    align-items: center;
-    column-gap: 15px;
-    justify-content: space-between;
-    border-bottom: 1px solid #e6e6e6;
-    padding: 0 16px 16px;
-    @include respondTo(small) {
-      display: flex;
-    }
-    p{
-      font-family: $ff-medium;
-      font-size: 15px;
-      line-height: 133%;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      overflow: hidden;
-    }
-  }
-  &__mobile-header-close{
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: 1px solid #252628;
-    border-radius: 50%;
-    margin-left: auto;
-  }
-  &__mobile-header-close-icon{
-    width: 10px;
-    height: 10px;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
-    background-image: url("data:image/svg+xml....");
 
+  positionDropdown(trigger, dropdown);
+
+  requestAnimationFrame(() => {
+    if (popupContainer) {
+      popupContainer.classList.add('active');
+    }
+    dropdown.classList.add('active');
+
+    if (isMobileDevice()) {
+      AddClassBody();
+      if (popupContainer) popupContainer.classList.add('mobile-share');
+      dropdown.classList.add('mobile-share');
+    }
+
+    // ✅ Анимация
+    if (isMobilePortrait) {
+      // Шторка: плавный выезд снизу
+      dropdown.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease';
+      dropdown.style.transform = 'translate(-50%, 0)';
+    } else {
+      // Всё остальное: просто fade-in
+      dropdown.style.transition = 'opacity 0.2s ease';
+    }
+
+    dropdown.style.opacity = '1';
+    dropdown.style.pointerEvents = 'auto';
+  });
+
+  activeDropdown = dropdown;
+  activeTrigger = trigger;
+  if (!isMobileDevice()) {
+    window.addEventListener('scroll', onScroll, { passive: true });
   }
 }
+
+function hideDropdown(dropdown) {
+  if (!dropdown) return;
+
+  dropdown.style.pointerEvents = 'none';
+  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
+
+  if (isMobilePortrait) {
+    dropdown.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease';
+    dropdown.style.transform = 'translate(-50%, 101%)';
+  } else {
+    dropdown.style.transition = 'opacity 0.2s ease';
+  }
+
+  dropdown.style.opacity = '0';
+
+  setTimeout(() => {
+    dropdown.style.display = 'none';
+    dropdown.style.transform = '';
+    dropdown.style.transition = '';
+
+    if (popupContainer) {
+      popupContainer.classList.remove('active');
+    }
+    dropdown.classList.remove('active');
+
+    if (dropdown.classList.contains('mobile-share')) {
+      RemoveClassBody();
+      if (popupContainer) popupContainer.classList.remove('mobile-share');
+      dropdown.classList.remove('mobile-share');
+    }
+  }, isMobilePortrait ? 300 : 200);
+
+  activeDropdown = null;
+  activeTrigger = null;
+  window.removeEventListener('scroll', onScroll);
+}
+
 
 
 
