@@ -23,36 +23,35 @@ function hideDropdown(dropdown) {
 
   const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
 
-  // ✅ 1. Сначала разрешаем анимацию
+  // Отключаем интерактивность
   dropdown.style.pointerEvents = 'none';
   dropdown.style.opacity = '0';
 
   if (isMobilePortrait) {
-    // ✅ Включаем transition ДО изменения класса
-    dropdown.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-  } else {
-    dropdown.style.transition = 'opacity 0.2s ease';
+    // ✅ Важно: ничего не трогаем в style.transform — оставляем управление CSS
+    // Просто убираем .active — CSS сам проанимирует transform
+    dropdown.classList.remove('active');
   }
 
-  // ✅ 2. Убираем .active → CSS применит transform: translate(-50%, 101%)
-  dropdown.classList.remove('active');
-
-  // ✅ 3. Ждём окончания анимации, ТОЛЬКО потом скрываем
+  // ✅ Ждём ДОЛЬШЕ, чем длительность transition (250 мс)
   setTimeout(() => {
+    // Только теперь скрываем
     dropdown.style.display = 'none';
-    dropdown.style.transition = ''; // сброс
 
-    // Очистка классов
-    if (popupContainer) popupContainer.classList.remove('active');
+    // Очистка
+    if (popupContainer) {
+      popupContainer.classList.remove('active');
+    }
     if (dropdown.classList.contains('mobile-share')) {
       RemoveClassBody();
       if (popupContainer) popupContainer.classList.remove('mobile-share');
       dropdown.classList.remove('mobile-share');
     }
-  }, isMobilePortrait ? 250 : 200); // ≈ длительность transition
+  }, 300); // ← 300 > 250 → гарантирует завершение анимации
 
   activeDropdown = null;
   activeTrigger = null;
   window.removeEventListener('scroll', onScroll);
 }
+
 
