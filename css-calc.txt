@@ -23,40 +23,41 @@ function showDropdown(dropdown, trigger) {
   dropdown.style.opacity = '0';
   dropdown.style.pointerEvents = 'none';
 
-  // ✅ Определяем: нужна ли шторка?
   const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
 
-  if (isMobilePortrait) {
-    // Мобилка в portrait: начинаем за экраном (как в CSS)
-    dropdown.style.transform = 'translate(-50%, 101%)';
-  }
-
+  // Позиционируем (для десктопа — под кнопкой)
   positionDropdown(trigger, dropdown);
 
   requestAnimationFrame(() => {
+    // Добавляем глобальный active
     if (popupContainer) {
       popupContainer.classList.add('active');
     }
-    dropdown.classList.add('active');
 
-    if (isMobileDevice()) {
-      AddClassBody();
-      if (popupContainer) popupContainer.classList.add('mobile-share');
-      dropdown.classList.add('mobile-share');
-    }
+    // ✅ Сначала снимаем .active — уходим в начальное положение (за экраном)
+    dropdown.classList.remove('active');
 
-    // ✅ Анимация
-    if (isMobilePortrait) {
-      // Шторка: плавный выезд снизу
-      dropdown.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease';
-      dropdown.style.transform = 'translate(-50%, 0)';
-    } else {
-      // Всё остальное: просто fade-in
-      dropdown.style.transition = 'opacity 0.2s ease';
-    }
+    requestAnimationFrame(() => {
+      // ✅ Теперь включаем transition и активируем
+      if (isMobilePortrait) {
+        dropdown.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      } else {
+        dropdown.style.transition = 'opacity 0.2s ease';
+      }
 
-    dropdown.style.opacity = '1';
-    dropdown.style.pointerEvents = 'auto';
+      // Добавляем классы
+      dropdown.classList.add('active');
+
+      if (isMobileDevice()) {
+        AddClassBody();
+        if (popupContainer) popupContainer.classList.add('mobile-share');
+        dropdown.classList.add('mobile-share');
+      }
+
+      // Показываем
+      dropdown.style.opacity = '1';
+      dropdown.style.pointerEvents = 'auto';
+    });
   });
 
   activeDropdown = dropdown;
@@ -66,20 +67,24 @@ function showDropdown(dropdown, trigger) {
   }
 }
 
+---------------
+
 function hideDropdown(dropdown) {
   if (!dropdown) return;
 
   dropdown.style.pointerEvents = 'none';
+  dropdown.style.opacity = '0';
+
   const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
 
   if (isMobilePortrait) {
-    dropdown.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease';
-    dropdown.style.transform = 'translate(-50%, 101%)';
+    dropdown.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
   } else {
     dropdown.style.transition = 'opacity 0.2s ease';
   }
 
-  dropdown.style.opacity = '0';
+  // ✅ Убираем .active — CSS применит transform: translate(-50%, 101%) с анимацией
+  dropdown.classList.remove('active');
 
   setTimeout(() => {
     dropdown.style.display = 'none';
@@ -89,7 +94,6 @@ function hideDropdown(dropdown) {
     if (popupContainer) {
       popupContainer.classList.remove('active');
     }
-    dropdown.classList.remove('active');
 
     if (dropdown.classList.contains('mobile-share')) {
       RemoveClassBody();
@@ -102,7 +106,3 @@ function hideDropdown(dropdown) {
   activeTrigger = null;
   window.removeEventListener('scroll', onScroll);
 }
-
-
-
-
