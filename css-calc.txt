@@ -16,42 +16,45 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 ------------------------------------------------------------------------------------------------------------------
 
-
+transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.15s ease;
 
 function hideDropdown(dropdown) {
-  if (!dropdown) return;
+  if (!dropdown || !dropdown.classList.contains('active')) return;
 
   const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
 
-  // Отключаем интерактивность
+  // 1. Запрещаем взаимодействие
   dropdown.style.pointerEvents = 'none';
-  dropdown.style.opacity = '0';
 
+  // 2. Запускаем визуальное исчезновение
   if (isMobilePortrait) {
-    // ✅ Важно: ничего не трогаем в style.transform — оставляем управление CSS
-    // Просто убираем .active — CSS сам проанимирует transform
+    // ✅ Только убираем .active — CSS сам анимирует transform
     dropdown.classList.remove('active');
+    // Убираем opacity через CSS transition, если нужно — добавьте в SCSS:
+    // .soc-list__share { transition: transform 0.25s, opacity 0.15s; }
+  } else {
+    // Десктоп: просто fade out
+    dropdown.style.opacity = '0';
   }
 
-  // ✅ Ждём ДОЛЬШЕ, чем длительность transition (250 мс)
+  // 3. ✅ Ждём ДОЛЬШЕ, чем длительность анимации (250 мс → 300 мс)
   setTimeout(() => {
-    // Только теперь скрываем
+    // 4. Только теперь скрываем из потока
     dropdown.style.display = 'none';
 
-    // Очистка
-    if (popupContainer) {
-      popupContainer.classList.remove('active');
-    }
+    // 5. Очистка
+    if (popupContainer) popupContainer.classList.remove('active');
     if (dropdown.classList.contains('mobile-share')) {
       RemoveClassBody();
       if (popupContainer) popupContainer.classList.remove('mobile-share');
       dropdown.classList.remove('mobile-share');
     }
-  }, 300); // ← 300 > 250 → гарантирует завершение анимации
+  }, 300); // ← ключевой момент: 300, а не 200/250
 
   activeDropdown = null;
   activeTrigger = null;
   window.removeEventListener('scroll', onScroll);
 }
+
 
 
