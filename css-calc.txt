@@ -17,9 +17,27 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 ------------------------------------------------------------------------------------------------------------------
 
 /* eslint-disable */
-import AddClassBody from './redesign-site/disallow-body-scrolling';
-import RemoveClassBody from './redesign-site/allow-body-scrolling';
+
 // Глобальные переменные
+function RemoveClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal');
+    document.body.classList.remove('body-additional-class');
+  }
+  const scrollY = document.body.style.top;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  window.scrollTo(0, parseInt(scrollY || '0') * -1);
+}
+function AddClassBody() {
+  document.body.classList.add('body-modal');
+  document.body.classList.add('body-additional-class');
+  document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+  document.ontouchmove = (e) => {
+    e.preventDefault();
+  };
+}
+
 let activeDropdown = null;
 let activeTrigger = null;
 let popupContainer = null;
@@ -54,9 +72,12 @@ function ensurePopupContainer() {
 
 
 // Обработчик клика
-function handleShareClick(e) {
+function handleShareClick(trigger,e) {
+  if (!trigger || typeof trigger.closest !== 'function') {
+    console.warn('Некорректный триггер:', trigger);
+    return;
+  }
   e.preventDefault();
-  const trigger = e.currentTarget;
   const wrapper = trigger.closest('.js--soc-list-wrapper-share');
   if (!wrapper) return;
 
@@ -83,7 +104,6 @@ function handleShareClick(e) {
   if (wrapper.hasAttribute('data-id')) {
     data_id = wrapper.getAttribute('data-id')
   }
-  console.log(data_id);
   let data_el_type = 0
   if (wrapper.hasAttribute('data-el-type')) {
     data_el_type = wrapper.getAttribute('data-el-type')
@@ -99,8 +119,6 @@ function handleShareClick(e) {
   }
 
   shareAjax(data_id,data_el_type,element_count,count_share)
-
-
 }
 
 //отправка данных
@@ -109,10 +127,32 @@ function shareAjax(id, type = defaultType,element_count, count){
   console.log(id);
   console.log('type');
   console.log(type);
-  if (element_count!==undefined) {
-    element_count.textContent = count+1
-  }
+  console.log('element_count');
+  console.log(element_count);
 
+  BX.ajax({
+    url: '/local/components/dev/likes/templates/mini/ajax.php',
+    data: {
+      element_id : id,
+      type : type,
+      share : 'Y'
+    },
+    method: 'POST',
+    dataType: 'html',
+    timeout: 30,
+    async: true,
+    processData: true,
+    scriptsRunFirst: true,
+    emulateOnload: true,
+    start: true,
+    cache: false,
+    onsuccess: function(data){
+      element_count.textContent=count + 1;
+    },
+    onfailure: function(){
+
+    }
+  });
 }
 
 // Показ popup’а
@@ -418,14 +458,14 @@ function getShareUrl(service, { rawUrl, rawText, rawImage }) {
   }
 }
 
-// Инициализация кнопок
-export default function shareSocList() {
-  const triggers = document.querySelectorAll('.js--soc-list-share:not([data-initialized])');
-  triggers.forEach(trigger => {
-    trigger.dataset.initialized = 'true';
-    trigger.addEventListener('click', handleShareClick);
-  });
-}
+document.addEventListener('click', function (e) {
+  const trigger = e.target.closest('.js--soc-list-share');
+  if (trigger) {
+    handleShareClick(trigger, e);
+  }
+}, true);
+
+
 
 
 
