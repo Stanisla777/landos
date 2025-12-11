@@ -16,45 +16,417 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 ------------------------------------------------------------------------------------------------------------------
 
-transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.15s ease;
+/* eslint-disable */
+import AddClassBody from './redesign-site/disallow-body-scrolling';
+import RemoveClassBody from './redesign-site/allow-body-scrolling';
+// Глобальные переменные
+let activeDropdown = null;
+let activeTrigger = null;
+let popupContainer = null;
+const defaultType = '1';
 
-function hideDropdown(dropdown) {
-  if (!dropdown || !dropdown.classList.contains('active')) return;
+const dropdownCache = new WeakMap();
+
+// Определение мобильного/планшетного устройства по User-Agent
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+
+// Создаём общий контейнер один раз
+function ensurePopupContainer() {
+  if (!popupContainer) {
+    popupContainer = document.createElement('div');
+    popupContainer.className = 'soc-share-popup-container';
+    Object.assign(popupContainer.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+      zIndex: '2147483647', // как у Яндекса — максимальный
+    });
+    document.body.appendChild(popupContainer);
+  }
+  return popupContainer;
+}
+
+
+// Обработчик клика
+function handleShareClick(e) {
+  e.preventDefault();
+  const trigger = e.currentTarget;
+  const wrapper = trigger.closest('.js--soc-list-wrapper-share');
+  if (!wrapper) return;
+
+  // Закрываем текущий активный popup (если есть)
+  if (activeDropdown) {
+    hideDropdown(activeDropdown);
+  }
+
+  // ✅ Ищем popup в кэше по wrapper
+  let dropdown = dropdownCache.get(wrapper);
+  if (!dropdown) {
+    // Создаём popup впервые для этой кнопки
+    dropdown = createShareDropdown(wrapper);
+    // Вставляем в глобальный контейнер
+    ensurePopupContainer().appendChild(dropdown);
+    // Сохраняем в кэш (WeakMap — безопасно)
+    dropdownCache.set(wrapper, dropdown);
+  }
+
+  // Показываем popup под текущей кнопкой
+  showDropdown(dropdown, trigger);
+
+  let data_id=0;
+  if (wrapper.hasAttribute('data-id')) {
+    data_id = wrapper.getAttribute('data-id')
+  }
+  console.log(data_id);
+  let data_el_type = 0
+  if (wrapper.hasAttribute('data-el-type')) {
+    data_el_type = wrapper.getAttribute('data-el-type')
+  }
+
+  let count_share = 0
+  if (wrapper.querySelector('.js-likes-share')) {
+    count_share = parseInt(wrapper.querySelector('.js-likes-share').textContent)
+  }
+  let element_count;
+  if (wrapper.querySelector('.js-likes-share')) {
+    element_count = wrapper.querySelector('.js-likes-share')
+  }
+
+  shareAjax(data_id,data_el_type,element_count,count_share)
+
+
+}
+
+//отправка данных
+function shareAjax(id, type = defaultType,element_count, count){
+  console.log('id');
+  console.log(id);
+  console.log('type');
+  console.log(type);
+  if (element_count!==undefined) {
+    element_count.textContent = count+1
+  }
+
+}
+
+// Показ popup’а
+function showDropdown(dropdown, trigger) {
+  dropdown.style.display = 'block';
+  dropdown.style.opacity = '0';
+  dropdown.style.pointerEvents = 'none';
 
   const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
 
-  // 1. Запрещаем взаимодействие
-  dropdown.style.pointerEvents = 'none';
+  // Позиционируем (для десктопа — под кнопкой)
+  positionDropdown(trigger, dropdown);
 
-  // 2. Запускаем визуальное исчезновение
-  if (isMobilePortrait) {
-    // ✅ Только убираем .active — CSS сам анимирует transform
+  requestAnimationFrame(() => {
+    // Добавляем глобальный active
+    if (popupContainer) {
+      popupContainer.classList.add('active');
+    }
+
+    // ✅ Сначала снимаем .active — уходим в начальное положение (за экраном)
     dropdown.classList.remove('active');
-    // Убираем opacity через CSS transition, если нужно — добавьте в SCSS:
-    // .soc-list__share { transition: transform 0.25s, opacity 0.15s; }
+
+    requestAnimationFrame(() => {
+      // ✅ Теперь включаем transition и активируем
+      if (isMobilePortrait) {
+        dropdown.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      } else {
+        dropdown.style.transition = 'opacity 0.2s ease';
+      }
+
+      // Добавляем классы
+      dropdown.classList.add('active');
+
+      if (isMobileDevice()) {
+        AddClassBody();
+        if (popupContainer) popupContainer.classList.add('mobile-share');
+        dropdown.classList.add('mobile-share');
+      }
+
+      // Показываем
+      dropdown.style.opacity = '1';
+      dropdown.style.pointerEvents = 'auto';
+    });
+  });
+
+  activeDropdown = dropdown;
+  activeTrigger = trigger;
+  if (!isMobileDevice()) {
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+}
+
+// Скрытие popup’а
+function hideDropdown(dropdown) {
+  if (!dropdown) return;
+
+  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
+
+  // ✅ 1. Сначала разрешаем анимацию
+  dropdown.style.pointerEvents = 'none';
+  // dropdown.style.opacity = '0';
+
+  if (isMobilePortrait) {
+    // ✅ Включаем transition ДО изменения класса
+    dropdown.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
   } else {
-    // Десктоп: просто fade out
-    dropdown.style.opacity = '0';
+    dropdown.style.transition = 'opacity 0.2s ease';
   }
 
-  // 3. ✅ Ждём ДОЛЬШЕ, чем длительность анимации (250 мс → 300 мс)
-  setTimeout(() => {
-    // 4. Только теперь скрываем из потока
-    dropdown.style.display = 'none';
+  // ✅ 2. Убираем .active → CSS применит transform: translate(-50%, 101%)
+  dropdown.classList.remove('active');
 
-    // 5. Очистка
+  // ✅ 3. Ждём окончания анимации, ТОЛЬКО потом скрываем
+  setTimeout(() => {
+    dropdown.style.display = 'none';
+    dropdown.style.transition = ''; // сброс
+
+    // Очистка классов
     if (popupContainer) popupContainer.classList.remove('active');
     if (dropdown.classList.contains('mobile-share')) {
       RemoveClassBody();
       if (popupContainer) popupContainer.classList.remove('mobile-share');
       dropdown.classList.remove('mobile-share');
     }
-  }, 300); // ← ключевой момент: 300, а не 200/250
+  }, isMobilePortrait ? 250 : 200); // ≈ длительность transition
 
   activeDropdown = null;
   activeTrigger = null;
   window.removeEventListener('scroll', onScroll);
 }
+
+// Позиционирование popup’а (мгновенно, без transition!)
+function positionDropdown(trigger, dropdown) {
+  const rect = trigger.getBoundingClientRect();
+  const top = rect.top + rect.height + 10; // отступ 10px
+  const left = rect.left;
+
+  // 🔑 Только transform — без top/left, без transition
+  dropdown.style.transform = `translate(${left}px, ${top}px)`;
+}
+
+// Обработчик скролла — мгновенный, как у Яндекса
+function onScroll() {
+  if (activeDropdown && activeTrigger) {
+    positionDropdown(activeTrigger, activeDropdown);
+  }
+}
+
+// Создание popup’а (внутри fixed-контейнера)
+function createShareDropdown(wrapper) {
+  const servicesStr = (wrapper.dataset.services || '').trim();
+  let services = [];
+  if (servicesStr) {
+    try {
+      services = JSON.parse(servicesStr);
+    } catch (_) {
+      let cleaned = servicesStr.trim();
+      if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+        cleaned = cleaned.slice(1, -1).trim();
+      }
+      services = cleaned.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  if (!Array.isArray(services)) services = [];
+
+  const rawUrl = wrapper.dataset.url || location.href;
+  const rawText = wrapper.dataset.text || document.title;
+  const rawImage = wrapper.dataset.image || '';
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'soc-list__share';
+  Object.assign(dropdown.style, {
+    opacity: '0',
+    pointerEvents: 'none',
+  });
+
+  // ✅ Мобильный хедер
+  const mobileHeader = document.createElement('div');
+  mobileHeader.className = 'soc-list__mobile-header';
+
+  const urlText = document.createElement('p');
+  urlText.textContent = rawText; // ← URL в хедере
+
+  const closeBtn = document.createElement('div');
+  closeBtn.className = 'soc-list__mobile-header-close js--soc-list-mobile-header-close';
+
+  const closeIcon = document.createElement('div');
+  closeIcon.className = 'soc-list__mobile-header-close-icon';
+
+  closeBtn.appendChild(closeIcon);
+  mobileHeader.appendChild(urlText);
+  mobileHeader.appendChild(closeBtn);
+
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideDropdown(dropdown);
+  });
+
+  dropdown.appendChild(mobileHeader);
+
+  // Список сервисов
+  const ul = document.createElement('ul');
+  const serviceTitles = {
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram',
+    vkontakte: 'ВКонтакте',
+    odnoklassniki: 'Одноклассники',
+  };
+
+  services.forEach(service => {
+    const title = serviceTitles[service];
+    if (!title) return;
+
+    const li = document.createElement('li');
+    const item = document.createElement('div');
+    item.className = 'soc-list__share-item';
+
+    const icon = document.createElement('div');
+    icon.className = `soc-list__share-icon ${service}-icon-share`;
+
+    const span = document.createElement('span');
+    span.className = 'soc-list__share-title';
+    span.textContent = title;
+
+    item.appendChild(icon);
+    item.appendChild(span);
+    li.appendChild(item);
+
+    item.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const shareUrl = getShareUrl(service, { rawUrl, rawText, rawImage });
+      window.open(shareUrl, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
+      hideDropdown(dropdown);
+    });
+
+    ul.appendChild(li);
+  });
+
+  // Копирование
+  const copyLi = document.createElement('li');
+  const copyDiv = document.createElement('div');
+  copyDiv.className = 'soc-list__copy-link';
+
+  const copyIcon = document.createElement('div');
+  copyIcon.className = 'soc-list__share-icon copy-link';
+
+  const copyTitle = document.createElement('span');
+  copyTitle.className = 'soc-list__share-title';
+  copyTitle.textContent = 'Скопировать ссылку';
+
+  copyDiv.appendChild(copyIcon);
+  copyDiv.appendChild(copyTitle);
+  copyLi.appendChild(copyDiv);
+  ul.appendChild(copyLi);
+
+  dropdown.appendChild(ul);
+
+  // Обработчик копирования
+  copyDiv.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    const copy = () => {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        return navigator.clipboard.writeText(rawUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = rawUrl;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+      }
+    };
+
+    copy()
+      .then(() => {
+        copyTitle.textContent = 'Скопировано';
+        setTimeout(() => {
+          if (activeDropdown === dropdown) {
+            hideDropdown(dropdown);
+          }
+        }, 500);
+      })
+      .catch(err => {
+        console.warn('Не удалось скопировать:', err);
+        copyTitle.textContent = 'Ошибка';
+        setTimeout(() => {
+          if (copyTitle.textContent === 'Ошибка') {
+            copyTitle.textContent = 'Скопировать ссылку';
+          }
+        }, 1500);
+      });
+  });
+
+  // ✅ Закрытие по клику вне — с остановкой ТОЛЬКО на мобилке
+  const onClickOutside = (ev) => {
+    if (!activeDropdown || activeDropdown !== dropdown) return;
+
+    const clickedInside = dropdown.contains(ev.target) ||
+      ev.target.closest('.js--soc-list-share');
+    if (clickedInside) return;
+
+    // Закрываем popup
+    hideDropdown(dropdown);
+
+    // ✅ На ВСЕХ устройствах: если клик по ссылке — не переходим
+    const clickedOnLink = ev.target.closest('a[href]');
+    if (clickedOnLink) {
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+    // Если не ссылка — событие продолжит всплытие (откроется другой popup и т.д.)
+  };
+  document.addEventListener('click', onClickOutside);
+
+  dropdown._cleanup = () => {
+    document.removeEventListener('click', onClickOutside);
+  };
+
+  return dropdown;
+}
+
+// Генерация share-ссылок
+function getShareUrl(service, { rawUrl, rawText, rawImage }) {
+  const url = encodeURIComponent(rawUrl);
+  const text = encodeURIComponent(rawText);
+  const image = encodeURIComponent(rawImage);
+
+  switch (service) {
+    case 'whatsapp':
+      return `https://api.whatsapp.com/send?text=${text} ${url}&utm_source=share2`;
+    case 'telegram':
+      return `https://t.me/share/url?url=${url}&text=${text}&utm_source=share2`;
+    case 'vkontakte':
+      return `https://vk.com/share.php?url=${url}&title=${text}&image=${image}&noparse=true&utm_source=share2`;
+    case 'odnoklassniki':
+      return `https://connect.ok.ru/offer?url=${url}&title=${text}&imageUrl=${image}&utm_source=share2`;
+    default:
+      return '#';
+  }
+}
+
+// Инициализация кнопок
+export default function shareSocList() {
+  const triggers = document.querySelectorAll('.js--soc-list-share:not([data-initialized])');
+  triggers.forEach(trigger => {
+    trigger.dataset.initialized = 'true';
+    trigger.addEventListener('click', handleShareClick);
+  });
+}
+
 
 
 
