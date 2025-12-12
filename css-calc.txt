@@ -16,38 +16,10 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 ------------------------------------------------------------------------------------------------------------------
 
-function positionDropdown(trigger, dropdown) {
-  const rect = trigger.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-
-  const isMobileOrTablet = isMobileDevice();
-  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-  const isMobileShare = dropdown.classList.contains('mobile-share');
-
-  if (isMobileOrTablet || isNarrow || isMobileShare) {
-    return;
+// Если не помещается снизу → показываем СВЕРХУ
+  if (top + dropdownHeight > viewportHeight - 10) {
+    top = rect.top - dropdownHeight - 10;
+    // Защита: не уходим за верхний край
+    if (top < 10) top = 10;
   }
 
-  // ✅ Динамическое измерение (без мигания)
-  const originalDisplay = dropdown.style.display;
-  const originalOpacity = dropdown.style.opacity;
-
-  dropdown.style.display = 'block';
-  dropdown.style.opacity = '0';
-  const dropdownWidth = dropdown.getBoundingClientRect().width;
-  dropdown.style.display = originalDisplay;
-  dropdown.style.opacity = originalOpacity;
-
-  const top = rect.top + rect.height + 10;
-  const left = rect.left; // ← левый край как у кнопки
-
-  // ✅ Сдвиг влево, если не помещается
-  let translateX = 0;
-  const rightEdge = left + dropdownWidth;
-  if (rightEdge > viewportWidth) {
-    translateX = viewportWidth - rightEdge - 10; // 10px отступ от края
-  }
-
-  // Применяем
-  dropdown.style.transform = `translate(${left + translateX}px, ${top}px)`;
-}
