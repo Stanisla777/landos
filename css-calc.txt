@@ -16,17 +16,51 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 ------------------------------------------------------------------------------------------------------------------
 
-// Если не помещается снизу → показываем СВЕРХУ
+function positionDropdown(trigger, dropdown) {
+  const rect = trigger.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  const isMobileOrTablet = isMobileDevice();
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+  const isMobileShare = dropdown.classList.contains('mobile-share');
+
+  if (isMobileOrTablet || isNarrow || isMobileShare) {
+    return;
+  }
+
+  // ✅ Сбрасываем transform
+  dropdown.style.transform = 'none';
+
+  // Измеряем ширину и высоту
+  const originalDisplay = dropdown.style.display;
+  dropdown.style.display = 'block';
+  dropdown.style.opacity = '0';
+  const dropdownRect = dropdown.getBoundingClientRect();
+  const dropdownWidth = dropdownRect.width;
+  const dropdownHeight = dropdownRect.height;
+  dropdown.style.display = originalDisplay;
+  dropdown.style.opacity = '';
+
+  // ✅ Горизонтальное позиционирование (как у вас)
+  let left = rect.left;
+  if (left + dropdownWidth > viewportWidth - 10) {
+    left = rect.left - dropdownWidth + 10;
+    if (left < 10) left = 10;
+  }
+
+  // ✅ Вертикальное позиционирование
+  let top = rect.top + rect.height + 10; // под кнопкой
+
+  // Если не помещается снизу → показываем СВЕРХУ
   if (top + dropdownHeight > viewportHeight - 10) {
     top = rect.top - dropdownHeight - 10;
     // Защита: не уходим за верхний край
     if (top < 10) top = 10;
   }
 
-const dropdownRect = dropdown.getBoundingClientRect();
-  const dropdownWidth = dropdownRect.width;
-  const dropdownHeight = dropdownRect.height;
-  dropdown.style.display = originalDisplay;
-  dropdown.style.opacity = '';
+  dropdown.style.transform = `translate(${left}px, ${top}px)`;
+}
+
 
 
