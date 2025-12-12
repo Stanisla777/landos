@@ -28,37 +28,26 @@ function positionDropdown(trigger, dropdown) {
     return;
   }
 
-  // ✅ Динамическое измерение ширины popup (без мигания)
+  // ✅ Динамическое измерение (без мигания)
   const originalDisplay = dropdown.style.display;
   const originalOpacity = dropdown.style.opacity;
-  const originalTransform = dropdown.style.transform;
 
   dropdown.style.display = 'block';
   dropdown.style.opacity = '0';
-  dropdown.style.transform = 'none'; // сброс transform для точного измерения
-
   const dropdownWidth = dropdown.getBoundingClientRect().width;
-
-  // Восстанавливаем
   dropdown.style.display = originalDisplay;
   dropdown.style.opacity = originalOpacity;
-  dropdown.style.transform = originalTransform;
 
   const top = rect.top + rect.height + 10;
-  let left = rect.left;
+  const left = rect.left; // ← левый край как у кнопки
 
-  // ✅ Если не помещается — прижимаем popup к ПРАВОМУ КРАЮ экрана
-  if (left + dropdownWidth > viewportWidth) {
-    left = viewportWidth - dropdownWidth;
+  // ✅ Сдвиг влево, если не помещается
+  let translateX = 0;
+  const rightEdge = left + dropdownWidth;
+  if (rightEdge > viewportWidth) {
+    translateX = viewportWidth - rightEdge - 10; // 10px отступ от края
   }
 
-  // Защита от ухода за левый край
-  if (left < 0) left = 10;
-
-  dropdown.style.transform = `translate(${left}px, ${top}px)`; // ← применяется здесь
+  // Применяем
+  dropdown.style.transform = `translate(${left + translateX}px, ${top}px)`;
 }
-
-
-
-
-
