@@ -15,7 +15,63 @@ https://t.me/share/url?url=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai&text=%D
 
 
 ------------------------------------------------------------------------------------------------------------------
+// === Кнопка "Другие" (только если navigator.share поддерживается) ===
+  if (navigator.share) {
+    const otherLi = document.createElement('li');
+    const otherDiv = document.createElement('div');
+    otherDiv.className = 'soc-list__share-item soc-list__share-other';
+    Object.assign(otherDiv.style, {
+      // display: 'flex',
+      // alignItems: 'center',
+      // gap: '10px',
+      // padding: '6px 12px',
+      // cursor: 'pointer',
+    });
 
-<li><div class="soc-list__share-item soc-list__share-other"><div class="soc-list__share-icon other-icon-share"></div><span class="soc-list__share-title">Другие</span></div></li>
+    // Иконка "⋮" (три точки) через div
+    const otherIcon = document.createElement('div');
+    otherIcon.className = 'soc-list__share-icon other-icon-share';
+    Object.assign(otherIcon.style, {
+      // width: '24px',
+      // height: '24px',
+      // background: `
+      //   radial-gradient(circle, #252628 20%, transparent 22%) 50% 4px,
+      //   radial-gradient(circle, #252628 20%, transparent 22%) 50% 12px,
+      //   radial-gradient(circle, #252628 20%, transparent 22%) 50% 20px
+      // `,
+      // backgroundSize: '4px 4px',
+      // backgroundRepeat: 'no-repeat',
+    });
+
+    const otherTitle = document.createElement('span');
+    otherTitle.className = 'soc-list__share-title';
+    otherTitle.textContent = 'Другие';
+
+    otherDiv.appendChild(otherIcon);
+    otherDiv.appendChild(otherTitle);
+    otherLi.appendChild(otherDiv);
+    ul.appendChild(otherLi);
+
+    otherDiv.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      navigator.share({
+        title: rawText || document.title,
+        text: rawText || '',
+        url: rawUrl || location.href
+      })
+        .then(() => {
+          // Успешно поделились
+        })
+        .catch(err => {
+          if (err.name !== 'AbortError') {
+            console.warn('Web Share отменён или не поддерживается:', err);
+          }
+        })
+        .finally(() => {
+          hideDropdown(dropdown);
+        });
+    });
+  }
+
 
 
