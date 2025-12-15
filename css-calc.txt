@@ -21,7 +21,7 @@ https://max.ru/:share?text=https://xn--h1alcedd.xn--d1aqf.xn--p1ai/calculators/k
 item.addEventListener('click', (ev) => {
   ev.stopPropagation();
 
-  //  Отправляем AJAX
+  // Отправляем AJAX
   let data_id = wrapper.dataset.id || '0';
   let data_el_type = wrapper.dataset.elType || defaultType;
   let element_count = wrapper.querySelector('.js-likes-share');
@@ -30,28 +30,26 @@ item.addEventListener('click', (ev) => {
     shareAjax(data_id, data_el_type, element_count, count);
   }
 
+  //  Открываем в новой вкладке — везде, без popup’ов
   const shareUrl = getShareUrl(service, { rawUrl, rawText, rawImage });
-
-  //  Определяем: мобильное устройство?
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    //  Мобилка: открываем в текущей вкладке (без popup’ов, без about:blank)
-    location.href = shareUrl;
-    // Закрываем popup после короткой задержки (чтобы AJAX ушёл)
-    setTimeout(() => hideDropdown(dropdown), 100);
-  } else {
-    //  Десктоп: popup как раньше
-    const popup = window.open('', '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
-    if (popup) {
-      popup.location.href = shareUrl;
-    } else {
-      // Если popup заблокирован — fallback в текущей вкладке
-      location.href = shareUrl;
-    }
-    hideDropdown(dropdown);
-  }
+  openInNewTab(shareUrl);
+  hideDropdown(dropdown);
 });
+
+-------
+
+// Безопасное открытие в новой вкладке (без about:blank, везде)
+function openInNewTab(url) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 
 
 
