@@ -28,13 +28,23 @@ item.addEventListener('click', (ev) => {
     shareAjax(data_id, data_el_type, element_count, count);
   }
 
-  // ✅ Без about:blank
   const shareUrl = getShareUrl(service, { rawUrl, rawText, rawImage });
-  const popup = window.open('', '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
-  if (popup) {
-    popup.location.href = shareUrl;
-  } else {
+
+  // ✅ Определение: iOS Chrome?
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const isChromeIOS = isIOS && /CriOS/.test(navigator.userAgent);
+
+  if (isChromeIOS) {
+    // В Chrome на iOS — открываем в текущей вкладке (без popup’ов)
     location.href = shareUrl;
+  } else {
+    // Везде остальное — как раньше, с popup’ом
+    const popup = window.open('', '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
+    if (popup) {
+      popup.location.href = shareUrl;
+    } else {
+      location.href = shareUrl; // fallback
+    }
   }
 
   hideDropdown(dropdown);
