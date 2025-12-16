@@ -1,3 +1,15 @@
-ERROR in chunk instruction [entry]
-./js/bundle.js
-Conflict: Multiple chunks emit assets to the same filename ./js/bundle.js (chunks all and instruction)
+{
+  apply: (compiler) => {
+    compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const mainPath = path.resolve(__dirname, 'dist/js/main.js');
+      const bundlePath = path.resolve(__dirname, 'dist/js/bundle.js');
+      if (fs.existsSync(mainPath)) {
+        fs.renameSync(mainPath, bundlePath);
+        console.log('✅ main.js → bundle.js');
+      }
+    });
+  }
+}
+
