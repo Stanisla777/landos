@@ -1,2 +1,27 @@
-git remote set-url origin ssh://git@gitlab.ahml.ru:22222/b2cdom/ringsites/sprosi.dom.rf.git
+// Удаляем JS-файлы от CSS-only entry
+{
+  apply: (compiler) => {
+    compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Имена entry, которые содержат ТОЛЬКО CSS
+      const cssOnlyEntries = [
+        'general-style',
+        'instruction-style',
+        'header',
+        'footer',
+        'all-styles-for-page',
+        // добавляйте сюда новые по мере появления
+      ];
 
+      cssOnlyEntries.forEach(name => {
+        const jsFile = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
+        if (fs.existsSync(jsFile)) {
+          fs.unlinkSync(jsFile);
+          console.log(`🧹 Удалён: ${name}.bundle.js`);
+        }
+      });
+    });
+  }
+}
