@@ -1,19 +1,16 @@
-/* eslint-disable */
-document.addEventListener('DOMContentLoaded', () => {
-  // создание несколько экземпляров vue для вызова тестов в них
-  const vueTestRoots = document.querySelectorAll('.js-test-n');
-
-  if (vueTestRoots.length) {
-    for (let i = 0; i < vueTestRoots.length; i += 1) {
-      vueTestRoots[i].id = `test-n-${i}`;
-
-      // eslint-disable-next-line no-new
-      new Vue({
-        el: `#test-n-${i}`,
-        components: {
-          'test-n': TestN,
-        }
-      });
+optimization: {
+  splitChunks: {
+    cacheGroups: {
+      vendor: {
+        test: /[\\/]node_modules[\\/](vue|swiper)[\\/]/,
+        name: 'vendor',
+        // 👇 Ключевая настройка: только для чанков 'general' и 'instruction'
+        chunks: (chunk) => {
+          return chunk.name === 'general' || chunk.name === 'instruction';
+        },
+        enforce: true
+      }
     }
   }
-})
+}
+
