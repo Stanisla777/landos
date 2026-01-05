@@ -1,19 +1,12 @@
-if (defined('IS_INSTRUCTIONS') && (IS_INSTRUCTIONS === true)){
-        $asset->addJs(TMP_PATCH . "js/vendor-script.bundle.js");
-        $asset->addJs(TMP_PATCH . "js/general-js.bundle.js");
-        $asset->addJs(TMP_PATCH . "js/instruction-js.bundle.js");
-    } else {
-        $asset->addJs(TMP_PATCH . "js/bundle.js",);
-    }
-
-$asset = Asset::getInstance();
-
-public static function getInstance()
+public function addJs($path, $additional = false)
 	{
-		if (is_null(self::$instance))
+		if ($path == '')
 		{
-			self::$instance = new Asset();
+			return false;
 		}
 
-		return self::$instance;
+		$js = $this->getAssetPath($path);
+		$this->js[$js]['TARGET'][] = $this->getTargetName();
+		$this->js[$js]['ADDITIONAL'] = (isset($this->js[$js]['ADDITIONAL']) && $this->js[$js]['ADDITIONAL'] ? true : $additional);
+		return true;
 	}
