@@ -1,143 +1,2003 @@
-instruction.js
+import Swiper, {
+ Navigation, Pagination, Autoplay, Thumbs, EffectFade
+} from 'swiper';
+import axios from 'axios';
+// eslint-disable-next-line no-unused-vars,import/no-unresolved,camelcase
+import paginationSlider_s from './redesign-site/paginationSlider';
+import arrowSlider from './redesign-site/arrowSlider';
+// eslint-disable-next-line no-unused-vars
+import setEqualHeight from './TemplateScript/updateBlockHeights';
+import RemoveClassBody from './redesign-site/allow-body-scrolling';
 
-/* eslint-disable */
+Swiper.use([Navigation, Pagination, Autoplay, Thumbs, EffectFade]);
 
-// Ленивая загрузка — только если нужны элементы инструкций
-document.addEventListener('DOMContentLoaded', () => {
-  // Проверяем: есть ли на странице элементы, требующие этого JS?
-  const needsInstructionJS = document.querySelector(`
-    .js-test-n,
-    .js-polls-n,
-    #search-family-mortgage,
-    #v-mortgage-surveys-one-request,
-    #v-minsport,
-    .instructions-content
-  `);
+const ios = () => [
+      'iPad Simulator',
+      'iPhone Simulator',
+      'iPod Simulator',
+      'iPad',
+      'iPhone',
+      'iPod'
+    ].includes(navigator.platform)
+    // iPad on iOS 13 detection
+    || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
 
-  if (!needsInstructionJS) {
-    return;
-  }
+// eslint-disable-next-line camelcase
+// function paginationSlider_s(el) {
+// eslint-disable-next-line max-len
+//   const array = el.el.closest('.general-style-slider').querySelectorAll('.swiper-pagination-bullet');
+//   if (array.length < 2) {
+// eslint-disable-next-line max-len
+//     el.el.closest('.general-style-slider').querySelector('.js--pagination-slider_s').classList.add('unactive');
+//     // eslint-disable-next-line no-param-reassign
+//     el.passedParams.simulateTouch = false;
+//     // eslint-disable-next-line no-param-reassign
+//     el.allowTouchMove = false;
+//   } else {
+// eslint-disable-next-line max-len
+//     el.el.closest('.general-style-slider').querySelector('.js--pagination-slider_s').classList.remove('unactive');
+//   }
+// }
+function makeLoop(slider) {
+    slider.navigation.prevEl.classList.add('get-edge');
 
-  // Загружаем тяжёлый код только при необходимости
-  // eslint-disable-next-line no-unused-expressions
-  require.ensure([], (require) => {
-    require('./lazy-instruction.js');
-    console.log('✅ Instruction modules loaded');
-  }, 'instruction-lazy');
-});
+    slider.navigation.nextEl.addEventListener('click', () => {
+        slider.navigation.prevEl.classList.remove('get-edge');
+        if (slider.navigation.nextEl.classList.contains('get-edge')) {
+            slider.slideTo(0);
+            slider.navigation.nextEl.classList.remove('get-edge');
+            slider.navigation.prevEl.classList.add('get-edge');
+        } else if (slider.navigation.nextEl.classList.contains('swiper-button-disabled')) {
+            slider.navigation.nextEl.classList.add('get-edge');
+        }
+    });
 
-lazy-instruction.js
-
-/* eslint-disable */
-import Vue from 'vue';
-import TestN from './modules/test-n/TestN.vue';
-import VPolls from './modules/polls/MainPolls.vue';
-import SearchFamilyMortgage from './modules/search-family-mortgage/SearchFamilyMortgagePointEntry.vue';
-import ItMortgageSurveysOneRequest from './modules/it-mortgage-surveys-one-request/ITMortgageSurveysPointEntry.vue';
-import MinSport from './modules/minsport/MinsportPointEntry.vue';
-import contentNote from './modules/content-note';
-import dropDown from './modules/dropDown';
-import {
-  mainBannerSlider, mainSlider, contentSlider, cardsInstructionSlider, cardsNewsSlider,
-  aboutSlider, questionsAndAnswerSliders, testSlider, mediaSlider, eventPageSlider,
-  educationalSlider, educationalSliderReviews, personalitiesSlider, slider4Col,
-  birthdayReviewsSwiper, cardHousingCooperativeSlider, housingCooperativeListSlider,
-  housingCooperativeDetailSlider, progressSlider, progressSlider4column, progressSliderPartners,
-  testPollsSlider, progressSlider2, atAdvantageSwiper, atBecomeSwiper, atSliderPartners,
-  SliderCourse, izhsMaterialSlider, izhsBunnersSlider, authorsSlider, authorsDetailedSliderDes,
-  authorsDetailedSliderMob, newMarathonScheduleSlider, cardSlider, cardSliderfoufcolumn,
-  atGameConsists, anotherThingPrizes
-} from './modules/swiper-sliders';
-import slideConstructor from './modules/constructor-swiper';
-import formRating from './modules/form-rating';
-
-function dropDownTags() {
-  const btnTags = document.querySelectorAll('.js--dropDown-btn');
-  for (const item of btnTags) {
-    item.onclick = (el) => {
-      dropDown(el.target, 0);
-    };
-  }
+    slider.navigation.prevEl.addEventListener('click', () => {
+        slider.navigation.nextEl.classList.remove('get-edge');
+        if (slider.navigation.prevEl.classList.contains('get-edge')) {
+            slider.slideTo(slider.slides.length - 1);
+            slider.navigation.prevEl.classList.remove('get-edge');
+            slider.navigation.nextEl.classList.add('get-edge');
+        } else if (slider.navigation.prevEl.classList.contains('swiper-button-disabled')) {
+            slider.navigation.prevEl.classList.add('get-edge');
+        }
+    });
 }
 
-// Вся инициализация — теперь здесь
-export function init() {
-  contentNote();
-  dropDownTags();
-  slideConstructor();
-  testPollsSlider();
-  authorsSlider();
-  formRating();
-  cardSliderfoufcolumn();
-  cardSlider();
-
-  // Vue-аппы
-  const vueTestRoots = document.querySelectorAll('.js-test-n');
-  vueTestRoots.forEach((el, i) => {
-    el.id = `test-n-${i}`;
-    new Vue({ el: `#test-n-${i}`, components: { 'test-n': TestN } });
-  });
-
-  const vuePolls = document.querySelectorAll('.js-polls-n');
-  vuePolls.forEach((el, i) => {
-    el.classList.add(`js__polls-n-${i}`);
-    new Vue({ el: `.js__polls-n-${i}`, components: { 'v-polls': VPolls } });
-  });
-
-  // Инициализация по ID
-  function initSearchFamilyMortgage() {
-    new Vue({
-      el: '#search-family-mortgage',
-      components: { 'search-family-mortgage': SearchFamilyMortgage }
+export function mainSlider() {
+    // eslint-disable-next-line no-unused-vars
+    const mySwiper = new Swiper('.js--main-slider', {
+        spaceBetween: 200,
+        simulateTouch: false,
+        loop: true,
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+        },
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+        autoplay: {
+            delay: 4000
+        }
     });
-  }
 
-  function initItMortgageSurveysOneRequest() {
-    new Vue({
-      el: '#v-mortgage-surveys-one-request',
-      components: { 'it-mortgage-surveys-one-request': ItMortgageSurveysOneRequest }
-    });
-  }
+    const slides = document.querySelectorAll('.main-slider .swiper-slide');
+    const likeCounter = document.querySelector('.js--main-slider-like-counter');
+    const shareCounter = document.querySelector('.js--main-slider-share-counter');
+    let likeIcon;
+    let shareIcon;
 
-  function initMinSport() {
-    new Vue({
-      el: '#v-minsport',
-      components: { 'min-sport': MinSport }
-    });
-  }
-
-  const obj = [
-    { id: 'search-family-mortgage', fn: initSearchFamilyMortgage },
-    { id: 'v-mortgage-surveys-one-request', fn: initItMortgageSurveysOneRequest },
-    { id: 'v-minsport', fn: initMinSport },
-    { id: 'form-rating', fn: formRating },
-  ];
-
-  function waitForVueApp(id, initFn) {
-    const el = document.getElementById(id);
-    if (el && !el.__vue_initialized) {
-      initFn();
-      el.__vue_initialized = true;
-      return;
+    if (likeCounter && shareCounter) {
+        likeIcon = likeCounter.closest('.main-slider__intr-item').querySelector('.main-slider__intr-like');
+        shareIcon = shareCounter.closest('.main-slider__intr-item').querySelector('.main-slider__intr-share');
     }
 
-    const observer = new MutationObserver(() => {
-      const element = document.getElementById(id);
-      if (element && !element.__vue_initialized) {
-        observer.disconnect();
-        initFn();
-        element.__vue_initialized = true;
-      }
+    mySwiper.on('slideChange', () => {
+        likeCounter.innerHTML = slides[mySwiper.activeIndex].dataset.likeCount;
+        shareCounter.innerHTML = slides[mySwiper.activeIndex].dataset.shareCount;
+        likeIcon.dataset.elId = slides[mySwiper.activeIndex].dataset.elId;
+        shareIcon.dataset.elId = slides[mySwiper.activeIndex].dataset.elId;
     });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-
-  obj.forEach(item => waitForVueApp(item.id, item.fn));
 }
 
-// Автозапуск при импорте
-init();
+export function mainBannerSlider() {
+    // eslint-disable-next-line no-unused-vars
+    const mySwiper = new Swiper('.js--main-banner-slider', {
+        loop: true,
+        direction: 'vertical',
+        simulateTouch: false,
+        allowTouchMove: false,
+        spaceBetween: 24,
+        watchOverflow: true,
+        autoplay: {
+            delay: 3500
+        },
+    });
+}
 
-export default { init };
+export function cardsInstructionSlider() {
+  const swiper = new Swiper('.js--cards-instruction-slider', {
+    init: false,
+    slidesPerView: 1,
+    spaceBetween: 20,
+    simulateTouch: false,
+    loop: true,
+    pagination: {
+      el: '.swiper-pagination',
+      clickable: true
+    },
+    navigation: {
+      nextEl: '.swiper-button-next',
+      prevEl: '.swiper-button-prev',
+    },
+    breakpoints: {
+      768: {
+        loop: false,
+        slidesPerView: 2,
+        spaceBetween: 20,
+      },
+      979: {
+        loop: false,
+        slidesPerView: 3,
+        spaceBetween: 20,
+      },
+      1244: {
+        loop: false,
+        slidesPerView: 4,
+        spaceBetween: 20,
+      }
+    },
+  });
+  // eslint-disable-next-line no-unused-vars
+  swiper.on('init', (el) => {
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('cards-instruction-slider__inside-wrap');
+    const swiperWrapper = document.querySelector('.js--cards-instruction-slider .swiper-wrapper');
+    swiperWrapper.parentNode.insertBefore(wrapper, swiperWrapper);
+    wrapper.appendChild(swiperWrapper);
+
+    makeLoop(swiper);
+    // eslint-disable-next-line no-empty,eqeqeq
+    if (ios() == true) {
+      // eslint-disable-next-line no-unused-vars
+      const array = el.el.querySelectorAll('.card-instruction');
+      // eslint-disable-next-line no-restricted-syntax
+      for (const item of array) {
+        item.classList.add('card-instruction__ios');
+      }
+    }
+  });
+
+  const swiperClass = document.querySelector('.js--cards-instruction-slider');
+  if (swiperClass) {
+    swiper.init();
+
+    if (swiperClass.querySelectorAll('.swiper-pagination-bullet').length === 1) {
+      swiperClass.querySelector('.swiper-pagination')
+        .classList
+        .add('d-none');
+      swiper.navigation.nextEl.classList.add('d-none');
+      swiper.navigation.prevEl.classList.add('d-none');
+    }
+  }
+  //  Удаление лишних слайдов, когда они появляются при изменении масштаба страницы
+  // eslint-disable-next-line max-len
+  const containerSwiper = document.querySelector('.js--cards-instruction-slider .swiper-wrapper');
+  const observerOptions = {
+    childList: true,
+  };
+
+  function callback() {
+    // if (document.documentElement.clientWidth < 768) {
+    // containerSwiper.querySelector('.document.querySelector').remove();
+    const duplicate = containerSwiper.querySelectorAll('.swiper-slide-duplicate');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const item of duplicate) {
+      item.remove();
+    }
+  }
+
+  const observer = new MutationObserver(callback);
+
+  if (containerSwiper) {
+    observer.observe(containerSwiper, observerOptions);
+  }
+}
+export function cardsNewsSlider() {
+    const swiper = new Swiper('.js--cards-news-slider', {
+        init: false,
+        loop: true,
+        slidesPerView: 1,
+        spaceBetween: 24,
+        simulateTouch: false,
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+        },
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+        breakpoints: {
+            768: {
+                loop: true,
+                slidesPerView: 2,
+                spaceBetween: 20,
+            },
+            979: {
+                loop: false,
+                slidesPerView: 3,
+                spaceBetween: 20,
+            },
+            1244: {
+                loop: false,
+                slidesPerView: 4,
+                spaceBetween: 20,
+            }
+        }
+    });
+
+    swiper.on('init', () => {
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('cards-instruction-slider__inside-wrap');
+        const swiperWrapper = document.querySelector('.js--cards-news-slider .swiper-wrapper');
+        swiperWrapper.parentNode.insertBefore(wrapper, swiperWrapper);
+        wrapper.appendChild(swiperWrapper);
+
+        makeLoop(swiper);
+    });
+
+    const swiperClass = document.querySelector('.js--cards-news-slider');
+    if (swiperClass) {
+        swiper.init();
+
+        if (swiperClass.querySelectorAll('.swiper-pagination-bullet').length === 1) {
+            swiperClass.querySelector('.swiper-pagination').classList.add('d-none');
+        }
+    }
+}
+
+export function contentSlider() {
+    const contentSliders = document.querySelectorAll('.js--content-slider');
+
+    for (let i = 0; i < contentSliders.length; i++) {
+        contentSliders[i].classList.add(`js--content-slider-${i}`);
+
+        // eslint-disable-next-line no-unused-vars
+        const mySwiper = new Swiper(`.js--content-slider-${i}`, {
+            init: false,
+            loop: true,
+            slidesPerView: 1,
+            simulateTouch: false,
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+        });
+
+        mySwiper.on('init', () => {
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('content-slider__inside-wrap');
+            const swiperWrapper = document.querySelector(`.js--content-slider-${i} .swiper-wrapper`);
+            swiperWrapper.parentNode.insertBefore(wrapper, swiperWrapper);
+            wrapper.appendChild(swiperWrapper);
+        });
+
+        const swiperClass = document.querySelector(`.js--content-slider-${i}`);
+        if (swiperClass) {
+            mySwiper.init();
+            if (swiperClass.querySelectorAll('.swiper-pagination-bullet').length === 1) {
+                swiperClass.querySelector('.swiper-pagination').classList.add('d-none');
+            }
+        }
+    }
+}
+export function aboutSlider() {
+    // eslint-disable-next-line no-unused-vars
+    const sliderLinks = new Swiper('.js--about-slider-links', {
+        loop: true,
+        direction: 'vertical',
+        simulateTouch: false,
+        allowTouchMove: false,
+        spaceBetween: 0,
+    });
+
+    const aboutText = document.querySelector('.js--about-slider-text');
+    const sliderLinksItems = document.querySelectorAll('.about-slider__links-item');
+
+    function setAboutText() {
+        if (sliderLinksItems && aboutText) {
+            aboutText.innerHTML = sliderLinksItems[sliderLinks.activeIndex].dataset.desc;
+        }
+    }
+
+    setAboutText();
+    sliderLinks.on('slideChange', setAboutText);
+
+    // eslint-disable-next-line no-unused-vars
+    const sliderMain = new Swiper('.js--about-slider-main', {
+        loop: true,
+        spaceBetween: 200,
+        simulateTouch: false,
+        pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+        },
+        autoplay: {
+            delay: 3500
+        },
+    });
+    sliderMain.on('slideChange', () => {
+        sliderLinks.slideTo(sliderMain.activeIndex);
+    });
+}
+// инициализация слайдера в блоке вопросы и ответы
+// eslint-disable-next-line camelcase
+function initializationAnswerSliders() {
+  const contentSliders2 = document.querySelectorAll('.js--questions-and-answer-slider');
+  for (let i = 0; i < contentSliders2.length; i++) {
+    contentSliders2[i].classList.add(`js--questions-and-answer-slider-${i}`);
+    // eslint-disable-next-line no-unused-vars
+    const mySwiper = new Swiper(contentSliders2[i], {
+      // init: false,
+      slidesPerView: 1,
+      spaceBetween: 20,
+      simulateTouch: true,
+      loop: true,
+      breakpoints: {
+        500: {
+          loop: false,
+          slidesPerView: 1,
+          spaceBetween: 16,
+        },
+        768: {
+          loop: false,
+          // slidesPerView: 'auto',
+          slidesPerView: 2,
+          spaceBetween: 16,
+          allowSlidePrev: true,
+          allowSlideNext: true
+        },
+        1000: {
+          slidesPerView: 3,
+          spaceBetween: 16,
+          allowSlidePrev: false,
+          allowSlideNext: false
+        }
+      }
+    });
+    // mySwiper.init();
+  }
+}
+export function questionsAndAnswerSliders() {
+    // const contentSliders = document.querySelectorAll('.js--questions-and-answer-slider');
+  initializationAnswerSliders();
+  // eslint-disable-next-line camelcase,max-len
+  const buttons_subject = document.querySelectorAll('.questions-and-answers__aside .round-cards__item');
+  buttons_subject.forEach((item) => {
+    // eslint-disable-next-line no-param-reassign
+    item.onclick = function () {
+      // eslint-disable-next-line no-unused-vars
+      axios.get('/local/templates/main/components/bitrix/news/question/bitrix/news.list/left_block/sort.php').then((response) => {
+        setTimeout(initializationAnswerSliders, 1000);
+      }).catch((error) => {
+        console.log(error);
+      });
+    };
+  });
+  // eslint-disable-next-line camelcase,max-len
+  const buttons_sorting = document.querySelectorAll('.questions-and-answers__sort .js--select-item');
+  buttons_sorting.forEach((item) => {
+    // eslint-disable-next-line no-param-reassign
+    item.onclick = function () {
+      // eslint-disable-next-line no-unused-vars
+      axios.get('/local/templates/main/components/bitrix/news/question/bitrix/news.list/left_block/sort.php').then((response) => {
+        setTimeout(initializationAnswerSliders, 1000);
+      }).catch((error) => {
+        console.log(error);
+      });
+    };
+  });
+}
+// eslint-disable-next-line no-unused-vars
+const activeSlideButton = () => {
+  let slideBtn = document.querySelectorAll('.test-window__slider-btn');
+  slideBtn = Array.prototype.slice.call(slideBtn);
+  slideBtn.forEach((item) => {
+    item.classList.add('unactive');
+  });
+  // eslint-disable-next-line no-unused-vars
+  let but = document.querySelectorAll('.btn-slide-sub');
+  but = Array.prototype.slice.call(but);
+  but.forEach((item) => {
+    item.classList.remove('unactive');
+  });
+};
+export function testSlider() {
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js-slider-test', {
+    loop: false,
+    simulateTouch: false,
+    allowTouchMove: false,
+    spaceBetween: 35,
+    navigation: {
+      nextEl: '.test-button-next',
+      prevEl: '.test-button-prev'
+    },
+    pagination: {
+      el: '.test-pagination',
+      clickable: true
+    }
+  });
+  mySwiper.init(activeSlideButton());
+  mySwiper.on('slideChange', () => {
+    activeSlideButton();
+  });
+}
+export function mediaSlider() {
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js-card-slider', {
+    init: true,
+    allowTouchMove: true,
+    slidesPerView: 3,
+    spaceBetween: 24,
+    navigation: {
+      nextEl: '.slider-button-card__next',
+      prevEl: '.slider-button-card__prev'
+    },
+    pagination: {
+      el: '.swiper-card-slider__pagination',
+      clickable: true
+    },
+    breakpoints: {
+      0: {
+        slidesPerView: 1,
+        spaceBetween: 0
+      },
+      480: {
+        slidesPerView: 2,
+      },
+      768: {
+        slidesPerView: 3
+      }
+    }
+  });
+  // mySwiper.on('init', () => {
+  //   const wrapper = document.createElement('div');
+  //   wrapper.classList.add('cards-instruction-slider__inside-wrap');
+  //   const swiperWrapper = document.querySelector('.js-slider-media-element .swiper-wrapper');
+  //   swiperWrapper.parentNode.insertBefore(wrapper, swiperWrapper);
+  //   wrapper.appendChild(swiperWrapper);
+  //
+  //   makeLoop(mySwiper);
+  // });
+  // const swiperClass = document.querySelector('.js--cards-news-slider');
+  // if (swiperClass) {
+  //   mySwiper.init();
+  //
+  //   if (swiperClass.querySelectorAll('.swiper-pagination-bullet').length === 1) {
+  //     swiperClass.querySelector('.swiper-pagination').classList.add('d-none');
+  //   }
+  // }
+}
+export function eventPageSlider() {
+    // eslint-disable-next-line no-unused-vars
+    const logoSwiper = new Swiper('.js--event-page-slider', {
+        slidesPerView: 4,
+        spaceBetween: 0,
+        loop: true,
+        freeMode: true,
+        grabCursor: true,
+        autoplay: {
+            delay: 0,
+        },
+        speed: 15000,
+        freeModeMomentum: false,
+    });
+    const eventPageSliderWrapper = document.querySelector('.js--event-page-slider');
+    if (eventPageSliderWrapper) {
+        eventPageSliderWrapper.addEventListener('mouseover', () => {
+            logoSwiper.autoplay.stop();
+        });
+        eventPageSliderWrapper.addEventListener('mouseout', () => {
+            logoSwiper.autoplay.start();
+        });
+    }
+}
+export function educationalSlider() {
+  // eslint-disable-next-line no-unused-vars
+  const swiper = new Swiper('.js--education-swiper', {
+    init: true,
+    loop: true,
+    autoHeight: true,
+    slidesPerView: 1,
+    spaceBetween: 24,
+    autoplay: {
+      delay: 12000,
+      pauseOnMouseEnter: true,
+      disableOnInteraction: false
+    },
+    pagination: {
+      el: '.education__swiper-announcement-pagination',
+      clickable: true,
+    },
+    navigation: false,
+  });
+}
+export function educationalSliderReviews() {
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js--education-swiper-reviews', {
+    init: true,
+    allowTouchMove: true,
+    slidesPerView: 3,
+    spaceBetween: 20,
+    navigation: {
+      nextEl: '.education__swiper-reviews-btn-next',
+      prevEl: '.education__swiper-reviews-btn-prev'
+    },
+    pagination: false,
+    breakpoints: {
+      0: {
+        slidesPerView: 1,
+        spaceBetween: 0,
+        autoHeight: true,
+      },
+      745: {
+        slidesPerView: 2,
+      },
+      1080: {
+        slidesPerView: 3
+      }
+    }
+  });
+}
+export function personalitiesSlider() {
+  // eslint-disable-next-line no-unused-vars
+  const swiper = new Swiper('.js--birthday-swiper', {
+    init: true,
+    loop: true,
+    slidesPerView: 1,
+    spaceBetween: 24,
+    // simulateTouch: false,
+    navigation: {
+      nextEl: '.birthday__slider-personalities-arrow .education__swiper-reviews-btn-next',
+      prevEl: '.birthday__slider-personalities-arrow .education__swiper-reviews-btn-prev'
+    },
+    breakpoints: {
+      0: {
+        navigation: false,
+        pagination: {
+          el: '.birthday__slider-personalities .birthday__swiper-audience-pagination',
+          clickable: true,
+        },
+      },
+      480: {
+        pagination: false,
+      }
+    }
+  });
+}
+export function slider4Col() {
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js--swiper-4col', {
+    init: true,
+    allowTouchMove: true,
+    slidesPerView: 4,
+    spaceBetween: 20,
+    navigation: {
+      nextEl: '.birthday__audience-swiper .education__swiper-reviews-btn-next',
+      prevEl: '.birthday__audience-swiper .education__swiper-reviews-btn-prev'
+    },
+    pagination: {
+      el: '.birthday__audience-swiper .birthday__swiper-audience-pagination',
+      clickable: true,
+    },
+    breakpoints: {
+      0: {
+        navigation: false,
+        slidesPerView: 1,
+      },
+      480: {
+        slidesPerView: 1,
+        spaceBetween: 0,
+        autoHeight: true,
+      },
+      590: {
+        slidesPerView: 2,
+      },
+      770: {
+        slidesPerView: 3,
+      },
+      1140: {
+        slidesPerView: 4
+      }
+    }
+  });
+}
+export function birthdayReviewsSwiper() {
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js--birthday-reviews-swiper', {
+    init: true,
+    allowTouchMove: true,
+    slidesPerView: 3,
+    spaceBetween: 20,
+    navigation: {
+      nextEl: '.birthday__reviews-swiper .education__swiper-reviews-btn-next',
+      prevEl: '.birthday__reviews-swiper .education__swiper-reviews-btn-prev'
+    },
+    // pagination: false,
+    breakpoints: {
+      0: {
+        autoHeight: true,
+        slidesPerView: 1,
+        navigation: false,
+        pagination: {
+          el: '.birthday__reviews-swiper .birthday__swiper-audience-pagination',
+          clickable: true,
+        },
+      },
+      480: {
+        pagination: false,
+        slidesPerView: 1,
+        autoHeight: true,
+      },
+      745: {
+        slidesPerView: 2,
+        pagination: false,
+      },
+      950: {
+        slidesPerView: 3,
+        pagination: false,
+      }
+    }
+  });
+}
+
+export function cardHousingCooperativeSlider() {
+  const sliderWraps = document.querySelectorAll('.js--card-housing-cooperative-slider');
+
+  for (let i = 0; i < sliderWraps.length; i++) {
+    const slides = sliderWraps[i].querySelectorAll('.swiper-slide');
+
+    if (slides.length > 1) {
+      // eslint-disable-next-line no-unused-vars
+      const mySwiper = new Swiper(sliderWraps[i], {
+        slidesPerView: 1,
+        navigation: {
+          nextEl: '.card-housing-cooperative__slider-nav_next',
+          prevEl: '.card-housing-cooperative__slider-nav_prev',
+        },
+        pagination: {
+          el: '.card-housing-cooperative__slider-pagination',
+          clickable: true,
+        },
+        allowTouchMove: false,
+      });
+    }
+  }
+}
+
+export function housingCooperativeListSlider() {
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js--housing-cooperative-list-slider > .swiper-container', {
+    init: false,
+    loop: true,
+    slidesPerView: 3,
+    spaceBetween: 20,
+    simulateTouch: false,
+    navigation: {
+        nextEl: '.js--housing-cooperative-list-slider .card-housing-cooperative-list-slider__prev',
+        prevEl: '.js--housing-cooperative-list-slider .card-housing-cooperative-list-slider__next',
+    }
+  });
+
+  if (document.querySelector('.js--housing-cooperative-list-slider') && document.documentElement.clientWidth > 979) {
+    mySwiper.init();
+  }
+}
+
+export function housingCooperativeDetailSlider() {
+  const sliderContainer = document.querySelector('.js--housing-cooperative-detail-slider');
+  if (!sliderContainer) return;
+
+  const slides = sliderContainer.querySelectorAll('.swiper-slide');
+  let slidesPerView = 4;
+
+  if (slides.length === 1) {
+    slidesPerView = 1;
+  } else if (slides.length === 2) {
+    slidesPerView = 2;
+    sliderContainer.classList.add('housing-cooperative-detail-slider_two-images');
+  } else if (slides.length === 3) {
+    slidesPerView = 3;
+  }
+
+  const mySwiper = new Swiper(sliderContainer, {
+    init: false,
+    slidesPerView: 2,
+    spaceBetween: 0,
+    simulateTouch: false,
+    navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+    },
+    pagination: {
+      el: '.housing-cooperative-detail-slider__pagination',
+      clickable: true,
+    },
+    breakpoints: {
+      768: {
+        slidesPerView
+      },
+    },
+    on: {
+      afterInit() {
+        if (sliderContainer.querySelectorAll('.swiper-pagination-bullet').length === 1) {
+          sliderContainer.querySelector('.swiper-pagination-bullets').classList.add('d-none');
+        }
+      }
+    }
+  });
+
+  if (slides.length > 1) {
+    mySwiper.init();
+  } else {
+    sliderContainer.classList.add('d-one');
+  }
+}
+export function progressSlider() {
+  /* eslint-disable */
+  const mySwiper = new Swiper(`.js--progress-swiper-1`, {
+    init: true,
+    allowTouchMove: true,
+    // slidesPerView: 'auto',
+    slidesPerView: 3,
+    spaceBetween: 15,
+    // autoHeight: true,
+    navigation: {
+      nextEl: `.js--progress-right-1`,
+      prevEl: `.js--progress-left-1`
+    },
+    pagination: false,
+    breakpoints: {
+      0: {
+        slidesPerView: 'auto'
+      },
+      745: {
+        slidesPerView: 'auto',
+      },
+      1340: {
+        slidesPerView: 3
+      }
+    },
+    on: {
+      init() {
+        const container = document.querySelector('.js--progress-swiper-1');
+        const boxes = container.querySelectorAll('.swiper-slide')
+        if (container) {
+          let height = 0;
+          // Определяем максимальную высоту блока
+          // eslint-disable-next-line no-var
+          for (var i = 0; i < boxes.length; i++) {
+            const current_height = boxes[i].offsetHeight;
+            if (current_height > height) {
+              height = current_height;
+            }
+          }
+          // Задаем максимальную высоту блока всем элементам
+          for (var j = 0; j < boxes.length; j++) {
+            boxes[j].style.height = `${height}px`;
+          }
+        }
+
+      },
+    },
+  });
+}
+export function progressSlider2() {
+  /* eslint-disable */
+  const mySwiper = new Swiper(`.js--progress-swiper-2`, {
+    init: true,
+    allowTouchMove: true,
+    // slidesPerView: 'auto',
+    slidesPerView: 3,
+    spaceBetween: 15,
+    // autoHeight: true,
+    navigation: {
+      nextEl: `.js--progress-right-2`,
+      prevEl: `.js--progress-left-2`
+    },
+    pagination: false,
+    breakpoints: {
+      0: {
+        slidesPerView: 'auto'
+      },
+      745: {
+        slidesPerView: 'auto',
+      },
+      1340: {
+        slidesPerView: 3
+      }
+    },
+    on: {
+      init() {
+        const container = document.querySelector('.js--progress-swiper-2');
+        const boxes = container.querySelectorAll('.swiper-slide')
+        if (container) {
+          let height = 0;
+          // Определяем максимальную высоту блока
+          // eslint-disable-next-line no-var
+          for (var i = 0; i < boxes.length; i++) {
+            const current_height = boxes[i].offsetHeight;
+            if (current_height > height) {
+              height = current_height;
+            }
+          }
+          // Задаем максимальную высоту блока всем элементам
+          for (var j = 0; j < boxes.length; j++) {
+            boxes[j].style.height = `${height}px`;
+          }
+        }
+
+      },
+    },
+  });
+}
+export function progressSlider4column() {
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js--progress-swiper-4-column', {
+    init: true,
+    allowTouchMove: true,
+    // slidesPerView: 'auto',
+    slidesPerView: 4,
+    spaceBetween: 15,
+    autoHeight: true,
+    navigation: {
+      nextEl: '.js--reports-swiper-a-right',
+      prevEl: '.js--reports-swiper-a-left'
+    },
+    pagination: false,
+    breakpoints: {
+      0: {
+        slidesPerView: 'auto',
+      },
+      745: {
+        slidesPerView: 'auto',
+      },
+      1015: {
+        slidesPerView: 4
+      }
+    }
+  });
+}
+export function progressSliderPartners() {
+  /* eslint-disable */
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js--partners-swiper', {
+    init: true,
+    allowTouchMove: true,
+    slidesPerView: 4,
+    // slidesPerView: 5,
+    spaceBetween: 15,
+    // autoHeight: true,
+    navigation: {
+      nextEl: '.js--partners-swiper-a-right',
+      prevEl: '.js--partners-swiper-a-left'
+    },
+    pagination: false,
+    breakpoints: {
+      0: {
+        slidesPerView: 'auto',
+      },
+      745: {
+        slidesPerView: 'auto',
+      },
+      1340: {
+        slidesPerView: 4
+      }
+    },
+    on: {
+      init() {
+        const container = document.querySelector('.js--partners-swiper');
+        const boxes = container.querySelectorAll('.swiper-slide')
+        if (container) {
+          let height = 0;
+          // Определяем максимальную высоту блока
+          // eslint-disable-next-line no-var
+          for (var i = 0; i < boxes.length; i++) {
+            const current_height = boxes[i].offsetHeight;
+            if (current_height > height) {
+              height = current_height;
+            }
+          }
+          // Задаем максимальную высоту блока всем элементам
+          for (var j = 0; j < boxes.length; j++) {
+            boxes[j].style.height = `${height}px`;
+          }
+        }
+
+      },
+    },
+  });
+}
+
+export function atAdvantageSwiper() {
+  /* eslint-disable */
+  const mySwiper = new Swiper(`.js--at-advantage-swiper`, {
+    init: true,
+    allowTouchMove: false,
+    simulateTouch: false,
+    // slidesPerView: 'auto',
+    slidesPerView: 6,
+    spaceBetween: 16,
+    // autoHeight: true,
+    navigation: false,
+    pagination: false,
+    breakpoints: {
+      0: {
+        slidesPerView: 1.8,
+        spaceBetween: 16,
+        allowTouchMove: true,
+        simulateTouch: true,
+      },
+      470: {
+        slidesPerView: 3.5,
+        spaceBetween: 16,
+        allowTouchMove: true,
+        simulateTouch: true,
+      },
+      850: {
+        slidesPerView: 5.5,
+        spaceBetween: 16,
+        allowTouchMove: true,
+        simulateTouch: true,
+      },
+      1340: {
+        slidesPerView: 6,
+        spaceBetween: 16,
+        allowTouchMove: false,
+        simulateTouch: false,
+      }
+    },
+    on: {
+      // afterInit: function (el) {
+      //   if (el.$el[0] && el.$el[0].closest('.container-at__advantage')) {
+      //     el.$el[0].closest('.container-at__advantage').classList.add('active');
+      //   }
+      // },
+    },
+  });
+}
+
+let mySwiperAt = null
+function initSwiper() {
+  /* eslint-disable */
+  mySwiperAt = new Swiper(`.js--at-game-consists`, {
+    allowTouchMove: false,
+    simulateTouch: false,
+    // slidesPerView: 'auto',
+    slidesPerView: 3,
+    spaceBetween: 24,
+    // autoHeight: true,
+    navigation: false,
+    pagination: false,
+    breakpoints: {
+      0: {
+        slidesPerView: 1.13,
+        spaceBetween: 24,
+        allowTouchMove: true,
+        simulateTouch: true,
+      },
+      530: {
+        slidesPerView: 2.3,
+        spaceBetween: 24,
+        allowTouchMove: true,
+        simulateTouch: true,
+      },
+      768: {
+        slidesPerView: 3,
+        spaceBetween: 24,
+        allowTouchMove: false,
+        simulateTouch: false,
+      }
+    },
+    on: {
+      resize: function (el) {
+        setTimeout(() => {
+          if (el && el.$el!==undefined) {
+            setEqualHeight(el.$el[0].querySelectorAll('.swiper-slide'));
+          }
+
+        },100)
+
+
+      },
+      init: function (el) {
+        if (el && el.$el!==undefined) {
+          setEqualHeight(el.$el[0].querySelectorAll('.swiper-slide'));
+        }
+
+      },
+      slideChangeTransitionEnd:function (el) {
+        setTimeout(() => {
+          if (el && el.$el!==undefined) {
+            setEqualHeight(el.$el[0].querySelectorAll('.swiper-slide'));
+          }
+
+        },100)
+
+      },
+    }
+
+  });
+  if (mySwiperAt.$el!==undefined){
+    if (mySwiperAt.$el[0] && mySwiperAt.$el[0].closest('.js--structure-swiper')) {
+      mySwiperAt.$el[0].closest('.js--structure-swiper').classList.remove('unactive');
+    }
+  }
+
+
+}
+
+function destroySwiper() {
+  if (mySwiperAt && mySwiperAt.$el!==undefined) {
+
+    if (mySwiperAt.$el[0] && mySwiperAt.$el[0].closest('.js--structure-swiper')) {
+      mySwiperAt.$el[0].closest('.js--structure-swiper').classList.add('unactive');
+    }
+    mySwiperAt.destroy(true,true);
+    mySwiperAt=null
+  }
+}
+export function atGameConsists() {
+  if (window.matchMedia('(max-width: 1060px)').matches) {
+    initSwiper()
+  }
+  window.matchMedia('(max-width: 1060px)').addEventListener('change',(e) => {
+    if (e.matches) {
+      initSwiper();
+    } else {
+      destroySwiper();
+    }
+  })
+}
+
+export function atBecomeSwiper() {
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js--swiper-become', {
+    init: true,
+    allowTouchMove: false,
+    simulateTouch: false,
+    // slidesPerView: 'auto',
+    slidesPerView: 4,
+    spaceBetween: 24,
+    autoHeight: true,
+    navigation: false,
+    pagination: false,
+    breakpoints: {
+      0: {
+        slidesPerView: 1.13,
+        spaceBetween: 24,
+        allowTouchMove: true,
+        simulateTouch: true,
+      },
+      530: {
+        slidesPerView: 2.3,
+        spaceBetween: 24,
+        allowTouchMove: true,
+        simulateTouch: true,
+      },
+      980: {
+        slidesPerView: 3.3,
+        spaceBetween: 24,
+        allowTouchMove: true,
+        simulateTouch: true,
+      },
+      1215: {
+        slidesPerView: 4,
+        allowTouchMove: false,
+        simulateTouch: false,
+      }
+    }
+  });
+}
+export function atSliderPartners() {
+  /* eslint-disable */
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js--at-partners', {
+    init: true,
+    allowTouchMove: true,
+    slidesPerView: 4,
+    // slidesPerView: 5,
+    spaceBetween: 15,
+    // autoHeight: true,
+    navigation: {
+      nextEl: '.js--at-partners-right',
+      prevEl: '.js--at-partners-left'
+    },
+    pagination: false,
+    breakpoints: {
+      0: {
+        slidesPerView: 'auto',
+      },
+      745: {
+        slidesPerView: 'auto',
+      },
+      1215: {
+        slidesPerView: 4
+      }
+    }
+  });
+}
+
+export function testPollsSlider() {
+
+  const contentSliders = document.querySelectorAll('.js--test-polls-swiper');
+
+  for (let i = 0; i < contentSliders.length; i++) {
+    contentSliders[i].classList.add(`js--test-polls-swiper-${i}`);
+    const first_slide = contentSliders[i].querySelector('.js--prev-slide')
+    const swiper_test_n = new Swiper(`.js--test-polls-swiper-${i}`, {
+      init: true,
+      loop: false,
+      simulateTouch: false,
+      allowTouchMove: false,
+      slidesPerView: 1,
+      spaceBetween: 24,
+      autoHeight: true,
+      resizeObserver: true,
+      pagination: {
+        el: `.js--test-polls-swiper-${i} .js-test-pagination`,
+        type: "fraction",
+        renderFraction: function (currentClass, totalClass) {
+          return 'Вопрос <span class="' + currentClass + '"></span>' +
+            ' из ' +
+            '<span class="' + totalClass + '"></span>';
+        }
+      },
+      navigation: {
+        nextEl: `.js--next-slide`,
+        prevEl: ''
+      },
+      on: {
+        beforeInit: (param) => {
+          const array_slide = param.$el[0].querySelectorAll('.swiper-slide')
+          const count = array_slide.length;
+          if (count > 1) {
+            param.$el[0].querySelector('.js-test-pagination')
+              .classList
+              .add('active')
+          }
+          param.$el[0].setAttribute('data-slide', count);
+          param.$el[0].setAttribute('data-correct-answers', 0);
+          for (let i = 0; i < array_slide.length; i++) {
+            array_slide[i].setAttribute('data-slide', i);
+            if (i === array_slide.length - 1) {
+              array_slide[i].setAttribute('data-last-slide', true);
+            } else {
+              array_slide[i].setAttribute('data-last-slide', false);
+            }
+          }
+
+          // const styles = window.getComputedStyle(color_style);
+          // const color = styles.getPropertyValue('color');
+
+        }
+      }
+    });
+    if (first_slide){
+      first_slide.onclick = () => {
+        swiper_test_n.slideTo(0,0,false);
+      }
+    }
+  }
+}
+export default function testPollsSliderFirstSlaide() {
+  swiper_test_n.slideTo(0,0,false);
+}
+
+export function SliderCourse() {
+  /* eslint-disable */
+  // eslint-disable-next-line no-unused-vars
+  const mySwiper = new Swiper('.js--swiper-course', {
+    init: true,
+    allowTouchMove: true,
+    slidesPerView: 2,
+    autoHeight: true,
+    // slidesPerView: 5,
+    spaceBetween: 24,
+    // autoHeight: true,
+    // navigation: {
+    //   nextEl: '.js--at-partners-right',
+    //   prevEl: '.js--at-partners-left'
+    // },
+    pagination: {
+      el: '.education__pagination-course',
+      clickable: true,
+    },
+    breakpoints: {
+      0: {
+        slidesPerView: 1
+      },
+      1000: {
+        slidesPerView: 2
+
+      }
+    }
+  });
+}
+
+export function izhsMaterialSlider() {
+  function countSlide(el){
+    const array = el.el.closest('.izhs__wrapper-popular-materials').querySelectorAll('.swiper-pagination-bullet')
+    if(array.length<2){
+      el.el.closest('.izhs__wrapper-popular-materials').querySelector('.js--izhs-swiper-materials-pag').classList.add('unactive')
+      el.passedParams.simulateTouch=false;
+      el.allowTouchMove=false;
+    }
+    else {
+      el.el.closest('.izhs__wrapper-popular-materials').querySelector('.js--izhs-swiper-materials-pag').classList.remove('unactive')
+    }
+  }
+  const swiper = new Swiper('.js--izhs-swiper-materials', {
+    slidesPerView: 4,
+    spaceBetween: 20,
+    simulateTouch: false,
+    loop: false,
+    autoHeight: false,
+    pagination: {
+      el: '.js--izhs-swiper-materials-pag',
+      clickable: true
+    },
+    navigation: {
+      nextEl: '.swiper-button-next',
+      prevEl: '.swiper-button-prev',
+    },
+    breakpoints: {
+      0: {
+        loop: false,
+        slidesPerView: 1.02,
+        spaceBetween: 12,
+      },
+      360: {
+        loop: false,
+        slidesPerView: 1.1,
+        spaceBetween: 12,
+      },
+      640: {
+        loop: false,
+        slidesPerView: 2,
+        spaceBetween: 12,
+      },
+      979: {
+        loop: false,
+        slidesPerView: 3,
+        spaceBetween: 20,
+      },
+      1244: {
+        loop: false,
+        slidesPerView: 4,
+        spaceBetween: 20,
+      }
+    },
+    on: {
+      afterInit: function (el) {
+        countSlide(el)
+      },
+      resize:function (el){
+        countSlide(el)
+      }
+    },
+  });
+}
+export function izhsBunnersSlider() {
+  // eslint-disable-next-line no-unused-vars
+  const swiper = new Swiper('.js--izhs-swiper-bunners', {
+    init: true,
+    loop: true,
+    autoHeight: true,
+    slidesPerView: 1,
+    spaceBetween: 24,
+    autoplay: {
+      delay: 12000,
+      pauseOnMouseEnter: true,
+      disableOnInteraction: false
+    },
+    pagination: {
+      el: '.js--banner-pagination',
+      clickable: true,
+    },
+    navigation: false,
+    on:{
+      beforeInit: (param) => {
+        const count = param.$el[0].querySelectorAll('.swiper-slide').length;
+        if(count==1){
+          param.$el[0].querySelector('.js--banner-pagination').classList.add('un-active')
+          param.allowTouchMove=false
+          param.params.autoplay.delay = 900000000
+        }
+      }
+    },
+  });
+}
+export function authorsSlider() {
+  let catalogSlider = null;
+  const slider_elem = document.querySelector('.js--swiper-authors')
+  function catalogSliderInit () {
+    if (!catalogSlider) {
+      catalogSlider = new Swiper('.js--swiper-authors', {
+        init: true,
+        loop: false,
+        slidesPerView: 2,
+        slidesPerGroup:2,
+        spaceBetween: 10,
+        simulateTouch: true,
+        pagination: {
+          el: '.js--pag-authorship',
+          clickable: true,
+        },
+        navigation: false,
+        breakpoints: {
+          0: {
+            slidesPerView: 1,
+            slidesPerGroup:1
+          },
+          610: {
+            slidesPerView: 2,
+            slidesPerGroup:2
+          }
+        },
+        on: {
+          beforeInit:function (el){
+
+            el.el.closest('.authorship__container').classList.remove('swiper-wrapper-desctop')
+          },
+          afterInit: function (el) {
+            paginationSlider_s(el)
+          },
+          beforeDestroy:function (el){
+            el.el.closest('.authorship__container').classList.add('swiper-wrapper-desctop')
+          },
+          resize:function (el){
+            paginationSlider_s(el)
+          }
+        }
+      });
+    }
+  }
+  function catalogSliderDestroy () {
+    if (catalogSlider) {
+      catalogSlider.destroy();
+      catalogSlider = null;
+    }
+  }
+
+  function sliderResize() {
+    const array_swiper = document.querySelectorAll('.js--swiper-authors .swiper-slide')
+    let win_width;
+    win_width = window.screen.width;
+    if (win_width < 610||array_swiper.length>=5) {
+      catalogSliderInit();
+    }
+    else if(win_width >= 610&&array_swiper.length<5) {
+      catalogSliderDestroy();
+    }
+  }
+  if (slider_elem) {
+    sliderResize();
+    window.addEventListener('resize', ()=>{
+      sliderResize()
+    });
+  }
+
+}
+
+export function authorsDetailedSliderDes() {
+  const swiper = new Swiper('.js--authorship-detailed-des', {
+    init: true,
+    loop: false,
+    slidesPerView: 1,
+    spaceBetween: 10,
+    simulateTouch: true,
+    autoHeight: true,
+    resizeObserver:true,
+    pagination: {
+      el: '.js--pag-detail-author-des',
+      clickable: true,
+    },
+    navigation: false,
+    breakpoints: {
+    },
+    on: {
+      beforeInit:()=>{
+
+      },
+      afterInit: function (el) {
+        paginationSlider_s(el)
+      },
+      resize:function (el){
+        paginationSlider_s(el)
+      }
+    }
+  });
+}
+export function authorsDetailedSliderMob() {
+  const swiper_mob = new Swiper('.js--authorship-detailed-mob', {
+    init: true,
+    loop: false,
+    slidesPerView: 1,
+    spaceBetween: 10,
+    simulateTouch: true,
+    // autoHeight: true,
+    resizeObserver:true,
+    pagination: {
+      el: '.js--pag-detail-author-mob',
+      clickable: true,
+    },
+    navigation: false,
+    breakpoints: {
+    },
+    on: {
+      beforeInit:()=>{
+
+      },
+      afterInit: function (el) {
+        paginationSlider_s(el)
+      },
+      resize:function (el){
+        paginationSlider_s(el)
+      }
+    }
+  });
+
+}
+
+export function newMarathonScheduleSlider() {
+  let value = 0;
+  let data_space_between= {
+    'desctop': '12',
+    'tablet': '12',
+    'mobile': '12'
+  };
+
+  if(document.querySelector('.js--marathon-new__schedule-swiper-pagination')
+    && document.querySelector('.js--marathon-new__schedule-swiper-pagination').hasAttribute('data-array')){
+    value = Number(document.querySelector('.js--marathon-new__schedule-swiper-pagination').dataset['array'])
+  }
+
+  if (document.querySelector('.js--marathon-new__schedule-swiper-pagination')
+    && document.querySelector('.js--marathon-new__schedule-swiper-pagination').hasAttribute('data-space-between')) {
+    data_space_between = document.querySelector('.js--marathon-new__schedule-swiper-pagination').getAttribute('data-space-between')
+    data_space_between = JSON.parse(data_space_between);
+  }
+
+
+  const swiperPagination = new Swiper('.js--marathon-new__schedule-swiper-pagination', {
+    slidesPerView: "auto",
+    spaceBetween: parseInt(data_space_between.desctop),
+    initialSlide: value,
+    centeredSlides: false,
+    scrollbar: {
+      enabled: false
+    },
+    navigation: {
+      nextEl: '.js--marathon-new__schedule-swiper-pagination-button-next',
+      prevEl: '.js--marathon-new__schedule-swiper-pagination-button-prev',
+    },
+    breakpoints: {
+      0: {
+        spaceBetween: parseInt(data_space_between.mobile),
+      },
+      470: {
+        spaceBetween: parseInt(data_space_between.desctop),
+      }
+
+    },
+    on: {
+      beforeInit:(el)=>{
+
+      },
+      afterInit: function (el) {
+        if(el.$el && el.$el[0].closest('.js--general-style-slider.before-init')) {
+          el.$el[0].closest('.js--general-style-slider').classList.remove('before-init')
+        }
+        paginationSlider_s(el)
+        const parent = el.$el[0].closest('.js--schedule-swiper-container')
+        const data_active_slider = el.$el[0].querySelector('.swiper-slide-active').getAttribute('data-month')
+        if (parent && parent.querySelector('.js--schedule-swiper-month')) {
+          parent.querySelector('.js--schedule-swiper-month').textContent = data_active_slider
+        }
+      },
+      resize:function (el){
+        paginationSlider_s(el)
+      },
+      transitionEnd: (el)=>{
+        const parent = el.$el[0].closest('.js--schedule-swiper-container')
+        const data_active_slider = el.$el[0].querySelector('.swiper-slide-active').getAttribute('data-month')
+        if (parent && parent.querySelector('.js--schedule-swiper-month')) {
+          parent.querySelector('.js--schedule-swiper-month').textContent = data_active_slider
+        }
+
+      },
+    }
+  });
+  const swiper = new Swiper('.js--marathon-new__schedule-swiper', {
+    init: true,
+    loop: false,
+    initialSlide: value,
+    slidesPerView: "auto",
+    simulateTouch: true,
+    allowTouchMove: false,
+    spaceBetween:40,
+    // autoHeight: true,
+    thumbs:{
+      swiper: swiperPagination
+    },
+  });
+
+}
+
+export function cardSlider() {
+  const swiper_mob = new Swiper('.js--card-slider', {
+    init: true,
+    loop: false,
+    slidesPerView: 3,
+    spaceBetween: 16,
+    simulateTouch: true,
+    autoHeight: true,
+    resizeObserver:true,
+    pagination: {
+      el: '.js--swiper-pagination',
+      clickable: true,
+    },
+    navigation: {
+      nextEl: '.js--swiper-arrow-right',
+      prevEl: '.js--swiper-arrow-left',
+    },
+    breakpoints: {
+      0: {
+        slidesPerView: 1,
+      },
+      610: {
+        slidesPerView: 2,
+      },
+      1140: {
+        slidesPerView: 3,
+      }
+    },
+    on: {
+      beforeInit:()=>{
+
+      },
+      // afterInit: function (el) {
+      //   paginationSlider_s(el)
+      // },
+      // resize:function (el){
+      //   paginationSlider_s(el)
+      // }
+    }
+  });
+
+}
+
+export function cardSliderfoufcolumn() {
+  const swiper_mob = new Swiper('.js--card-slider-four-column', {
+    init: true,
+    loop: false,
+    slidesPerView: 4,
+    spaceBetween: 16,
+    simulateTouch: true,
+    autoHeight: true,
+    resizeObserver:true,
+    observeParents:true,
+    observer:true,
+    observeSlideChildren:true,
+
+    pagination: {
+      el: '.js--swiper-pagination-question',
+      clickable: true,
+    },
+    navigation: {
+      nextEl: '.js--swiper-arrow-right-question',
+      prevEl: '.js--swiper-arrow-left-question',
+    },
+    breakpoints: {
+      0: {
+        slidesPerView: 1,
+      },
+      690: {
+        slidesPerView: 2,
+      },
+      1050: {
+        slidesPerView: 3,
+      },
+      1375: {
+        slidesPerView: 4,
+      }
+    },
+    on: {
+      beforeInit:()=>{
+
+      },
+      afterInit: function (el) {
+        paginationSlider_s(el);
+        arrowSlider(el);
+      },
+      resize:function (el){
+        paginationSlider_s(el);
+        arrowSlider(el);
+      },
+      observerUpdate:function (){
+
+      }
+    }
+  });
+
+}
+
+// //слайдер конструктор
+// export function slideConstructor() {
+//   const array_slider = document.querySelectorAll('.js--slider-construtor')
+//   let data_space_between= {
+//     'desctop': '16',
+//     'tablet': '14',
+//     'mobile': '0'
+//   };
+//   let data_count_slide= {
+//     'large_desctop': '4',
+//     'desctop':'4',
+//     'small_desctop': '3',
+//     'tablet': '2',
+//     'mobile': '1'
+//   };
+//   let data_simulate_touch_mobile=true
+//   let data_arrows= {
+//     'arrow_left': '',
+//     'arrow_right': ''
+//   }
+//   let data_pagination = {'pagination':''}
+//   let data_loop = {
+//     'desctop': 'false',
+//     'small_desctop': 'false',
+//     'tablet': 'false',
+//     'mobile': 'false'
+//   }
+//   let data_simulation_touch= {
+//     'desctop': 'false',
+//     'tablet': 'false',
+//     'mobile': 'true'
+//   };
+//
+//   let auto_height = false
+//   let same_height_slides = false
+//
+//   for (let item of array_slider) {
+//
+//
+//     if (item.hasAttribute('data-space-between')) {
+//       data_space_between = item.getAttribute('data-space-between')
+//       data_space_between = JSON.parse(data_space_between);
+//     }
+//
+//     if (item.hasAttribute('data-count-slide')) {
+//       data_count_slide = item.getAttribute('data-count-slide')
+//       data_count_slide = JSON.parse(data_count_slide);
+//     }
+//
+//
+//
+//     if (item.hasAttribute('data-simulate-touch')) {
+//       data_simulate_touch_mobile = item.getAttribute('data-simulate-touch')
+//       data_simulate_touch_mobile = JSON.parse(data_simulate_touch_mobile);
+//     }
+//
+//     if (item.hasAttribute('data-loop')) {
+//       data_loop = item.getAttribute('data-loop')
+//       data_loop = JSON.parse(data_loop);
+//     }
+//
+//     if (item.hasAttribute('data-arrows')) {
+//       data_arrows = item.getAttribute('data-arrows')
+//       data_arrows = JSON.parse(data_arrows);
+//     }
+//
+//     if (item.hasAttribute('data-pagination')) {
+//       data_pagination = item.getAttribute('data-pagination')
+//       data_pagination = JSON.parse(data_pagination);
+//     }
+//
+//     if (item.hasAttribute('data-simulation-touch')) {
+//       data_simulation_touch = item.getAttribute('data-simulation-touch')
+//       data_simulation_touch = JSON.parse(data_simulation_touch);
+//     }
+//
+//     if (item.hasAttribute('auto-height')) {
+//       auto_height = item.getAttribute('auto-height')
+//       auto_height = JSON.parse(auto_height);
+//     }
+//     if (item.hasAttribute('same-height-slides')) {
+//       same_height_slides = item.getAttribute('same-height-slides')
+//       same_height_slides = JSON.parse(same_height_slides);
+//     }
+//
+//     let swiper
+//     swiper = new Swiper(item, {
+//       init: true,
+//       slidesPerView: parseInt(data_count_slide.desctop),
+//       spaceBetween: parseInt(data_space_between.desctop),
+//
+//       observer:true,
+//       observerParents:true,
+//       observeSlideChildren:true,
+//       loop: true,
+//       autoHeight: false,
+//       pagination: {
+//         el: `${data_pagination.pagination}`,
+//         clickable: true
+//       },
+//       navigation: {
+//         nextEl: `${data_arrows.arrow_right}`,
+//         prevEl: `${data_arrows.arrow_left}`,
+//       },
+//       breakpoints: {
+//         0: {
+//           loop: JSON.parse(data_loop.mobile),
+//           autoHeight:auto_height,
+//           slidesPerView: parseInt(data_count_slide.mobile),
+//           spaceBetween: parseInt(data_space_between.mobile),
+//           simulateTouch:JSON.parse(data_simulation_touch.mobile),
+//           allowTouchMove:JSON.parse(data_simulation_touch.mobile)
+//         },
+//         590: {
+//           loop: JSON.parse(data_loop.tablet),
+//           autoHeight:auto_height,
+//           slidesPerView: parseInt(data_count_slide.tablet),
+//           spaceBetween: parseInt(data_space_between.tablet),
+//           simulateTouch:JSON.parse(data_simulation_touch.tablet),
+//           allowTouchMove:JSON.parse(data_simulation_touch.tablet)
+//
+//         },
+//         768: {
+//           loop: JSON.parse(data_loop.small_desctop),
+//           autoHeight:auto_height,
+//           slidesPerView: parseInt(data_count_slide.small_desctop),
+//           spaceBetween: parseInt(data_space_between.desctop),
+//           simulateTouch:JSON.parse(data_simulation_touch.desctop),
+//           allowTouchMove:JSON.parse(data_simulation_touch.desctop)
+//         },
+//         1100: {
+//           loop: JSON.parse(data_loop.desctop),
+//           autoHeight:auto_height,
+//           slidesPerView: parseInt(data_count_slide.desctop),
+//           spaceBetween: parseInt(data_space_between.desctop),
+//           simulateTouch:JSON.parse(data_simulation_touch.desctop),
+//           allowTouchMove:JSON.parse(data_simulation_touch.desctop),
+//
+//         },
+//         1360: {
+//           loop: JSON.parse(data_loop.desctop),
+//           autoHeight:auto_height,
+//           slidesPerView: parseInt(data_count_slide.large_desctop),
+//           spaceBetween: parseInt(data_space_between.desctop),
+//           simulateTouch:JSON.parse(data_simulation_touch.desctop),
+//           allowTouchMove:JSON.parse(data_simulation_touch.desctop)
+//         },
+//
+//       },
+//       on: {
+//         beforeInit:(el)=>{
+//           if( window.innerWidth > 768 ){
+//             if (el.$el[0].closest('.js--marathon-new__schedule-swiper')
+//               && el.$el[0].closest('.js--marathon-new__schedule-swiper')
+//                 .querySelector('.marathon-new-last__schedule-stories')) {
+//
+//               const array_left = el.$el[0].closest('.js--marathon-new__schedule-swiper')
+//                 .querySelectorAll('.swiper-slide-arrow__left');
+//               const width_el = el.$el[0].closest('.js--marathon-new__schedule-swiper')
+//                 .querySelector('.marathon-new-last__schedule-stories').offsetWidth;
+//
+//               for (let item of array_left) {
+//                 item.style.left = `-${width_el + 50}px`
+//               }
+//             }
+//           }
+//
+//
+//         },
+//         afterInit: function (el) {
+//           if(el.$el && el.$el[0].closest('.js--general-style-slider.before-init')) {
+//             el.$el[0].closest('.js--general-style-slider').classList.remove('before-init')
+//           }
+//           paginationSlider_s(el)
+//         },
+//         resize:function (el){
+//           console.log('Привет!!!!!!');
+//           paginationSlider_s(el)
+//           if( window.innerWidth > 768 ){
+//             if (el.$el[0].closest('.js--marathon-new__schedule-swiper')
+//               && el.$el[0].closest('.js--marathon-new__schedule-swiper')
+//                 .querySelector('.marathon-new-last__schedule-stories')) {
+//
+//               const array_left = el.$el[0].closest('.js--marathon-new__schedule-swiper')
+//                 .querySelectorAll('.swiper-slide-arrow__left');
+//               const width_el = el.$el[0].closest('.js--marathon-new__schedule-swiper')
+//                 .querySelector('.marathon-new-last__schedule-stories').offsetWidth;
+//
+//               for (let item of array_left) {
+//                 item.style.left = `-${width_el + 50}px`
+//               }
+//             }
+//           }
+//           if (same_height_slides) {
+//             if (el && el.$el!==undefined) {
+//               setEqualHeight(el.$el[0].querySelectorAll('.swiper-slide'));
+//             }
+//           }
+//         },
+//         init:function (el) {
+//           if (same_height_slides) {
+//             if (el && el.$el!==undefined) {
+//               setEqualHeight(el.$el[0].querySelectorAll('.swiper-slide'));
+//             }
+//           }
+//
+//         }
+//       },
+//
+//     });
+//
+//     item.querySelectorAll('.advanced-editor__gallery-wr-img picture img').forEach(img => {
+//       const updateHeight = () => swiper.updateAutoHeight();
+//       if(img.complete) {
+//         updateHeight()
+//       } else {
+//         img.addEventListener('load', updateHeight)
+//         img.addEventListener('error', updateHeight)
+//       }
+//     })
+//
+//   }
+//
+//
+// }
+
+export function anotherThingPrizes() {
+  const swiper = new Swiper('.js--another-thing-2025-prizes', {
+    init: true,
+    loop: false,
+    slidesPerView: 1,
+    spaceBetween: 16,
+    simulateTouch: false,
+    allowTouchMove: false,
+    autoHeight: true,
+    resizeObserver:true,
+    observeParents:true,
+    observer:true,
+    observeSlideChildren:true,
+
+    pagination: {
+      // el: '.js--swiper-pagination-question',
+      // clickable: true,
+    },
+    navigation: {
+      // nextEl: '.js--swiper-arrow-right-question',
+      // prevEl: '.js--swiper-arrow-left-question',
+    },
+    breakpoints: {
+
+    },
+    on: {
+      beforeInit:()=>{
+
+      },
+      afterInit: function (el) {
+        const parent = el.$el[0].closest('.js--prizes-container')
+        if (parent) {
+          const array_arrows = parent.querySelectorAll('.js--swiper-arrow-prise-container')
+          Array.from(array_arrows).forEach((element, index) => {
+            const length_el = element.querySelectorAll('.swiper-button-disabled').length
+            element.dataset.count = index + 1;
+            parent.appendChild(element)
+          })
+        }
+
+        //
+
+      },
+      resize:function (el){
+
+      },
+      slideChange:function (el) {
+        const parent = el.$el[0].closest('.js--prizes-container')
+        if (parent) {
+
+          parent.querySelectorAll('.js--swiper-arrow-prise-container').forEach(container => {
+            container.classList.add('display-none')
+          })
+
+          const activeArrows = parent.querySelector(`.js--swiper-arrow-prise-container[data-count="${this.activeIndex}"]`)
+          if (activeArrows) {
+            activeArrows.classList.remove('display-none')
+          }
+
+
+        }
+
+      }
+
+    }
+  });
+
+  const controls = document.querySelectorAll('.js--anotgher-thing-prizes-pag');
+  const controlsMobile = document.querySelectorAll('.js--pagination-body-mobile .js--anotgher-thing-prizes-pag');
+  controls.forEach(control => {
+    control.addEventListener('click', () => {
+      const slideIndex = parseInt(control.dataset.index);
+      console.log(slideIndex);
+      swiper.slideTo(slideIndex)
+      for (let i=0;i<controls.length; i++) {
+        controls[i].classList.remove('active')
+      }
+      control.classList.add('active')
+
+      if (control.closest('.js--pagination-parent-mobile')) {
+        control.closest('.js--pagination-parent-mobile').querySelector('.js--pagination-btn-mobile p').textContent = control.querySelector('p').textContent
+        control.closest('.js--pagination-parent-mobile').classList.remove('active')
+        RemoveClassBody();
+      }
+
+    })
+  });
+
+  // swiper.on('slideChange', () => {
+  //
+  //   const realIndex = swiper.realIndex;
+  //   controls.forEach((control,index) => {
+  //
+  //
+  //     if (index === realIndex) {
+  //       control.classList.add('active')
+  //     } else {
+  //       control.classList.remove('active')
+  //     }
+  //   })
+  //   controlsMobile.forEach((control,index) => {
+  //     const data_index = parseInt(control.getAttribute('data-index'))
+  //
+  //     if (data_index === realIndex) {
+  //       control.classList.add('active')
+  //       const controt_text = control.querySelector('p')
+  //       if (controt_text && controt_text.closest('.js--pagination-parent-mobile') && controt_text.closest('.js--pagination-parent-mobile').querySelector('.js--prizes-pagination-value')) {
+  //         const text = controt_text.textContent;
+  //         controt_text.closest('.js--pagination-parent-mobile').querySelector('.js--prizes-pagination-value').textContent = text
+  //       }
+  //
+  //     } else {
+  //       control.classList.remove('active')
+  //     }
+  //   })
+  //
+  //
+  // })
+
+  swiper.on('afterInit', () => {
+    const realIndex = swiper.realIndex;
+    controls.forEach((control,index) => {
+      if (index === realIndex) {
+        control.classList.add('active')
+      }
+      // else {
+      //   control.classList.remove('active')
+      // }
+    })
+  })
+
+}
+
 
