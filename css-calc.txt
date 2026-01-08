@@ -1,2 +1,143 @@
-<script src="<?= SITE_TEMPLATE_PATH ?>/js/beesenderchat/beesender2.js" defer></script>
+instruction.js
+
+/* eslint-disable */
+
+// Ленивая загрузка — только если нужны элементы инструкций
+document.addEventListener('DOMContentLoaded', () => {
+  // Проверяем: есть ли на странице элементы, требующие этого JS?
+  const needsInstructionJS = document.querySelector(`
+    .js-test-n,
+    .js-polls-n,
+    #search-family-mortgage,
+    #v-mortgage-surveys-one-request,
+    #v-minsport,
+    .instructions-content
+  `);
+
+  if (!needsInstructionJS) {
+    return;
+  }
+
+  // Загружаем тяжёлый код только при необходимости
+  // eslint-disable-next-line no-unused-expressions
+  require.ensure([], (require) => {
+    require('./lazy-instruction.js');
+    console.log('✅ Instruction modules loaded');
+  }, 'instruction-lazy');
+});
+
+lazy-instruction.js
+
+/* eslint-disable */
+import Vue from 'vue';
+import TestN from './modules/test-n/TestN.vue';
+import VPolls from './modules/polls/MainPolls.vue';
+import SearchFamilyMortgage from './modules/search-family-mortgage/SearchFamilyMortgagePointEntry.vue';
+import ItMortgageSurveysOneRequest from './modules/it-mortgage-surveys-one-request/ITMortgageSurveysPointEntry.vue';
+import MinSport from './modules/minsport/MinsportPointEntry.vue';
+import contentNote from './modules/content-note';
+import dropDown from './modules/dropDown';
+import {
+  mainBannerSlider, mainSlider, contentSlider, cardsInstructionSlider, cardsNewsSlider,
+  aboutSlider, questionsAndAnswerSliders, testSlider, mediaSlider, eventPageSlider,
+  educationalSlider, educationalSliderReviews, personalitiesSlider, slider4Col,
+  birthdayReviewsSwiper, cardHousingCooperativeSlider, housingCooperativeListSlider,
+  housingCooperativeDetailSlider, progressSlider, progressSlider4column, progressSliderPartners,
+  testPollsSlider, progressSlider2, atAdvantageSwiper, atBecomeSwiper, atSliderPartners,
+  SliderCourse, izhsMaterialSlider, izhsBunnersSlider, authorsSlider, authorsDetailedSliderDes,
+  authorsDetailedSliderMob, newMarathonScheduleSlider, cardSlider, cardSliderfoufcolumn,
+  atGameConsists, anotherThingPrizes
+} from './modules/swiper-sliders';
+import slideConstructor from './modules/constructor-swiper';
+import formRating from './modules/form-rating';
+
+function dropDownTags() {
+  const btnTags = document.querySelectorAll('.js--dropDown-btn');
+  for (const item of btnTags) {
+    item.onclick = (el) => {
+      dropDown(el.target, 0);
+    };
+  }
+}
+
+// Вся инициализация — теперь здесь
+export function init() {
+  contentNote();
+  dropDownTags();
+  slideConstructor();
+  testPollsSlider();
+  authorsSlider();
+  formRating();
+  cardSliderfoufcolumn();
+  cardSlider();
+
+  // Vue-аппы
+  const vueTestRoots = document.querySelectorAll('.js-test-n');
+  vueTestRoots.forEach((el, i) => {
+    el.id = `test-n-${i}`;
+    new Vue({ el: `#test-n-${i}`, components: { 'test-n': TestN } });
+  });
+
+  const vuePolls = document.querySelectorAll('.js-polls-n');
+  vuePolls.forEach((el, i) => {
+    el.classList.add(`js__polls-n-${i}`);
+    new Vue({ el: `.js__polls-n-${i}`, components: { 'v-polls': VPolls } });
+  });
+
+  // Инициализация по ID
+  function initSearchFamilyMortgage() {
+    new Vue({
+      el: '#search-family-mortgage',
+      components: { 'search-family-mortgage': SearchFamilyMortgage }
+    });
+  }
+
+  function initItMortgageSurveysOneRequest() {
+    new Vue({
+      el: '#v-mortgage-surveys-one-request',
+      components: { 'it-mortgage-surveys-one-request': ItMortgageSurveysOneRequest }
+    });
+  }
+
+  function initMinSport() {
+    new Vue({
+      el: '#v-minsport',
+      components: { 'min-sport': MinSport }
+    });
+  }
+
+  const obj = [
+    { id: 'search-family-mortgage', fn: initSearchFamilyMortgage },
+    { id: 'v-mortgage-surveys-one-request', fn: initItMortgageSurveysOneRequest },
+    { id: 'v-minsport', fn: initMinSport },
+    { id: 'form-rating', fn: formRating },
+  ];
+
+  function waitForVueApp(id, initFn) {
+    const el = document.getElementById(id);
+    if (el && !el.__vue_initialized) {
+      initFn();
+      el.__vue_initialized = true;
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      const element = document.getElementById(id);
+      if (element && !element.__vue_initialized) {
+        observer.disconnect();
+        initFn();
+        element.__vue_initialized = true;
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  obj.forEach(item => waitForVueApp(item.id, item.fn));
+}
+
+// Автозапуск при импорте
+init();
+
+export default { init };
 
