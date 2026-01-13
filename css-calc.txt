@@ -1,26 +1,262 @@
-.content-block-new.js--anchor-block#title1
-    h2 Кто может оформить ипотеку?
+const path = require('path');
+const fs = require('fs');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+// eslint-disable-next-line no-unused-vars
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
-    div.content-mark-block
-      p
-        span.highlighting
-          | Справочно
-      p
-        | Подробно изучить все категории и оформить карту можно на
-        a(href='http://mos.ru/' target='_blank')
-          | портале mos.ru
-
-
-.content-block-new p:not(.form-rating__title):not([class]), .content-block-new strong {
-    font-family: Gilroy-Medium, sans-serif;
-    font-size: 16px;
-    line-height: 150%;
-    color: #252628;
+function generateHtmlPlugins(templateDir) {
+  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return templateFiles.map((item) => {
+    const parts = item.split('.');
+    const name = parts[0];
+    const extension = parts[1];
+    return new HtmlWebpackPlugin({
+      filename: `${name}.html`,
+      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
+      inject: false
+    });
+  });
 }
 
-.content-block-new .content-mark-block p {
-    font-family: Gilroy-SemiBold, sans-serif;
-    font-size: 16px;
-    line-height: 150%;
-    color: #252628;
-}
+const config = {
+  // entry: ['./src/js/index.js', './src/scss/style.scss'], // старое
+  entry: { // новое
+    all: ['./src/js/index.js'], // → bundle.js (legacy)
+    'general-style': ['./src/scss/general-style.scss'], // → general-style.css
+    instruction: ['./src/scss/instruction.scss'], // → instruction.css
+    'general-js': './src/js/general.js', // → general.bundle.js
+    'instruction-js': './src/js/instruction.js' // → instruction.bundle.js
+  },
+  output: {
+    filename: './js/[name].bundle.js',
+    // filename: './js/bundle.js',
+
+    // 2023-04-25 fix корневого пути  для корректной ленивой подгрузки apexchart и js вообще.
+    // TODO: сделать аналогичный fix корневого пути и для картинок
+    publicPath: '/dist/',
+    // path: path.resolve(__dirname, 'dist'), // с этим тоже работает
+    // filename: 'js/bundle.js' // с этим тоже работает
+  },
+  devtool: 'source-map',
+  mode: 'production',
+  optimization: {
+    minimize: true,
+    // splitChunks: {
+    //   chunks: 'all'
+    // },
+    minimizer: [
+      new TerserPlugin({
+        parallel: true,
+        cache: true
+      })
+      // new TerserPlugin({ parallel: true })
+    ],
+    splitChunks: {
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/](vue|axios|vue-axios|swiper|imask)[\\/]/,
+          name: 'vendor-script',
+          // 👇 Ключевая настройка: только для чанков 'general' и 'instruction'
+          chunks: (chunk) => chunk.name === 'general-js' || chunk.name === 'instruction-js',
+          enforce: true
+        }
+      }
+    }
+  },
+  performance: {
+    hints: false
+  },
+  module: {
+    rules: [
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader'
+      },
+      {
+        test: /\.(sass|scss)$/,
+        include: path.resolve(__dirname, 'src/scss'),
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {}
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              sourceMap: true,
+              url: false
+            }
+          },
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              sourceMap: true,
+              plugins: () => [
+                // eslint-disable-next-line global-require
+                require('cssnano')({
+                  preset: [
+                    'default',
+                    {
+                      discardComments: {
+                        removeAll: true
+                      }
+                    }
+                  ]
+                }),
+                // включать при сборке продакшен
+                // require('autoprefixer')({
+                //   grid: true
+                // })
+              ]
+            }
+          },
+          {
+            loader: 'sass-loader',
+            options: {
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      {
+        test: /\.pug$/,
+        oneOf: [
+          {
+            include: path.resolve(__dirname, 'src/pug/'),
+            exclude: /\.vue$/,
+            use: ['pug-loader']
+          },
+          {
+            use: ['pug-plain-loader']
+          }
+        ]
+      },
+      {
+        enforce: 'pre',
+        test: /\.js$/,
+        exclude: /node_modules/,
+        loader: 'eslint-loader',
+        options: {
+          // formatter: require("./.eslintrc.js")
+          // cache: true
+        }
+      },
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      },
+      {
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
+      },
+      {
+        test: /\.js$/,
+        use: [{
+          loader: 'cache-loader'
+        }]
+      },
+      {
+        test: /\.(sass|scss)$/,
+        use: [{
+          loader: 'cache-loader'
+        }]
+      },
+      // {
+      //   test: /\.pug$/,
+      //   use: [{
+      //     loader: 'cache-loader'
+      //   }]
+      // }
+    ]
+  },
+  plugins: [
+    new VueLoaderPlugin(),
+    new MiniCssExtractPlugin({
+      filename: './css/[name].css'
+    }),
+    new CopyWebpackPlugin([
+      {
+        from: './src/fonts',
+        to: './fonts'
+      },
+      {
+        from: './src/img',
+        to: './img'
+      }
+    ]),
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
+          // eslint-disable-next-line no-shadow,global-require
+          const fs = require('fs');
+          // eslint-disable-next-line no-shadow,global-require
+          const path = require('path');
+          const mainPath = path.resolve(__dirname, 'dist/js/all.bundle.js');
+          const bundlePath = path.resolve(__dirname, 'dist/js/bundle.js');
+          if (fs.existsSync(mainPath)) {
+            fs.renameSync(mainPath, bundlePath);
+            console.log('✅ all.bundle.js → bundle.js');
+          }
+        });
+      }
+    },
+    // удаление JS от CSS-only entry
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
+          // eslint-disable-next-line no-shadow,global-require
+          const fs = require('fs');
+          // eslint-disable-next-line no-shadow,global-require
+          const path = require('path');
+
+          // Имена entry, которые содержат ТОЛЬКО CSS → их JS-файлы удаляем
+          const cssOnlyEntries = [
+            'general-style',
+            'instruction'
+            // Добавляйте сюда новые по мере появления:
+            // 'header',
+            // 'footer',
+            // 'news'
+          ];
+
+          cssOnlyEntries.forEach((name) => {
+            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
+            if (fs.existsSync(jsPath)) {
+              fs.unlinkSync(jsPath);
+              // console.log(`🧹 Удалён: ${name}.bundle.js`);
+            }
+          });
+        });
+      }
+    }
+    // new BundleAnalyzerPlugin()
+  ],
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.js'
+    }
+  }
+};
+
+module.exports = (env, argv) => {
+  if (argv.mode === 'production') {
+    config.plugins.push(new CleanWebpackPlugin());
+    config.resolve.alias.vue = 'vue/dist/vue.min.js';
+    config.devtool = 'eval';
+    // config.publicPath = './';
+    // config.publicPath =  path.resolve(__dirname, 'dist');
+  } else {
+    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
+  }
+  return config;
+};
