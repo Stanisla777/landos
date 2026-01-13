@@ -1,6 +1,39 @@
-С изменениями проект не хочет собираться, получаю ошибку:
-C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack\lib\Chunk.js:844
-                throw new Error("Chunk.parents: Use ChunkGroup.getParents() instead");
-                ^
+// src/js/instruction.js
+document.addEventListener('DOMContentLoaded', () => {
+  require.ensure(
+    [],
+    (require) => {
+      require('./lazy-instruction.js');
+      console.log('✅ Instruction modules loaded');
+    },
+    'instruction-lazy' // ← явное имя чанка
+  );
+});
 
-Error: Chunk.parents: Use ChunkGroup.getParents() instead
+-----------------------------------------------
+
+optimization: {
+  minimize: true,
+  minimizer: [
+    new TerserPlugin({
+      parallel: true,
+      cache: true
+    })
+  ],
+  splitChunks: {
+    cacheGroups: {
+      vendor: {
+        test: /[\\/]node_modules[\\/](vue|axios|vue-axios|swiper|imask)[\\/]/,
+        name: 'vendor-script',
+        chunks: (chunk) => {
+          return [
+            'general-js',
+            'instruction-js',
+            'instruction-lazy' // ← имя из require.ensure
+          ].includes(chunk.name);
+        },
+        enforce: true
+      }
+    }
+  }
+}
