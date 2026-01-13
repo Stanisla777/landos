@@ -1,14 +1,15 @@
 ESLint: Parsing error: 'import' and 'export' may only appear at the top level
 // Внутри init()
+// В lazy-instruction.js
 const vueTestRoots = document.querySelectorAll('.js-test-n');
 if (vueTestRoots.length > 0) {
-  // Ленивая загрузка компонента
-  import('./modules/test-n/TestN.vue').then(({ default: TestN }) => {
+  require.ensure([], (require) => {
+    const TestN = require('./modules/test-n/TestN.vue').default;
     vueTestRoots.forEach((el, i) => {
       el.id = `test-n-${i}`;
       new Vue({ el: `#test-n-${i}`, components: { 'test-n': TestN } });
     });
-  });
+  }, 'test-n-lazy');
 }
 
 
@@ -707,6 +708,7 @@ export default {
   },
 }
 </script>
+
 
 
 
