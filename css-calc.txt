@@ -1,38 +1,6 @@
-ESLint: Parsing error: 'import' and 'export' may only appear at the top level
+С изменениями проект не хочет собираться, получаю ошибку:
+C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\webpack\lib\Chunk.js:844
+                throw new Error("Chunk.parents: Use ChunkGroup.getParents() instead");
+                ^
 
-// src/js/instruction.js
-document.addEventListener('DOMContentLoaded', () => {
-  // Убрали условие — грузим всегда на страницах инструкций
-  import('./lazy-instruction.js')
-    .then(() => console.log('✅ Instruction modules loaded'))
-    .catch(err => console.error('❌ Lazy instruction load failed', err));
-});
-
---------------------------------------------------------------------
-
-optimization: {
-  minimize: true,
-  minimizer: [
-    new TerserPlugin({
-      parallel: true,
-      cache: true
-    })
-  ],
-  splitChunks: {
-    cacheGroups: {
-      vendor: {
-        test: /[\\/]node_modules[\\/](vue|axios|vue-axios|swiper|imask)[\\/]/,
-        name: 'vendor-script',
-        chunks: (chunk) => {
-          const isEntry = ['general-js', 'instruction-js'].includes(chunk.name);
-          const hasParentFromEntry = chunk.parents && chunk.parents.some(parent =>
-            ['general-js', 'instruction-js'].includes(parent.name)
-          );
-          return isEntry || hasParentFromEntry;
-        },
-        enforce: true
-      }
-    }
-  }
-}
-
+Error: Chunk.parents: Use ChunkGroup.getParents() instead
