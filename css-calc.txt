@@ -3,17 +3,11 @@
 // Ленивая загрузка — только если нужны элементы инструкций
 // src/js/instruction.js
 document.addEventListener('DOMContentLoaded', () => {
-  require.ensure(
-    [],
-    (require) => {
-      require('./lazy-instruction.js');
-      console.log(' Instruction modules loaded');
-    },
-    'instruction-lazy' // ← явное имя чанка
-  );
+  require.ensure([], (require) => {
+    require('./lazy-instruction.js');
+    console.log('✅ Instruction modules loaded');
+  }, 'instruction-lazy');
 });
-
-------------------------------------------
 
 
 
@@ -65,20 +59,23 @@ const config = {
   mode: 'production',
   optimization: {
     minimize: true,
+    // splitChunks: {
+    //   chunks: 'all'
+    // },
     minimizer: [
       new TerserPlugin({
         parallel: true,
         cache: true
       })
+      // new TerserPlugin({ parallel: true })
     ],
     splitChunks: {
-      chunks: 'all', // ← Анализировать ВСЕ чанки
       cacheGroups: {
         vendor: {
           test: /[\\/]node_modules[\\/](vue|axios|vue-axios|swiper|imask)[\\/]/,
           name: 'vendor-script',
-          // Исключаем ТОЛЬКО legacy-чанк 'all' из vendor
-          chunks: (chunk) => chunk.name !== 'all',
+          // 👇 Ключевая настройка: только для чанков 'general' и 'instruction'
+          chunks: (chunk) => chunk.name === 'general-js' || chunk.name === 'instruction-js',
           enforce: true
         }
       }
