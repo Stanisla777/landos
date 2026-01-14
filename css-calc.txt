@@ -1,56 +1,14 @@
-import VPolls from './modules/polls/MainPolls.vue';
-import initializationPolls from './modules/polls/custom-scripts/initialization-polls';
-
-export function init() {
-initializationPolls();
-
+// Ленивая загрузка VPolls — только если есть элементы
 const vuePolls = document.querySelectorAll('.js-polls-n');
-
-  if (vuePolls.length) {
-    for (let i = 0; i < vuePolls.length; i += 1) {
-      vuePolls[i].classList.add(`js__polls-n-${i}`);
-
-      // eslint-disable-next-line no-new
+if (vuePolls.length > 0) {
+  require.ensure([], (require) => {
+    const VPolls = require('./modules/polls/MainPolls.vue').default;
+    vuePolls.forEach((el, i) => {
+      el.classList.add(`js__polls-n-${i}`);
       new Vue({
         el: `.js__polls-n-${i}`,
-        components: {
-          'v-polls': VPolls,
-        }
+        components: { 'v-polls': VPolls }
       });
-    }
-  }
-
-
-
-export default function initializationPolls() {
-  // eslint-disable-next-line no-unused-vars
-  const testAvailability = document.querySelectorAll('polls');
-  testAvailability.forEach((item) => {
-    // eslint-disable-next-line no-unused-vars
-    const id = item.getAttribute('id');
-    // console.log(id);
-    // eslint-disable-next-line no-unused-vars
-    const views = item.getAttribute('views');
-    // eslint-disable-next-line camelcase
-    const color_text = item.getAttribute('color');
-    // eslint-disable-next-line camelcase,no-unused-vars
-    const title_text = item.getAttribute('title-text');
-    // eslint-disable-next-line camelcase
-    const content_btn = item.getAttribute('button');
-    const Test = document.createElement('v-polls');
-    Test.setAttribute('views', `${views}`);
-    Test.setAttribute('id', `${id}`);
-    Test.classList.add('js-polls-n')
-    // eslint-disable-next-line camelcase
-    Test.setAttribute('color', `${color_text}`);
-    // eslint-disable-next-line camelcase,eqeqeq
-    if (color_text == null || color_text == '') {
-      Test.setAttribute('color', 'white');
-    }
-    // eslint-disable-next-line camelcase
-    Test.setAttribute('button', `${content_btn}`);
-    // eslint-disable-next-line camelcase
-    Test.setAttribute('title_text', `${title_text}`);
-    item.prepend(Test);
-  });
+    });
+  }, 'v-polls-lazy');
 }
