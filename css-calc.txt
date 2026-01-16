@@ -1,10 +1,30 @@
-1.      Пользователь выделяет фрагмент текста из статьи: https://xn--h1alcedd.xn--d1aqf.xn--p1ai/news/stipendii-studentov-planiruyut-indeksirovat-ezhegodno/
-2.      Пользователь выбирает в контекстном меню (нажатие правой кнопкой мыши) пункт Копировать или использует комбинацию клавиш для соответствующего устройства.
-3.      Пользователь вставляет скопированный текст в любой текстовый редактор (например, Блокнот, Word, Telegram, почтовый клиент - Gmail, Яндекс.Почта).
-4.      В результате вставки отображается скопированный текст, а также дополнительный текстовый атрибут, которым оформляется копирование с сайта спроси.дом.рф:
-Цитата:
-Предполагается, что с 2026 года в бюджете будут закладываться средства на ежегодное увеличение стипендиального фонда, индексация которого будет производиться с 1 сентября.
-Подробнее на сайте ПАО ДОМ.РФ: https://спроси.дом.рф/news/stipendii-studentov-planiruyut-indeksirovat-ezhegodno?utm_source=copy_text&utm_medium=sharing&utm_campaign=citation&utm_content=news&utm_term=1497212
+document.addEventListener('copy', (event) => {
+  // Игнорируем, если выделение внутри поля ввода
+  const activeEl = document.activeElement;
+  if (
+    activeEl &&
+    (activeEl.tagName === 'INPUT' ||
+     activeEl.tagName === 'TEXTAREA' ||
+     activeEl.contentEditable === 'true')
+  ) {
+    return;
+  }
 
-Функционал автоматического цитирования не должен срабатывать при копировании текста из полей ввода, а также если размер копируемого текста составляет не более 20 символов.
-Пустая строка между скопированным текстом и атрибутом автоматического цитирования.
+  const selection = window.getSelection();
+  if (!selection || selection.toString().trim() === '') return;
+
+  const selectedText = selection.toString();
+  if (selectedText.length <= 20) return;
+
+  const pageUrl = new URL(window.location.href);
+  // Добавляем UTM-метки
+  pageUrl.searchParams.set('utm_source', 'copy_text');
+  pageUrl.searchParams.set('utm_medium', 'sharing');
+  pageUrl.searchParams.set('utm_campaign', 'citation');
+
+  const citation = `\n\nПодробнее на сайте ПАО ДОМ.РФ: ${pageUrl.toString()}`;
+
+  // Устанавливаем модифицированный текст в буфер обмена
+  event.clipboardData.setData('text/plain', selectedText + citation);
+  event.preventDefault(); // Отменяем стандартное поведение
+});
