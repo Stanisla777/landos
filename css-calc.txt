@@ -1,5 +1,12 @@
+// modules/copy-citation.js
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML; // экранирует <, >, &, " и т.д.
+}
+
 document.addEventListener('copy', (event) => {
-  // Игнорируем, если выделение внутри поля ввода
   const activeEl = document.activeElement;
   if (
     activeEl &&
@@ -17,14 +24,23 @@ document.addEventListener('copy', (event) => {
   if (selectedText.length <= 20) return;
 
   const pageUrl = new URL(window.location.href);
-  // Добавляем UTM-метки
   pageUrl.searchParams.set('utm_source', 'copy_text');
   pageUrl.searchParams.set('utm_medium', 'sharing');
   pageUrl.searchParams.set('utm_campaign', 'citation');
 
-  const citation = `\n\nПодробнее на сайте ПАО ДОМ.РФ: ${pageUrl.toString()}`;
+  const citationText = 'Подробнее на сайте ПАО ДОМ.РФ: ' + pageUrl.toString();
 
-  // Устанавливаем модифицированный текст в буфер обмена
-  event.clipboardData.setData('text/plain', selectedText + citation);
-  event.preventDefault(); // Отменяем стандартное поведение
+  // Plain text — для Блокнота, терминала и т.д.
+  const plain = selectedText + '\n\n' + citationText;
+
+  // HTML — для Word, Gmail, Outlook и других rich-редакторов
+  const html = `
+    ${escapeHtml(selectedText).replace(/\n/g, '<br>')}
+    <br><br>
+    Подробнее на сайте ПАО ДОМ.РФ: <a href="${pageUrl}">${pageUrl}</a>
+  `.trim();
+
+  event.clipboardData.setData('text/plain', plain);
+  event.clipboardData.setData('text/html', html);
+  event.preventDefault();
 });
