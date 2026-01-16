@@ -1,14 +1,31 @@
-// Ленивая загрузка VPolls — только если есть элементы
-const vuePolls = document.querySelectorAll('.js-polls-n');
-if (vuePolls.length > 0) {
-  require.ensure([], (require) => {
-    const VPolls = require('./modules/polls/MainPolls.vue').default;
-    vuePolls.forEach((el, i) => {
-      el.classList.add(`js__polls-n-${i}`);
-      new Vue({
-        el: `.js__polls-n-${i}`,
-        components: { 'v-polls': VPolls }
-      });
-    });
-  }, 'v-polls-lazy');
+function getCookie(name) {
+    const matches = document.cookie.match(new RegExp(
+        // eslint-disable-next-line no-useless-escape
+        `(?:^|; )${name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1')}=([^;]*)`
+    ));
+    return matches ? decodeURIComponent(matches[1]) : undefined;
 }
+
+export default function cookies() {
+    const cookiesWindow = document.querySelector('.js--cookies');
+
+    if (!cookiesWindow) {
+        return false;
+    }
+
+    if (!(getCookie('cookiewindowclosed'))) {
+        cookiesWindow.classList.add('show');
+    }
+
+    // по закрытию куки-окна делаем запись в куки браузера о том, что оно закрыто на 5 лет
+    cookiesWindow.addEventListener('click', (e) => {
+      console.log('Привет');
+        if (e.target.classList.contains('cookies__btn')) {
+            cookiesWindow.classList.remove('show');
+        }
+        document.cookie = 'cookiewindowclosed=yes; path=/; max-age=157248000';
+    });
+}
+
+<div class="cookies js--cookies show">    <span class="cookies__title">На сайте используются файлы&nbsp;cookie</span>    <span class="cookies__text">        Оставаясь на сайте, вы выражаете свое <a href="/user-agreement/#cookies">согласие</a> на обработку персональных данных в соответствии с <a href="https://дом.рф/upload/documents/personal_data_process.pdf" target="_blank">политикой</a> ПАО ДОМ.РФ
+    </span>    <button class="btn cookies__btn">Подтвердить</button></div>
