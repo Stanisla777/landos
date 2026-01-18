@@ -23,12 +23,25 @@ document.addEventListener('copy', (event) => {
   const selectedText = selection.toString();
   if (selectedText.length <= 20) return;
 
-  // Клонируем текущий URL, чтобы не менять оригинальный
   const pageUrl = new URL(window.location.href);
-
-  // Извлекаем первый сегмент пути (без ведущего /)
   const pathSegments = pageUrl.pathname.split('/').filter(segment => segment !== '');
-  const utmContent = pathSegments[0] || 'homepage'; // fallback на случай корня /
+
+  let utmContent;
+
+  // Специальная обработка для /education/...
+  if (pathSegments[0] === 'education' && pathSegments[1]) {
+    const secondSegment = pathSegments[1];
+    // Разрешаем только нужные подкатегории
+    if (['marathons', 'courses', 'video', 'tests'].includes(secondSegment)) {
+      utmContent = secondSegment;
+    } else {
+      // Если второй сегмент не из списка — можно использовать его или fallback
+      utmContent = secondSegment; // или 'education' — по желанию
+    }
+  } else {
+    // Обычный случай: первый сегмент или homepage
+    utmContent = pathSegments[0] || 'homepage';
+  }
 
   // Устанавливаем UTM-метки
   pageUrl.searchParams.set('utm_source', 'copy_text');
@@ -38,10 +51,8 @@ document.addEventListener('copy', (event) => {
 
   const citationText = 'Подробнее на сайте ПАО ДОМ.РФ: ' + pageUrl.toString();
 
-  // Plain text
   const plain = selectedText + '\n\n' + citationText;
 
-  // HTML
   const html = `
     ${escapeHtml(selectedText).replace(/\n/g, '<br>')}
     <br><br>
