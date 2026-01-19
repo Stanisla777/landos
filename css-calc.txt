@@ -1,1 +1,84 @@
-Если метки utm_content или utm_term не могут быть определены, проставлять для них значение по умолчанию (например: utm_term=unknown), чтобы общие переходы по ссылкам с цитированием всё равно отслеживались.
+/* eslint-disable */
+export default function copyCitation() {
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  document.addEventListener('copy', (event) => {
+    // === Определяем utm_term ===
+    let utm_term = 'unknown'; // значение по умолчанию
+
+    const hiddenInput = document.querySelector('#section_id');
+    if (hiddenInput) {
+      const dataElType = hiddenInput.getAttribute('data-el-type');
+      const value = hiddenInput.getAttribute('value');
+
+      if (dataElType && value) {
+        if (dataElType === '1') {
+          utm_term = `E${value}`;
+        } else if (dataElType === '2') {
+          utm_term = `S${value}`;
+        }
+        // Если data-el-type не 1/2 — оставляем 'unknown'
+      }
+    }
+
+    // === Стандартные проверки копирования ===
+    const activeEl = document.activeElement;
+    if (
+      activeEl &&
+      (activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.contentEditable === 'true')
+    ) {
+      return;
+    }
+
+    const selection = window.getSelection();
+    if (!selection || selection.toString().trim() === '') return;
+
+    const selectedText = selection.toString();
+    if (selectedText.length <= 20) return;
+
+    // === Определяем utm_content ===
+    const pageUrl = new URL(window.location.href);
+    const pathSegments = pageUrl.pathname.split('/').filter(segment => segment !== '');
+
+    let utmContent = 'unknown'; // значение по умолчанию
+
+    if (pathSegments[0] === 'education' && pathSegments[1]) {
+      const secondSegment = pathSegments[1];
+      if (['marathons', 'courses', 'video', 'tests'].includes(secondSegment)) {
+        utmContent = secondSegment;
+      } else {
+        utmContent = secondSegment; // можно оставить как есть, даже если не в списке
+      }
+    } else if (pathSegments[0]) {
+      utmContent = pathSegments[0];
+    }
+    // если pathSegments[0] пуст (корень /) — остаётся 'unknown'
+
+    // === Устанавливаем все UTM-метки ===
+    pageUrl.searchParams.set('utm_source', 'copy_text');
+    pageUrl.searchParams.set('utm_medium', 'sharing');
+    pageUrl.searchParams.set('utm_campaign', 'citation');
+    pageUrl.searchParams.set('utm_content', utmContent);
+    pageUrl.searchParams.set('utm_term', utm_term);
+
+    // === Формируем цитату ===
+    const citationText = 'Подробнее на сайте ПАО ДОМ.РФ: ' + pageUrl.toString();
+    const plain = selectedText + '\n\n' + citationText;
+
+    const html = `
+      ${escapeHtml(selectedText).replace(/\n/g, '<br>')}
+      <br><br>
+      Подробнее на сайте ПАО ДОМ.РФ: <a href="${pageUrl}">${pageUrl}</a>
+    `.trim();
+
+    event.clipboardData.setData('text/plain', plain);
+    event.clipboardData.setData('text/html', html);
+    event.preventDefault();
+  });
+}
