@@ -1,65 +1,87 @@
-// modules/copy-citation.js
+<input type="hidden" id="section_id" data-type="question" data-el-type="1" value="1482391">
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
+/* eslint-disable */
+export default function copyCitation() {
+  // modules/copy-citation.js
 
-document.addEventListener('copy', (event) => {
-  const activeEl = document.activeElement;
-  if (
-    activeEl &&
-    (activeEl.tagName === 'INPUT' ||
-     activeEl.tagName === 'TEXTAREA' ||
-     activeEl.contentEditable === 'true')
-  ) {
-    return;
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
-  const selection = window.getSelection();
-  if (!selection || selection.toString().trim() === '') return;
-
-  const selectedText = selection.toString();
-  if (selectedText.length <= 20) return;
-
-  const pageUrl = new URL(window.location.href);
-  const pathSegments = pageUrl.pathname.split('/').filter(segment => segment !== '');
-
-  let utmContent;
-
-  // Специальная обработка для /education/...
-  if (pathSegments[0] === 'education' && pathSegments[1]) {
-    const secondSegment = pathSegments[1];
-    // Разрешаем только нужные подкатегории
-    if (['marathons', 'courses', 'video', 'tests'].includes(secondSegment)) {
-      utmContent = secondSegment;
+  document.addEventListener('copy', (event) => {
+    const hidden_input = document.querySelector('#section_id');
+    let data_el_type;
+    let value_el_type;
+    let utm_term;
+    if (hidden_input&&hidden_input.hasAttribute('data-el-type')&&hidden_input.hasAttribute('value')){
+      data_el_type = hidden_input.getAttribute('data-el-type')
+      value_el_type = hidden_input.getAttribute('value')
+      if (data_el_type==='1') {
+        utm_term = `E${value_el_type}`
+      } else if (data_el_type==='2') {
+        utm_term = `S${value_el_type}`
+      }
     } else {
-      // Если второй сегмент не из списка — можно использовать его или fallback
-      utmContent = secondSegment; // или 'education' — по желанию
+      utm_term = 'unknown'
     }
-  } else {
-    // Обычный случай: первый сегмент или homepage
-    utmContent = pathSegments[0] || 'homepage';
-  }
 
-  // Устанавливаем UTM-метки
-  pageUrl.searchParams.set('utm_source', 'copy_text');
-  pageUrl.searchParams.set('utm_medium', 'sharing');
-  pageUrl.searchParams.set('utm_campaign', 'citation');
-  pageUrl.searchParams.set('utm_content', utmContent);
+    const activeEl = document.activeElement;
+    if (
+      activeEl &&
+      (activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.contentEditable === 'true')
+    ) {
+      return;
+    }
 
-  const citationText = 'Подробнее на сайте ПАО ДОМ.РФ: ' + pageUrl.toString();
+    const selection = window.getSelection();
+    if (!selection || selection.toString().trim() === '') return;
 
-  const plain = selectedText + '\n\n' + citationText;
+    const selectedText = selection.toString();
+    if (selectedText.length <= 20) return;
 
-  const html = `
+    const pageUrl = new URL(window.location.href);
+    const pathSegments = pageUrl.pathname.split('/').filter(segment => segment !== '');
+
+    let utmContent;
+
+    // Специальная обработка для /education/...
+    if (pathSegments[0] === 'education' && pathSegments[1]) {
+      const secondSegment = pathSegments[1];
+      // Разрешаем только нужные подкатегории
+      if (['marathons', 'courses', 'video', 'tests'].includes(secondSegment)) {
+        utmContent = secondSegment;
+      } else {
+        // Если второй сегмент не из списка — можно использовать его или fallback
+        utmContent = secondSegment; // или 'education' — по желанию
+      }
+    } else {
+      // Обычный случай: первый сегмент или homepage
+      utmContent = pathSegments[0] || 'homepage';
+    }
+
+    // Устанавливаем UTM-метки
+    pageUrl.searchParams.set('utm_source', 'copy_text');
+    pageUrl.searchParams.set('utm_medium', 'sharing');
+    pageUrl.searchParams.set('utm_campaign', 'citation');
+    pageUrl.searchParams.set('utm_content', utmContent);
+    pageUrl.searchParams.set('utm_term', utm_term);
+
+    const citationText = 'Подробнее на сайте ПАО ДОМ.РФ: ' + pageUrl.toString();
+
+    const plain = selectedText + '\n\n' + citationText;
+
+    const html = `
     ${escapeHtml(selectedText).replace(/\n/g, '<br>')}
     <br><br>
     Подробнее на сайте ПАО ДОМ.РФ: <a href="${pageUrl}">${pageUrl}</a>
   `.trim();
 
-  event.clipboardData.setData('text/plain', plain);
-  event.clipboardData.setData('text/html', html);
-  event.preventDefault();
-});
+    event.clipboardData.setData('text/plain', plain);
+    event.clipboardData.setData('text/html', html);
+    event.preventDefault();
+  });
+}
