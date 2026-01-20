@@ -1,86 +1,335 @@
 /* eslint-disable */
-export default function copyCitation() {
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+import AddClassBody from './redesign-site/disallow-body-scrolling';
+import RemoveClassBody from './redesign-site/allow-body-scrolling';
+
+export function closeModal(id) {
+  const modalWindow = document.getElementById(id);
+  if (modalWindow && modalWindow.querySelector('.js--stories-body-video video')) {
+    modalWindow.querySelector('.js--stories-body-video video').pause();
   }
+  // eslint-disable-next-line no-unused-vars
+  const promice = new Promise(((resolve) => {
+    if (modalWindow && modalWindow.classList.contains('open')) {
+      // modalWindow.classList.remove('open');
+      if(modalWindow.querySelector('.select-list__selection-window')) {
+        modalWindow.querySelector('.select-list__selection-window').classList.remove('opacity')
+        setTimeout(() => {
+          modalWindow.classList.remove('open');
+        },200)
 
-  document.addEventListener('copy', (event) => {
-    // === Определяем utm_term ===
-    let utm_term = 'unknown'; // значение по умолчанию
+      }
+      else {
+        modalWindow.classList.remove('open');
 
-    const hiddenInput = document.querySelector('#section_id');
-    if (hiddenInput) {
-      const dataElType = hiddenInput.getAttribute('data-el-type');
-      const value = hiddenInput.getAttribute('value');
-
-      if (dataElType && value) {
-        if (dataElType === '1') {
-          utm_term = `E${value}`;
-        } else if (dataElType === '2') {
-          utm_term = `S${value}`;
-        }
-        // Если data-el-type не 1/2 — оставляем 'unknown'
       }
     }
-
-    // === Стандартные проверки копирования ===
-    const activeEl = document.activeElement;
-    if (
-      activeEl &&
-      (activeEl.tagName === 'INPUT' ||
-        activeEl.tagName === 'TEXTAREA' ||
-        activeEl.contentEditable === 'true')
-    ) {
-      return;
+    else if (modalWindow && modalWindow.classList.contains('show')) {
+      modalWindow.classList.remove('show');
     }
-
-    const selection = window.getSelection();
-    if (!selection || selection.toString().trim() === '') return;
-
-    const selectedText = selection.toString();
-    if (selectedText.length <= 20) return;
-
-    // === Определяем utm_content ===
-    const pageUrl = new URL(window.location.href);
-    const pathSegments = pageUrl.pathname.split('/').filter(segment => segment !== '');
-
-    let utmContent = 'unknown'; // значение по умолчанию
-
-    if (pathSegments[0] === 'education' && pathSegments[1]) {
-      const secondSegment = pathSegments[1];
-      if (['marathons', 'courses', 'video', 'tests'].includes(secondSegment)) {
-        utmContent = secondSegment;
-      } else {
-        utmContent = secondSegment; // можно оставить как есть, даже если не в списке
-      }
-    } else if (pathSegments[0]) {
-      utmContent = pathSegments[0];
+    document.body.classList.remove('modal-opened');
+    if (!document.body.classList.contains('non-scroll-for-body')&&document.body.classList.contains('body-additional-class')) {
+      RemoveClassBody();
     }
-    // если pathSegments[0] пуст (корень /) — остаётся 'unknown'
-
-    // === Устанавливаем все UTM-метки ===
-    pageUrl.searchParams.set('utm_source', 'copy_text');
-    pageUrl.searchParams.set('utm_medium', 'sharing');
-    pageUrl.searchParams.set('utm_campaign', 'citation');
-    pageUrl.searchParams.set('utm_content', utmContent);
-    pageUrl.searchParams.set('utm_term', utm_term);
-
-    // === Формируем цитату ===
-    const citationText = 'Подробнее на сайте ПАО ДОМ.РФ: ' + pageUrl.toString();
-    const plain = selectedText + '\n\n' + citationText;
-
-    const html = `
-      ${escapeHtml(selectedText).replace(/\n/g, '<br>')}
-      <br><br>
-      Подробнее на сайте ПАО ДОМ.РФ: <a href="${pageUrl}">${pageUrl}</a>
-    `.trim();
-
-    event.clipboardData.setData('text/plain', plain);
-    event.clipboardData.setData('text/html', html);
-    event.preventDefault();
-  });
+    document.body.classList.remove('body-modal-not-remove')
+    document.body.classList.remove('body-modal-not-remove-else')
+    resolve();
+  })).then(() => new Promise(((resolve) => {
+    setTimeout(() => {
+      // document.body.classList.remove('body-modal');
+      resolve();
+    }, 500);
+  })));
 }
 
-const safeBrand = 'ПАО ДОМ.\u200BРФ';
+//старый вызов
+
+// export function modals() {
+//   const modalWindows = document.querySelectorAll('.modal');
+//   const modalOpeners = document.querySelectorAll('.js--modal-opener');
+//   const modalOpenersOnLanding = document.querySelectorAll("[href$='modalcall']");
+//
+//   for (let i = 0; i < modalOpeners.length; i++) {
+//     modalOpeners[i].addEventListener('click', () => {
+//       console.log('>>>>scrollY в момент клика: ', window.scrollY);
+//       if (modalOpeners[i].getAttribute('data-program')) {
+//         document.querySelector('label.prog input').value = modalOpeners[i].getAttribute('data-program');
+//       }
+//
+//       //основная часть открытия модалок
+//       if (document.querySelector(modalOpeners[i].dataset.modal)) {
+//         document.querySelector(modalOpeners[i].dataset.modal).classList.add('open');
+//         if(document.querySelector(modalOpeners[i].dataset.modal).querySelector('.select-list__selection-window')){
+//           setTimeout(() => {
+//             document.querySelector(modalOpeners[i].dataset.modal).querySelector('.select-list__selection-window').classList.add('opacity')
+//           },400)
+//         }
+//         document.body.classList.add('modal-opened');
+//         // eslint-disable-next-line no-unused-vars
+//         document.body.classList.add('body-modal-not-remove-else')
+//         // if (document.body.classList.contains('body-modal')) {
+//           document.body.classList.add('body-modal-not-remove')
+//         // }
+//         AddClassBody();
+//       }
+//     });
+//   }
+//
+//   for (let i = 0; i < modalOpenersOnLanding.length; i++) {
+//     modalOpenersOnLanding[i].addEventListener('click', (e) => {
+//       e.stopPropagation();
+//       e.preventDefault();
+//       if (modalOpenersOnLanding[i].getAttribute('data-program')) {
+//         document.querySelector('label.prog input').value = modalOpeners[i].getAttribute('data-program');
+//       }
+//       document.querySelector('#modalcall').classList.add('open');
+//       document.body.classList.add('modal-opened');
+//       return false;
+//     });
+//   }
+//
+//   for (let j = 0; j < modalWindows.length; j++) {
+//     // eslint-disable-next-line func-names
+//     const modalWindowCloser = modalWindows[j].querySelectorAll('.js--modal-closer');
+//     // eslint-disable-next-line no-restricted-syntax
+//     for (const item of modalWindowCloser) {
+//       // eslint-disable-next-line func-names
+//       item.onclick = function () {
+//         closeModal(modalWindows[j].id);
+//       };
+//     }
+//     const modalWindowWrapper = modalWindows[j].querySelector('.modal__wrapper');
+//     if (modalWindowWrapper) {
+//       modalWindowWrapper.onclick = function (w) {
+//         w.stopPropagation();
+//       };
+//     }
+//     modalWindows[j].onclick = function (e) {
+//       if (!e.target.classList.contains('.js--modal')){
+//         closeModal(modalWindows[j].id);
+//       }
+//
+//     };
+//   }
+// }
+
+
+export function modals() {
+  const modalWindows = document.querySelectorAll('.modal');
+  const modalOpeners = document.querySelectorAll('.js--modal-opener');
+
+  // === Только новые кнопки ===
+  for (let i = 0; i < modalOpeners.length; i++) {
+    const opener = modalOpeners[i];
+    if (opener.hasAttribute('data-modal-bound')) continue; // ← защита
+
+    opener.addEventListener('click', (e) => {
+      if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+      }
+      if (e && typeof e.stopPropagation === 'function') {
+        e.stopPropagation();
+      }
+
+
+      if (opener.getAttribute('data-program')) {
+        const input = document.querySelector('label.prog input');
+        if (input) {
+          input.value = opener.getAttribute('data-program');
+        }
+      }
+
+      const modal = document.querySelector(opener.dataset.modal);
+      if (!modal) return;
+
+      modal.classList.add('open');
+      if (modal.querySelector('.select-list__selection-window')) {
+        setTimeout(() => {
+          modal.querySelector('.select-list__selection-window').classList.add('opacity');
+        }, 400);
+      }
+
+      document.body.classList.add('modal-opened', 'body-modal-not-remove-else', 'body-modal-not-remove');
+      AddClassBody();
+    });
+
+    opener.setAttribute('data-modal-bound', 'true'); // ← пометили
+  }
+
+  // === Закрытие — тоже защищаем (если modalWindows могут дублироваться) ===
+  // for (let j = 0; j < modalWindows.length; j++) {
+  //   const modal = modalWindows[j];
+  //   if (modal.hasAttribute('data-closers-bound')) continue;
+  //
+  //   const closers = modal.querySelectorAll('.js--modal-closer');
+  //   closers.forEach(closer => {
+  //     closer.addEventListener('click', () => closeModal(modal.id));
+  //   });
+  //
+  //   const wrapper = modal.querySelector('.modal__wrapper');
+  //   if (wrapper) {
+  //     wrapper.addEventListener('click', e => e.stopPropagation());
+  //   }
+  //
+  //   modal.addEventListener('click', e => {
+  //     if (!e.target.closest('.js--modal')) closeModal(modal.id);
+  //   });
+  //
+  //   modal.setAttribute('data-closers-bound', 'true');
+  // }
+
+  for (let j = 0; j < modalWindows.length; j++) {
+    // eslint-disable-next-line func-names
+    const modalWindowCloser = modalWindows[j].querySelectorAll('.js--modal-closer');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const item of modalWindowCloser) {
+      // eslint-disable-next-line func-names
+      item.onclick = function () {
+        closeModal(modalWindows[j].id);
+      };
+    }
+    const modalWindowWrapper = modalWindows[j].querySelector('.modal__wrapper');
+    if (modalWindowWrapper) {
+      modalWindowWrapper.onclick = function (w) {
+        w.stopPropagation();
+      };
+    }
+    modalWindows[j].onclick = function (e) {
+      if (!e.target.classList.contains('.js--modal')){
+        closeModal(modalWindows[j].id);
+      }
+
+    };
+  }
+}
+
+
+//с делегированием
+
+// Защита от повторной инициализации (глобальная переменная + DOM-атрибут)
+function isInitialized() {
+  return window.__modalsInitialized || document.body.hasAttribute('data-modals-initialized');
+}
+
+function markAsInitialized() {
+  window.__modalsInitialized = true;
+  document.body.setAttribute('data-modals-initialized', 'true');
+}
+
+// --- Основная логика (взята из initModals, но внутри modals) ---
+// export function modals() {
+//   if (isInitialized()) return;
+//   markAsInitialized();
+//
+//   // === 1. Открытие модалок ===
+//   document.addEventListener('click', (e) => {
+//     const opener = e.target.closest('.js--modal-opener[data-modal]');
+//     if (!opener) return;
+//
+//     e.preventDefault();
+//     e.stopPropagation();
+//
+//     const modalSelector = opener.dataset.modal;
+//     const modal = document.querySelector(modalSelector);
+//     if (!modal) {
+//       console.warn(`Модалка не найдена: ${modalSelector}`);
+//       return;
+//     }
+//
+//     // Подстановка программы
+//     const program = opener.dataset.program;
+//     if (program) {
+//       const input = document.querySelector('label.prog input');
+//       if (input) input.value = program;
+//     }
+//
+//     // Открытие
+//     modal.classList.add('open');
+//
+//     // Анимация select-list (если есть)
+//     const selectWindow = modal.querySelector('.select-list__selection-window');
+//     if (selectWindow) {
+//       setTimeout(() => selectWindow.classList.add('opacity'), 400);
+//     }
+//
+//     // Блокировка скролла
+//     document.body.classList.add(
+//       'modal-opened',
+//       'body-modal-not-remove-else',
+//       'body-modal-not-remove'
+//     );
+//     AddClassBody();
+//   });
+//
+//   // === 2. Закрытие модалок ===
+//   document.addEventListener('click', (e) => {
+//     // По кнопке закрытия
+//     const closer = e.target.closest('.js--modal-closer');
+//     if (closer) {
+//       e.stopPropagation();
+//       const modal = closer.closest('.modal');
+//       if (modal) closeModal(modal.id);
+//       return;
+//     }
+//
+//     // По клику вне модалки
+//     const modal = e.target.closest('.modal');
+//     if (modal && !e.target.closest('.modal__wrapper')) {
+//       closeModal(modal.id);
+//     }
+//   });
+//
+//   // === 3. Защита от закрытия при клике внутри модалки ===
+//   document.addEventListener('click', (e) => {
+//     if (e.target.closest('.modal__wrapper')) {
+//       e.stopPropagation();
+//     }
+//   }, true);
+// }
+
+export function catalogModal() {
+  const catalogWrapper = document.querySelector('.js--ct-modal');
+  if (!catalogWrapper) return;
+
+  catalogWrapper.addEventListener('click', (e) => {
+    if (e.target.closest('.js--ct-modal-opener')) {
+      if (e.target.getAttribute('data-program')) {
+        document.querySelector('label.prog input').value = e.target.getAttribute('data-program');
+        document.querySelector('#modalcall').classList.add('open');
+        document.body.classList.add('modal-opened');
+      } else {
+        document.querySelector('#modalcall').classList.add('open');
+        document.body.classList.add('modal-opened');
+      }
+    }
+  });
+}
+-------------------------------------------------------------------------------------------------------
+export default function AddClassBody() {
+  document.body.classList.add('body-modal');
+  document.body.classList.add('body-additional-class');
+  document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+  document.ontouchmove = (e) => {
+    e.preventDefault();
+  };
+}
+
+---------------------------------------------------------------------------------------------
+
+/* eslint-disable */
+export default function RemoveClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal');
+    document.body.classList.remove('body-additional-class');
+  }
+  const scrollY = document.body.style.top;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  window.scrollTo(0, parseInt(scrollY || '0') * -1);
+}
+
+------------------------------------------------------------------
+
+<div class="header__phone js--modal-opener" data-modal="#modal-back-call"></div>
+<div class="header__favourites js--modal-opener" data-modal="#modal-registration-state-service-header"></div>
+<div class="header__call-personal-account-wr user-not-registered js--modal-opener" data-modal="#modal-registration-state-service-header"></div>
+
