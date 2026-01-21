@@ -1,131 +1,523 @@
-/* eslint-disable */
-import AddClassBody from './redesign-site/disallow-body-scrolling';
-import RemoveClassBody from './redesign-site/allow-body-scrolling';
+/**
+ * Избранные материалы
+ */
 
-// Защита от двойной инициализации
-let isInitialized = false;
+/*if (document.readyState !== 'loading') {
+  processBtnBookmark();
+  initCheckboxValidation('.js--btn-registration-state');
+} else {
+  document.addEventListener('DOMContentLoaded', function () {
+    processBtnBookmark();
+    initCheckboxValidation('.js--btn-registration-state');
+  });
+}*/
 
-export function closeModal(id) {
-  const modalWindow = document.getElementById(id);
-  if (!modalWindow) return;
 
-  if (modalWindow.querySelector('.js--stories-body-video video')) {
-    modalWindow.querySelector('.js--stories-body-video video').pause();
-  }
+/*
+События по клику на кнопку Войти через Госуслуги, проверка заполненности чекбоксов с атрибутом required
+перехватываю клик до выполнения onclick, проверяю чекбоксы и если они заполнены запускаю битриксовый обработчик, который сохраняю в переменной до удаления
 
-  const promice = new Promise((resolve) => {
-    if (modalWindow.classList.contains('open')) {
-      if (modalWindow.querySelector('.select-list__selection-window')) {
-        modalWindow.querySelector('.select-list__selection-window').classList.remove('opacity');
-        setTimeout(() => {
-          modalWindow.classList.remove('open');
-        }, 200);
-      } else {
-        modalWindow.classList.remove('open');
-      }
-    } else if (modalWindow.classList.contains('show')) {
-      modalWindow.classList.remove('show');
-    }
+если не заполнены то я изначально убранный обработчик onclick не подставляю в кнопку
+Автор - Станислав Щёголев
+ */
 
-    document.body.classList.remove('modal-opened', 'body-modal-not-remove', 'body-modal-not-remove-else');
 
-    if (!document.body.classList.contains('non-scroll-for-body') && document.body.classList.contains('body-additional-class')) {
-      RemoveClassBody();
-    }
+// import AddClassBody from "../../../../src/js/modules/redesign-site/disallow-body-scrolling";
 
-    resolve();
-  }).then(() =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        // Можно раскомментировать, если нужно убирать body-modal позже
-        // document.body.classList.remove('body-modal');
-        resolve();
-      }, 500);
-    })
-  );
+function runAfterDomReady() {
+  // 1. поставил первым, чтобы точно ничего не перехватывало и я спокойно сохранил onclick в переменную
+  initCheckboxValidation('.js--btn-registration-state');
 
-  return promice;
+  // 2. поставил после моего метода, что-то тут перехватывает клик
+  BOOKMARKS.bindBookmarkButtons() // обработка клика на кнопки "добавить в избранное"
+  BOOKMARKS.updateBookmarkButtons() // получение данных о материалах в избранном и обновление состояния кнопок "добавить в избранное"
 }
 
-export function modals() {
-  if (isInitialized) return;
-  isInitialized = true;
+// Вызов функций
+if (document.readyState !== 'loading') {
+  runAfterDomReady();
+} else {
+  document.addEventListener('DOMContentLoaded', runAfterDomReady);
+}
 
-  // === 1. Открытие модалок — делегирование ===
-  document.addEventListener('click', (e) => {
-    const opener = e.target.closest('.js--modal-opener[data-modal]');
-    if (!opener) return;
+
+/**
+ * Инициализирую валидацию чекбоксов перед вызовом onclick на кнопке.
+ * Показываю ошибку, если обязательные чекбоксы не отмечены.
+ * Добавляю класс input_error к блоку .js--checkbox_wrapper.
+ *
+ */
+function initCheckboxValidation(buttonSelector) {
+  const btn = document.querySelector(buttonSelector);
+  if (!btn) {
+    return;
+  }
+
+  // Сохраняем onclick в пееменную
+  const originalOnclick = btn.getAttribute('onclick');
+  const originalHandler = btn.onclick;
+
+  // Удаляю onclick из элемента, чтобы не срабатывал без валидации
+  btn.removeAttribute('onclick');
+  btn.onclick = null;
+
+  // Определяю общий контейнер (модальное окно)
+  const container = btn.closest('.js--modal') || document;
+  const checkboxWrappers = container.querySelectorAll('.js--checkbox_wrapper');
+  const errorClass = 'js--input__error_required';
+
+
+  function getErrorMessage(checkbox) {
+    return checkbox.getAttribute('data-required-hint') || 'Согласитесь с условиями';
+  }
+
+  function showError(formBlock, message) {
+    if (!formBlock.querySelector('.' + errorClass)) {
+      const error = document.createElement('p');
+      error.className = 'input__error ' + errorClass;
+      error.textContent = message;
+      formBlock.appendChild(error);
+    }
+  }
+
+  function removeError(formBlock) {
+    const error = formBlock.querySelector('.' + errorClass);
+    if (error) {
+      error.remove();
+    }
+  }
+
+  // обработчик клика
+  document.addEventListener('click', function (e) {
+    const targetBtn = document.querySelector(buttonSelector);
+    if (!targetBtn || !e.target.closest(buttonSelector)) {
+      return;
+    }
 
     e.preventDefault();
 
-    const modalSelector = opener.dataset.modal;
-    const modal = document.querySelector(modalSelector);
-    if (!modal) {
-      console.warn(`Модальное окно не найдено: ${modalSelector}`);
+    let hasError = false;
+
+    // Удаляю старые ошибки и классы
+    checkboxWrappers.forEach(function (wrapper) {
+      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+      if (formBlock) {
+        removeError(formBlock);
+      }
+      wrapper.classList.remove('input_error');
+    });
+
+    // Проверяю чекбоксы
+    checkboxWrappers.forEach(function (wrapper) {
+      const checkbox = wrapper.querySelector('input[type="checkbox"]');
+      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
+
+      if (!checkbox || !formBlock) {
+        return;
+      }
+
+      if (checkbox.hasAttribute('required') && !checkbox.checked) {
+        const message = getErrorMessage(checkbox);
+        showError(formBlock, message);
+        wrapper.classList.add('input_error');
+        hasError = true;
+      }
+    });
+
+    if (hasError) {
       return;
     }
 
-    // Подстановка программы
-    if (opener.dataset.program) {
-      const input = document.querySelector('label.prog input');
-      if (input) input.value = opener.dataset.program;
+    // Выполняю клик с битриксовоым методом onclick
+    if (originalHandler && typeof originalHandler === 'function') {
+      console.log('initCheckboxValidation: выполняем originalHandler');
+      originalHandler.call(targetBtn, e);
+    } else if (originalOnclick) {
+      console.log('initCheckboxValidation: выполняем originalOnclick как строку');
+      try {
+        new Function(originalOnclick)();
+      } catch (err) {
+        console.log('initCheckboxValidation: ошибка при выполнении onclick:', err);
+      }
+    } else {
+      console.log('initCheckboxValidation: нечего выполнять — onclick отсутствует');
     }
+  }, true); // useCapture: true
 
-    // Открытие
-    modal.classList.add('open');
-
-    // Анимация select-list
-    const selectWindow = modal.querySelector('.select-list__selection-window');
-    if (selectWindow) {
-      setTimeout(() => {
-        selectWindow.classList.add('opacity');
-      }, 400);
-    }
-
-    // Блокировка скролла
-    document.body.classList.add(
-      'modal-opened',
-      'body-modal-not-remove-else',
-      'body-modal-not-remove'
-    );
-    AddClassBody();
-  });
-
-  // === 2. Закрытие модалок — делегирование ===
-  document.addEventListener('click', (e) => {
-    // Кнопка закрытия
-    const closer = e.target.closest('.js--modal-closer');
-    if (closer) {
-      const modal = closer.closest('.modal');
-      if (modal) closeModal(modal.id);
-      return;
-    }
-
-    // Клик по фону (вне содержимого)
-    const modal = e.target.closest('.modal');
-    if (modal && !e.target.closest('.js--modal, .modal__wrapper')) {
-      closeModal(modal.id);
-    }
-  });
 }
 
-// Если catalogModal тоже должен работать с динамикой — его тоже нужно делегировать
-export function catalogModal() {
-  // Просто делегируем клик на весь документ
-  document.addEventListener('click', (e) => {
-    const opener = e.target.closest('.js--ct-modal-opener');
-    if (!opener) return;
 
-    const program = opener.getAttribute('data-program');
-    const input = document.querySelector('label.prog input');
-    if (program && input) {
-      input.value = program;
+/**
+ * Методы для работы с кнопками "Добавить в избранное"
+ */
+const BOOKMARKS = {
+  debugLog: true, // Для отладки. TODO Убрать после отладки
+  showButtonHints: true,  // Временное решение для отображения результата операций с Избранным. TODO Обсудить и либо переделать, либо убрать
+
+  /**
+   * Возвращает все кнопки "добавить в избранное" без валидации
+   * @returns {NodeListOf<Element>}
+   */
+  getBookmarkButtonsUnvalidatedAll() {
+    return document.querySelectorAll('.js--btn-bookmark')
+  },
+
+  /**
+   * Возвращает все кнопки "добавить в избранное"
+   * @returns {NodeListOf<Element>}
+   */
+  getBookmarkButtonsAll() {
+    return document.querySelectorAll(`.js--btn-bookmark[data-iblockid][data-elementid]`)
+  },
+
+  /**
+   * Возвращает набор одинаковых кнопок одного и того же материала (Например на странице льготной гос-программы две кнопки: для десктопа и мобилки)
+   * @param iblockId
+   * @param elementId
+   * @returns {*}
+   */
+  getSameBookmarkButtons(iblockId, elementId) {
+    return document.querySelectorAll(`.js--btn-bookmark[data-iblockid="${iblockId}"][data-elementid="${elementId}"]`)
+  },
+
+  /**
+   * События для кнопки "Добавить в Избранное"
+   */
+  bindBookmarkButtons() {
+    try {
+      // Обрабатываются ВСЕ кнопки "Добавить в Избранное" на странице на случай, если захотят их использовать не только на детальной странице
+      const buttons = BOOKMARKS.getBookmarkButtonsUnvalidatedAll()
+      if (buttons) {
+        buttons.forEach(function (button, index) {
+          if (!button.dataset?.iblockid) {
+            if (BOOKMARKS.debugLog) console.warn(`У ${index + 1}-й кнопки "Добавить в Избранное" не указан атрибут iblockid`)
+            return;
+          }
+          if (!button.dataset?.elementid) {
+            if (BOOKMARKS.debugLog) console.warn(`У ${index + 1}-й кнопки "Добавить в Избранное" не указан атрибут elementid`)
+            return;
+          }
+
+          // Обработка клика
+          button.addEventListener('click', function (e) {
+            e.preventDefault()
+            e.stopPropagation()
+            const iblockId = this.dataset?.iblockid
+            const elementId = this.dataset?.elementid
+            if (!(iblockId && elementId)) {
+              if (BOOKMARKS.debugLog) console.warn('У кнопки "Добавить в Избранное" не указаны атрибуты', button);
+              return;
+            }
+
+            // Троебуется авторизация
+            if (this.classList.contains('js--need-auth')) {
+              if (BOOKMARKS.debugLog) console.log('Кнопка "Добавить в Избранное", нужна авторизация')
+              BOOKMARKS.openModalAuth()
+              return
+            }
+
+            if (this.classList.contains('active')) {
+
+
+              // Удаление из избранного
+              if (BOOKMARKS.debugLog) console.log('Кнопка "Добавить в Избранное", удаление материала')
+              fetch('/api/local/personal/bookmarks/', {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-bitrix-csrf-token': window.BX.bitrix_sessid(),
+                },
+                body: JSON.stringify({
+                  iblockId: iblockId,
+                  elementId: elementId
+                })
+              })
+                .then(response => {
+                  if (BOOKMARKS.debugLog) console.log('response', response)
+                  if (!response.ok) {
+                    BOOKMARKS.processResponseStatus(response.status, BOOKMARKS.getBookmarkButtonsAll(),true)
+
+                    if (BOOKMARKS.showButtonHints) {
+                      response.json().then(data => {
+                        const sameButtons = BOOKMARKS.getSameBookmarkButtons(iblockId, elementId)
+                        if (sameButtons) {
+                          sameButtons.forEach((button) => {
+                            showButtonHint(button, 'Ошибка при добавлении в избранное' + (BOOKMARKS.debugLog ? `. [${data?.code}] ${data?.description}` : ''), 'error')
+                          })
+                        }
+                      })
+                    }
+
+                    throw new Error('Сетевая ошибка: ' + response.status + ' ' + response.statusText)
+                  }
+                  return response.json()
+                })
+                .then(data => {
+                  if (BOOKMARKS.debugLog) console.log('Кнопка "Добавить в Избранное", Запрос выполнен, ответ:', data)
+
+                  // Меняем все одинаковые кнопки одного и того же материала (Например на странице льготной гос-программы две кнопки: для десктопа и мобилки)
+                  const sameButtons = BOOKMARKS.getSameBookmarkButtons(iblockId, elementId)
+                  if (sameButtons) {
+                    sameButtons.forEach((button) => {
+                      BOOKMARKS.changeBookmarkButtonState(button, 'removed')
+                      if (BOOKMARKS.showButtonHints) {
+                        showButtonHint(button, 'Удалено из избранного')
+                      }
+                    })
+                  }
+                })
+                .catch(error => {
+                  if (BOOKMARKS.debugLog) console.warn('Кнопка "Добавить в Избранное", Ошибка:', error)
+                })
+            } else {
+
+
+              // Добавление в избранное
+              if (BOOKMARKS.debugLog) console.log('Кнопка "Добавить в Избранное", добавление материала')
+              fetch('/api/local/personal/bookmarks/', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-bitrix-csrf-token': window.BX.bitrix_sessid(),
+                },
+                body: JSON.stringify({
+                  iblockId: iblockId,
+                  elementId: elementId
+                })
+              })
+                .then(response => {
+                  if (BOOKMARKS.debugLog) console.log('response', response)
+                  if (!response.ok) {
+                    BOOKMARKS.processResponseStatus(response.status, BOOKMARKS.getBookmarkButtonsAll(),true)
+                    if (BOOKMARKS.showButtonHints) {
+                      response.json().then(data => {
+                        const sameButtons = BOOKMARKS.getSameBookmarkButtons(iblockId, elementId)
+                        if (sameButtons) {
+                          sameButtons.forEach((button) => {
+                            showButtonHint(button, 'Ошибка при добавлении в избранное' + (BOOKMARKS.debugLog ? `. [${data?.code}] ${data?.description}` : ''), 'error')
+                          })
+                        }
+                      })
+                    }
+                    throw new Error('Сетевая ошибка: ' + response.status + ' ' + response.statusText)
+                  }
+                  return response.json()
+                })
+                .then(data => {
+                  if (BOOKMARKS.debugLog) console.log('Кнопка "Добавить в Избранное", Запрос выполнен, ответ:', data)
+
+                  // Меняем все одинаковые кнопки одного и того же материала (Например на странице льготной гос-программы две кнопки: для десктопа и мобилки)
+                  const sameButtons = BOOKMARKS.getSameBookmarkButtons(iblockId, elementId)
+                  if (sameButtons) {
+                    sameButtons.forEach((button) => {
+                      BOOKMARKS.changeBookmarkButtonState(button, 'added')
+                      if (BOOKMARKS.showButtonHints) {
+                        showButtonHint(button, 'Добавлено в избранное')
+                      }
+                    })
+                  }
+                })
+                .catch(error => {
+                  if (BOOKMARKS.debugLog) console.warn('Кнопка "Добавить в Избранное", Ошибка:', error)
+                })
+            }
+          })
+        })
+      }
+    } catch (e) {
+      console.warn(e)
     }
 
-    const modal = document.querySelector('#modalcall');
-    if (modal) {
-      modal.classList.add('open');
-      document.body.classList.add('modal-opened');
+    /**
+     * Временное решение для отображения результата операций с Избранным. TODO Обсудить и либо переделать, либо убрать
+     * @param el - элемент с кнопкой Избранного
+     * @param message - текст сообщения
+     * @param type - тип хинта - success | warning | error
+     */
+    function showButtonHint(el, message, type = 'success') {
+      if (el) {
+        let timeout = 2000
+        const hint = document.createElement('div');
+        hint.dataset.iblockid = el.dataset.iblockid
+        hint.dataset.elementId = el.dataset.elementId
+        hint.className = 'button_hint ' + type;
+        hint.textContent = message;
+        hint.style.position = 'absolute'
+        hint.style.marginTop = '70px'
+        hint.style.fontSize = 'small'
+        hint.style.marginLeft = '20px'
+        hint.style.transition = '0.5s'
+        hint.style.opacity = 0
+
+        switch (type) {
+          case 'error':
+            hint.style.color = 'red'
+            timeout = 7000
+            break
+          case 'warning':
+            hint.style.color = 'orange'
+            timeout = 5000
+            break
+          case 'success':
+            hint.style.color = 'green'
+            break
+        }
+        el.parentElement.append(hint);
+        setTimeout(function (hint) {
+          hint.style.opacity = 1
+        }, 10, hint)
+        setTimeout(function (hint) {
+          hint.style.opacity = 0
+          setTimeout(function (hint) {
+            hint.remove()
+          }, 1000, hint)
+        }, timeout, hint)
+      }
     }
-  });
+  },
+
+  /**
+   * Обрабатывает ответ API
+   * @param status
+   * @param buttons
+   * @param bShowModalAuth
+   */
+  processResponseStatus(status, buttons,bShowModalAuth = false) {
+    if (status === 401) {
+      if (buttons) {
+        buttons.forEach(button => {
+          BOOKMARKS.changeBookmarkButtonState(button, 'auth')
+        })
+      }
+      if (bShowModalAuth){
+        BOOKMARKS.openModalAuth()
+      }
+      throw new Error('Требуется авторизация')
+    }
+
+    if (status === 403) {
+      if (buttons) {
+        buttons.forEach(button => {
+          BOOKMARKS.changeBookmarkButtonState(button, 'auth')
+        })
+      }
+      if (bShowModalAuth){
+        BOOKMARKS.openModalAuth()
+      }
+      throw new Error('Нужно обновить страницу')
+    }
+  },
+
+
+  /**
+   * Получает актуальные данные о материалах в Избранном и обновляет состояние кнопок "Добавить в избранное"
+   */
+  updateBookmarkButtons() {
+    const bookmarkButtonsValidAll = BOOKMARKS.getBookmarkButtonsAll()
+    if (!bookmarkButtonsValidAll) {
+      if (BOOKMARKS.debugLog) console.log('Кнопки "Добавить в избранное не найдены на странице')
+      return
+    }
+    fetch('/api/local/personal/bookmarks/', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-bitrix-csrf-token': window.BX.bitrix_sessid(),
+      },
+    })
+      .then(response => {
+        if (!response.ok) {
+
+          BOOKMARKS.processResponseStatus(response.status, bookmarkButtonsValidAll)
+
+          bookmarkButtonsValidAll.forEach(button => {
+            BOOKMARKS.changeBookmarkButtonState(button, 'error')
+          })
+          throw new Error('Получение всех материалов из Избранного, Сетевая ошибка: ' + response.status + ' ' + response.statusText)
+        }
+        return response.json()
+      })
+      .then(data => {
+        if (BOOKMARKS.debugLog) console.log('Получение всех материалов из Избранного, Запрос выполнен, ответ:', data)
+        if (data && data?.result) {
+          bookmarkButtonsValidAll.forEach(button => {
+            BOOKMARKS.changeBookmarkButtonState(button) // очищаем состояние всех кнопок "Добавить в Избранное"
+          })
+          const iblockIds = Object.keys(data.result);
+          iblockIds.forEach(iblockId => {
+            const elementIds = Object.keys(data.result[iblockId]);
+            elementIds.forEach(elementId => {
+              if (elementId) {
+                const sameButtons = BOOKMARKS.getSameBookmarkButtons(iblockId, elementId)
+                if (sameButtons) {
+                  sameButtons.forEach((button) => {
+                    BOOKMARKS.changeBookmarkButtonState(button, 'added')
+                  })
+                }
+              }
+            })
+          })
+        }
+      })
+      .catch(error => {
+        if (BOOKMARKS.debugLog) console.warn('Получение всех материалов из Избранного, Ошибка:', error)
+      })
+  },
+
+  /**
+   * Обновляет внешний вид кнопок "Добавить в избранное"
+   * @param button
+   * @param state
+   */
+  changeBookmarkButtonState(button, state = '') {
+    if (button) {
+      switch (state) {
+        case 'auth':
+          button.classList.remove('active')
+          button.classList.add('js--need-auth')
+          // button.innerText = 'Добавить в избранное *'
+          break
+        case 'added':
+          button.classList.remove('js--need-auth')
+          button.classList.add('active')
+          // button.innerText = 'Добавлено в избранное!!'
+          break
+        case 'error':
+          button.classList.remove('active')
+          // button.innerText = 'Добавить в избранное(('
+          break
+        case 'removed':
+        default:
+          button.classList.remove('js--need-auth')
+          button.classList.remove('active')
+          // button.innerText = 'Добавить в избранное!'
+          break
+      }
+    }
+  },
+
+  /**
+   * Открывает модальное окно авторизации
+   */
+  openModalAuth() {
+    const authModal = document.querySelector('#modal-registration-state-service')
+    if (authModal) {
+      authModal.classList.add('open');
+      if (document.body.classList.contains('body-modal')) {
+        document.body.classList.add('body-modal-not-remove')
+      }
+
+      // AddClassBody
+      document.body.classList.add('body-modal');
+      document.body.classList.add('body-additional-class');
+      document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+      document.ontouchmove = (e) => {
+        e.preventDefault();
+      };
+    }
+  }
+
 }
+
+
+
