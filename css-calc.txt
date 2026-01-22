@@ -1,130 +1,343 @@
 /* eslint-disable */
-import AddClassBody from './redesign-site/disallow-body-scrolling';
-import RemoveClassBody from './redesign-site/allow-body-scrolling';
+import dropDown from '../dropDown';
+import AddClassBody from './disallow-body-scrolling';
+import RemoveClassBody from './allow-body-scrolling';
 
-// Защита от двойной инициализации
-let isInitialized = false;
+function dropDownSubMenu() {
+  const menuHeaderBtn = document.querySelectorAll('.js--mobile-menu-btn')
+  for (let item of menuHeaderBtn) {
+    item.onclick = (el) => {
+      if (!el.target.classList.contains('js--mobile-menu-link')) {
+        dropDown(el.target,0)
+      }
+    }
+  }
+}
 
-export function closeModal(id) {
-  const modalWindow = document.getElementById(id);
-  if (!modalWindow) return;
+function callMobileMenu() {
+  const btn = document.querySelector('.js--header-burger');
+  const mobileMenu = document.querySelector('.js--mobile-menu');
+  const containerYandexSearch = document.querySelector('.js--yandex-search');
+  if (btn && btn.closest('.js--page-content')) {
+    btn.onclick = (el) => {
+      const header = btn.closest('.js--page-content').querySelector('.header');
+      if (header) {
+        header.classList.toggle('z-ind');
+      }
 
-  if (modalWindow.querySelector('.js--stories-body-video video')) {
-    modalWindow.querySelector('.js--stories-body-video video').pause();
+      if (containerYandexSearch) {
+        if (containerYandexSearch.classList.contains('active') && document.body.classList.contains('body-modal') && document.body.classList.contains('body-additional-class')) {
+          AddClassBody();
+        }
+        else if (!containerYandexSearch.classList.contains('active')
+          && !document.body.classList.contains('body-modal')
+          && !document.body.classList.contains('body-additional-class')) {
+          AddClassBody();
+        }
+        else if (!containerYandexSearch.classList.contains('active')
+          && document.body.classList.contains('body-modal')
+          && document.body.classList.contains('body-additional-class')) {
+          RemoveClassBody();
+        }
+      }
+      else {
+        if (document.body.classList.contains('body-modal') && document.body.classList.contains('body-additional-class')) {
+          RemoveClassBody()
+        }
+
+
+        else if (!document.body.classList.contains('body-modal') && !document.body.classList.contains('body-additional-class')){
+          AddClassBody();
+        }
+      }
+
+      // document.body.classList.toggle('body-modal');
+      // document.body.classList.toggle('body-additional-class');
+      // btn.closest('.header').classList.toggle('not-border')
+      // btn.classList.toggle('open');
+      if (btn.classList.contains('open')) {
+        btn.classList.remove('open')
+      } else {
+        btn.classList.add('open')
+      }
+
+      if (mobileMenu) {
+        // mobileMenu.classList.toggle('active');
+        if (mobileMenu.classList.contains('active')) {
+          mobileMenu.classList.remove('active')
+          document.body.classList.remove('non-scroll-for-body')
+        } else {
+          mobileMenu.classList.add('active')
+          document.body.classList.add('non-scroll-for-body')
+        }
+      }
+
+
+    };
+  }
+}
+//Чтобы было настраивать проще
+
+// function resizeWindowCloseMobileMenu(){
+//   const containerYandexSearch = document.querySelector('.js--yandex-search');
+//   const btn = document.querySelector('.js--header-burger');
+//   const mobileMenu = document.querySelector('.js--mobile-menu');
+//   const header = btn.closest('.js--page-content').querySelector('.header');
+//   window.addEventListener('resize', ()=>{
+//
+//     if (window.innerWidth > 1225) {
+//       if (mobileMenu && mobileMenu.classList.contains('active')) {
+//         mobileMenu.classList.remove('active')
+//       }
+//       if (btn && btn.classList.contains('open')) {
+//         btn.classList.remove('open')
+//       }
+//       if (header && header.classList.contains('z-ind')){
+//         header.classList.remove('z-ind');
+//       }
+//       if (mobileMenu) {
+//         const menu_accordeon = mobileMenu.querySelectorAll('.header__mobile-menu-item.js-accordion-parent')
+//         for (let item of menu_accordeon) {
+//           item.classList.remove('active')
+//           if (item.querySelector('.js-accordion-body')) {
+//             item.querySelector('.js-accordion-body').setAttribute('style', `max-height:0;`)
+//           }
+//         }
+//       }
+//
+//
+//       if ((containerYandexSearch&&!containerYandexSearch.classList.contains('active'))
+//         && document.body.classList.contains('body-modal')
+//         && document.body.classList.contains('body-additional-class')) {
+//         RemoveClassBody();
+//       }
+//       if (!containerYandexSearch
+//         && document.body.classList.contains('body-modal')
+//         && document.body.classList.contains('body-additional-class')
+//         && !document.body.classList.contains('body-modal-not-remove')) {
+//         RemoveClassBody();
+//       }
+//     }
+//   });
+// }
+
+// новый метод со старой логткой
+
+// function resizeWindowCloseMobileMenu(){
+//   let isMobileMenuOpen = false;
+//   const btn = document.querySelector('.js--header-burger');
+//   const mobileMenu = document.querySelector('.js--mobile-menu');
+//   if (!btn || !mobileMenu) return;
+//
+//   let header = null;
+//   const pageContent = btn.closest && btn.closest('.js--page-content');
+//   if (pageContent) {
+//     header = pageContent.querySelector('.header');
+//   }
+//
+//   const containerYandexSearch = document.querySelector('.js--yandex-search');
+//
+//   // === Обновление состояния меню (с небольшим debounce для iOS) ===
+//   let updateDebounceId;
+//   const updateMenuState = () => {
+//     clearTimeout(updateDebounceId);
+//     updateDebounceId = setTimeout(() => {
+//       isMobileMenuOpen = mobileMenu.classList.contains('active');
+//     }, 10); // 10ms — достаточно для анимаций и стабильности iOS
+//   };
+//
+//   updateMenuState(); // инициализация
+//
+//   const observer = new MutationObserver(updateMenuState);
+//   observer.observe(mobileMenu, { attributes: true, attributeFilter: ['class'] });
+//   observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
+//
+//   // === Закрытие меню — совместимая версия ===
+//   const closeMobileMenuIfOpen = () => {
+//     // Двойная проверка: на случай race condition в iOS
+//     const currentlyOpen = mobileMenu.classList.contains('active');
+//     if (!isMobileMenuOpen && !currentlyOpen) return;
+//
+//     mobileMenu.classList.remove('active');
+//     btn.classList.remove('open');
+//     if (header && header.classList.contains('z-ind')) {
+//       header.classList.remove('z-ind');
+//     }
+//
+//     // Аккордеоны
+//     const accordions = mobileMenu.querySelectorAll('.header__mobile-menu-item.js-accordion-parent');
+//     for (let i = 0; i < accordions.length; i++) {
+//       const item = accordions[i];
+//       item.classList.remove('active');
+//       const body = item.querySelector('.js-accordion-body');
+//       if (body) body.style.maxHeight = '0';
+//     }
+//
+//     // Удаление классов с body
+//     const body = document.body;
+//     const hasModalClasses = body.classList.contains('body-modal') && body.classList.contains('body-additional-class');
+//     if (hasModalClasses) {
+//       const shouldRemove =
+//         (containerYandexSearch && !containerYandexSearch.classList.contains('active')) ||
+//         (!containerYandexSearch && !body.classList.contains('body-modal-not-remove'));
+//
+//       if (shouldRemove) {
+//         // Проверяем, что функция существует (защита от ошибок загрузки)
+//         if (typeof RemoveClassBody === 'function') {
+//           RemoveClassBody();
+//         } else if (typeof window.RemoveClassBody === 'function') {
+//           window.RemoveClassBody();
+//         }
+//       }
+//     }
+//
+//     isMobileMenuOpen = false;
+//   };
+//
+//   // === matchMedia — безопасно, без полифиллов нужно ===
+//   const mediaQuery = window.matchMedia('(min-width: 1225px)');
+//
+//   const handleMediaChange = function (e) {
+//     if (e.matches) {
+//       closeMobileMenuIfOpen();
+//     }
+//   };
+//
+//   // Совместимая подписка (для старых браузеров, где addEventListener не поддерживается у MediaQueryList)
+//   if (mediaQuery.addEventListener) {
+//     mediaQuery.addEventListener('change', handleMediaChange);
+//   } else if (mediaQuery.addListener) {
+//     // устаревший API (IE10, очень старые Safari) — но на iOS 13+ не нужен
+//     mediaQuery.addListener(handleMediaChange);
+//   }
+//
+//   // Инициализация: проверяем текущее состояние
+//   if (mediaQuery.matches) {
+//     closeMobileMenuIfOpen();
+//   }
+// }
+
+function resizeWindowCloseMobileMenu(){
+  console.log('Переменная');
+  let isMobileMenuOpen = false;
+  const btn = document.querySelector('.js--header-burger');
+  const mobileMenu = document.querySelector('.js--mobile-menu');
+  if (!btn || !mobileMenu) return;
+
+  // === Безопасное получение header (без optional chaining) ===
+  let header = null;
+  const pageContent = btn.closest && btn.closest('.js--page-content');
+  if (pageContent) {
+    header = pageContent.querySelector('.header');
   }
 
-  const promice = new Promise((resolve) => {
-    if (modalWindow.classList.contains('open')) {
-      if (modalWindow.querySelector('.select-list__selection-window')) {
-        modalWindow.querySelector('.select-list__selection-window').classList.remove('opacity');
-        setTimeout(() => {
-          modalWindow.classList.remove('open');
-        }, 200);
-      } else {
-        modalWindow.classList.remove('open');
+  const containerYandexSearch = document.querySelector('.js--yandex-search');
+
+  // === Отслеживание состояния меню с debounce (для iOS-стабильности) ===
+  let updateDebounceId;
+  const updateMenuState = () => {
+    clearTimeout(updateDebounceId);
+    updateDebounceId = setTimeout(() => {
+      isMobileMenuOpen = mobileMenu.classList.contains('active');
+    }, 10);
+  };
+
+  updateMenuState();
+  const observer = new MutationObserver(updateMenuState);
+  observer.observe(mobileMenu, { attributes: true, attributeFilter: ['class'] });
+  observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
+
+  // === Функция закрытия — с вашими условиями ===
+  const closeMobileMenuIfOpen = () => {
+    const body = document.body;
+
+    console.log('Вторая переменная');
+
+    // 🔹 Условие из вашего кода: не закрываем, если стоит 'body-modal-not-remove-else'
+    if (
+      !isMobileMenuOpen ||
+      !mobileMenu.classList.contains('active') ||
+      body.classList.contains('body-modal-not-remove-else')
+    ) {
+      return;
+    }
+
+    // 🔹 Закрываем меню и кнопку
+    mobileMenu.classList.remove('active');
+    if (btn.classList.contains('open')) {
+      btn.classList.remove('open');
+    }
+    if (header && header.classList.contains('z-ind')) {
+      header.classList.remove('z-ind');
+    }
+
+    // 🔹 Сворачиваем аккордеоны (ваша логика)
+    const accordions = mobileMenu.querySelectorAll('.header__mobile-menu-item.js-accordion-parent');
+    for (let i = 0; i < accordions.length; i++) {
+      const item = accordions[i];
+      item.classList.remove('active');
+      const bodyEl = item.querySelector('.js-accordion-body');
+      if (bodyEl) {
+        bodyEl.setAttribute('style', 'max-height:0;');
       }
-    } else if (modalWindow.classList.contains('show')) {
-      modalWindow.classList.remove('show');
     }
 
-    document.body.classList.remove('modal-opened', 'body-modal-not-remove', 'body-modal-not-remove-else');
+    // 🔹 Условия для RemoveClassBody — как у вас (два варианта)
+    const hasModalClasses = body.classList.contains('body-modal') && body.classList.contains('body-additional-class');
+    if (hasModalClasses) {
+      // Вариант 1: есть containerYandexSearch, но он не активен
+      if (
+        containerYandexSearch &&
+        !containerYandexSearch.classList.contains('active')
+      ) {
+        safeCallRemoveClassBody();
+      }
+      // Вариант 2: containerYandexSearch вообще нет
+      else if (!containerYandexSearch) {
+        safeCallRemoveClassBody();
+      }
+    }
 
-    if (!document.body.classList.contains('non-scroll-for-body') && document.body.classList.contains('body-additional-class')) {
+    isMobileMenuOpen = false;
+  };
+
+  // Вспомогательная функция — безопасный вызов
+  function safeCallRemoveClassBody() {
+    if (typeof RemoveClassBody === 'function') {
+
       RemoveClassBody();
+      document.body.classList.remove('non-scroll-for-body')
+    } else if (typeof window.RemoveClassBody === 'function') {
+      window.RemoveClassBody();
+      document.body.classList.remove('non-scroll-for-body')
     }
 
-    resolve();
-  }).then(() =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        // Можно раскомментировать, если нужно убирать body-modal позже
-        // document.body.classList.remove('body-modal');
-        resolve();
-      }, 500);
-    })
-  );
+  }
 
-  return promice;
+  // === Подписка через matchMedia (эффективно + iOS-safe) ===
+  const mediaQuery = window.matchMedia('(min-width: 1225px)');
+
+  const handleMediaChange = (e) => {
+    if (e.matches) {
+      closeMobileMenuIfOpen();
+    }
+  };
+
+  // Совместимая подписка
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handleMediaChange);
+  } else if (mediaQuery.addListener) {
+    mediaQuery.addListener(handleMediaChange); // legacy, но для полной поддержки
+  }
+
+  // Инициализация при старте
+  if (mediaQuery.matches) {
+    closeMobileMenuIfOpen();
+  }
 }
 
-export function modals() {
-  if (isInitialized) return;
-  isInitialized = true;
-
-  // === 1. Открытие модалок — делегирование ===
-  document.addEventListener('click', (e) => {
-    const opener = e.target.closest('.js--modal-opener[data-modal]');
-    if (!opener) return;
-
-    e.preventDefault();
-
-    const modalSelector = opener.dataset.modal;
-    const modal = document.querySelector(modalSelector);
-    if (!modal) {
-      return;
-    }
-
-    // Подстановка программы
-    if (opener.dataset.program) {
-      const input = document.querySelector('label.prog input');
-      if (input) input.value = opener.dataset.program;
-    }
-
-    // Открытие
-    modal.classList.add('open');
-
-    // Анимация select-list
-    const selectWindow = modal.querySelector('.select-list__selection-window');
-    if (selectWindow) {
-      setTimeout(() => {
-        selectWindow.classList.add('opacity');
-      }, 400);
-    }
-
-    // Блокировка скролла
-    document.body.classList.add(
-      'modal-opened',
-      'body-modal-not-remove-else',
-      'body-modal-not-remove'
-    );
-    AddClassBody();
-  });
-
-  // === 2. Закрытие модалок — делегирование ===
-  document.addEventListener('click', (e) => {
-    // Кнопка закрытия
-    const closer = e.target.closest('.js--modal-closer');
-    if (closer) {
-      const modal = closer.closest('.modal');
-      if (modal) closeModal(modal.id);
-      return;
-    }
-
-    // Клик по фону (вне содержимого)
-    const modal = e.target.closest('.modal');
-    if (modal && !e.target.closest('.js--modal, .modal__wrapper')) {
-      closeModal(modal.id);
-    }
-  });
-}
-
-// Если catalogModal тоже должен работать с динамикой — его тоже нужно делегировать
-export function catalogModal() {
-  // Просто делегируем клик на весь документ
-  document.addEventListener('click', (e) => {
-    const opener = e.target.closest('.js--ct-modal-opener');
-    if (!opener) return;
-
-    const program = opener.getAttribute('data-program');
-    const input = document.querySelector('label.prog input');
-    if (program && input) {
-      input.value = program;
-    }
-
-    const modal = document.querySelector('#modalcall');
-    if (modal) {
-      modal.classList.add('open');
-      document.body.classList.add('modal-opened');
-    }
-  });
+export default function headerMenu() {
+  dropDownSubMenu();
+  callMobileMenu();
+  resizeWindowCloseMobileMenu();
 }
