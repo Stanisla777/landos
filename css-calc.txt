@@ -107,3 +107,65 @@ function resizeWindowCloseMobileMenu(){
     closeMobileMenuIfOpen();
   }
 }
+
+-----------------------------
+
+export function closeModal(id) {
+  console.log('=== closeModal вызвана для id:', id);
+  const modalWindow = document.getElementById(id);
+  if (!modalWindow) return;
+
+  if (modalWindow.querySelector('.js--stories-body-video video')) {
+    modalWindow.querySelector('.js--stories-body-video video').pause();
+  }
+
+  const promice = new Promise((resolve) => {
+    if (modalWindow.classList.contains('open')) {
+      console.log('Закрываем модалку open');
+      if (modalWindow.querySelector('.select-list__selection-window')) {
+        modalWindow.querySelector('.select-list__selection-window').classList.remove('opacity');
+        setTimeout(() => {
+          modalWindow.classList.remove('open');
+        }, 200);
+      } else {
+        modalWindow.classList.remove('open');
+      }
+    } else if (modalWindow.classList.contains('show')) {
+      console.log('Закрываем модалку show');
+      modalWindow.classList.remove('show');
+    }
+
+    console.log('Удаляем классы модалки с body');
+    document.body.classList.remove('modal-opened', 'body-modal-not-remove', 'body-modal-not-remove-else');
+
+    // 🔹 ИСПРАВЛЕНИЕ: Проверяем, открыто ли мобильное меню
+    const mobileMenu = document.querySelector('.js--mobile-menu');
+    const isMobileMenuOpen = mobileMenu && mobileMenu.classList.contains('active');
+    console.log('Мобильное меню открыто?', isMobileMenuOpen);
+    console.log('Классы body перед восстановлением:', document.body.className);
+
+    // Восстанавливаем скролл только если мобильное меню закрыто
+    if (!isMobileMenuOpen && !document.body.classList.contains('non-scroll-for-body') && document.body.classList.contains('body-additional-class')) {
+      console.log('Условие восстановления скролла выполнено');
+      console.log('Вызываем RemoveClassBody из closeModal');
+      if (typeof RemoveClassBody === 'function') {
+        RemoveClassBody();
+      }
+    } else {
+      console.log('Условие восстановления скролла НЕ выполнено');
+      console.log('isMobileMenuOpen:', isMobileMenuOpen);
+      console.log('non-scroll-for-body:', document.body.classList.contains('non-scroll-for-body'));
+      console.log('body-additional-class:', document.body.classList.contains('body-additional-class'));
+    }
+
+    resolve();
+  }).then(() =>
+    new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 500);
+    })
+  );
+
+  return promice;
+}
