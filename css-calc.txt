@@ -1,4 +1,164 @@
 /**
+ * События для кнопки "Добавить в Избранное" — ДЕЛЕГИРОВАННАЯ ВЕРСИЯ
+ */
+bindBookmarkButtons() {
+  // Удаляем предыдущий обработчик, если он был (защита от дублей)
+  if (this._bookmarkClickHandler) {
+    document.removeEventListener('click', this._bookmarkClickHandler);
+  }
+
+  // Создаём новый обработчик
+  this._bookmarkClickHandler = (e) => {
+    const button = e.target.closest('.js--btn-bookmark');
+    if (!button) return;
+
+    // Проверяем наличие обязательных атрибутов
+    if (!button.dataset?.iblockid) {
+      if (this.debugLog) console.warn('У кнопки "Добавить в Избранное" не указан атрибут iblockid', button);
+      return;
+    }
+    if (!button.dataset?.elementid) {
+      if (this.debugLog) console.warn('У кнопки "Добавить в Избранное" не указан атрибут elementid', button);
+      return;
+    }
+
+    // 🔥 КРИТИЧЕСКИ ВАЖНО: отменяем переход по ссылке (если кнопка внутри <a>)
+    e.preventDefault();
+    e.stopPropagation();
+
+    const iblockId = button.dataset.iblockid;
+    const elementId = button.dataset.elementid;
+
+    // Требуется авторизация
+    if (button.classList.contains('js--need-auth')) {
+      if (this.debugLog) console.log('Кнопка "Добавить в Избранное", нужна авторизация');
+      this.openModalAuth();
+      return;
+    }
+
+    if (button.classList.contains('active')) {
+      // Удаление из избранного
+      if (this.debugLog) console.log('Кнопка "Добавить в Избранное", удаление материала');
+      fetch('/api/local/personal/bookmarks/', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-bitrix-csrf-token': window.BX.bitrix_sessid(),
+        },
+        body: JSON.stringify({
+          iblockId: iblockId,
+          elementId: elementId
+        })
+      })
+        .then(response => {
+          if (this.debugLog) console.log('response', response);
+          if (!response.ok) {
+            this.processResponseStatus(response.status, this.getBookmarkButtonsAll(), true);
+
+            if (this.showButtonHints) {
+              response.json().then(data => {
+                const sameButtons = this.getSameBookmarkButtons(iblockId, elementId);
+                if (sameButtons) {
+                  sameButtons.forEach((btn) => {
+                    this.showButtonHint(btn, 'Ошибка при добавлении в избранное' + (this.debugLog ? `. [${data?.code}] ${data?.description}` : ''), 'error');
+                  });
+                }
+              });
+            }
+            throw new Error('Сетевая ошибка: ' + response.status + ' ' + response.statusText);
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (this.debugLog) console.log('Кнопка "Добавить в Избранное", Запрос выполнен, ответ:', data);
+          const sameButtons = this.getSameBookmarkButtons(iblockId, elementId);
+          if (sameButtons) {
+            sameButtons.forEach((btn) => {
+              this.changeBookmarkButtonState(btn, 'removed');
+              if (this.showButtonHints) {
+                this.showButtonHint(btn, 'Удалено из избранного');
+              }
+            });
+          }
+        })
+        .catch(error => {
+          if (this.debugLog) console.warn('Кнопка "Добавить в Избранное", Ошибка:', error);
+        });
+    } else {
+      // Добавление в избранное
+      if (this.debugLog) console.log('Кнопка "Добавить в Избранное", добавление материала');
+      fetch('/api/local/personal/bookmarks/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-bitrix-csrf-token': window.BX.bitrix_sessid(),
+        },
+        body: JSON.stringify({
+          iblockId: iblockId,
+          elementId: elementId
+        })
+      })
+        .then(response => {
+          if (this.debugLog) console.log('response', response);
+          if (!response.ok) {
+            this.processResponseStatus(response.status, this.getBookmarkButtonsAll(), true);
+            if (this.showButtonHints) {
+              response.json().then(data => {
+                const sameButtons = this.getSameBookmarkButtons(iblockId, elementId);
+                if (sameButtons) {
+                  sameButtons.forEach((btn) => {
+                    this.showButtonHint(btn, 'Ошибка при добавлении в избранное' + (this.debugLog ? `. [${data?.code}] ${data?.description}` : ''), 'error');
+                  });
+                }
+              });
+            }
+            throw new Error('Сетевая ошибка: ' + response.status + ' ' + response.statusText);
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (this.debugLog) console.log('Кнопка "Добавить в Избранное", Запрос выполнен, ответ:', data);
+          const sameButtons = this.getSameBookmarkButtons(iblockId, elementId);
+          if (sameButtons) {
+            sameButtons.forEach((btn) => {
+              this.changeBookmarkButtonState(btn, 'added');
+              if (this.showButtonHints) {
+                this.showButtonHint(btn, 'Добавлено в избранное');
+              }
+            });
+          }
+        })
+        .catch(error => {
+          if (this.debugLog) console.warn('Кнопка "Добавить в Избранное", Ошибка:', error);
+        });
+    }
+  };
+
+  // Вешаем один обработчик на document
+  document.addEventListener('click', this._bookmarkClickHandler);
+},
+
+
+
+
+
+
+
+
+--------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+/**
  * Избранные материалы
  */
 
@@ -530,6 +690,7 @@ const BOOKMARKS = {
   }
 
 }
+
 
 
 
