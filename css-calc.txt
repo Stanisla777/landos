@@ -1,7 +1,5 @@
 /* eslint-disable */
 import Vue from 'vue';
-//import TestN from './modules/test-n/TestNPointEntry.vue';
-// import VPolls from './modules/polls/MainPolls.vue';
 import initializationPolls from './modules/polls/custom-scripts/initialization-polls';
 import SearchFamilyMortgage from './modules/search-family-mortgage/SearchFamilyMortgagePointEntry.vue';
 import ItMortgageSurveysOneRequest from './modules/it-mortgage-surveys-one-request/ITMortgageSurveysPointEntry.vue';
@@ -43,13 +41,7 @@ export function init() {
   instruction();
   commentsTexarea();
 
-  // Vue-аппы
-  // const vueTestRoots = document.querySelectorAll('.js-test-n');
-  // vueTestRoots.forEach((el, i) => {
-  //   el.id = `test-n-${i}`;
-  //   new Vue({ el: `#test-n-${i}`, components: { 'test-n': TestN } });
-  // });
-
+  // === Ленивая загрузка TestN ===
   const vueTestRoots = document.querySelectorAll('.js-test-n');
   if (vueTestRoots.length > 0) {
     require.ensure([], (require) => {
@@ -61,22 +53,7 @@ export function init() {
     }, 'test-n-lazy');
   }
 
-  // const vuePolls = document.querySelectorAll('.js-polls-n');
-  // if (vuePolls.length) {
-  //   for (let i = 0; i < vuePolls.length; i += 1) {
-  //     vuePolls[i].classList.add(`js__polls-n-${i}`);
-  //
-  //     // eslint-disable-next-line no-new
-  //     new Vue({
-  //       el: `.js__polls-n-${i}`,
-  //       components: {
-  //         'v-polls': VPolls,
-  //       }
-  //     });
-  //   }
-  // }
-
-  // Ленивая загрузка VPolls — только если есть элементы
+  // === Ленивая загрузка VPolls ===
   const vuePolls = document.querySelectorAll('.js-polls-n');
   if (vuePolls.length > 0) {
     require.ensure([], (require) => {
@@ -91,7 +68,7 @@ export function init() {
     }, 'v-polls-lazy');
   }
 
-  // Инициализация по ID
+  // === Инициализация Vue-приложений по ID с надёжной проверкой ===
   function initSearchFamilyMortgage() {
     new Vue({
       el: '#search-family-mortgage',
@@ -113,6 +90,7 @@ export function init() {
     });
   }
 
+  // Используем ваше имя переменной `obj`
   const obj = [
     { id: 'search-family-mortgage', fn: initSearchFamilyMortgage },
     { id: 'v-mortgage-surveys-one-request', fn: initItMortgageSurveysOneRequest },
@@ -120,32 +98,30 @@ export function init() {
     { id: 'form-rating', fn: formRating },
   ];
 
-  function waitForVueApp(id, initFn) {
+  // Надёжная инициализация: сначала проверяем наличие, потом ждём через observer
+  obj.forEach(({ id, fn }) => {
     const el = document.getElementById(id);
     if (el && !el.__vue_initialized) {
-      initFn();
+      fn();
       el.__vue_initialized = true;
       return;
     }
 
+    // Если элемента ещё нет — ждём его появления
     const observer = new MutationObserver(() => {
       const element = document.getElementById(id);
       if (element && !element.__vue_initialized) {
         observer.disconnect();
-        initFn();
+        fn();
         element.__vue_initialized = true;
       }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
-  }
-
-  obj.forEach(item => waitForVueApp(item.id, item.fn));
+  });
 }
 
 // Автозапуск при импорте
 init();
 
 export default { init };
-
-
