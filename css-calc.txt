@@ -1,654 +1,159 @@
-<script charset="utf-8" src="/dist/./js/vendors~instruction-lazy.bundle.js"></script>
-<script charset="utf-8" src="/dist/./js/instruction-lazy.bundle.js"></script>
+/**
+ * Отложенная загрузка вебформы при скроллинге к месту ее вывода
+ * @param webFormPlaceholderTarget  - целевой объект для загрузки вебформы
+ * @param webFormCode               - символьный код вебформы
+ * @param webformTemplate           - bitrix-шаблон вебформы для bitrix:form.result.new
+ */
+function lazyLoadWebform(webFormPlaceholderTarget, webFormCode, webformTemplate, webFormParams = null) {
+  var observerWebFormLoad = new IntersectionObserver(function (entries, observer) {
+    // console.log(entries);
+    for (entry of entries) {
+      if (entry.isIntersecting) {
+        console.log(`-- Loading webform ${webFormCode}`);
+        let webformPageFrom = window.location.pathname;
+        let webformUrlFrom = window.location.pathname + window.location.search;
+        let query = `/local/ajax/get_webform.php?webFormCode=${webFormCode}&webformTemplate=${webformTemplate}&webformPageFrom=${webformPageFrom}&webformUrlFrom=${webformUrlFrom}`;
+        if (webFormParams){
+          query += `&webformParams=${encodeURIComponent(webFormParams)}`;
+        }
+        // console.log('webform query', query)
+        $.ajax({
+          url: query,
+          success: function (result) {
+            console.log('lazyLoadWebform, result', result);
+            if (!!result) {
+              $(entry.target).html(result);
+              // phoneMask();
+              // selectsInit();
+              modals();
 
-webpack.js
-const path = require('path');
-const fs = require('fs');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const TerserPlugin = require('terser-webpack-plugin');
-const VueLoaderPlugin = require('vue-loader/lib/plugin');
-// eslint-disable-next-line no-unused-vars
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+              clickSelectItem();
+              openListDirectory();
+              closeSelectList();
+              closeSelectListNoneOpenlistBackground();
 
-function generateHtmlPlugins(templateDir) {
-  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
-  return templateFiles.map((item) => {
-    const parts = item.split('.');
-    const name = parts[0];
-    const extension = parts[1];
-    return new HtmlWebpackPlugin({
-      filename: `${name}.html`,
-      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
-      inject: false
-    });
+             window.universalForm();
+              svgHandWritingFixed(webFormPlaceholderTarget)
+            } else {
+              console.warn(`Webform <${webFormCode}> not found`);
+            }
+            observer.unobserve(entry.target);
+            observer.disconnect;
+          },
+          error: function (error) {
+            console.warn(`Loading webform <${webFormCode}> failed`, error);
+          }
+        });
+      }
+    }
+  });
+  observerWebFormLoad.observe(webFormPlaceholderTarget);
+}
+
+/**
+ * Отложенная загрузка модальной вебформы при клике на кнопку открытия модальных вебформ
+ * @param webFormPlaceholderTarget  - целевой объект для загрузки вебформы
+ * @param webFormCode               - символьный код вебформы
+ * @param webformTemplate           - bitrix-шаблон вебформы для bitrix:form.result.new
+ */
+function lazyLoadModalWebForm(webFormPlaceholderTarget, webFormCode, webformTemplate,webFormParams = null,webformId = null) {
+  console.log(`-- Loading modal webform ${webFormCode}`);
+  let webformPageFrom = window.location.pathname;
+  let webformUrlFrom = window.location.pathname + window.location.search;
+  let query = `/local/ajax/get_webform.php?webFormCode=${webFormCode}&webformTemplate=${webformTemplate}&webformPageFrom=${webformPageFrom}&webformUrlFrom=${webformUrlFrom}`
+  if (webFormParams){
+    query += `&webformParams=${encodeURIComponent(webFormParams)}`;
+  }
+  $.ajax({
+    url: query,
+    success: function (result) {
+      console.log('lazyLoadModalWebForm, result', result);
+      if (!!result) {
+        $(webFormPlaceholderTarget).html(result);
+        modals();
+        clickSelectItem();
+        openListDirectory();
+        closeSelectList();
+        closeSelectListNoneOpenlistBackground();
+
+        // TODO Тех.долг: Переделать в будущем, когда будем заниматься оптимизациией bundle.js  (убрать имитацию клика, сделать прямой вызов модалки после ее загрузки)
+        if (!!webformId) {
+          const modalButton = document.querySelector(`.js--modal-opener[data-modal="#${webformId}"]`);
+          if (!!modalButton){
+            modalButton.click();
+          }
+        }
+      } else {
+        console.warn(`Modal Webform <${webFormCode}> not found`);
+      }
+    },
+    error: function (error) {
+      console.warn(`Loading modal webform <${webFormCode}> failed`, error);
+    }
   });
 }
 
-const config = {
-  // entry: ['./src/js/index.js', './src/scss/style.scss'], // старое
-  entry: { // новое
-    all: ['./src/js/index.js'], // → bundle.js (legacy)
-    'general-style': ['./src/scss/general-style.scss'], // → general-style.css
-    instruction: ['./src/scss/instruction.scss'], // → instruction.css
-    'general-js': './src/js/general.js', // → general.bundle.js
-    'instruction-js': './src/js/instruction.js' // → instruction.bundle.js
-  },
-  output: {
-    filename: './js/[name].bundle.js',
-    // filename: './js/bundle.js',
-
-    // 2023-04-25 fix корневого пути  для корректной ленивой подгрузки apexchart и js вообще.
-    // TODO: сделать аналогичный fix корневого пути и для картинок
-    publicPath: '/dist/',
-    // path: path.resolve(__dirname, 'dist'), // с этим тоже работает
-    // filename: 'js/bundle.js' // с этим тоже работает
-  },
-  devtool: 'source-map',
-  mode: 'production',
-  optimization: {
-    minimize: true,
-    minimizer: [
-      new TerserPlugin({
-        parallel: true,
-        cache: true
-      })
-    ],
-    splitChunks: {
-      cacheGroups: {
-        defaultVendors: false, // ← ЭТО КЛЮЧЕВОЕ
-        vendor: {
-          test: /[\\/]node_modules[\\/](vue|axios|vue-axios|swiper|imask)[\\/]/,
-          name: 'vendor-script',
-          chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
-          enforce: true
+/**
+ * Поиск всех LazyLoad-вебформ для последующей их загрузки при скроллинге
+ */
+document.addEventListener('DOMContentLoaded', function () {
+  let lazyLoadModalWebformsLoaded = false;
+  const lazyLoadWebforms = document.querySelectorAll('.js-lazyload-webform');
+  if (lazyLoadWebforms.length) {
+    // console.log(`Found ${lazyLoadWebforms.length} lazyload webforms`);
+    lazyLoadWebforms.forEach(function (el) {
+      if (el.dataset?.code && el.dataset?.template) {
+        let webFormParams = el.dataset?.params ?? null;
+        // console.log(`Found lazyload webform <${el.dataset.code}>`);
+        lazyLoadWebform(el, el.dataset.code, el.dataset.template, webFormParams)
+      }
+    })
+  }
+  const lazyModalLoadWebforms = document.querySelectorAll('.js-lazyload-modal-webform');
+  if (lazyModalLoadWebforms.length) {
+    // console.log(`Found ${lazyModalLoadWebforms.length} modal lazyload webforms`);
+    const modalWebformButtons = document.querySelectorAll('.js--modal-opener');
+    let modalWebformIds = [];
+    if (modalWebformButtons.length)
+      modalWebformButtons.forEach(function (modalBtn) {
+        if (modalBtn.dataset?.modal)
+          modalWebformIds.push(modalBtn.dataset.modal.replace('#', ''));
+      });
+    const modalBtnWrapper = document.querySelector('.js-lazyload-modal-webform-buttons')
+    // const modalBtnWrapper = document.querySelector(`/*.js-lazyload-modal-webform-buttons [data-modal="#${webFormPlaceholderTarget.id}"]*/`)
+    if (modalBtnWrapper)
+      modalBtnWrapper.addEventListener('click', () => {
+        if (!lazyLoadModalWebformsLoaded) {
+          lazyModalLoadWebforms.forEach(function (el) {
+            if (el.dataset?.code && el.dataset?.template) {
+              if (modalWebformIds.length && modalWebformIds.includes(el.dataset?.id)) {
+                let webFormParams = el.dataset?.params ?? null;
+                // console.log(`Found modal lazyload webform <${el.dataset.code}>`);
+                lazyLoadModalWebForm(el, el.dataset.code, el.dataset.template,webFormParams,el.dataset?.id);
+              }
+            }
+          })
+          lazyLoadModalWebformsLoaded = true;
         }
-      }
-    }
-  },
-  performance: {
-    hints: false
-  },
-  module: {
-    rules: [
-      {
-        test: /\.vue$/,
-        loader: 'vue-loader'
-      },
-      {
-        test: /\.(sass|scss)$/,
-        include: path.resolve(__dirname, 'src/scss'),
-        use: [
-          {
-            loader: MiniCssExtractPlugin.loader,
-            options: {}
-          },
-          {
-            loader: 'css-loader',
-            options: {
-              sourceMap: true,
-              url: false
-            }
-          },
-          {
-            loader: 'postcss-loader',
-            options: {
-              ident: 'postcss',
-              sourceMap: true,
-              plugins: () => [
-                // eslint-disable-next-line global-require
-                require('cssnano')({
-                  preset: [
-                    'default',
-                    {
-                      discardComments: {
-                        removeAll: true
-                      }
-                    }
-                  ]
-                }),
-                // включать при сборке продакшен
-                // require('autoprefixer')({
-                //   grid: true
-                // })
-              ]
-            }
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              sourceMap: true
-            }
-          }
-        ]
-      },
-      {
-        test: /\.pug$/,
-        oneOf: [
-          {
-            include: path.resolve(__dirname, 'src/pug/'),
-            exclude: /\.vue$/,
-            use: ['pug-loader']
-          },
-          {
-            use: ['pug-plain-loader']
-          }
-        ]
-      },
-      {
-        enforce: 'pre',
-        test: /\.js$/,
-        exclude: /node_modules/,
-        loader: 'eslint-loader',
-        options: {
-          // formatter: require("./.eslintrc.js")
-          // cache: true
-        }
-      },
-      {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader'
-        }
-      },
-      {
-        test: /\.js$/,
-        enforce: 'pre',
-        use: ['source-map-loader'],
-      },
-      {
-        test: /\.js$/,
-        use: [{
-          loader: 'cache-loader'
-        }]
-      },
-      {
-        test: /\.(sass|scss)$/,
-        use: [{
-          loader: 'cache-loader'
-        }]
-      },
-      // {
-      //   test: /\.pug$/,
-      //   use: [{
-      //     loader: 'cache-loader'
-      //   }]
-      // }
-    ]
-  },
-  plugins: [
-    new VueLoaderPlugin(),
-    new MiniCssExtractPlugin({
-      filename: './css/[name].css'
-    }),
-    new CopyWebpackPlugin([
-      {
-        from: './src/fonts',
-        to: './fonts'
-      },
-      {
-        from: './src/img',
-        to: './img'
-      }
-    ]),
-    {
-      apply: (compiler) => {
-        compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
-          // eslint-disable-next-line no-shadow,global-require
-          const fs = require('fs');
-          // eslint-disable-next-line no-shadow,global-require
-          const path = require('path');
-          const mainPath = path.resolve(__dirname, 'dist/js/all.bundle.js');
-          const bundlePath = path.resolve(__dirname, 'dist/js/bundle.js');
-          if (fs.existsSync(mainPath)) {
-            fs.renameSync(mainPath, bundlePath);
-            console.log('✅ all.bundle.js → bundle.js');
-          }
-        });
-      }
-    },
-    // удаление JS от CSS-only entry
-    {
-      apply: (compiler) => {
-        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
-          // eslint-disable-next-line no-shadow,global-require
-          const fs = require('fs');
-          // eslint-disable-next-line no-shadow,global-require
-          const path = require('path');
+        // phoneMask();
 
-          // Имена entry, которые содержат ТОЛЬКО CSS → их JS-файлы удаляем
-          const cssOnlyEntries = [
-            'general-style',
-            'instruction'
-            // Добавляйте сюда новые по мере появления:
-            // 'header',
-            // 'footer',
-            // 'news'
-          ];
+        // selectsInit();
+        modals()
+        clickSelectItem();
+        openListDirectory();
+        closeSelectList();
+        closeSelectListNoneOpenlistBackground();
+        window.universalForm();
+      });
 
-          cssOnlyEntries.forEach((name) => {
-            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
-            if (fs.existsSync(jsPath)) {
-              fs.unlinkSync(jsPath);
-              // console.log(`🧹 Удалён: ${name}.bundle.js`);
-            }
-          });
-        });
-      }
-    },
-    // new BundleAnalyzerPlugin()
-  ],
-  resolve: {
-    alias: {
-      vue: 'vue/dist/vue.js'
-    }
   }
-};
-
-module.exports = (env, argv) => {
-  if (argv.mode === 'production') {
-    config.plugins.push(new CleanWebpackPlugin());
-    config.resolve.alias.vue = 'vue/dist/vue.min.js';
-    config.devtool = 'eval';
-    // config.publicPath = './';
-    // config.publicPath =  path.resolve(__dirname, 'dist');
-  } else {
-    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
-  }
-  return config;
-};
-
------------------------------------------------------------------------------------------
-
-general.js
-
-/* eslint-disable */
-import Vue from 'vue';
-import IMask from 'imask'
-import selectsInit from './modules/selects-init';
-import catalogNew from './modules/catalog-new';
-import universalForm from './modules/universal-form/universal-form';
-import leftSideBar from './modules/redesign-site/left-side-bar';
-import headerMenu from './modules/redesign-site/header-menu';
-import yandexSearch from './modules/redesign-site/yandex-search';
-import TelegramBlock from './modules/TelegramBlock.vue';
-import anchors from './modules/anchors';
-import {
-  modals, closeModal, catalogModal
-} from './modules/modals';
-import cookies from './modules/cookies';
-import playVideo from './modules/video/play-video';
-import videoWithPreview from './modules/video/video-with-preview';
-import footerDropDown from './modules/redesign-site/footer-drop-down';
-import fetchLikes from './modules/fetch-likes';
-import scrollToUp from './modules/redesign-site/scroll-to-up';
-
-Vue.config.productionTip = false;
-window.selectsInit = selectsInit;
-
-document.addEventListener('DOMContentLoaded', () => {
-  window.closeModal = closeModal;
-  window.modals = modals;
-  window.fetchLikes = fetchLikes;
-  // window.selectsInit = selectsInit;
-  window.universalForm = universalForm;
-  selectsInit();
-  catalogNew();
-  leftSideBar();
-  headerMenu();
-  yandexSearch();
-  catalogModal();
-  modals();
-  anchors();
-  cookies();
-  playVideo();
-  videoWithPreview();
-  universalForm();
-  footerDropDown();
-  fetchLikes();
-  scrollToUp();
-
-  function initTelegramBlock() {
-    new Vue({
-      el: '#telegram-block',
-      components: { 'telegram-block': TelegramBlock }
-    });
-  }
-
-  const obj = [{ id: 'telegram-block', fn: initTelegramBlock }];
-
-  function waitForVueApp(id, initFn) {
-    const el = document.getElementById(id);
-    if (el && !el.__vue_initialized) {
-      initFn();
-      el.__vue_initialized = true;
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      const element = document.getElementById(id);
-      if (element && !element.__vue_initialized) {
-        observer.disconnect();
-        initFn();
-        element.__vue_initialized = true;
-      }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-
-  obj.forEach(item => waitForVueApp(item.id, item.fn));
-
-
-})
-
-
-----------------------
-
-instruction.js
-/* eslint-disable */
-
-// Ленивая загрузка — только если нужны элементы инструкций
-// src/js/instruction.js
-document.addEventListener('DOMContentLoaded', () => {
-  require.ensure([], (require) => {
-    require('./lazy-instruction.js');
-    console.log('✅ Instruction modules loaded');
-  }, 'instruction-lazy');
 });
 
----------------------------------------------------------------
-
-lazy-instruction.js
-/* eslint-disable */
-import Vue from 'vue';
-import initializationPolls from './modules/polls/custom-scripts/initialization-polls';
-import SearchFamilyMortgage from './modules/search-family-mortgage/SearchFamilyMortgagePointEntry.vue';
-import ItMortgageSurveysOneRequest from './modules/it-mortgage-surveys-one-request/ITMortgageSurveysPointEntry.vue';
-import MinSport from './modules/minsport/MinsportPointEntry.vue';
-import contentNote from './modules/content-note';
-import dropDown from './modules/dropDown';
-import {
-  testPollsSlider, authorsSlider, cardSlider, cardSliderfoufcolumn,cardsInstructionSlider,
-} from './modules/swiper-sliders';
-import slideConstructor from './modules/constructor-swiper';
-import formRating from './modules/form-rating';
-import popupGallery from './modules/popup-gallery';
-import shareSocList from './modules/share-soc-list';
-import instruction from './modules/redesign-site/instruction/instruction';
-import commentsTexarea from './modules/comments-component/comments-texarea';
-
-function dropDownTags() {
-  const btnTags = document.querySelectorAll('.js--dropDown-btn');
-  for (const item of btnTags) {
-    item.onclick = (el) => {
-      dropDown(el.target, 0);
-    };
+function svgHandWritingFixed(webFormPlaceholderTarget){
+  if (webFormPlaceholderTarget) {
+    const _svg_hand_writing = webFormPlaceholderTarget.querySelector('.js--svg-hand-writing')
+    if (_svg_hand_writing) {
+      _svg_hand_writing.classList.add('active');
+    }
   }
 }
-
-// Вся инициализация — теперь здесь
-export function init() {
-  contentNote();
-  dropDownTags();
-  slideConstructor();
-  testPollsSlider();
-  initializationPolls();
-  authorsSlider();
-  formRating();
-  cardSliderfoufcolumn();
-  cardSlider();
-  cardsInstructionSlider();
-  popupGallery();
-  shareSocList();
-  instruction();
-  commentsTexarea();
-
-  // Ленивая загрузка TestN
-  const vueTestRoots = document.querySelectorAll('.js-test-n');
-  if (vueTestRoots.length > 0) {
-    require.ensure([], (require) => {
-      const TestN = require('./modules/test-n/TestN.vue').default;
-      vueTestRoots.forEach((el, i) => {
-        el.id = `test-n-${i}`;
-        new Vue({ el: `#test-n-${i}`, components: { 'test-n': TestN } });
-      });
-    }, 'test-n-lazy');
-  }
-
-  //Ленивая загрузка VPolls
-  const vuePolls = document.querySelectorAll('.js-polls-n');
-  if (vuePolls.length > 0) {
-    require.ensure([], (require) => {
-      const VPolls = require('./modules/polls/MainPolls.vue').default;
-      vuePolls.forEach((el, i) => {
-        el.classList.add(`js__polls-n-${i}`);
-        new Vue({
-          el: `.js__polls-n-${i}`,
-          components: { 'v-polls': VPolls }
-        });
-      });
-    }, 'v-polls-lazy');
-  }
-
-  // Инициализация Vue-приложений по ID с проверкой
-  function initSearchFamilyMortgage() {
-    new Vue({
-      el: '#search-family-mortgage',
-      components: { 'search-family-mortgage': SearchFamilyMortgage }
-    });
-  }
-
-  function initItMortgageSurveysOneRequest() {
-    new Vue({
-      el: '#v-mortgage-surveys-one-request',
-      components: { 'it-mortgage-surveys-one-request': ItMortgageSurveysOneRequest }
-    });
-  }
-
-  function initMinSport() {
-    new Vue({
-      el: '#v-minsport',
-      components: { 'min-sport': MinSport }
-    });
-  }
-
-  const obj = [
-    { id: 'search-family-mortgage', fn: initSearchFamilyMortgage },
-    { id: 'v-mortgage-surveys-one-request', fn: initItMortgageSurveysOneRequest },
-    { id: 'v-minsport', fn: initMinSport },
-    { id: 'form-rating', fn: formRating },
-  ];
-
-  // сначала проверяем наличие, потом ждём через observer
-  obj.forEach(({ id, fn }) => {
-    const el = document.getElementById(id);
-    if (el && !el.__vue_initialized) {
-      fn();
-      el.__vue_initialized = true;
-      return;
-    }
-
-    // Если элемента ещё нет — ждём его появления
-    const observer = new MutationObserver(() => {
-      const element = document.getElementById(id);
-      if (element && !element.__vue_initialized) {
-        observer.disconnect();
-        fn();
-        element.__vue_initialized = true;
-      }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-  });
-}
-
-// Автозапуск при импорте
-init();
-
-export default { init };
-
-
----------------------------------------------------
-
-index.js
-import TelegramBlock from './modules/TelegramBlock.vue';
-
-document.addEventListener('DOMContentLoaded', () => {
-
-function initTelegramBlock() {
-        // eslint-disable-next-line no-new
-        new Vue({
-            el: '#telegram-block',
-            components: {
-                'telegram-block': TelegramBlock
-            }
-        });
-    }
-
-const obj = [
-{
-            id: 'telegram-block',
-            fn: initTelegramBlock
-        },
-
-]
-
-function waitForVueApp(id, initFn) {
-    const el = document.getElementById(id);
-    // eslint-disable-next-line no-underscore-dangle
-    if (el && !el.__vue_initialized) {
-      initFn();
-      // eslint-disable-next-line no-underscore-dangle
-      el.__vue_initialized = true;
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      const element = document.getElementById(id);
-      // eslint-disable-next-line no-underscore-dangle
-      if (element && !element.__vue_initialized) {
-        observer.disconnect();
-        initFn();
-        // eslint-disable-next-line no-underscore-dangle
-        element.__vue_initialized = true;
-      }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-
-// Использование:
-  obj.forEach((item) => {
-    waitForVueApp(item.id, item.fn);
-  });
-
-
-
-------------------------------------------------------------------------------------------------
-
-
-<template>
-  <article class="telegram" v-if="active">
-    <div class="telegram__popup">
-      <button class="telegram__popup-close"> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" @click="hideBlock">
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4.00005C4.39053 3.60952 5.02369 3.60952 5.41422 4.00005L11.7783 10.3642L18.1421 4.00034C18.5327 3.60981 19.1658 3.60981 19.5564 4.00034C19.9469 4.39086 19.9469 5.02403 19.5564 5.41455L13.1925 11.7784L19.5564 18.1422C19.9469 18.5327 19.9469 19.1659 19.5564 19.5564C19.1658 19.9469 18.5327 19.9469 18.1421 19.5564L11.7783 13.1926L5.41422 19.5567C5.02369 19.9472 4.39053 19.9472 4 19.5567C3.60948 19.1662 3.60948 18.533 4 18.1425L10.3641 11.7784L4 5.41426C3.60948 5.02374 3.60948 4.39057 4 4.00005Z" fill="#252628"/>
-      </svg> </button>
-<!--      <img src="/dist/img/qr-code2407.svg" class="telegram__popup-qr">-->
-      <img :src="qr" class="telegram__popup-qr" alt="">
-<!--      <p class="telegram__popup-text">-->
-<!--        Подпишитесь на наш <br>-->
-<!--        <a class="telegram__popup-link" target="_blank" href="https://t.me/+vRwgO5Nk0MEyMjEy">Телеграм канал Спроси ДОМ.РФ  </a>-->
-<!--        <a class="telegram__popup-link" target="_blank" :href="link">Телеграм канал Спроси ДОМ.РФ  </a>-->
-<!--        и будьте в курсе <br> последних новостей-->
-<!--      </p>-->
-      <p class="telegram__popup-text" v-html="description"></p>
-      <div class="telegram__popup-block">
-<!--        <img class="telegram__popup-block-icon" src="/dist/img/telegram-icon.jpg">-->
-        <img v-if="mobilicon" class="telegram__popup-block-icon" :src="mobilicon" alt="">
-<!--        <p class="telegram__popup-text telegram__popup-text_mobile"> Подпишитесь на наш Телеграм <br> канал Спроси ДОМ.РФ  и будьте в курсе последних новостей</p>-->
-        <p class="telegram__popup-text telegram__popup-text_mobile" v-html="description"></p>
-      </div>
-
-<!--      <a class="telegram__popup-link-button" target="_blank" href="https://t.me/+vRwgO5Nk0MEyMjEy">Подписаться</a>-->
-      <a class="telegram__popup-link-button" target="_blank" :href="link">Подписаться</a>
-    </div>
-  </article>
-</template>
-<script>
-
-export default {
-  name: "TelegramBlock",
-  data() {
-    return {
-      active: false,
-      qr:'',
-      mobilicon:'',
-      link:'',
-      description:'',
-    }
-  },
-  mounted(){
-    let qr = this.$attrs.qr
-    if (qr){
-      try{
-        this.qr = qr
-      } catch (error) {
-        console.log('Ошибка при парсинге');
-      }
-    }
-    let mobilicon = this.$attrs.mobilicon
-    if (mobilicon){
-      try{
-        this.mobilicon = mobilicon
-      } catch (error) {
-        console.log('Ошибка при парсинге');
-      }
-    }
-    let link = this.$attrs.link
-    if (link){
-      try{
-        this.link = link
-      } catch (error) {
-        console.log('Ошибка при парсинге');
-      }
-    }
-    let description = this.$attrs.description
-    if (description){
-      try{
-        this.description = description
-      } catch (error) {
-        console.log('Ошибка при парсинге');
-      }
-    }
-    console.log('description');
-    console.log(description);
-
-    if(!this.getCookie('telegram')){
-      this.active = true;
-    }
-  },
-  methods:{
-    hideBlock(){
-      this.setCookie('telegram',true,1)
-      this.active = false
-    },
-    setCookie(key, value, days) {
-      const expires = new Date();
-      expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-      document.cookie = `${key}=${value};path=/;expires=${expires.toUTCString()}`;
-    },
-    getCookie(key) {
-      const keyValue = document.cookie.match(`(^|;) ?${key}=([^;]*)(;|$)`);
-      return keyValue ? keyValue[2] : null;
-    },
-  }
-}
-</script>
-
-
-
-
