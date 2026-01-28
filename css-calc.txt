@@ -1,11 +1,98 @@
+<template>
+  <article class="telegram" v-if="active">
+    <div class="telegram__popup">
+      <button class="telegram__popup-close"> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" @click="hideBlock">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4.00005C4.39053 3.60952 5.02369 3.60952 5.41422 4.00005L11.7783 10.3642L18.1421 4.00034C18.5327 3.60981 19.1658 3.60981 19.5564 4.00034C19.9469 4.39086 19.9469 5.02403 19.5564 5.41455L13.1925 11.7784L19.5564 18.1422C19.9469 18.5327 19.9469 19.1659 19.5564 19.5564C19.1658 19.9469 18.5327 19.9469 18.1421 19.5564L11.7783 13.1926L5.41422 19.5567C5.02369 19.9472 4.39053 19.9472 4 19.5567C3.60948 19.1662 3.60948 18.533 4 18.1425L10.3641 11.7784L4 5.41426C3.60948 5.02374 3.60948 4.39057 4 4.00005Z" fill="#252628"/>
+      </svg> </button>
+<!--      <img src="/dist/img/qr-code2407.svg" class="telegram__popup-qr">-->
+      <img :src="qr" class="telegram__popup-qr" alt="">
+<!--      <p class="telegram__popup-text">-->
+<!--        Подпишитесь на наш <br>-->
+<!--        <a class="telegram__popup-link" target="_blank" href="https://t.me/+vRwgO5Nk0MEyMjEy">Телеграм канал Спроси ДОМ.РФ  </a>-->
+<!--        <a class="telegram__popup-link" target="_blank" :href="link">Телеграм канал Спроси ДОМ.РФ  </a>-->
+<!--        и будьте в курсе <br> последних новостей-->
+<!--      </p>-->
+      <p class="telegram__popup-text" v-html="description"></p>
+      <div class="telegram__popup-block">
+<!--        <img class="telegram__popup-block-icon" src="/dist/img/telegram-icon.jpg">-->
+        <img v-if="mobilicon" class="telegram__popup-block-icon" :src="mobilicon" alt="">
+<!--        <p class="telegram__popup-text telegram__popup-text_mobile"> Подпишитесь на наш Телеграм <br> канал Спроси ДОМ.РФ  и будьте в курсе последних новостей</p>-->
+        <p class="telegram__popup-text telegram__popup-text_mobile" v-html="description"></p>
+      </div>
+
+<!--      <a class="telegram__popup-link-button" target="_blank" href="https://t.me/+vRwgO5Nk0MEyMjEy">Подписаться</a>-->
+      <a class="telegram__popup-link-button" target="_blank" :href="link">Подписаться</a>
+    </div>
+  </article>
+</template>
 <script>
-(function() {
-  const originalAdd = document.body.classList.add;
-  document.body.classList.add = function(...classes) {
-    if (classes.includes('body-modal') || classes.includes('body-modal-modals')) {
-      console.warn('НУ КТО ДОБАВЛЯЕТ ЭТИ КЛАССЫ, А?', classes, new Error().stack);
+
+export default {
+  name: "TelegramBlock",
+  data() {
+    return {
+      active: false,
+      qr:'',
+      mobilicon:'',
+      link:'',
+      description:'',
     }
-    return originalAdd.apply(this, classes);
-  };
-})();
+  },
+  mounted(){
+    let qr = this.$attrs.qr
+    if (qr){
+      try{
+        this.qr = qr
+      } catch (error) {
+        console.log('Ошибка при парсинге');
+      }
+    }
+    let mobilicon = this.$attrs.mobilicon
+    if (mobilicon){
+      try{
+        this.mobilicon = mobilicon
+      } catch (error) {
+        console.log('Ошибка при парсинге');
+      }
+    }
+    let link = this.$attrs.link
+    if (link){
+      try{
+        this.link = link
+      } catch (error) {
+        console.log('Ошибка при парсинге');
+      }
+    }
+    let description = this.$attrs.description
+    if (description){
+      try{
+        this.description = description
+      } catch (error) {
+        console.log('Ошибка при парсинге');
+      }
+    }
+    console.log('description');
+    console.log(description);
+
+    if(!this.getCookie('telegram')){
+      this.active = true;
+    }
+  },
+  methods:{
+    hideBlock(){
+      this.setCookie('telegram',true,1)
+      this.active = false
+    },
+    setCookie(key, value, days) {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+      document.cookie = `${key}=${value};path=/;expires=${expires.toUTCString()}`;
+    },
+    getCookie(key) {
+      const keyValue = document.cookie.match(`(^|;) ?${key}=([^;]*)(;|$)`);
+      return keyValue ? keyValue[2] : null;
+    },
+  }
+}
 </script>
+
