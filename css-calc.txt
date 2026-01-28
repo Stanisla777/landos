@@ -1,130 +1,158 @@
-https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/usloviya-programmy-lgotnoy-ipoteki-dlya-it-spetsialistov/
+/**
+ * Отложенная загрузка вебформы при скроллинге к месту ее вывода
+ * @param webFormPlaceholderTarget  - целевой объект для загрузки вебформы
+ * @param webFormCode               - символьный код вебформы
+ * @param webformTemplate           - bitrix-шаблон вебформы для bitrix:form.result.new
+ */
+function lazyLoadWebform(webFormPlaceholderTarget, webFormCode, webformTemplate, webFormParams = null) {
+  var observerWebFormLoad = new IntersectionObserver(function (entries, observer) {
+    // console.log(entries);
+    for (entry of entries) {
+      if (entry.isIntersecting) {
+        console.log(`-- Loading webform ${webFormCode}`);
+        let webformPageFrom = window.location.pathname;
+        let webformUrlFrom = window.location.pathname + window.location.search;
+        let query = `/local/ajax/get_webform.php?webFormCode=${webFormCode}&webformTemplate=${webformTemplate}&webformPageFrom=${webformPageFrom}&webformUrlFrom=${webformUrlFrom}`;
+        if (webFormParams){
+          query += `&webformParams=${encodeURIComponent(webFormParams)}`;
+        }
+        // console.log('webform query', query)
+        $.ajax({
+          url: query,
+          success: function (result) {
+            // console.log({result});
+            if (!!result) {
+              $(entry.target).html(result);
+              // phoneMask();
+              // selectsInit();
+              modals();
+              clickSelectItem();
+              openListDirectory();
+              closeSelectList();
+              closeSelectListNoneOpenlistBackground();
 
-/* eslint-disable */
-import Vue from 'vue';
-import initializationPolls from './modules/polls/custom-scripts/initialization-polls';
-import SearchFamilyMortgage from './modules/search-family-mortgage/SearchFamilyMortgagePointEntry.vue';
-import ItMortgageSurveysOneRequest from './modules/it-mortgage-surveys-one-request/ITMortgageSurveysPointEntry.vue';
-import MinSport from './modules/minsport/MinsportPointEntry.vue';
-import contentNote from './modules/content-note';
-import dropDown from './modules/dropDown';
-import {
-  testPollsSlider, authorsSlider, cardSlider, cardSliderfoufcolumn,
-} from './modules/swiper-sliders';
-import slideConstructor from './modules/constructor-swiper';
-import formRating from './modules/form-rating';
-import popupGallery from './modules/popup-gallery';
-import shareSocList from './modules/share-soc-list';
-import instruction from './modules/redesign-site/instruction/instruction';
-import commentsTexarea from './modules/comments-component/comments-texarea';
-
-function dropDownTags() {
-  const btnTags = document.querySelectorAll('.js--dropDown-btn');
-  for (const item of btnTags) {
-    item.onclick = (el) => {
-      dropDown(el.target, 0);
-    };
-  }
+             window.universalForm();
+              svgHandWritingFixed(webFormPlaceholderTarget)
+            } else {
+              console.warn(`Webform <${webFormCode}> not found`);
+            }
+            observer.unobserve(entry.target);
+            observer.disconnect;
+          },
+          error: function (error) {
+            console.warn(`Loading webform <${webFormCode}> failed`, error);
+          }
+        });
+      }
+    }
+  });
+  observerWebFormLoad.observe(webFormPlaceholderTarget);
 }
 
-// Вся инициализация — теперь здесь
-export function init() {
-  contentNote();
-  dropDownTags();
-  slideConstructor();
-  testPollsSlider();
-  initializationPolls();
-  authorsSlider();
-  formRating();
-  cardSliderfoufcolumn();
-  cardSlider();
-  popupGallery();
-  shareSocList();
-  instruction();
-  commentsTexarea();
-
-  // === Ленивая загрузка TestN ===
-  const vueTestRoots = document.querySelectorAll('.js-test-n');
-  if (vueTestRoots.length > 0) {
-    require.ensure([], (require) => {
-      const TestN = require('./modules/test-n/TestN.vue').default;
-      vueTestRoots.forEach((el, i) => {
-        el.id = `test-n-${i}`;
-        new Vue({ el: `#test-n-${i}`, components: { 'test-n': TestN } });
-      });
-    }, 'test-n-lazy');
+/**
+ * Отложенная загрузка модальной вебформы при клике на кнопку открытия модальных вебформ
+ * @param webFormPlaceholderTarget  - целевой объект для загрузки вебформы
+ * @param webFormCode               - символьный код вебформы
+ * @param webformTemplate           - bitrix-шаблон вебформы для bitrix:form.result.new
+ */
+function lazyLoadModalWebForm(webFormPlaceholderTarget, webFormCode, webformTemplate,webFormParams = null,webformId = null) {
+  console.log(`-- Loading modal webform ${webFormCode}`);
+  let webformPageFrom = window.location.pathname;
+  let webformUrlFrom = window.location.pathname + window.location.search;
+  let query = `/local/ajax/get_webform.php?webFormCode=${webFormCode}&webformTemplate=${webformTemplate}&webformPageFrom=${webformPageFrom}&webformUrlFrom=${webformUrlFrom}`
+  if (webFormParams){
+    query += `&webformParams=${encodeURIComponent(webFormParams)}`;
   }
+  $.ajax({
+    url: query,
+    success: function (result) {
+      // console.log({result});
+      if (!!result) {
+        $(webFormPlaceholderTarget).html(result);
+        modals();
+        clickSelectItem();
+        openListDirectory();
+        closeSelectList();
+        closeSelectListNoneOpenlistBackground();
 
-  // === Ленивая загрузка VPolls ===
-  const vuePolls = document.querySelectorAll('.js-polls-n');
-  if (vuePolls.length > 0) {
-    require.ensure([], (require) => {
-      const VPolls = require('./modules/polls/MainPolls.vue').default;
-      vuePolls.forEach((el, i) => {
-        el.classList.add(`js__polls-n-${i}`);
-        new Vue({
-          el: `.js__polls-n-${i}`,
-          components: { 'v-polls': VPolls }
-        });
-      });
-    }, 'v-polls-lazy');
-  }
-
-  // === Инициализация Vue-приложений по ID с надёжной проверкой ===
-  function initSearchFamilyMortgage() {
-    new Vue({
-      el: '#search-family-mortgage',
-      components: { 'search-family-mortgage': SearchFamilyMortgage }
-    });
-  }
-
-  function initItMortgageSurveysOneRequest() {
-    new Vue({
-      el: '#v-mortgage-surveys-one-request',
-      components: { 'it-mortgage-surveys-one-request': ItMortgageSurveysOneRequest }
-    });
-  }
-
-  function initMinSport() {
-    new Vue({
-      el: '#v-minsport',
-      components: { 'min-sport': MinSport }
-    });
-  }
-
-  // Используем ваше имя переменной `obj`
-  const obj = [
-    { id: 'search-family-mortgage', fn: initSearchFamilyMortgage },
-    { id: 'v-mortgage-surveys-one-request', fn: initItMortgageSurveysOneRequest },
-    { id: 'v-minsport', fn: initMinSport },
-    { id: 'form-rating', fn: formRating },
-  ];
-
-  // Надёжная инициализация: сначала проверяем наличие, потом ждём через observer
-  obj.forEach(({ id, fn }) => {
-    const el = document.getElementById(id);
-    if (el && !el.__vue_initialized) {
-      fn();
-      el.__vue_initialized = true;
-      return;
-    }
-
-    // Если элемента ещё нет — ждём его появления
-    const observer = new MutationObserver(() => {
-      const element = document.getElementById(id);
-      if (element && !element.__vue_initialized) {
-        observer.disconnect();
-        fn();
-        element.__vue_initialized = true;
+        // TODO Тех.долг: Переделать в будущем, когда будем заниматься оптимизациией bundle.js  (убрать имитацию клика, сделать прямой вызов модалки после ее загрузки)
+        if (!!webformId) {
+          const modalButton = document.querySelector(`.js--modal-opener[data-modal="#${webformId}"]`);
+          if (!!modalButton){
+            modalButton.click();
+          }
+        }
+      } else {
+        console.warn(`Modal Webform <${webFormCode}> not found`);
       }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
+    },
+    error: function (error) {
+      console.warn(`Loading modal webform <${webFormCode}> failed`, error);
+    }
   });
 }
 
-// Автозапуск при импорте
-init();
+/**
+ * Поиск всех LazyLoad-вебформ для последующей их загрузки при скроллинге
+ */
+document.addEventListener('DOMContentLoaded', function () {
+  let lazyLoadModalWebformsLoaded = false;
+  const lazyLoadWebforms = document.querySelectorAll('.js-lazyload-webform');
+  if (lazyLoadWebforms.length) {
+    // console.log(`Found ${lazyLoadWebforms.length} lazyload webforms`);
+    lazyLoadWebforms.forEach(function (el) {
+      if (el.dataset?.code && el.dataset?.template) {
+        let webFormParams = el.dataset?.params ?? null;
+        // console.log(`Found lazyload webform <${el.dataset.code}>`);
+        lazyLoadWebform(el, el.dataset.code, el.dataset.template, webFormParams)
+      }
+    })
+  }
+  const lazyModalLoadWebforms = document.querySelectorAll('.js-lazyload-modal-webform');
+  if (lazyModalLoadWebforms.length) {
+    // console.log(`Found ${lazyModalLoadWebforms.length} modal lazyload webforms`);
+    const modalWebformButtons = document.querySelectorAll('.js--modal-opener');
+    let modalWebformIds = [];
+    if (modalWebformButtons.length)
+      modalWebformButtons.forEach(function (modalBtn) {
+        if (modalBtn.dataset?.modal)
+          modalWebformIds.push(modalBtn.dataset.modal.replace('#', ''));
+      });
+    const modalBtnWrapper = document.querySelector('.js-lazyload-modal-webform-buttons')
+    // const modalBtnWrapper = document.querySelector(`/*.js-lazyload-modal-webform-buttons [data-modal="#${webFormPlaceholderTarget.id}"]*/`)
+    if (modalBtnWrapper)
+      modalBtnWrapper.addEventListener('click', () => {
+        if (!lazyLoadModalWebformsLoaded) {
+          lazyModalLoadWebforms.forEach(function (el) {
+            if (el.dataset?.code && el.dataset?.template) {
+              if (modalWebformIds.length && modalWebformIds.includes(el.dataset?.id)) {
+                let webFormParams = el.dataset?.params ?? null;
+                // console.log(`Found modal lazyload webform <${el.dataset.code}>`);
+                lazyLoadModalWebForm(el, el.dataset.code, el.dataset.template,webFormParams,el.dataset?.id);
+              }
+            }
+          })
+          lazyLoadModalWebformsLoaded = true;
+        }
+        // phoneMask();
+        // modals();
+        // selectsInit();
+        modals();
+        clickSelectItem();
+        openListDirectory();
+        closeSelectList();
+        closeSelectListNoneOpenlistBackground();
+        window.universalForm();
+      });
 
-export default { init };
+  }
+});
 
+function svgHandWritingFixed(webFormPlaceholderTarget){
+  if (webFormPlaceholderTarget) {
+    const _svg_hand_writing = webFormPlaceholderTarget.querySelector('.js--svg-hand-writing')
+    if (_svg_hand_writing) {
+      _svg_hand_writing.classList.add('active');
+    }
+  }
+}
