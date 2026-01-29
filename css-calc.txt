@@ -1,9 +1,30 @@
-<div id="telegram-block" v-cloak="">            <telegram-block qr="/upload/local.portal/b27/v0a2cr7bcdk2p184wyxbmsznizew2eqo/2025_12_18_qr_max_bot.svg" mobilicon="/upload/local.portal/818/9tprhr7wpc71p5ait0r0xn7rxd2ios9p/icon_max.png" link="https://max.ru/nash_domrf_bot" description="Подключитесь к &lt;a target=&quot;_blank&quot; href=&quot;https://max.ru/nash_domrf_bot&quot; class=&quot;telegram__popup-link&quot;&gt;чат-боту ДОМ.РФ в MAX&lt;/a&gt;&lt;span class=&quot;telegram__popup-link-span&quot;&gt;чат-боту ДОМ.РФ в MAX&lt;/span&gt;, чтобы не пропускать важные обновления по новостройкам
-"></telegram-block>        </div>
+function initTelegramBlockIfNeeded() {
+  const el = document.getElementById('telegram-block');
+  console.log('🔍 initTelegramBlockIfNeeded вызван, элемент:', el);
 
+  // Защита 1: уже инициализирован
+  if (el && el.__vue_initialized) {
+    console.log('⚠️ Уже инициализирован — пропускаем');
+    return;
+  }
 
+  // Защита 2: уже содержит отрендеренный контент (article.telegram)
+  if (el && el.querySelector('article.telegram')) {
+    console.log('⚠️ Уже отрендерен — пропускаем');
+    return;
+  }
 
-<div id="telegram-block"><article class="telegram" qr="/upload/local.portal/b27/v0a2cr7bcdk2p184wyxbmsznizew2eqo/2025_12_18_qr_max_bot.svg" mobilicon="/upload/local.portal/818/9tprhr7wpc71p5ait0r0xn7rxd2ios9p/icon_max.png" link="https://max.ru/nash_domrf_bot" description="Подключитесь к &lt;a target=&quot;_blank&quot; href=&quot;https://max.ru/nash_domrf_bot&quot; class=&quot;telegram__popup-link&quot;&gt;чат-боту ДОМ.РФ в MAX&lt;/a&gt;&lt;span class=&quot;telegram__popup-link-span&quot;&gt;чат-боту ДОМ.РФ в MAX&lt;/span&gt;, чтобы не пропускать важные обновления по новостройкам
-"><div class="telegram__popup"><button class="telegram__popup-close"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M4 4.00005C4.39053 3.60952 5.02369 3.60952 5.41422 4.00005L11.7783 10.3642L18.1421 4.00034C18.5327 3.60981 19.1658 3.60981 19.5564 4.00034C19.9469 4.39086 19.9469 5.02403 19.5564 5.41455L13.1925 11.7784L19.5564 18.1422C19.9469 18.5327 19.9469 19.1659 19.5564 19.5564C19.1658 19.9469 18.5327 19.9469 18.1421 19.5564L11.7783 13.1926L5.41422 19.5567C5.02369 19.9472 4.39053 19.9472 4 19.5567C3.60948 19.1662 3.60948 18.533 4 18.1425L10.3641 11.7784L4 5.41426C3.60948 5.02374 3.60948 4.39057 4 4.00005Z" fill="#252628"></path></svg></button> <img src="/upload/local.portal/b27/v0a2cr7bcdk2p184wyxbmsznizew2eqo/2025_12_18_qr_max_bot.svg" alt="" class="telegram__popup-qr"> <p class="telegram__popup-text">Подключитесь к <a target="_blank" href="https://max.ru/nash_domrf_bot" class="telegram__popup-link">чат-боту ДОМ.РФ в MAX</a><span class="telegram__popup-link-span">чат-боту ДОМ.РФ в MAX</span>, чтобы не пропускать важные обновления по новостройкам
-</p> <div class="telegram__popup-block"><img src="/upload/local.portal/818/9tprhr7wpc71p5ait0r0xn7rxd2ios9p/icon_max.png" alt="" class="telegram__popup-block-icon"> <p class="telegram__popup-text telegram__popup-text_mobile">Подключитесь к <a target="_blank" href="https://max.ru/nash_domrf_bot" class="telegram__popup-link">чат-боту ДОМ.РФ в MAX</a><span class="telegram__popup-link-span">чат-боту ДОМ.РФ в MAX</span>, чтобы не пропускать важные обновления по новостройкам
-</p></div> <a target="_blank" href="https://max.ru/nash_domrf_bot" class="telegram__popup-link-button">Подписаться</a></div></article></div>
+  // Защита 3: нет шаблона <telegram-block>
+  if (el && !el.querySelector('telegram-block')) {
+    console.log('⚠️ Нет шаблона telegram-block — пропускаем');
+    return;
+  }
+
+  // Инициализируем
+  new Vue({
+    el: '#telegram-block',
+    components: { 'telegram-block': TelegramBlock }
+  });
+  el.__vue_initialized = true;
+  console.log('✅ Vue инициализирован');
+}
