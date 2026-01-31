@@ -1,16 +1,14 @@
 // vh.js
-let resizeTimer;
+let isInitialized = false;
 
-function setVH() {
-  const vh = window.innerHeight * 0.01;
-  document.documentElement.style.setProperty('--vh', `${vh}px`);
+export default function initVH() {
+  if (isInitialized) return;
+  isInitialized = true;
+
+  const setVH = () => {
+    document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+  };
+
+  setVH();
+  window.addEventListener('resize', setVH);
 }
-
-// Запускаем сразу
-setVH();
-
-// Добавляем один обработчик
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(setVH, 100); // debounce для производительности
-});
