@@ -1,31 +1,16 @@
-function initTelegramBlockIfNeeded() {
-  const el = document.getElementById('telegram-block');
-  console.log('initTelegramBlockIfNeeded вызван, элемент:', el);
+// vh.js
+let resizeTimer;
 
-  // Защита 1: уже инициализирован
-  if (el && el.__vue_initialized) {
-    console.log('Уже инициализирован — пропускаем');
-    return;
-  }
-
-  // Защита 2: уже содержит отрендеренный контент (article.telegram)
-  if (el && el.querySelector('article.telegram')) {
-    console.log('Уже отрендерен — пропускаем');
-    return;
-  }
-
-  // Защита 3: нет шаблона <telegram-block>
-  if (el && !el.querySelector('telegram-block')) {
-    console.log('Нет шаблона telegram-block — пропускаем');
-    return;
-  }
-
-  // Инициализируем
-  new Vue({
-    el: '#telegram-block',
-    components: { 'telegram-block': TelegramBlock }
-  });
-  el.__vue_initialized = true;
-  console.log('Vue инициализирован');
+function setVH() {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
 }
 
+// Запускаем сразу
+setVH();
+
+// Добавляем один обработчик
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(setVH, 100); // debounce для производительности
+});
