@@ -192,7 +192,7 @@ function showTooltip(trigger, content) {
     });
   });
 
-  // Сохраняю ссылки на текущий тултип
+  // Сохраняю ссылки на текущий тултип 
   activeTooltip = tooltip;
   activeTrigger = trigger;
 
@@ -231,10 +231,10 @@ function hideTooltip(tooltip) {
   activeTrigger = null;
 }
 
-// ОБРАБОТЧИК НАВЕДЕНИЯ
+// ОБРАБОТЧИК НАВЕДЕНИЯ 
 function handleMouseOver(e) {
   // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || !e.target.closest) return;
+  if (!e.target || typeof e.target.closest !== 'function') return;
 
   // Нахожу именно тот элемент, на который навели
   const trigger = e.target.closest('.js--content-note-new');
@@ -252,9 +252,12 @@ function handleMouseOver(e) {
 
   // Читаю контент именно из этого элемента
   const content = trigger.dataset.contentText || '';
-
+  
   // === Дополнительная проверка на пустой контент ===
-  if (!content || content.trim() === '') return;
+  if (!content || content.trim() === '') {
+    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
+    return;
+  }
 
   // Если уже открыт тултип для этого же блока - ничего не делаю
   if (activeTooltip && activeTrigger === trigger) {
@@ -271,15 +274,21 @@ function handleMouseOver(e) {
   showTooltip(trigger, content);
 }
 
-// ОБРАБОТЧИК УХОДА МЫШИ (использую mouseleave вместо mouseout)
-function handleMouseLeave(e) {
+// ОБРАБОТЧИК УХОДА МЫШИ (использую mouseout - работает надёжнее для этой задачи)
+function handleMouseOut(e) {
   // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || !e.target.closest) return;
+  if (!e.target || typeof e.target.closest !== 'function') return;
 
   const trigger = e.target.closest('.js--content-note-new');
+  const relatedTarget = e.relatedTarget || e.toElement;
 
-  // Если уходим не с нашего триггера или тултип не активен - выходим
-  if (!trigger || !activeTooltip || activeTrigger !== trigger) {
+  // Проверяю, что relatedTarget существует и имеет метод closest
+  const isTooltip = relatedTarget && 
+                    typeof relatedTarget.closest === 'function' && 
+                    relatedTarget.closest('.content-note__text-new');
+
+  // Если уходим не с нашего триггера или уходим на сам тултип - ничего не делаем
+  if (!trigger || isTooltip) {
     return;
   }
 
@@ -297,36 +306,10 @@ function handleMouseLeave(e) {
   }, 150);
 }
 
-// ОБРАБОТЧИК УХОДА МЫШИ С ТУЛТИПА
-function handleTooltipMouseLeave(e) {
-  // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || !e.target.closest) return;
-
-  const tooltip = e.target.closest('.content-note__text-new');
-
-  // Если уходим не с нашего тултипа - выходим
-  if (!tooltip || !activeTooltip || activeTooltip !== tooltip) {
-    return;
-  }
-
-  // Отменяю предыдущий таймер
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-  }
-
-  // Закрываю тултип
-  tooltipCloseTimer = setTimeout(() => {
-    if (activeTooltip) {
-      hideTooltip(activeTooltip);
-    }
-    tooltipCloseTimer = null;
-  }, 150);
-}
-
 // ОБРАБОТЧИК КЛИКА ДЛЯ МОБИЛЬНЫХ
 function handleClick(e) {
   // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || !e.target.closest) return;
+  if (!e.target || typeof e.target.closest !== 'function') return;
 
   const trigger = e.target.closest('.js--content-note-new');
   if (!trigger) return;
@@ -343,9 +326,12 @@ function handleClick(e) {
 
   // === Читаем контент именно из этого элемента ===
   const content = trigger.dataset.contentText || '';
-
+  
   // === Дополнительная проверка на пустой контент ===
-  if (!content || content.trim() === '') return;
+  if (!content || content.trim() === '') {
+    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
+    return;
+  }
 
   // Предотвращаю стандартное поведение
   e.preventDefault();
@@ -398,13 +384,10 @@ export default function contentNoteNew() {
 
   // Добавляю обработчики событий
   document.addEventListener('mouseover', handleMouseOver);
-  // Использую mouseleave вместо mouseout - работает надёжнее
-  document.addEventListener('mouseleave', handleMouseLeave);
+  // Использую mouseout вместо mouseleave - работает надёжнее для этой задачи
+  document.addEventListener('mouseout', handleMouseOut);
   document.addEventListener('click', handleClickOutside);
   window.addEventListener('resize', handleResize);
-
-  // Добавляю обработчик ухода мыши с тултипа
-  document.addEventListener('mouseleave', handleTooltipMouseLeave);
 
   // Скролл страницы
   window.addEventListener('scroll', handleScroll, { passive: true });
