@@ -6,6 +6,7 @@ let activeTooltip = null;
 let activeTrigger = null;
 let tooltipContainer = null;
 let isBodyLocked = false;
+let tooltipCloseTimer = null; // Таймер для закрытия тултипа
 
 // Создаю общий контейнер один раз
 function ensureTooltipContainer() {
@@ -122,7 +123,7 @@ function positionTooltip(trigger, tooltip) {
     // Горизонтальное позиционирование
     if (centerX + tooltipWidth + offset > viewportWidth) {
       // Тултип слева от иконки
-      tooltip.style.right = `${viewportWidth - rect.left + offset - 15}px`;
+      tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
       tooltip.classList.add('left');
       tooltip.classList.remove('right');
     } else {
@@ -205,6 +206,12 @@ function showTooltip(trigger, content) {
 function hideTooltip(tooltip) {
   if (!tooltip) return;
 
+  // Отменяю таймер закрытия
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+    tooltipCloseTimer = null;
+  }
+
   tooltip.style.pointerEvents = 'none';
   tooltip.style.opacity = '0';
   tooltip.classList.remove('active');
@@ -224,11 +231,21 @@ function hideTooltip(tooltip) {
   activeTrigger = null;
 }
 
-//ОБРАБОТЧИК НАВЕДЕНИЯ 
+// ОБРАБОТЧИК НАВЕДЕНИЯ 
 function handleMouseOver(e) {
   // Нахожу именно тот элемент, на который навели
   const trigger = e.target.closest('.js--content-note-new');
   if (!trigger) return;
+
+  // === Проверяю, есть ли класс для полного отключения тултипа ===
+  if (trigger.classList.contains('not-use-tooltip')) {
+    return;
+  }
+
+  // === Проверяю, есть ли класс для отключения на мобильных ===
+  if (isMobileDevice() && trigger.classList.contains('not-use-tooltip-mobile')) {
+    return;
+  }
 
   // Читаю контент именно из этого элемента
   const content = trigger.dataset.contentText || '';
@@ -239,32 +256,76 @@ function handleMouseOver(e) {
     return;
   }
 
+  // Отменяю предыдущий таймер закрытия
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+    tooltipCloseTimer = null;
+  }
+
   // Показываю тултип с контентом из именно блока по который навели
   showTooltip(trigger, content);
 }
 
-// ОБРАБОТЧИК УХОДА МЫШИ
-function handleMouseOut(e) {
+// ОБРАБОТЧИК УХОДА МЫШИ (использую mouseleave вместо mouseout)
+function handleMouseLeave(e) {
   const trigger = e.target.closest('.js--content-note-new');
-  const relatedTarget = e.relatedTarget || e.toElement;
 
-  // Проверяю, ушли ли мы на сам тултип
-  const isTooltip = relatedTarget && relatedTarget.closest && relatedTarget.closest('.content-note__text-new');
-
-  if (trigger && !isTooltip) {
-    // Задержка перед скрытием для плавности
-    setTimeout(() => {
-      if (activeTooltip && activeTrigger === trigger) {
-        hideTooltip(activeTooltip);
-      }
-    }, 150);
+  // Если уходим не с нашего триггера или тултип не активен - выходим
+  if (!trigger || !activeTooltip || activeTrigger !== trigger) {
+    return;
   }
+
+  // Отменяю предыдущий таймер
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+  }
+
+  // Задержка перед скрытием для плавности
+  tooltipCloseTimer = setTimeout(() => {
+    if (activeTooltip && activeTrigger === trigger) {
+      hideTooltip(activeTooltip);
+    }
+    tooltipCloseTimer = null;
+  }, 150);
+}
+
+// ОБРАБОТЧИК УХОДА МЫШИ С ТУЛТИПА
+function handleTooltipMouseLeave(e) {
+  const tooltip = e.target.closest('.content-note__text-new');
+
+  // Если уходим не с нашего тултипа - выходим
+  if (!tooltip || !activeTooltip || activeTooltip !== tooltip) {
+    return;
+  }
+
+  // Отменяю предыдущий таймер
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+  }
+
+  // Закрываю тултип
+  tooltipCloseTimer = setTimeout(() => {
+    if (activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+    tooltipCloseTimer = null;
+  }, 150);
 }
 
 // ОБРАБОТЧИК КЛИКА ДЛЯ МОБИЛЬНЫХ
 function handleClick(e) {
   const trigger = e.target.closest('.js--content-note-new');
   if (!trigger) return;
+
+  // === Проверяю, есть ли класс для полного отключения тултипа ===
+  if (trigger.classList.contains('not-use-tooltip')) {
+    return;
+  }
+
+  // === Проверяю, есть ли класс для отключения на мобильных ===
+  if (trigger.classList.contains('not-use-tooltip-mobile')) {
+    return;
+  }
 
   // === Читаем контент именно из этого элемента ===
   const content = trigger.dataset.contentText || '';
@@ -321,9 +382,13 @@ export default function contentNoteNew() {
 
   // Добавляю обработчики событий
   document.addEventListener('mouseover', handleMouseOver);
-  document.addEventListener('mouseout', handleMouseOut);
+  // Использую mouseleave вместо mouseout - работает надёжнее
+  document.addEventListener('mouseleave', handleMouseLeave);
   document.addEventListener('click', handleClickOutside);
   window.addEventListener('resize', handleResize);
+
+  // Добавляю обработчик ухода мыши с тултипа
+  document.addEventListener('mouseleave', handleTooltipMouseLeave);
 
   // Скролл страницы
   window.addEventListener('scroll', handleScroll, { passive: true });
