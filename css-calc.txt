@@ -1,25 +1,37 @@
-// Определяем позиционирование для короткого текста
-if (tooltip.classList.contains('location-side')) {
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-  const offset = 10; // отступ от иконки
+// Инициализация
+export default function contentNoteNew() {
+  // === Закрываем тултип при скролле ===
+  const handleScroll = () => {
+    if (activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+  };
   
-  // Горизонтальное позиционирование
-  if (centerX + tooltipWidth + offset > viewportWidth) {
-    // Тултип слева от иконки
-    tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
-    tooltip.classList.add('left');
-    tooltip.classList.remove('right');
-  } else {
-    // Тултип справа от иконки
-    tooltip.style.left = `${rect.right + offset}px`;
-    tooltip.classList.add('right');
-    tooltip.classList.remove('left');
+  // Добавляем обработчики событий
+  document.addEventListener('mouseover', handleMouseOver);
+  document.addEventListener('mouseout', handleMouseOut);
+  document.addEventListener('click', handleClickOutside);
+  window.addEventListener('resize', handleResize);
+  
+  // Скролл страницы
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  // Прокрутка колёсиком мыши
+  document.addEventListener('wheel', handleScroll, { passive: true });
+  
+  // Для мобильных устройств используем клик вместо наведения
+  const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
+                (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+  
+  if (isIOS || isMobileDevice()) {
+    document.addEventListener('touchstart', handleClick, { passive: false });
+    // Свайп на мобильных
+    document.addEventListener('touchmove', handleScroll, { passive: true });
   }
   
-  // Вертикальное позиционирование (по центру)
-  tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
-  tooltip.classList.remove('up', 'down');
-  
-  return;
+  // Обработчик для закрытия по клику на крестики в мобильном тултипе
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('js--close-mobile-tooltip') && activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+  });
 }
