@@ -1,3 +1,74 @@
+// === ОБРАБОТЧИК НАВЕДЕНИЯ ===
+function handleMouseOver(e) {
+  // Находим именно тот элемент, на который навели
+  const trigger = e.target.closest('.js--content-note-new');
+  if (!trigger) return;
+  
+  // === Читаем контент именно из этого элемента ===
+  const content = trigger.dataset.contentText || '';
+  if (!content) return;
+  
+  // Если уже открыт тултип для этого же триггера - ничего не делаем
+  if (activeTooltip && activeTrigger === trigger) {
+    return;
+  }
+  
+  // Отменяем предыдущий таймер закрытия, если есть
+  if (window.tooltipCloseTimer) {
+    clearTimeout(window.tooltipCloseTimer);
+    window.tooltipCloseTimer = null;
+  }
+  
+  // === Показываем тултип с контентом из именно этого триггера ===
+  showTooltip(trigger, content);
+}
+
+// === ОБРАБОТЧИК УХОДА МЫШИ ===
+function handleMouseLeave(e) {
+  const trigger = e.target.closest('.js--content-note-new');
+  
+  if (!trigger || !activeTooltip || activeTrigger !== trigger) {
+    return;
+  }
+  
+  // Отменяем предыдущий таймер, если есть
+  if (window.tooltipCloseTimer) {
+    clearTimeout(window.tooltipCloseTimer);
+  }
+  
+  // Задержка перед скрытием для плавности
+  window.tooltipCloseTimer = setTimeout(() => {
+    if (activeTooltip && activeTrigger === trigger) {
+      hideTooltip(activeTooltip);
+    }
+    window.tooltipCloseTimer = null;
+  }, 150);
+}
+
+// === ОБРАБОТЧИК УХОДА МЫШИ С ТУЛТИПА ===
+function handleTooltipMouseLeave(e) {
+  const tooltip = e.target.closest('.content-note__text-new');
+  
+  if (!tooltip || !activeTooltip || activeTooltip !== tooltip) {
+    return;
+  }
+  
+  // Отменяем предыдущий таймер, если есть
+  if (window.tooltipCloseTimer) {
+    clearTimeout(window.tooltipCloseTimer);
+  }
+  
+  // Закрываем тултип
+  window.tooltipCloseTimer = setTimeout(() => {
+    if (activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+    window.tooltipCloseTimer = null;
+  }, 150);
+}
+
+------------------------------
+
 // Инициализация
 export default function contentNoteNew() {
   // === Закрываем тултип при скролле ===
@@ -9,9 +80,13 @@ export default function contentNoteNew() {
   
   // Добавляем обработчики событий
   document.addEventListener('mouseover', handleMouseOver);
-  document.addEventListener('mouseout', handleMouseOut);
+  // Используем mouseleave вместо mouseout - работает надёжнее
+  document.addEventListener('mouseleave', handleMouseLeave);
   document.addEventListener('click', handleClickOutside);
   window.addEventListener('resize', handleResize);
+  
+  // Добавляем обработчик ухода мыши с тултипа
+  document.addEventListener('mouseleave', handleTooltipMouseLeave);
   
   // Скролл страницы
   window.addEventListener('scroll', handleScroll, { passive: true });
