@@ -1,110 +1,62 @@
-// ОБРАБОТЧИК УХОДА МЫШИ С ИКОНКИ
-function handleMouseOut(e) {
-  // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || typeof e.target.closest !== 'function') return;
+// Созданю тултип
+function createTooltip(content, trigger) {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'content-note__text-new';
+  tooltip.style.cssText = `
+    opacity: 0;
+    pointerEvents: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  `;
 
-  const trigger = e.target.closest('.js--content-note-new');
-  const relatedTarget = e.relatedTarget || e.toElement;
+  // Проверяю, содержит ли контент HTML
+  const hasHTML = /<[^>]+>/.test(content);
+  const textLength = content.replace(/<[^>]+>/g, '').length;
 
-  // Проверяю, что relatedTarget существует и имеет метод closest
-  const isTooltip = relatedTarget &&
-    typeof relatedTarget.closest === 'function' &&
-    relatedTarget.closest('.content-note__text-new');
-
-  // Если уходим не с нашего триггера или уходим на сам тултип - ничего не делаем
-  if (!trigger || isTooltip) {
-    return;
+  // Определяю тип позиционирования
+  // Тултип сбоку только если:
+  // 1. У триггера есть класс aside-location
+  // 2. В контенте нет HTML
+  // 3. Длина текста <= 40 символов
+  if (trigger && trigger.classList.contains('aside-location') && !hasHTML && textLength <= 40) {
+    tooltip.classList.add('location-side');
   }
 
-  // Отменяю предыдущий таймер
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-  }
+  // Добавляю контент
+  tooltip.innerHTML = content;
 
-  // Задержка перед скрытием для плавности
-  tooltipCloseTimer = setTimeout(() => {
-    if (activeTooltip && activeTrigger === trigger) {
-      hideTooltip(activeTooltip);
-    }
-    tooltipCloseTimer = null;
-  }, 150);
+  return tooltip;
 }
 
-// ОБРАБОТЧИК УХОДА МЫШИ С ТУЛТИПА
-function handleTooltipMouseOut(e) {
-  // Проверяю, что уходим именно с тултипа
-  if (!e.target || typeof e.target.closest !== 'function') return;
-
-  const tooltip = e.target.closest('.content-note__text-new');
-  if (!tooltip || tooltip !== activeTooltip) {
-    return;
+// Показ тултипа
+function showTooltip(trigger, content) {
+  // Закрываю предыдущий тултип, если он есть
+  if (activeTooltip) {
+    hideTooltip(activeTooltip);
   }
 
-  const relatedTarget = e.relatedTarget || e.toElement;
-  
-  // Проверяю, куда уходим - если на иконку-триггер, то не закрываем
-  const isTrigger = relatedTarget &&
-    typeof relatedTarget.closest === 'function' &&
-    relatedTarget.closest('.js--content-note-new');
+  // Создаю новый тултип с контентом из data-content-text блока на который навели
+  // Передаю триггер для проверки класса aside-location
+  const tooltip = createTooltip(content, trigger);
+  ensureTooltipContainer().appendChild(tooltip);
 
-  // Если уходим на триггер - ничего не делаем
-  if (isTrigger) {
-    return;
-  }
+  // Позиционирую тултип относительно блока по которому кликнули
+  positionTooltip(trigger, tooltip);
 
-  // Отменяю предыдущий таймер
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-  }
-
-  // Закрываем тултип, так как уходим не на триггер
-  tooltipCloseTimer = setTimeout(() => {
-    if (activeTooltip) {
-      hideTooltip(activeTooltip);
-    }
-    tooltipCloseTimer = null;
-  }, 150);
-}
-
---------------------------------
-
-// Инициализация
-export default function contentNoteNew() {
-  //  Закрываем тултип при скролле
-  const handleScroll = () => {
-    if (activeTooltip) {
-      hideTooltip(activeTooltip);
-    }
-  };
-
-  // Добавляю обработчики событий
-  document.addEventListener('mouseover', handleMouseOver);
-  // Использую mouseout вместо mouseleave - работает надёжнее для этой задачи
-  document.addEventListener('mouseout', handleMouseOut);
-  // Добавляю обработчик ухода с тултипа
-  document.addEventListener('mouseout', handleTooltipMouseOut);
-  document.addEventListener('click', handleClickOutside);
-  window.addEventListener('resize', handleResize);
-
-  // Скролл страницы
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  // Прокрутка колёсиком мыши
-  document.addEventListener('wheel', handleScroll, { passive: true });
-
-  // Для мобильных устройств использую клик вместо наведения
-  const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
-    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-
-  if (isIOS || isMobileDevice()) {
-    document.addEventListener('touchstart', handleClick, { passive: false });
-    // Свайп на мобильных
-    document.addEventListener('touchmove', handleScroll, { passive: true });
-  }
-
-  // Обработчик для закрытия по клику на крестики в мобильном тултипе
-  document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('js--close-mobile-tooltip') && activeTooltip) {
-      hideTooltip(activeTooltip);
-    }
+  // Показываю с анимацией небольшой
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      tooltip.style.opacity = '1';
+      tooltip.style.pointerEvents = 'auto';
+      tooltip.classList.add('active');
+    });
   });
+
+  // Сохраняю ссылки на текущий тултип 
+  activeTooltip = tooltip;
+  activeTrigger = trigger;
+
+  // Для мобильных добавляю блокировку скролла
+  if (isMobileDevice()) {
+    addClassBody();
+  }
 }
