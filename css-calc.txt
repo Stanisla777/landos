@@ -1,102 +1,15 @@
-// Позиционирование тултипа относительно иконки по которой кликнули
-function positionTooltip(trigger, tooltip) {
-  const rect = trigger.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
+const topOffset = rect.top + rect.height / 2;
 
-  const isMobileOrTablet = isMobileDevice();
-  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-
-  // Для мобильных устройств использую мобильный вид
-  if (isMobileOrTablet || isNarrow) {
-    tooltip.style.transform = 'translate(-50%, -50%)';
-    tooltip.classList.add('mobile-tooltip');
-    return;
-  }
-
-  // Сбрасываю позиционирование
-  tooltip.style.left = '';
-  tooltip.style.right = '';
-  tooltip.style.top = '';
-  tooltip.style.bottom = '';
-  tooltip.style.transform = '';
-
-  // Измеряю размеры тултипа
-  const originalDisplay = tooltip.style.display;
-  tooltip.style.display = 'block';
-  tooltip.style.opacity = '0';
-  const tooltipRect = tooltip.getBoundingClientRect();
-  const tooltipWidth = tooltipRect.width;
-  const tooltipHeight = tooltipRect.height;
-  tooltip.style.display = originalDisplay;
-  tooltip.style.opacity = '';
-
-  // Определяю позиционирование для короткого текста
-  if (tooltip.classList.contains('location-side')) {
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const offset = 10; // отступ от иконки
-    const minMargin = 100; // минимальный отступ от края экрана
-
-    // Горизонтальное позиционирование
-    // Если тултип не помещается справа ИЛИ справа остаётся меньше 100px свободного места
-    if (centerX + tooltipWidth + offset > viewportWidth - minMargin) {
-      // Тултип слева от иконки
-      tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
-      tooltip.classList.add('left');
-      tooltip.classList.remove('right');
-    } else {
-      // Тултип справа от иконки
-      tooltip.style.left = `${rect.right + offset}px`;
-      tooltip.classList.add('right');
-      tooltip.classList.remove('left');
-    }
-
-    // Вертикальное позиционирование (по центру иконки)
-    tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
-    tooltip.classList.remove('up', 'down');
-
-    return;
-  }
-
-  // Для длинного текста используем стандартное позиционирование
-
-  // Горизонтальное позиционирование
-  // Если центр иконки правее середины экрана → тултип слева от иконки
-  // Если центр иконки левее середины экрана → тултип справа от иконки
-  const leftOffset = rect.left + rect.width / 2;
-  const offset = 4; // отступ от иконки
-
-  if (viewportWidth / 2 < leftOffset) {
-    // Иконка правее середины → тултип слева от иконки - прижимаем к ПРАВОМУ краю иконки
-    tooltip.style.left = 'auto';
-    tooltip.style.right = `${viewportWidth - rect.right + offset}px`;
-    tooltip.classList.add('left');
-    tooltip.classList.remove('right');
-  } else {
-    // Иконка левее середины → тултип справа от иконки - прижимаем к ЛЕВОМУ краю иконки
-    tooltip.style.left = `${rect.left - offset}px`;
-    tooltip.style.right = 'auto';
-    tooltip.classList.add('right');
-    tooltip.classList.remove('left');
-  }
-
-  // Вертикальное позиционирование
-  // Если центр иконки выше середины экрана → тултип снизу
-  // Если центр иконки ниже середины экрана → тултип сверху
-  const topOffset = rect.top + rect.height / 2;
-
-  if (viewportHeight / 2 < topOffset) {
-    // Иконка ниже середины → тултип сверху - прижимаем к НИЖНЕМУ краю иконки
-    tooltip.style.top = 'auto';
-    tooltip.style.bottom = `${viewportHeight - rect.bottom + offset}px`;
-    tooltip.classList.add('up');
-    tooltip.classList.remove('down');
-  } else {
-    // Иконка выше середины → тултип снизу - прижимаем к ВЕРХНЕМУ краю иконки
-    tooltip.style.top = `${rect.top - offset}px`;
-    tooltip.style.bottom = 'auto';
-    tooltip.classList.add('down');
-    tooltip.classList.remove('up');
-  }
+if (viewportHeight / 2 < topOffset) {
+  // Иконка ниже середины → тултип сверху - прижимаем к ВЕРХНЕМУ краю иконки
+  tooltip.style.top = 'auto';
+  tooltip.style.bottom = `${viewportHeight - rect.top + offset}px`;
+  tooltip.classList.add('up');
+  tooltip.classList.remove('down');
+} else {
+  // Иконка выше середины → тултип снизу - прижимаем к НИЖНЕМУ краю иконки
+  tooltip.style.top = `${rect.bottom - offset}px`;
+  tooltip.style.bottom = 'auto';
+  tooltip.classList.add('down');
+  tooltip.classList.remove('up');
 }
