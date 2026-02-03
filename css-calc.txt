@@ -1,15 +1,40 @@
-const topOffset = rect.top + rect.height / 2;
+// Созданю тултип
+function createTooltip(content, trigger) {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'content-note__text-new';
+  tooltip.style.cssText = `
+    opacity: 0;
+    pointerEvents: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  `;
 
-if (viewportHeight / 2 < topOffset) {
-  // Иконка ниже середины → тултип сверху - прижимаем к ВЕРХНЕМУ краю иконки
-  tooltip.style.top = 'auto';
-  tooltip.style.bottom = `${viewportHeight - rect.top + offset}px`;
-  tooltip.classList.add('up');
-  tooltip.classList.remove('down');
-} else {
-  // Иконка выше середины → тултип снизу - прижимаем к НИЖНЕМУ краю иконки
-  tooltip.style.top = `${rect.bottom - offset}px`;
-  tooltip.style.bottom = 'auto';
-  tooltip.classList.add('down');
-  tooltip.classList.remove('up');
+  // Добавляем классы из триггера, начинающиеся с 'class-for-tooltip-'
+  if (trigger) {
+    const triggerClasses = Array.from(trigger.classList);
+    const tooltipClasses = triggerClasses.filter(className => 
+      className.startsWith('class-for-tooltip-')
+    );
+    if (tooltipClasses.length > 0) {
+      tooltip.classList.add(...tooltipClasses);
+    }
+  }
+
+  // Проверяю, содержит ли контент HTML
+  const hasHTML = /<[^>]+>/.test(content);
+  const textLength = content.replace(/<[^>]+>/g, '').length;
+
+  // Определяю тип позиционирования
+  // Тултип сбоку только если:
+  // 1. У триггера есть класс aside-location
+  // 2. В контенте нет HTML
+  // 3. Длина текста <= 40 символов
+  if (trigger && trigger.classList.contains('aside-location') && !hasHTML && textLength <= 40) {
+    tooltip.classList.add('location-side');
+  }
+
+  // Добавляю контент
+  tooltip.innerHTML = content;
+
+  return tooltip;
 }
+
