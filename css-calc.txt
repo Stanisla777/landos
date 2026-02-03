@@ -1,640 +1,562 @@
-/**
- * Избранные материалы
- */
+// content-note-new.js
+/* eslint-disable */
 
-/*if (document.readyState !== 'loading') {
-  processBtnBookmark();
-  initCheckboxValidation('.js--btn-registration-state');
-} else {
-  document.addEventListener('DOMContentLoaded', function () {
-    processBtnBookmark();
-    initCheckboxValidation('.js--btn-registration-state');
-  });
-}*/
+// Глобальные переменные
+let activeTooltip = null;
+let activeTrigger = null;
+let tooltipContainer = null;
+let isBodyLocked = false;
+let tooltipCloseTimer = null; // Таймер для закрытия тултипа
 
-
-/*
-События по клику на кнопку Войти через Госуслуги, проверка заполненности чекбоксов с атрибутом required
-перехватываю клик до выполнения onclick, проверяю чекбоксы и если они заполнены запускаю битриксовый обработчик, который сохраняю в переменной до удаления
-
-если не заполнены то я изначально убранный обработчик onclick не подставляю в кнопку
-Автор - Станислав Щёголев
- */
-
-
-// import AddClassBody from "../../../../src/js/modules/redesign-site/disallow-body-scrolling";
-
-function runAfterDomReady() {
-  // 1. поставил первым, чтобы точно ничего не перехватывало и я спокойно сохранил onclick в переменную
-  initCheckboxValidation('.js--btn-registration-state');
-
-  // 2. поставил после моего метода, что-то тут перехватывает клик
-  BOOKMARKS.bindBookmarkButtons() // обработка клика на кнопки "добавить в избранное"
-  BOOKMARKS.updateBookmarkButtons() // получение данных о материалах в избранном и обновление состояния кнопок "добавить в избранное"
+// Создаю общий контейнер один раз
+function ensureTooltipContainer() {
+  if (!tooltipContainer) {
+    tooltipContainer = document.createElement('div');
+    tooltipContainer.className = 'tooltip-popup-container';
+    Object.assign(tooltipContainer.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+      zIndex: '2147483646',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    });
+    document.body.appendChild(tooltipContainer);
+  }
+  return tooltipContainer;
 }
 
-// Вызов функций
-if (document.readyState !== 'loading') {
-  runAfterDomReady();
-} else {
-  document.addEventListener('DOMContentLoaded', runAfterDomReady);
+// Функции блокировки/разблокировки скролла
+function addClassBody() {
+  if (isBodyLocked) return;
+  isBodyLocked = true;
+  document.body.classList.add('body-modal', 'body-additional-class');
 }
 
+function removeClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal', 'body-additional-class');
+  }
+  isBodyLocked = false;
+}
 
-/**
- * Инициализирую валидацию чекбоксов перед вызовом onclick на кнопке.
- * Показываю ошибку, если обязательные чекбоксы не отмечены.
- * Добавляю класс input_error к блоку .js--checkbox_wrapper.
- *
- */
-function initCheckboxValidation(buttonSelector) {
-  const btn = document.querySelector(buttonSelector);
-  if (!btn) {
+// Определяю мобильное или планшетное устройства
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function isMobilePhone() {
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua) && !/iPad/.test(ua)) return true;
+  if (/Android/.test(ua) && /Mobile/.test(ua)) return true;
+  return false;
+}
+
+// Созданю тултип
+function createTooltip(content, trigger) {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'content-note__text-new';
+  tooltip.style.cssText = `
+    opacity: 0;
+    pointerEvents: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  `;
+
+  // Проверяю, содержит ли контент HTML
+  const hasHTML = /<[^>]+>/.test(content);
+  const textLength = content.replace(/<[^>]+>/g, '').length;
+
+  // Определяю тип позиционирования
+  // Тултип сбоку только если:
+  // 1. У триггера есть класс aside-location
+  // 2. В контенте нет HTML
+  // 3. Длина текста <= 40 символов
+  if (trigger && trigger.classList.contains('aside-location') && !hasHTML && textLength <= 40) {
+    tooltip.classList.add('location-side');
+  }
+
+  // Добавляю контент
+  tooltip.innerHTML = content;
+
+  return tooltip;
+}
+
+// Позиционирование тултипа относительно иконки по которой кликнули
+//старое
+// function positionTooltip(trigger, tooltip) {
+//   const rect = trigger.getBoundingClientRect();
+//   const viewportWidth = window.innerWidth;
+//   const viewportHeight = window.innerHeight;
+//
+//   const isMobileOrTablet = isMobileDevice();
+//   const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+//
+//   // Для мобильных устройств использую мобильный вид
+//   if (isMobileOrTablet || isNarrow) {
+//     tooltip.style.transform = 'translate(-50%, -50%)';
+//     tooltip.classList.add('mobile-tooltip');
+//     return;
+//   }
+//
+//   // Сбрасываю позиционирование
+//   tooltip.style.left = '';
+//   tooltip.style.right = '';
+//   tooltip.style.top = '';
+//   tooltip.style.bottom = '';
+//   tooltip.style.transform = '';
+//
+//   // Измеряю размеры тултипа
+//   const originalDisplay = tooltip.style.display;
+//   tooltip.style.display = 'block';
+//   tooltip.style.opacity = '0';
+//   const tooltipRect = tooltip.getBoundingClientRect();
+//   const tooltipWidth = tooltipRect.width;
+//   const tooltipHeight = tooltipRect.height;
+//   tooltip.style.display = originalDisplay;
+//   tooltip.style.opacity = '';
+//
+//   // Определяю позиционирование для короткого текста
+//   if (tooltip.classList.contains('location-side')) {
+//     const centerX = rect.left + rect.width / 2;
+//     const centerY = rect.top + rect.height / 2;
+//     const offset = 10; // отступ от иконки
+//     const minMargin = 100; // минимальный отступ от края экрана
+//
+//     // Горизонтальное позиционирование
+//     // Если тултип не помещается справа ИЛИ справа остаётся меньше 100px свободного места
+//     if (centerX + tooltipWidth + offset > viewportWidth - minMargin) {
+//       // Тултип слева от иконки
+//       tooltip.style.right = `${viewportWidth - rect.left + offset - 15}px`;
+//       tooltip.classList.add('left');
+//       tooltip.classList.remove('right');
+//     } else {
+//       // Тултип справа от иконки
+//       tooltip.style.left = `${rect.right + offset}px`;
+//       tooltip.classList.add('right');
+//       tooltip.classList.remove('left');
+//     }
+//
+//     // Вертикальное позиционирование (по центру)
+//     tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
+//     tooltip.classList.remove('up', 'down');
+//
+//     return;
+//   }
+//
+//   // Для длинного текста используем стандартное позиционирование
+//
+//   // Горизонтальное позиционирование
+//   const centerX = rect.left + rect.width / 2;
+//   if (centerX + tooltipWidth / 2 > viewportWidth - 20) {
+//     tooltip.style.right = `${viewportWidth - centerX - rect.width / 2 + 10}px`;
+//     tooltip.classList.add('left');
+//     tooltip.classList.remove('right');
+//   } else if (centerX - tooltipWidth / 2 < 20) {
+//     tooltip.style.left = `${centerX - rect.width / 2 - 10}px`;
+//     tooltip.classList.add('right');
+//     tooltip.classList.remove('left');
+//   } else {
+//     tooltip.style.left = `${centerX - tooltipWidth / 2}px`;
+//   }
+//
+//   // Вертикальное позиционирование
+//   const centerY = rect.top + rect.height / 2;
+//   if (centerY + tooltipHeight + 20 > viewportHeight) {
+//     tooltip.style.bottom = `${viewportHeight - centerY + rect.height / 2 + 10}px`;
+//     tooltip.classList.add('up');
+//     tooltip.classList.remove('down');
+//   } else {
+//     tooltip.style.top = `${centerY + rect.height / 2 + 10}px`;
+//     tooltip.classList.add('down');
+//     tooltip.classList.remove('up');
+//   }
+// }
+
+//новое
+function positionTooltip(trigger, tooltip) {
+  const rect = trigger.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  const isMobileOrTablet = isMobileDevice();
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+
+  // Для мобильных устройств использую мобильный вид
+  if (isMobileOrTablet || isNarrow) {
+    tooltip.style.transform = 'translate(-50%, -50%)';
+    tooltip.classList.add('mobile-tooltip');
     return;
   }
 
-  // Сохраняем onclick в переменную
-  const originalOnclick = btn.getAttribute('onclick');
-  const originalHandler = btn.onclick;
+  // Сбрасываю позиционирование
+  tooltip.style.left = '';
+  tooltip.style.right = '';
+  tooltip.style.top = '';
+  tooltip.style.bottom = '';
+  tooltip.style.transform = '';
 
-  // Удаляю onclick из элемента, чтобы не срабатывал без валидации
-  btn.removeAttribute('onclick');
-  btn.onclick = null;
+  // Измеряю размеры тултипа
+  const originalDisplay = tooltip.style.display;
+  tooltip.style.display = 'block';
+  tooltip.style.opacity = '0';
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const tooltipWidth = tooltipRect.width;
+  const tooltipHeight = tooltipRect.height;
+  tooltip.style.display = originalDisplay;
+  tooltip.style.opacity = '';
 
-  // Определяю общий контейнер (модальное окно)
-  const container = btn.closest('.js--modal') || document;
-  const checkboxWrappers = container.querySelectorAll('.js--checkbox_wrapper');
-  const errorClass = 'js--input__error_required';
+  // Определяю позиционирование для короткого текста
+  if (tooltip.classList.contains('location-side')) {
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const offset = 10; // отступ от иконки
+    const minMargin = 100; // минимальный отступ от края экрана
 
-
-  function getErrorMessage(checkbox) {
-    return checkbox.getAttribute('data-required-hint') || 'Согласитесь с условиями';
-  }
-
-  function showError(formBlock, message) {
-    if (!formBlock.querySelector('.' + errorClass)) {
-      const error = document.createElement('p');
-      error.className = 'input__error ' + errorClass;
-      error.textContent = message;
-      formBlock.appendChild(error);
-    }
-  }
-
-  function removeError(formBlock) {
-    const error = formBlock.querySelector('.' + errorClass);
-    if (error) {
-      error.remove();
-    }
-  }
-
-  // обработчик клика
-  document.addEventListener('click', function (e) {
-    const targetBtn = document.querySelector(buttonSelector);
-    if (!targetBtn || !e.target.closest(buttonSelector)) {
-      return;
-    }
-
-    e.preventDefault();
-
-    let hasError = false;
-
-    // Удаляю старые ошибки и классы
-    checkboxWrappers.forEach(function (wrapper) {
-      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-      if (formBlock) {
-        removeError(formBlock);
-      }
-      wrapper.classList.remove('input_error');
-    });
-
-    // Проверяю чекбоксы
-    checkboxWrappers.forEach(function (wrapper) {
-      const checkbox = wrapper.querySelector('input[type="checkbox"]');
-      const formBlock = wrapper.querySelector('.feed_back__user-form-block');
-
-      if (!checkbox || !formBlock) {
-        return;
-      }
-
-      if (checkbox.hasAttribute('required') && !checkbox.checked) {
-        const message = getErrorMessage(checkbox);
-        showError(formBlock, message);
-        wrapper.classList.add('input_error');
-        hasError = true;
-      }
-    });
-
-    if (hasError) {
-      return;
-    }
-
-    // Выполняю клик с битриксовым методом onclick
-    if (originalHandler && typeof originalHandler === 'function') {
-      console.log('initCheckboxValidation: выполняем originalHandler');
-      originalHandler.call(targetBtn, e);
-    } else if (originalOnclick) {
-      console.log('initCheckboxValidation: выполняем originalOnclick как строку');
-      try {
-        new Function(originalOnclick)();
-      } catch (err) {
-        console.log('initCheckboxValidation: ошибка при выполнении onclick:', err);
-      }
+    // Горизонтальное позиционирование
+    // Если тултип не помещается справа ИЛИ справа остаётся меньше 100px свободного места
+    if (centerX + tooltipWidth + offset > viewportWidth - minMargin) {
+      // Тултип слева от иконки
+      tooltip.style.right = `${viewportWidth - rect.left + offset - 15}px`;
+      tooltip.classList.add('left');
+      tooltip.classList.remove('right');
     } else {
-      console.log('initCheckboxValidation: нечего выполнять — onclick отсутствует');
+      // Тултип справа от иконки
+      tooltip.style.left = `${rect.right + offset}px`;
+      tooltip.classList.add('right');
+      tooltip.classList.remove('left');
     }
-  }, true); // useCapture: true
 
+    // Вертикальное позиционирование (по центру иконки)
+    tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
+    tooltip.classList.remove('up', 'down');
+
+    return;
+  }
+
+  // Для длинного текста используем стандартное позиционирование
+
+  // Горизонтальное позиционирование
+  // Если центр иконки правее середины экрана → тултип слева от иконки
+  // Если центр иконки левее середины экрана → тултип справа от иконки
+  const leftOffset = rect.left + rect.width / 2;
+  const offset = 4; // отступ от иконки
+
+  if (viewportWidth / 2 < leftOffset) {
+    // Иконка правее середины → тултип слева от иконки
+    tooltip.style.left = 'auto';
+    tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
+    tooltip.classList.add('left');
+    tooltip.classList.remove('right');
+  } else {
+    // Иконка левее середины → тултип справа от иконки
+    tooltip.style.left = `${rect.right - offset}px`;
+    tooltip.style.right = 'auto';
+    tooltip.classList.add('right');
+    tooltip.classList.remove('left');
+  }
+
+  // Вертикальное позиционирование
+  // Если центр иконки выше середины экрана → тултип снизу
+  // Если центр иконки ниже середины экрана → тултип сверху
+  const topOffset = rect.top + rect.height / 2;
+
+  if (viewportHeight / 2 < topOffset) {
+    // Иконка ниже середины → тултип сверху
+    tooltip.style.top = 'auto';
+    tooltip.style.bottom = `${viewportHeight - rect.top + offset}px`;
+    tooltip.classList.add('up');
+    tooltip.classList.remove('down');
+  } else {
+    // Иконка выше середины → тултип снизу
+    tooltip.style.top = `${rect.bottom - offset}px`;
+    tooltip.style.bottom = 'auto';
+    tooltip.classList.add('down');
+    tooltip.classList.remove('up');
+  }
 }
 
-
-/**
- * Методы для работы с кнопками "Добавить в избранное"
- */
-const BOOKMARKS = {
-  debugLog: true, // Для отладки. TODO Убрать после отладки
-  showButtonHints: false,  // Временное решение для отображения результата операций с Избранным. TODO Обсудить и либо переделать, либо убрать
-  showButtonErrorModals: true,  // Отображать ошибку в модальном окне
-
-  /**
-   * Возвращает все кнопки "добавить в избранное" без валидации
-   * @returns {NodeListOf<Element>}
-   */
-  getBookmarkButtonsUnvalidatedAll() {
-    return document.querySelectorAll('.js--btn-bookmark')
-  },
-
-  /**
-   * Возвращает все кнопки "добавить в избранное"
-   * @returns {NodeListOf<Element>}
-   */
-  getBookmarkButtonsAll() {
-    return document.querySelectorAll(`.js--btn-bookmark[data-iblockid][data-elementid]`)
-  },
-
-  /**
-   * Возвращает набор одинаковых кнопок одного и того же материала (Например на странице льготной гос-программы две кнопки: для десктопа и мобилки)
-   * @param iblockId
-   * @param elementId
-   * @returns {*}
-   */
-  getSameBookmarkButtons(iblockId, elementId) {
-    return document.querySelectorAll(`.js--btn-bookmark[data-iblockid="${iblockId}"][data-elementid="${elementId}"]`)
-  },
-
-  /**
-   * События для кнопки "Добавить в Избранное"
-   * 
-   * === ИЗМЕНЕНИЯ ДЛЯ БЭКЕНД-РАЗРАБОТЧИКА ===
-   * 
-   * БЫЛО: Каждая кнопка имела свой обработчик через button.addEventListener('click', ...)
-   * СТАЛО: Один обработчик на document (делегирование события)
-   * 
-   * ПОЧЕМУ ЭТО НЕОБХОДИМО:
-   * 1. Кнопки могут добавляться динамически (через AJAX, Vue, React и т.д.)
-   * 2. Старый способ не работал с динамически добавленными кнопками
-   * 3. Новый способ работает со всеми кнопками, включая добавленные после загрузки страницы
-   * 
-   * ПОЧЕМУ ЭТО БЕЗОПАСНО:
-   * 1. closest() безопасен - если элемент не найден, вернет null (не вызывает ошибку)
-   * 2. Проверки атрибутов (dataset.iblockid, dataset.elementid) делают код устойчивым
-   * 3. e.preventDefault() и e.stopPropagation() защищают от нежелательных действий
-   * 4. Удаление предыдущего обработчика предотвращает дублирование событий
-   * 5. Все ваша логика (401/403, модальные окна, подсказки) сохранена полностью
-   * 
-   * ЧТО СОХРАНЕНО ОТ ВАС (бэкенд-разработчика):
-   * ✅ Параметр showButtonErrorModals
-   * ✅ Метод openModalError()
-   * ✅ Показ модального окна ошибки
-   * ✅ Обработка статусов 401/403 в processResponseStatus
-   * ✅ Все вызовы showButtonHint()
-   * ✅ Вся логика добавления/удаления из избранного
-   * ✅ Вся логика авторизации
-   * 
-   * ФУНКЦИОНАЛЬНОСТЬ НЕ ИЗМЕНИЛАСЬ - только способ обработки клика!
-   */
-  bindBookmarkButtons() {
-    // Удаляю предыдущий обработчик, если он был (защита от дублей при повторном вызове)
-    if (this._bookmarkClickHandler) {
-      document.removeEventListener('click', this._bookmarkClickHandler);
-    }
-
-    // Создаю новый обработчик события
-    this._bookmarkClickHandler = (e) => {
-      // Ищем ближайшую кнопку "Добавить в избранное" от точки клика
-      const button = e.target.closest('.js--btn-bookmark');
-      if (!button) return; // Если клик не по кнопке - выходим
-
-      // Проверяем наличие обязательных атрибутов
-      if (!button.dataset?.iblockid) {
-        if (this.debugLog) console.warn('У кнопки "Добавить в Избранное" не указан атрибут iblockid', button);
-        return;
-      }
-      if (!button.dataset?.elementid) {
-        if (this.debugLog) console.warn('У кнопки "Добавить в Избранное" не указан атрибут elementid', button);
-        return;
-      }
-
-      // Отменяем переход по ссылке (если кнопка внутри <a>) и всплытие события
-      e.preventDefault();
-      e.stopPropagation();
-
-      const iblockId = button.dataset.iblockid;
-      const elementId = button.dataset.elementid;
-
-      // Требуется авторизация
-      if (button.classList.contains('js--need-auth')) {
-        if (this.debugLog) console.log('Кнопка "Добавить в Избранное", нужна авторизация');
-        this.openModalAuth();
-        return;
-      }
-
-      if (button.classList.contains('active')) {
-        // Удаление из избранного
-        if (this.debugLog) console.log('Кнопка "Добавить в Избранное", удаление материала');
-        fetch('/api/local/personal/bookmarks/', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-bitrix-csrf-token': window.BX.bitrix_sessid(),
-          },
-          body: JSON.stringify({
-            iblockId: iblockId,
-            elementId: elementId
-          })
-        })
-          .then(response => {
-            if (this.debugLog) console.log('response', response);
-            if (!response.ok) {
-              this.processResponseStatus(response.status, this.getBookmarkButtonsAll(), true);
-
-              // Показываем подсказку об ошибке, если включено
-              if (this.showButtonHints) {
-                response.json().then(data => {
-                  const sameButtons = this.getSameBookmarkButtons(iblockId, elementId);
-                  if (sameButtons) {
-                    sameButtons.forEach((btn) => {
-                      this.showButtonHint(btn, 'Ошибка при удалении из избранного' + (this.debugLog ? `. [${data?.code}] ${data?.description}` : ''), 'error');
-                    });
-                  }
-                });
-              }
-
-              // Открываем модальное окно с ошибкой, если включено (ВАША ЛОГИКА БЭКЕНД-РАЗРАБОТЧИКА)
-              if (this.showButtonErrorModals) {
-                response.json().then(data => {
-                  this.openModalError('Ошибка при удалении из избранного', data?.description);
-                });
-              }
-
-              throw new Error('Сетевая ошибка: ' + response.status + ' ' + response.statusText);
-            }
-            return response.json();
-          })
-          .then(data => {
-            if (this.debugLog) console.log('Кнопка "Добавить в Избранное", Запрос выполнен, ответ:', data);
-            const sameButtons = this.getSameBookmarkButtons(iblockId, elementId);
-            if (sameButtons) {
-              sameButtons.forEach((btn) => {
-                this.changeBookmarkButtonState(btn, 'removed');
-                if (this.showButtonHints) {
-                  this.showButtonHint(btn, 'Удалено из избранного');
-                }
-              });
-            }
-          })
-          .catch(error => {
-            if (this.debugLog) console.warn('Кнопка "Добавить в Избранное", Ошибка:', error);
-          });
-      } else {
-        // Добавление в избранное
-        if (this.debugLog) console.log('Кнопка "Добавить в Избранное", добавление материала');
-        fetch('/api/local/personal/bookmarks/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-bitrix-csrf-token': window.BX.bitrix_sessid(),
-          },
-          body: JSON.stringify({
-            iblockId: iblockId,
-            elementId: elementId
-          })
-        })
-          .then(response => {
-            if (this.debugLog) console.log('response', response);
-            if (!response.ok) {
-              this.processResponseStatus(response.status, this.getBookmarkButtonsAll(), true);
-              
-              // Показываем подсказку об ошибке, если включено
-              if (this.showButtonHints) {
-                response.json().then(data => {
-                  const sameButtons = this.getSameBookmarkButtons(iblockId, elementId);
-                  if (sameButtons) {
-                    sameButtons.forEach((btn) => {
-                      this.showButtonHint(btn, 'Ошибка при добавлении в избранное' + (this.debugLog ? `. [${data?.code}] ${data?.description}` : ''), 'error');
-                    });
-                  }
-                });
-              }
-              
-              // Открываем модальное окно с ошибкой, если включено (ВАША ЛОГИКА БЭКЕНД-РАЗРАБОТЧИКА)
-              if (this.showButtonErrorModals) {
-                response.json().then(data => {
-                  this.openModalError('Ошибка при добавлении в избранное', data?.description);
-                });
-              }
-              
-              throw new Error('Сетевая ошибка: ' + response.status + ' ' + response.statusText);
-            }
-            return response.json();
-          })
-          .then(data => {
-            if (this.debugLog) console.log('Кнопка "Добавить в Избранное", Запрос выполнен, ответ:', data);
-            const sameButtons = this.getSameBookmarkButtons(iblockId, elementId);
-            if (sameButtons) {
-              sameButtons.forEach((btn) => {
-                this.changeBookmarkButtonState(btn, 'added');
-                if (this.showButtonHints) {
-                  this.showButtonHint(btn, 'Добавлено в избранное');
-                }
-              });
-            }
-          })
-          .catch(error => {
-            if (this.debugLog) console.warn('Кнопка "Добавить в Избранное", Ошибка:', error);
-          });
-      }
-    };
-
-    // Вешаем один обработчик на document (делегирование события)
-    document.addEventListener('click', this._bookmarkClickHandler);
-  },
-
-  /**
-   * Временное решение для отображения результата операций с Избранным. TODO Обсудить и либо переделать, либо убрать
-   * @param el - элемент с кнопкой Избранного
-   * @param message - текст сообщения
-   * @param type - тип хинта - success | warning | error
-   * 
-   * === ИЗМЕНЕНИЯ ДЛЯ БЭКЕНД-РАЗРАБОТЧИКА ===
-   * 
-   * БЫЛО: Функция была вложена внутри метода bindBookmarkButtons()
-   * СТАЛО: Функция вынесена в объект BOOKMARKS как метод
-   * 
-   * ПОЧЕМУ ЭТО СДЕЛАНО:
-   * 1. Теперь функция доступна из любого места через this.showButtonHint()
-   * 2. Это стандартная практика - методы объекта должны быть на уровне объекта
-   * 3. Улучшает читаемость и поддерживаемость кода
-   * 4. Функциональность не изменилась - работает точно так же
-   */
-  showButtonHint(el, message, type = 'success') {
-    if (el) {
-      let timeout = 2000;
-      const hint = document.createElement('div');
-      hint.dataset.iblockid = el.dataset.iblockid;
-      hint.dataset.elementid = el.dataset.elementid;
-      hint.className = 'button_hint ' + type;
-      hint.textContent = message + ' (для отладки)';
-      hint.style.position = 'fixed';
-      hint.style.left = '10px';
-      hint.style.bottom = '10px';
-      hint.style.fontSize = 'small';
-      hint.style.backgroundColor = 'white';
-      hint.style.padding = '20px';
-      hint.style.borderRadius = '5px';
-      hint.style.boxShadow = '0 5px 10px rgba(0, 0, 0, 0.2)';
-      hint.style.zIndex = '100';
-      hint.style.transition = '0.5s';
-      hint.style.opacity = 0;
-
-      switch (type) {
-        case 'error':
-          hint.style.color = 'red';
-          timeout = 7000;
-          break;
-        case 'warning':
-          hint.style.color = 'orange';
-          timeout = 5000;
-          break;
-        case 'success':
-          hint.style.color = 'green';
-          break;
-      }
-      
-      document.body.append(hint);
-      setTimeout(() => { hint.style.opacity = 1; }, 10);
-      setTimeout(() => {
-        hint.style.opacity = 0;
-        setTimeout(() => { hint.remove(); }, 1000);
-      }, timeout);
-    }
-  },
-
-  /**
-   * Обрабатывает ответ API
-   * @param status
-   * @param buttons
-   * @param bShowModalAuth
-   * 
-   * === ВАЖНО ДЛЯ БЭКЕНД-РАЗРАБОТЧИКА ===
-   * 
-   * ЭТО ВАША ЛОГИКА - НИЧЕГО НЕ ИЗМЕНЕНО!
-   * Обработка статусов 401 (не авторизован) и 403 (нужно обновить страницу)
-   * Работает точно так же, как и раньше
-   */
-  processResponseStatus(status, buttons, bShowModalAuth = false) {
-    if (status === 401) {
-      if (buttons) {
-        buttons.forEach(button => {
-          this.changeBookmarkButtonState(button, 'auth');
-        });
-      }
-      if (bShowModalAuth) {
-        this.openModalAuth();
-      }
-      throw new Error('Требуется авторизация');
-    }
-
-    if (status === 403) {
-      if (buttons) {
-        buttons.forEach(button => {
-          this.changeBookmarkButtonState(button, 'auth');
-        });
-      }
-      if (bShowModalAuth) {
-        this.openModalAuth();
-      }
-      throw new Error('Нужно обновить страницу');
-    }
-  },
-
-  /**
-   * Получает актуальные данные о материалах в Избранном и обновляет состояние кнопок "Добавить в избранное"
-   * 
-   * === ВАЖНО ДЛЯ БЭКЕНД-РАЗРАБОТЧИКА ===
-   * 
-   * ЭТО ВАША ЛОГИКА - НИЧЕГО НЕ ИЗМЕНЕНО!
-   * Получение списка избранных материалов при загрузке страницы
-   * Работает точно так же, как и раньше
-   */
-  updateBookmarkButtons() {
-    const bookmarkButtonsValidAll = this.getBookmarkButtonsAll();
-    if (!bookmarkButtonsValidAll) {
-      if (this.debugLog) console.log('Кнопки "Добавить в избранное не найдены на странице');
-      return;
-    }
-    
-    fetch('/api/local/personal/bookmarks/', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-bitrix-csrf-token': window.BX.bitrix_sessid(),
-      },
-    })
-      .then(response => {
-        if (!response.ok) {
-          this.processResponseStatus(response.status, bookmarkButtonsValidAll);
-          bookmarkButtonsValidAll.forEach(button => {
-            this.changeBookmarkButtonState(button, 'error');
-          });
-          throw new Error('Получение всех материалов из Избранного, Сетевая ошибка: ' + response.status + ' ' + response.statusText);
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (this.debugLog) console.log('Получение всех материалов из Избранного, Запрос выполнен, ответ:', data);
-        if (data && data?.result) {
-          bookmarkButtonsValidAll.forEach(button => {
-            this.changeBookmarkButtonState(button); // очищаем состояние всех кнопок "Добавить в избранное"
-          });
-          const iblockIds = Object.keys(data.result);
-          iblockIds.forEach(iblockId => {
-            const elementIds = Object.keys(data.result[iblockId]);
-            elementIds.forEach(elementId => {
-              if (elementId) {
-                const sameButtons = this.getSameBookmarkButtons(iblockId, elementId);
-                if (sameButtons) {
-                  sameButtons.forEach((button) => {
-                    this.changeBookmarkButtonState(button, 'added');
-                  });
-                }
-              }
-            });
-          });
-        }
-      })
-      .catch(error => {
-        if (this.debugLog) console.warn('Получение всех материалов из Избранного, Ошибка:', error);
-      });
-  },
-
-  /**
-   * Обновляет внешний вид кнопок "Добавить в избранное"
-   * @param button
-   * @param state
-   * 
-   * === ВАЖНО ДЛЯ БЭКЕНД-РАЗРАБОТЧИКА ===
-   * 
-   * ЭТО ВАША ЛОГИКА - НИЧЕГО НЕ ИЗМЕНЕНО!
-   * Изменение состояния кнопки (активная, неактивная, требует авторизации)
-   * Работает точно так же, как и раньше
-   */
-  changeBookmarkButtonState(button, state = '') {
-    if (button) {
-      switch (state) {
-        case 'auth':
-          button.classList.remove('active');
-          button.classList.add('js--need-auth');
-          // button.innerText = 'Добавить в избранное *'
-          break;
-        case 'added':
-          button.classList.remove('js--need-auth');
-          button.classList.add('active');
-          // button.innerText = 'Добавлено в избранное!!'
-          break;
-        case 'error':
-          button.classList.remove('active');
-          // button.innerText = 'Добавить в избранное(('
-          break;
-        case 'removed':
-        default:
-          button.classList.remove('js--need-auth');
-          button.classList.remove('active');
-          // button.innerText = 'Добавить в избранное!'
-          break;
-      }
-    }
-  },
-
-  /**
-   * Открывает модальное окно авторизации
-   * 
-   * === ВАЖНО ДЛЯ БЭКЕНД-РАЗРАБОТЧИКА ===
-   * 
-   * ЭТО ВАША ЛОГИКА - НИЧЕГО НЕ ИЗМЕНЕНО!
-   * Открытие модального окна авторизации
-   * Работает точно так же, как и раньше
-   */
-  openModalAuth() {
-    const authModal = document.querySelector('#modal-registration-state-service');
-    if (authModal) {
-      authModal.classList.add('open');
-      // if (document.body.classList.contains('body-modal')) {
-      //   document.body.classList.add('body-modal-not-remove')
-      // }
-
-      // AddClassBody
-      document.body.classList.add(
-        'modal-opened',
-        'body-modal-not-remove-else',
-        'body-modal-not-remove'
-      );
-      document.body.classList.add('body-modal');
-      document.body.classList.add('body-additional-class');
-      document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
-      document.ontouchmove = (e) => {
-        e.preventDefault();
-      };
-    }
-  },
-
-  /**
-   * Открывает модальное окно ошибки
-   * 
-   * === ВАЖНО ДЛЯ БЭКЕНД-РАЗРАБОТЧИКА ===
-   * 
-   * ЭТО ВАША ЛОГИКА - НИЧЕГО НЕ ИЗМЕНЕНО!
-   * Метод добавлен вами для отображения ошибок в модальном окне
-   * Используется в bindBookmarkButtons() при ошибках добавления/удаления
-   * Работает точно так же, как и раньше
-   */
-  openModalError(title, description = '') {
-    if (!title) {
-      return;
-    }
-    const authErrorModal = document.querySelector('#modal-lkfl-error');
-    if (authErrorModal) {
-      const modalTitle = authErrorModal.querySelector('.js--lkfl-error-title');
-      if (modalTitle) {
-        modalTitle.innerText = title;
-      }
-      const modalDescription = authErrorModal.querySelector('.js--lkfl-error-description');
-      if (modalDescription) {
-        modalDescription.innerText = description;
-      }
-      authErrorModal.classList.add('open');
-
-      // AddClassBody
-      document.body.classList.add(
-        'modal-opened',
-        'body-modal-not-remove-else',
-        'body-modal-not-remove'
-      );
-      document.body.classList.add('body-modal');
-      document.body.classList.add('body-additional-class');
-      document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
-      document.ontouchmove = (e) => {
-        e.preventDefault();
-      };
-    }
+// Показ тултипа
+function showTooltip(trigger, content) {
+  // Закрываю предыдущий тултип, если он есть
+  if (activeTooltip) {
+    hideTooltip(activeTooltip);
   }
-};
+
+  // Создаю новый тултип с контентом из data-content-text блока на который навели
+  // Передаю триггер для проверки класса aside-location
+  const tooltip = createTooltip(content, trigger);
+  ensureTooltipContainer().appendChild(tooltip);
+
+  // Позиционирую тултип относительно блока по которому кликнули
+  positionTooltip(trigger, tooltip);
+
+  // Показываю с анимацией небольшой
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      tooltip.style.opacity = '1';
+      tooltip.style.pointerEvents = 'auto';
+      tooltip.classList.add('active');
+    });
+  });
+
+  // Сохраняю ссылки на текущий тултип
+  activeTooltip = tooltip;
+  activeTrigger = trigger;
+
+  // Для мобильных добавляю блокировку скролла
+  if (isMobileDevice()) {
+    addClassBody();
+  }
+}
+
+// Скрытие тултипа
+function hideTooltip(tooltip) {
+  if (!tooltip) return;
+
+  // Отменяю таймер закрытия
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+    tooltipCloseTimer = null;
+  }
+
+  tooltip.style.pointerEvents = 'none';
+  tooltip.style.opacity = '0';
+  tooltip.classList.remove('active');
+
+  setTimeout(() => {
+    if (tooltip.parentNode) {
+      tooltip.parentNode.removeChild(tooltip);
+    }
+
+    // Разблокирую скролл для мобильных
+    if (isMobileDevice()) {
+      removeClassBody();
+    }
+  }, 200);
+
+  activeTooltip = null;
+  activeTrigger = null;
+}
+
+// ОБРАБОТЧИК НАВЕДЕНИЯ
+function handleMouseOver(e) {
+  // Проверяю, что e.target существует и имеет метод closest
+  if (!e.target || typeof e.target.closest !== 'function') return;
+
+  // Нахожу именно тот элемент, на который навели
+  const trigger = e.target.closest('.js--content-note-new');
+  if (!trigger) return;
+
+  // === Проверяю, есть ли класс для полного отключения тултипа ===
+  if (trigger.classList.contains('not-use-tooltip')) {
+    return;
+  }
+
+  // === Проверяю, есть ли класс для отключения на мобильных ===
+  if (isMobileDevice() && trigger.classList.contains('not-use-tooltip-mobile')) {
+    return;
+  }
+
+  // Читаю контент именно из этого элемента
+  const content = trigger.dataset.contentText || '';
+
+  // === Дополнительная проверка на пустой контент ===
+  if (!content || content.trim() === '') {
+    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
+    return;
+  }
+
+  // Если уже открыт тултип для этого же блока - ничего не делаю
+  if (activeTooltip && activeTrigger === trigger) {
+    return;
+  }
+
+  // Отменяю предыдущий таймер закрытия
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+    tooltipCloseTimer = null;
+  }
+
+  // Показываю тултип с контентом из именно блока по который навели
+  showTooltip(trigger, content);
+}
+
+// ОБРАБОТЧИК УХОДА МЫШИ (использую mouseout - работает надёжнее для этой задачи)
+function handleMouseOut(e) {
+  // Проверяю, что e.target существует и имеет метод closest
+  if (!e.target || typeof e.target.closest !== 'function') return;
+
+  const trigger = e.target.closest('.js--content-note-new');
+  const relatedTarget = e.relatedTarget || e.toElement;
+
+  // Проверяю, что relatedTarget существует и имеет метод closest
+  const isTooltip = relatedTarget &&
+    typeof relatedTarget.closest === 'function' &&
+    relatedTarget.closest('.content-note__text-new');
+
+  // Если уходим не с нашего триггера или уходим на сам тултип - ничего не делаем
+  if (!trigger || isTooltip) {
+    return;
+  }
+
+  // Отменяю предыдущий таймер
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+  }
+
+  // Задержка перед скрытием для плавности
+  tooltipCloseTimer = setTimeout(() => {
+    if (activeTooltip && activeTrigger === trigger) {
+      hideTooltip(activeTooltip);
+    }
+    tooltipCloseTimer = null;
+  }, 150);
+}
+
+// ОБРАБОТЧИК УХОДА МЫШИ С ТУЛТИПА
+function handleTooltipMouseOut(e) {
+  // Проверяю, что уходим именно с тултипа
+  if (!e.target || typeof e.target.closest !== 'function') return;
+
+  const tooltip = e.target.closest('.content-note__text-new');
+  if (!tooltip || tooltip !== activeTooltip) {
+    return;
+  }
+
+  const relatedTarget = e.relatedTarget || e.toElement;
+
+  // Проверяю, куда уходим - если на иконку-триггер, то не закрываем
+  const isTrigger = relatedTarget &&
+    typeof relatedTarget.closest === 'function' &&
+    relatedTarget.closest('.js--content-note-new');
+
+  // Если уходим на триггер - ничего не делаем
+  if (isTrigger) {
+    return;
+  }
+
+  // Отменяю предыдущий таймер
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+  }
+
+  // Закрываем тултип, так как уходим не на триггер
+  tooltipCloseTimer = setTimeout(() => {
+    if (activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+    tooltipCloseTimer = null;
+  }, 150);
+}
+
+// ОБРАБОТЧИК КЛИКА ДЛЯ МОБИЛЬНЫХ
+function handleClick(e) {
+  // Проверяю, что e.target существует и имеет метод closest
+  if (!e.target || typeof e.target.closest !== 'function') return;
+
+  const trigger = e.target.closest('.js--content-note-new');
+  if (!trigger) return;
+
+  //  Проверяю, есть ли класс для полного отключения тултипа
+  if (trigger.classList.contains('not-use-tooltip')) {
+    return;
+  }
+
+  //  Проверяю, есть ли класс для отключения на мобильных
+  if (trigger.classList.contains('not-use-tooltip-mobile')) {
+    return;
+  }
+
+  //  Читаю контент именно из этого элемента
+  const content = trigger.dataset.contentText || '';
+
+  //  Дополнительная проверка на пустой контент
+  if (!content || content.trim() === '') {
+    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
+    return;
+  }
+
+  // Предотвращаю стандартное поведение
+  e.preventDefault();
+
+  // Если тултип уже открыт для этого же триггера - закрываем
+  if (activeTooltip && activeTrigger === trigger) {
+    hideTooltip(activeTooltip);
+    return;
+  }
+
+  // Показываю тултип с контентом из блока по которому кликнули
+  showTooltip(trigger, content);
+}
+
+// Обработчик клика вне тултипа
+function handleClickOutside(e) {
+  if (!activeTooltip) return;
+
+  const clickedInside = activeTooltip.contains(e.target) ||
+    (activeTrigger && activeTrigger.contains(e.target));
+
+  if (!clickedInside) {
+    hideTooltip(activeTooltip);
+  }
+}
+
+// Обработчик изменения размера окна
+function handleResize() {
+  if (activeTooltip && activeTrigger) {
+    positionTooltip(activeTrigger, activeTooltip);
+  }
+
+  // Для мобильных устройств закрываю тултип при изменении ориентации
+  const isMobileOrTablet = isMobileDevice();
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+
+  if (isMobileOrTablet && !isNarrow && activeTooltip) {
+    hideTooltip(activeTooltip);
+  }
+}
+
+// Инициализация
+export default function contentNoteNew() {
+  //  Закрываю тултип при скролле
+  const handleScroll = () => {
+    if (activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+  };
+
+  // Добавляю обработчики событий
+  document.addEventListener('mouseover', handleMouseOver);
+  // Использую mouseout вместо mouseleave - работает надёжнее для этой задачи
+  // document.addEventListener('mouseout', handleMouseOut);
+  // Добавляю обработчик ухода с тултипа
+  // document.addEventListener('mouseout', handleTooltipMouseOut);
+  document.addEventListener('click', handleClickOutside);
+  window.addEventListener('resize', handleResize);
+
+  // Скролл страницы
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  // Прокрутка колёсиком мыши
+  document.addEventListener('wheel', handleScroll, { passive: true });
+
+  // Для мобильных устройств использую клик вместо наведения
+  const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
+    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
+  if (isIOS || isMobileDevice()) {
+    document.addEventListener('touchstart', handleClick, { passive: false });
+    // Свайп на мобильных
+    document.addEventListener('touchmove', handleScroll, { passive: true });
+  }
+
+  // Обработчик для закрытия по клику на крестики в мобильном тултипе
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('js--close-mobile-tooltip') && activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+  });
+}
