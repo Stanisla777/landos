@@ -1,4 +1,107 @@
+// content-note-new.js
+/* eslint-disable */
+
+// Глобальные переменные
+let activeTooltip = null;
+let activeTrigger = null;
+let tooltipContainer = null;
+let isBodyLocked = false;
+let tooltipCloseTimer = null; // Таймер для закрытия тултипа
+
+// Создаю общий контейнер один раз
+function ensureTooltipContainer() {
+  if (!tooltipContainer) {
+    tooltipContainer = document.createElement('div');
+    tooltipContainer.className = 'tooltip-popup-container';
+    Object.assign(tooltipContainer.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+      zIndex: '2147483646',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    });
+    document.body.appendChild(tooltipContainer);
+  }
+  return tooltipContainer;
+}
+
+// Функции блокировки/разблокировки скролла
+function addClassBody() {
+  if (isBodyLocked) return;
+  isBodyLocked = true;
+  document.body.classList.add('body-modal', 'body-additional-class');
+}
+
+function removeClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal', 'body-additional-class');
+  }
+  isBodyLocked = false;
+}
+
+// Определяю мобильное или планшетное устройства
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function isMobilePhone() {
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua) && !/iPad/.test(ua)) return true;
+  if (/Android/.test(ua) && /Mobile/.test(ua)) return true;
+  return false;
+}
+
+// Созданю тултип
+function createTooltip(content, trigger) {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'content-note__text-new';
+  tooltip.style.cssText = `
+    opacity: 0;
+    pointerEvents: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  `;
+
+  // Добавляем классы из триггера, начинающиеся с 'class-for-tooltip-'
+  if (trigger) {
+    const triggerClasses = Array.from(trigger.classList);
+    const tooltipClasses = triggerClasses.filter(className =>
+      className.startsWith('class-for-tooltip-')
+    );
+    if (tooltipClasses.length > 0) {
+      tooltip.classList.add(...tooltipClasses);
+    }
+  }
+
+  // Проверяю, содержит ли контент HTML
+  const hasHTML = /<[^>]+>/.test(content);
+  const textLength = content.replace(/<[^>]+>/g, '').length;
+
+  // Определяю тип позиционирования
+  // Тултип сбоку только если:
+  // 1. У триггера есть класс aside-location
+  // 2. В контенте нет HTML
+  // 3. Длина текста <= 40 символов
+  if (trigger && trigger.classList.contains('aside-location') && !hasHTML && textLength <= 40) {
+    tooltip.classList.add('location-side');
+  }
+
+  // Добавляю контент
+  tooltip.innerHTML = content;
+
+  return tooltip;
+}
+
+
+//Самое новое
 // Позиционирование тултипа относительно иконки по которой кликнули
+
+
+
 function positionTooltip(trigger, tooltip) {
   const rect = trigger.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
@@ -31,163 +134,372 @@ function positionTooltip(trigger, tooltip) {
   tooltip.style.display = originalDisplay;
   tooltip.style.opacity = '';
 
-  // Проверяем наличие родителя с классом .js--focus-on-parent
-  const focusParent = trigger.closest('.js--focus-on-parent');
-
   // Определяю позиционирование для короткого текста
   if (tooltip.classList.contains('location-side')) {
-    let centerX, centerY;
-    
-    if (focusParent) {
-      // Используем координаты относительно родителя
-      const parentRect = focusParent.getBoundingClientRect();
-      centerX = rect.left - parentRect.left + rect.width / 2;
-      centerY = rect.top - parentRect.top + rect.height / 2;
-      
-      // Горизонтальное позиционирование относительно родителя
-      if (parentRect.width / 2 < centerX) {
-        // Иконка правее середины родителя → тултип слева от иконки
-        if (rect.left - parentRect.left - tooltipWidth - 10 >= 0) {
-          tooltip.style.right = `${parentRect.right - rect.left + 10}px`;
-          tooltip.classList.add('left');
-          tooltip.classList.remove('right');
-        } else {
-          tooltip.style.left = `${rect.right - parentRect.left + 10}px`;
-          tooltip.classList.add('right');
-          tooltip.classList.remove('left');
-        }
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const offset = 10; // отступ от иконки
+
+    // Основное позиционирование - зависит от положения иконки относительно середины экрана
+    if (viewportWidth / 2 < centerX) {
+      // Иконка правее середины → тултип слева от иконки
+      // Проверяем, что тултип не вылезает за левый край
+      if (rect.left - tooltipWidth - offset >= 0) {
+        // Помещается слева → показываем слева
+        tooltip.style.right = `${viewportWidth - rect.left + (offset - 15)}px`;
+        tooltip.classList.add('left');
+        tooltip.classList.remove('right');
       } else {
-        // Иконка левее середины родителя → тултип справа от иконки
-        if (rect.right - parentRect.left + tooltipWidth + 10 <= parentRect.width) {
-          tooltip.style.left = `${rect.right - parentRect.left + 10}px`;
-          tooltip.classList.add('right');
-          tooltip.classList.remove('left');
-        } else {
-          tooltip.style.right = `${parentRect.right - rect.left + 10}px`;
-          tooltip.classList.add('left');
-          tooltip.classList.remove('right');
-        }
+        // Не помещается слева → показываем справа
+        tooltip.style.left = `${rect.right + offset}px`;
+        tooltip.classList.add('right');
+        tooltip.classList.remove('left');
       }
-      
-      // Вертикальное позиционирование относительно родителя
-      tooltip.style.top = `${centerY - tooltipHeight / 2 + parentRect.top}px`;
     } else {
-      // Обычное позиционирование относительно экрана
-      centerX = rect.left + rect.width / 2;
-      centerY = rect.top + rect.height / 2;
-      
-      if (viewportWidth / 2 < centerX) {
-        // Иконка правее середины экрана → тултип слева от иконки
-        if (rect.left - tooltipWidth - 10 >= 0) {
-          tooltip.style.right = `${viewportWidth - rect.left + 10}px`;
-          tooltip.classList.add('left');
-          tooltip.classList.remove('right');
-        } else {
-          tooltip.style.left = `${rect.right + 10}px`;
-          tooltip.classList.add('right');
-          tooltip.classList.remove('left');
-        }
+      // Иконка левее середины → тултип справа от иконки
+      // Проверяем, что тултип не вылезает за правый край
+      if (rect.right + tooltipWidth + offset <= viewportWidth) {
+        // Помещается справа → показываем справа
+        tooltip.style.left = `${rect.right + offset}px`;
+        tooltip.classList.add('right');
+        tooltip.classList.remove('left');
       } else {
-        // Иконка левее середины экрана → тултип справа от иконки
-        if (rect.right + tooltipWidth + 10 <= viewportWidth) {
-          tooltip.style.left = `${rect.right + 10}px`;
-          tooltip.classList.add('right');
-          tooltip.classList.remove('left');
-        } else {
-          tooltip.style.right = `${viewportWidth - rect.left + 10}px`;
-          tooltip.classList.add('left');
-          tooltip.classList.remove('right');
-        }
+        // Не помещается справа → показываем слева
+        tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
+        tooltip.classList.add('left');
+        tooltip.classList.remove('right');
       }
-      
-      tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
     }
-    
+
+    // Вертикальное позиционирование (по центру иконки)
+    tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
     tooltip.classList.remove('up', 'down');
+
     return;
   }
 
-  // Для длинного текста используем стандартное позиционирование
+  // Для длинного текста использую стандартное позиционирование
 
   // Горизонтальное позиционирование
-  let leftOffset;
-  if (focusParent) {
-    const parentRect = focusParent.getBoundingClientRect();
-    leftOffset = rect.left - parentRect.left + rect.width / 2;
-  } else {
-    leftOffset = rect.left + rect.width / 2;
-  }
-
+  // Если центр иконки правее середины экрана → тултип слева от иконки
+  // Если центр иконки левее середины экрана → тултип справа от иконки
+  const leftOffset = rect.left + rect.width / 2;
   const offset = 4; // отступ от иконки
 
-  if (focusParent) {
-    const parentRect = focusParent.getBoundingClientRect();
-    if (parentRect.width / 2 < leftOffset) {
-      // Иконка правее середины родителя → тултип слева от иконки
-      tooltip.style.left = 'auto';
-      tooltip.style.right = `${parentRect.right - rect.right + offset}px`;
-      tooltip.classList.add('left');
-      tooltip.classList.remove('right');
-    } else {
-      // Иконка левее середины родителя → тултип справа от иконки
-      tooltip.style.left = `${rect.left - parentRect.left - offset}px`;
-      tooltip.style.right = 'auto';
-      tooltip.classList.add('right');
-      tooltip.classList.remove('left');
-    }
+  if (viewportWidth / 2 < leftOffset) {
+    // Иконка правее середины → тултип слева от иконки - прижимаем к ПРАВОМУ краю иконки
+    tooltip.style.left = 'auto';
+    tooltip.style.right = `${viewportWidth - rect.right + (offset - 21)}px`;
+    tooltip.classList.add('left');
+    tooltip.classList.remove('right');
   } else {
-    if (viewportWidth / 2 < leftOffset) {
-      // Иконка правее середины экрана → тултип слева от иконки
-      tooltip.style.left = 'auto';
-      tooltip.style.right = `${viewportWidth - rect.right + offset}px`;
-      tooltip.classList.add('left');
-      tooltip.classList.remove('right');
-    } else {
-      // Иконка левее середины экрана → тултип справа от иконки
-      tooltip.style.left = `${rect.left - offset}px`;
-      tooltip.style.right = 'auto';
-      tooltip.classList.add('right');
-      tooltip.classList.remove('left');
-    }
+    // Иконка левее середины → тултип справа от иконки - прижимаем к ЛЕВОМУ краю иконки
+    tooltip.style.left = `${rect.left - offset}px`;
+    tooltip.style.right = 'auto';
+    tooltip.classList.add('right');
+    tooltip.classList.remove('left');
   }
 
   // Вертикальное позиционирование
-  let topOffset;
-  if (focusParent) {
-    const parentRect = focusParent.getBoundingClientRect();
-    topOffset = rect.top - parentRect.top + rect.height / 2;
+  // Если центр иконки выше середины экрана → тултип снизу
+  // Если центр иконки ниже середины экрана → тултип сверху
+  const topOffset = rect.top + rect.height / 2;
+
+  if (viewportHeight / 2 < topOffset) {
+    // Иконка ниже середины → тултип сверху - прижимаем к ВЕРХНЕМУ краю иконки
+    tooltip.style.top = 'auto';
+    tooltip.style.bottom = `${viewportHeight - rect.top + offset + 5}px`;
+    tooltip.classList.add('up');
+    tooltip.classList.remove('down');
   } else {
-    topOffset = rect.top + rect.height / 2;
+    // Иконка выше середины → тултип снизу - прижимаем к НИЖНЕМУ краю иконки
+    tooltip.style.top = `${rect.bottom - (offset - 15)}px`;
+    tooltip.style.bottom = 'auto';
+    tooltip.classList.add('down');
+    tooltip.classList.remove('up');
+  }
+}
+
+
+
+// Показ тултипа
+function showTooltip(trigger, content) {
+  // Закрываю предыдущий тултип, если он есть
+  if (activeTooltip) {
+    hideTooltip(activeTooltip);
   }
 
-  if (focusParent) {
-    const parentRect = focusParent.getBoundingClientRect();
-    if (parentRect.height / 2 < topOffset) {
-      // Иконка ниже середины родителя → тултип сверху
-      tooltip.style.top = 'auto';
-      tooltip.style.bottom = `${parentRect.bottom - rect.top + offset}px`;
-      tooltip.classList.add('up');
-      tooltip.classList.remove('down');
-    } else {
-      // Иконка выше середины родителя → тултип снизу
-      tooltip.style.top = `${rect.bottom - parentRect.top - offset}px`;
-      tooltip.style.bottom = 'auto';
-      tooltip.classList.add('down');
-      tooltip.classList.remove('up');
-    }
-  } else {
-    if (viewportHeight / 2 < topOffset) {
-      // Иконка ниже середины экрана → тултип сверху
-      tooltip.style.top = 'auto';
-      tooltip.style.bottom = `${viewportHeight - rect.top + offset}px`;
-      tooltip.classList.add('up');
-      tooltip.classList.remove('down');
-    } else {
-      // Иконка выше середины экрана → тултип снизу
-      tooltip.style.top = `${rect.bottom - offset}px`;
-      tooltip.style.bottom = 'auto';
-      tooltip.classList.add('down');
-      tooltip.classList.remove('up');
-    }
+  // Создаю новый тултип с контентом из data-content-text блока на который навели
+  // Передаю триггер для проверки класса aside-location
+  const tooltip = createTooltip(content, trigger);
+  ensureTooltipContainer().appendChild(tooltip);
+
+  // Позиционирую тултип относительно блока по которому кликнули
+  positionTooltip(trigger, tooltip);
+
+  // Показываю с анимацией небольшой
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      tooltip.style.opacity = '1';
+      tooltip.style.pointerEvents = 'auto';
+      tooltip.classList.add('active');
+    });
+  });
+
+  // Сохраняю ссылки на текущий тултип
+  activeTooltip = tooltip;
+  activeTrigger = trigger;
+
+  // Для мобильных добавляю блокировку скролла
+  if (isMobileDevice()) {
+    addClassBody();
   }
+}
+
+// Скрытие тултипа
+function hideTooltip(tooltip) {
+  if (!tooltip) return;
+
+  // Отменяю таймер закрытия
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+    tooltipCloseTimer = null;
+  }
+
+  tooltip.style.pointerEvents = 'none';
+  tooltip.style.opacity = '0';
+  tooltip.classList.remove('active');
+
+  setTimeout(() => {
+    if (tooltip.parentNode) {
+      tooltip.parentNode.removeChild(tooltip);
+    }
+
+    // Разблокирую скролл для мобильных
+    if (isMobileDevice()) {
+      removeClassBody();
+    }
+  }, 200);
+
+  activeTooltip = null;
+  activeTrigger = null;
+}
+
+// ОБРАБОТЧИК НАВЕДЕНИЯ
+function handleMouseOver(e) {
+  // Проверяю, что e.target существует и имеет метод closest
+  if (!e.target || typeof e.target.closest !== 'function') return;
+
+  // Нахожу именно тот элемент, на который навели
+  const trigger = e.target.closest('.js--content-note-new');
+  if (!trigger) return;
+
+  // === Проверяю, есть ли класс для полного отключения тултипа ===
+  if (trigger.classList.contains('not-use-tooltip')) {
+    return;
+  }
+
+  // === Проверяю, есть ли класс для отключения на мобильных ===
+  if (isMobileDevice() && trigger.classList.contains('not-use-tooltip-mobile')) {
+    return;
+  }
+
+  // Читаю контент именно из этого элемента
+  const content = trigger.dataset.contentText || '';
+
+  // === Дополнительная проверка на пустой контент ===
+  if (!content || content.trim() === '') {
+    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
+    return;
+  }
+
+  // Если уже открыт тултип для этого же блока - ничего не делаю
+  if (activeTooltip && activeTrigger === trigger) {
+    return;
+  }
+
+  // Отменяю предыдущий таймер закрытия
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+    tooltipCloseTimer = null;
+  }
+
+  // Показываю тултип с контентом из именно блока по который навели
+  showTooltip(trigger, content);
+}
+
+// ОБРАБОТЧИК УХОДА МЫШИ (использую mouseout - работает надёжнее для этой задачи)
+function handleMouseOut(e) {
+  // Проверяю, что e.target существует и имеет метод closest
+  if (!e.target || typeof e.target.closest !== 'function') return;
+
+  const trigger = e.target.closest('.js--content-note-new');
+  const relatedTarget = e.relatedTarget || e.toElement;
+
+  // Проверяю, что relatedTarget существует и имеет метод closest
+  const isTooltip = relatedTarget &&
+    typeof relatedTarget.closest === 'function' &&
+    relatedTarget.closest('.content-note__text-new');
+
+  // Если уходим не с нашего триггера или уходим на сам тултип - ничего не делаем
+  if (!trigger || isTooltip) {
+    return;
+  }
+
+  // Отменяю предыдущий таймер
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+  }
+
+  // Задержка перед скрытием для плавности
+  tooltipCloseTimer = setTimeout(() => {
+    if (activeTooltip && activeTrigger === trigger) {
+      hideTooltip(activeTooltip);
+    }
+    tooltipCloseTimer = null;
+  }, 150);
+}
+
+// ОБРАБОТЧИК УХОДА МЫШИ С ТУЛТИПА
+function handleTooltipMouseOut(e) {
+  // Проверяю, что уходим именно с тултипа
+  if (!e.target || typeof e.target.closest !== 'function') return;
+
+  const tooltip = e.target.closest('.content-note__text-new');
+  if (!tooltip || tooltip !== activeTooltip) {
+    return;
+  }
+
+  const relatedTarget = e.relatedTarget || e.toElement;
+
+  // Проверяю, куда уходим - если на иконку-триггер, то не закрываем
+  const isTrigger = relatedTarget &&
+    typeof relatedTarget.closest === 'function' &&
+    relatedTarget.closest('.js--content-note-new');
+
+  // Если уходим на триггер - ничего не делаем
+  if (isTrigger) {
+    return;
+  }
+
+  // Отменяю предыдущий таймер
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+  }
+
+  // Закрываем тултип, так как уходим не на триггер
+  tooltipCloseTimer = setTimeout(() => {
+    if (activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+    tooltipCloseTimer = null;
+  }, 150);
+}
+
+// ОБРАБОТЧИК КЛИКА ДЛЯ МОБИЛЬНЫХ
+function handleClick(e) {
+  // Проверяю, что e.target существует и имеет метод closest
+  if (!e.target || typeof e.target.closest !== 'function') return;
+
+  const trigger = e.target.closest('.js--content-note-new');
+  if (!trigger) return;
+
+  //  Проверяю, есть ли класс для полного отключения тултипа
+  if (trigger.classList.contains('not-use-tooltip')) {
+    return;
+  }
+
+  //  Проверяю, есть ли класс для отключения на мобильных
+  if (trigger.classList.contains('not-use-tooltip-mobile')) {
+    return;
+  }
+
+  //  Читаю контент именно из этого элемента
+  const content = trigger.dataset.contentText || '';
+
+  //  Дополнительная проверка на пустой контент
+  if (!content || content.trim() === '') {
+    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
+    return;
+  }
+
+  // Предотвращаю стандартное поведение
+  e.preventDefault();
+
+  // Если тултип уже открыт для этого же триггера - закрываем
+  if (activeTooltip && activeTrigger === trigger) {
+    hideTooltip(activeTooltip);
+    return;
+  }
+
+  // Показываю тултип с контентом из блока по которому кликнули
+  showTooltip(trigger, content);
+}
+
+// Обработчик клика вне тултипа
+function handleClickOutside(e) {
+  if (!activeTooltip) return;
+
+  const clickedInside = activeTooltip.contains(e.target) ||
+    (activeTrigger && activeTrigger.contains(e.target));
+
+  if (!clickedInside) {
+    hideTooltip(activeTooltip);
+  }
+}
+
+// Обработчик изменения размера окна
+function handleResize() {
+  if (activeTooltip && activeTrigger) {
+    positionTooltip(activeTrigger, activeTooltip);
+  }
+
+  // Для мобильных устройств закрываю тултип при изменении ориентации
+  const isMobileOrTablet = isMobileDevice();
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+
+  if (isMobileOrTablet && !isNarrow && activeTooltip) {
+    hideTooltip(activeTooltip);
+  }
+}
+
+// Инициализация
+export default function contentNoteNew() {
+  //  Закрываю тултип при скролле
+  const handleScroll = () => {
+    if (activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+  };
+
+  // Добавляю обработчики событий
+  document.addEventListener('mouseover', handleMouseOver);
+  // Использую mouseout вместо mouseleave - работает надёжнее для этой задачи
+  // document.addEventListener('mouseout', handleMouseOut);
+  // Добавляю обработчик ухода с тултипа
+  // document.addEventListener('mouseout', handleTooltipMouseOut);
+  document.addEventListener('click', handleClickOutside);
+  window.addEventListener('resize', handleResize);
+
+  // Скролл страницы
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  // Прокрутка колёсиком мыши
+  document.addEventListener('wheel', handleScroll, { passive: true });
+
+  // Для мобильных устройств использую клик вместо наведения
+  const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
+    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
+  if (isIOS || isMobileDevice()) {
+    document.addEventListener('touchstart', handleClick, { passive: false });
+    // Свайп на мобильных
+    document.addEventListener('touchmove', handleScroll, { passive: true });
+  }
+
+  // Обработчик для закрытия по клику на крестики в мобильном тултипе
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('js--close-mobile-tooltip') && activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+  });
 }
