@@ -45,42 +45,44 @@ function positionTooltipRelativeToParent(trigger, tooltip) {
   if (tooltip.classList.contains('location-side')) {
     const iconCenterInParent = rect.left - parentRect.left + rect.width / 2;
     const parentCenter = parentRect.width / 2;
-    const centerY = rect.top - parentRect.top + rect.height / 2;
+    const centerY = rect.top + rect.height / 2;
     const offset = 10;
 
     // Горизонтальное позиционирование
     if (iconCenterInParent > parentCenter) {
       // Иконка правее середины родителя → тултип слева от иконки
-      if (rect.left - parentRect.left - tooltipWidth - offset >= 0) {
-        tooltip.style.right = `${parentRect.right - rect.left + offset}px`;
+      // Проверяем, что тултип не выходит за левую границу родителя
+      if (rect.left - tooltipWidth - offset >= parentRect.left) {
+        tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
         tooltip.classList.add('left');
         tooltip.classList.remove('right');
       } else {
-        tooltip.style.left = `${rect.right - parentRect.left + offset}px`;
+        // Не помещается слева → показываем справа
+        tooltip.style.left = `${rect.right + offset}px`;
         tooltip.classList.add('right');
         tooltip.classList.remove('left');
       }
     } else {
       // Иконка левее середины родителя → тултип справа от иконки
-      if (rect.right - parentRect.left + tooltipWidth + offset <= parentRect.width) {
-        tooltip.style.left = `${rect.right - parentRect.left + offset}px`;
+      // Проверяем, что тултип не выходит за правую границу родителя
+      if (rect.right + tooltipWidth + offset <= parentRect.right) {
+        tooltip.style.left = `${rect.right + offset}px`;
         tooltip.classList.add('right');
         tooltip.classList.remove('left');
       } else {
-        tooltip.style.right = `${parentRect.right - rect.left + offset}px`;
+        // Не помещается справа → показываем слева
+        tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
         tooltip.classList.add('left');
         tooltip.classList.remove('right');
       }
     }
 
-    // Вертикальное позиционирование (по центру иконки относительно родителя)
-    tooltip.style.top = `${centerY - tooltipHeight / 2 + parentRect.top}px`;
+    // Вертикальное позиционирование (по центру иконки)
+    tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
     tooltip.classList.remove('up', 'down');
 
     return;
   }
-
-
 
   // Для длинного текста используем стандартное позиционирование
 
@@ -91,16 +93,34 @@ function positionTooltipRelativeToParent(trigger, tooltip) {
 
   if (iconCenterInParent > parentCenter) {
     // Иконка правее середины родителя → тултип слева от иконки
-    tooltip.style.left = 'auto';
-    tooltip.style.right = `${parentRect.right - rect.right + offset}px`;
-    tooltip.classList.add('left');
-    tooltip.classList.remove('right');
+    // Проверяем, что тултип не выходит за левую границу родителя
+    if (rect.left - tooltipWidth - offset >= parentRect.left) {
+      tooltip.style.left = 'auto';
+      tooltip.style.right = `${viewportWidth - rect.right + offset}px`;
+      tooltip.classList.add('left');
+      tooltip.classList.remove('right');
+    } else {
+      // Не помещается слева → показываем справа
+      tooltip.style.left = `${rect.left - offset}px`;
+      tooltip.style.right = 'auto';
+      tooltip.classList.add('right');
+      tooltip.classList.remove('left');
+    }
   } else {
     // Иконка левее середины родителя → тултип справа от иконки
-    tooltip.style.left = `${rect.left - parentRect.left - offset}px`;
-    tooltip.style.right = 'auto';
-    tooltip.classList.add('right');
-    tooltip.classList.remove('left');
+    // Проверяем, что тултип не выходит за правую границу родителя
+    if (rect.right + tooltipWidth + offset <= parentRect.right) {
+      tooltip.style.left = `${rect.left - offset}px`;
+      tooltip.style.right = 'auto';
+      tooltip.classList.add('right');
+      tooltip.classList.remove('left');
+    } else {
+      // Не помещается справа → показываем слева
+      tooltip.style.left = 'auto';
+      tooltip.style.right = `${viewportWidth - rect.right + offset}px`;
+      tooltip.classList.add('left');
+      tooltip.classList.remove('right');
+    }
   }
 
   // Вертикальное позиционирование
@@ -109,79 +129,33 @@ function positionTooltipRelativeToParent(trigger, tooltip) {
 
   if (iconCenterYInParent > parentCenterY) {
     // Иконка ниже середины родителя → тултип сверху
-    tooltip.style.top = 'auto';
-    tooltip.style.bottom = `${parentRect.bottom - rect.top + offset}px`;
-    tooltip.classList.add('up');
-    tooltip.classList.remove('down');
+    // Проверяем, что тултип не выходит за верхнюю границу родителя
+    if (rect.top - tooltipHeight - offset >= parentRect.top) {
+      tooltip.style.top = 'auto';
+      tooltip.style.bottom = `${viewportHeight - rect.top + offset}px`;
+      tooltip.classList.add('up');
+      tooltip.classList.remove('down');
+    } else {
+      // Не помещается сверху → показываем снизу
+      tooltip.style.top = `${rect.bottom - offset}px`;
+      tooltip.style.bottom = 'auto';
+      tooltip.classList.add('down');
+      tooltip.classList.remove('up');
+    }
   } else {
     // Иконка выше середины родителя → тултип снизу
-    tooltip.style.top = `${rect.bottom - parentRect.top - offset}px`;
-    tooltip.style.bottom = 'auto';
-    tooltip.classList.add('down');
-    tooltip.classList.remove('up');
-  }
-}
-
-------------------------------------------------------------------------------------
-
-// Показ тултипа
-function showTooltip(trigger, content) {
-  // Закрываю предыдущий тултип, если он есть
-  if (activeTooltip) {
-    hideTooltip(activeTooltip);
-  }
-
-  // Создаю новый тултип с контентом из data-content-text блока на который навели
-  // Передаю триггер для проверки класса aside-location
-  const tooltip = createTooltip(content, trigger);
-  ensureTooltipContainer().appendChild(tooltip);
-
-  // Определяю, какую функцию позиционирования использовать
-  const focusParent = trigger.closest('.js--focus-on-parent');
-  if (focusParent) {
-    // Позиционируем относительно родителя
-    positionTooltipRelativeToParent(trigger, tooltip);
-  } else {
-    // Позиционируем относительно экрана
-    positionTooltip(trigger, tooltip);
-  }
-
-  // Показываю с анимацией небольшой
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      tooltip.style.opacity = '1';
-      tooltip.style.pointerEvents = 'auto';
-      tooltip.classList.add('active');
-    });
-  });
-
-  // Сохраняю ссылки на текущий тултип 
-  activeTooltip = tooltip;
-  activeTrigger = trigger;
-
-  // Для мобильных добавляю блокировку скролла
-  if (isMobileDevice()) {
-    addClassBody();
-  }
-}
--------------------------------------------------
-
-// Обработчик изменения размера окна
-function handleResize() {
-  if (activeTooltip && activeTrigger) {
-    const focusParent = activeTrigger.closest('.js--focus-on-parent');
-    if (focusParent) {
-      positionTooltipRelativeToParent(activeTrigger, activeTooltip);
+    // Проверяем, что тултип не выходит за нижнюю границу родителя
+    if (rect.bottom + tooltipHeight + offset <= parentRect.bottom) {
+      tooltip.style.top = `${rect.bottom - offset}px`;
+      tooltip.style.bottom = 'auto';
+      tooltip.classList.add('down');
+      tooltip.classList.remove('up');
     } else {
-      positionTooltip(activeTrigger, activeTooltip);
+      // Не помещается снизу → показываем сверху
+      tooltip.style.top = 'auto';
+      tooltip.style.bottom = `${viewportHeight - rect.top + offset}px`;
+      tooltip.classList.add('up');
+      tooltip.classList.remove('down');
     }
-  }
-
-  // Для мобильных устройств закрываю тултип при изменении ориентации
-  const isMobileOrTablet = isMobileDevice();
-  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-
-  if (isMobileOrTablet && !isNarrow && activeTooltip) {
-    hideTooltip(activeTooltip);
   }
 }
