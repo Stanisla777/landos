@@ -1,40 +1,43 @@
-// Созданю тултип
-function createTooltip(content, trigger) {
-  const tooltip = document.createElement('div');
-  tooltip.className = 'content-note__text-new';
-  tooltip.style.cssText = `
-    opacity: 0;
-    pointerEvents: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-  `;
-
-  // Добавляем классы из триггера, начинающиеся с 'class-for-tooltip-'
-  if (trigger) {
-    const triggerClasses = Array.from(trigger.classList);
-    const tooltipClasses = triggerClasses.filter(className => 
-      className.startsWith('class-for-tooltip-')
-    );
-    if (tooltipClasses.length > 0) {
-      tooltip.classList.add(...tooltipClasses);
+// Определяю позиционирование для короткого текста
+if (tooltip.classList.contains('location-side')) {
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const offset = 10; // отступ от иконки
+  
+  // Основное позиционирование - зависит от положения иконки относительно середины экрана
+  if (viewportWidth / 2 < centerX) {
+    // Иконка правее середины → тултип слева от иконки
+    // Проверяем, что тултип не вылезает за левый край
+    if (rect.left - tooltipWidth - offset >= 0) {
+      // Помещается слева → показываем слева
+      tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
+      tooltip.classList.add('left');
+      tooltip.classList.remove('right');
+    } else {
+      // Не помещается слева → показываем справа
+      tooltip.style.left = `${rect.right + offset}px`;
+      tooltip.classList.add('right');
+      tooltip.classList.remove('left');
+    }
+  } else {
+    // Иконка левее середины → тултип справа от иконки
+    // Проверяем, что тултип не вылезает за правый край
+    if (rect.right + tooltipWidth + offset <= viewportWidth) {
+      // Помещается справа → показываем справа
+      tooltip.style.left = `${rect.right + offset}px`;
+      tooltip.classList.add('right');
+      tooltip.classList.remove('left');
+    } else {
+      // Не помещается справа → показываем слева
+      tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
+      tooltip.classList.add('left');
+      tooltip.classList.remove('right');
     }
   }
-
-  // Проверяю, содержит ли контент HTML
-  const hasHTML = /<[^>]+>/.test(content);
-  const textLength = content.replace(/<[^>]+>/g, '').length;
-
-  // Определяю тип позиционирования
-  // Тултип сбоку только если:
-  // 1. У триггера есть класс aside-location
-  // 2. В контенте нет HTML
-  // 3. Длина текста <= 40 символов
-  if (trigger && trigger.classList.contains('aside-location') && !hasHTML && textLength <= 40) {
-    tooltip.classList.add('location-side');
-  }
-
-  // Добавляю контент
-  tooltip.innerHTML = content;
-
-  return tooltip;
+  
+  // Вертикальное позиционирование (по центру иконки)
+  tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
+  tooltip.classList.remove('up', 'down');
+  
+  return;
 }
-
