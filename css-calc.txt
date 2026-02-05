@@ -1,2 +1,81 @@
-.btn-add-favorites.btn-add-favorites.js--modal-opener(data-modal="#modal-registration-state-service")
-     .btn-add-favorites__icon.aside-location.class-for-tooltip-hert.js--content-note-new(data-content-text='<p>Ссылка</p>')
+// Инициализация
+export default function contentNoteNew() {
+  //  Закрываю тултип при скролле
+  const handleScroll = () => {
+    if (activeTooltip) {
+      hideTooltip(activeTooltip);
+    }
+  };
+
+  // Добавляю обработчики событий
+  document.addEventListener('mouseover', handleMouseOver);
+  // Использую mouseout вместо mouseleave - работает надёжнее для этой задачи
+  document.addEventListener('mouseout', handleMouseOut);
+  // Добавляю обработчик ухода с тултипа
+  document.addEventListener('mouseout', handleTooltipMouseOut);
+  document.addEventListener('click', handleClickOutside);
+  window.addEventListener('resize', handleResize);
+
+  // === НОВЫЙ: Закрываем тултип мгновенно при клике на иконку с модалкой (только десктоп) ===
+  document.addEventListener('click', (e) => {
+    // Проверяем, что это не мобильное устройство
+    if (isMobileDevice()) return;
+    
+    // Проверяем, что кликнули на иконку тултипа
+    const trigger = e.target.closest('.js--content-note-new');
+    if (!trigger) return;
+    
+    // Проверяем, есть ли класс .js--modal-opener у иконки или её родителя
+    const hasModalOpener = trigger.classList.contains('js--modal-opener') || 
+                          trigger.closest('.js--modal-opener');
+    
+    if (hasModalOpener && activeTooltip) {
+      // Мгновенно закрываем тултип без задержки
+      hideTooltip(activeTooltip);
+    }
+  });
+
+  // Скролл страницы
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  // Прокрутка колёсиком мыши
+  document.addEventListener('wheel', handleScroll, { passive: true });
+
+  // Для мобильных устройств использую клик вместо наведения
+  const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
+    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
+  if (isIOS || isMobileDevice()) {
+    document.addEventListener('touchstart', handleClick, { passive: false });
+    // Свайп на мобильных
+    document.addEventListener('touchmove', handleScroll, { passive: true });
+  }
+
+  // Обработчик для закрытия по клику на крестики в мобильном тултипе
+  document.addEventListener('click', (e) => {
+    // Закрытие по крестику (псевдоэлемент ::after)
+    if (activeTooltip && activeTooltip.classList.contains('mobile-tooltip')) {
+      const rect = activeTooltip.getBoundingClientRect();
+      const closeButtonRect = {
+        top: rect.top + 12,
+        right: rect.right - 16,
+        width: 32,
+        height: 32
+      };
+
+      if (
+        e.clientX >= closeButtonRect.right - closeButtonRect.width &&
+        e.clientX <= closeButtonRect.right &&
+        e.clientY >= closeButtonRect.top &&
+        e.clientY <= closeButtonRect.top + closeButtonRect.height
+      ) {
+        hideTooltip(activeTooltip);
+        return;
+      }
+    }
+
+    // Закрытие по клику на затемнённый фон контейнера
+    if (e.target === tooltipContainer && tooltipContainer.classList.contains('mobile-tooltip')) {
+      hideTooltip(activeTooltip);
+    }
+  });
+}
