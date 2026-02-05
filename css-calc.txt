@@ -27,6 +27,15 @@ function ensureTooltipContainer() {
     });
     document.body.appendChild(tooltipContainer);
   }
+  
+  // Добавляем/удаляем класс mobile-tooltip в зависимости от устройства
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+  if (isMobilePhone() || isNarrow) {
+    tooltipContainer.classList.add('mobile-tooltip');
+  } else {
+    tooltipContainer.classList.remove('mobile-tooltip');
+  }
+  
   return tooltipContainer;
 }
 
@@ -96,7 +105,6 @@ function createTooltip(content, trigger) {
   return tooltip;
 }
 
-
 // Общая функция для вертикального позиционирования тултипа
 function positionTooltipVertically(rect, tooltip, offset = 4) {
   const viewportHeight = window.innerHeight;
@@ -117,18 +125,16 @@ function positionTooltipVertically(rect, tooltip, offset = 4) {
   }
 }
 
-
 // Позиционирование тултипа относительно экрана
 function positionTooltip(trigger, tooltip) {
   const rect = trigger.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
 
-  const isMobileOrTablet = isMobileDevice();
   const isNarrow = window.matchMedia('(max-width: 480px)').matches;
 
-  // Для мобильных устройств использую мобильный вид
-  if (isMobileOrTablet || isNarrow) {
+  // Для мобильных телефонов использую мобильный вид
+  if (isMobilePhone() || isNarrow) {
     tooltip.style.transform = 'translate(-50%, -50%)';
     tooltip.classList.add('mobile-tooltip');
     return;
@@ -227,11 +233,10 @@ function positionTooltipRelativeToParent(trigger, tooltip) {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
 
-  const isMobileOrTablet = isMobileDevice();
   const isNarrow = window.matchMedia('(max-width: 480px)').matches;
 
-  // Для мобильных устройств использую мобильный вид
-  if (isMobileOrTablet || isNarrow) {
+  // Для мобильных телефонов использую мобильный вид
+  if (isMobilePhone() || isNarrow) {
     tooltip.style.transform = 'translate(-50%, -50%)';
     tooltip.classList.add('mobile-tooltip');
     return;
@@ -349,7 +354,6 @@ function positionTooltipRelativeToParent(trigger, tooltip) {
   // Вертикальное позиционирование - используем общую функцию
   positionTooltipVertically(rect, tooltip, offset);
 }
-
 
 // Показ тултипа
 function showTooltip(trigger, content) {
@@ -545,8 +549,8 @@ function handleClick(e) {
     return;
   }
 
-  //  Проверяю, есть ли класс для отключения на мобильных
-  if (trigger.classList.contains('not-use-tooltip-mobile')) {
+  //  Проверяю, есть ли класс для отключения на всех тач-устройствах (телефоны + планшеты)
+  if (isMobileDevice() && trigger.classList.contains('not-use-tooltip-mobile')) {
     return;
   }
 
@@ -596,10 +600,9 @@ function handleResize() {
   }
 
   // Для мобильных устройств закрываю тултип при изменении ориентации
-  const isMobileOrTablet = isMobileDevice();
   const isNarrow = window.matchMedia('(max-width: 480px)').matches;
 
-  if (isMobileOrTablet && !isNarrow && activeTooltip) {
+  if (isMobilePhone() && !isNarrow && activeTooltip) {
     hideTooltip(activeTooltip);
   }
 }
