@@ -1,3 +1,39 @@
+// Позиционирование тултипа относительно экрана
+function positionTooltip(trigger, tooltip) {
+  const rect = trigger.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+
+  // Для мобильных телефонов использую мобильный вид (только класс, без стилей)
+  if (isMobilePhone() || isNarrow) {
+    tooltip.classList.add('mobile-tooltip');
+    return;
+  }
+
+  // ... остальной код без изменений ...
+}
+
+// Позиционирование тултипа относительно родителя с классом .js--focus-on-parent
+function positionTooltipRelativeToParent(trigger, tooltip) {
+  const rect = trigger.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+
+  // Для мобильных телефонов использую мобильный вид (только класс, без стилей)
+  if (isMobilePhone() || isNarrow) {
+    tooltip.classList.add('mobile-tooltip');
+    return;
+  }
+
+  // ... остальной код без изменений ...
+}
+
+-------------------------------------------------------------------------
+
 // Показ тултипа
 function showTooltip(trigger, content) {
   // Закрываю предыдущий тултип, если он есть
@@ -5,32 +41,50 @@ function showTooltip(trigger, content) {
     hideTooltip(activeTooltip);
   }
 
-  // Создаю новый тултип с контентом из data-content-text блока на который навели
-  // Передаю триггер для проверки класса aside-location
+  // Создаю новый тултип
   const tooltip = createTooltip(content, trigger);
   const container = ensureTooltipContainer();
+  
+  // Сначала добавляем в контейнер
   container.appendChild(tooltip);
 
   // Определяю, какую функцию позиционирования использовать
   const focusParent = trigger.closest('.js--focus-on-parent');
   if (focusParent) {
-    // Позиционируем относительно родителя
     positionTooltipRelativeToParent(trigger, tooltip);
   } else {
-    // Позиционируем относительно экрана
     positionTooltip(trigger, tooltip);
   }
 
-  // Показываю с анимацией
+  // === КЛЮЧЕВОЕ: правильная последовательность анимации как в поделиться ===
   requestAnimationFrame(() => {
+    // Сбрасываем активные классы для гарантии
+    container.classList.remove('active');
+    tooltip.classList.remove('active');
+    
     requestAnimationFrame(() => {
-      // Добавляем класс контейнеру
-      container.classList.add('active');
+      const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+      const isMobile = isMobilePhone() || isNarrow;
       
-      // Анимация тултипа
+      // Устанавливаем transition только в момент анимации
+      if (isMobile) {
+        tooltip.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      } else {
+        tooltip.style.transition = 'opacity 0.2s ease';
+      }
+
+      // Добавляем активные классы
+      container.classList.add('active');
+      tooltip.classList.add('active');
+      
+      // Устанавливаем видимость
       tooltip.style.opacity = '1';
       tooltip.style.pointerEvents = 'auto';
-      tooltip.classList.add('active');
+      
+      // Для мобильных добавляем класс контейнера
+      if (isMobile) {
+        container.classList.add('mobile-tooltip');
+      }
     });
   });
 
@@ -44,7 +98,7 @@ function showTooltip(trigger, content) {
   }
 }
 
----------------------------------
+--------------------------------------------
 
 // Скрытие тултипа
 function hideTooltip(tooltip) {
@@ -54,6 +108,16 @@ function hideTooltip(tooltip) {
   if (tooltipCloseTimer) {
     clearTimeout(tooltipCloseTimer);
     tooltipCloseTimer = null;
+  }
+
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+  const isMobile = isMobilePhone() || isNarrow;
+
+  // Устанавливаем transition для анимации закрытия
+  if (isMobile) {
+    tooltip.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  } else {
+    tooltip.style.transition = 'opacity 0.2s ease';
   }
 
   tooltip.style.pointerEvents = 'none';
@@ -67,6 +131,7 @@ function hideTooltip(tooltip) {
       // Удаляем класс контейнера, если больше нет тултипов
       if (!tooltipContainer.querySelector('.content-note__text-new')) {
         tooltipContainer.classList.remove('active');
+        tooltipContainer.classList.remove('mobile-tooltip');
       }
     }
 
@@ -74,63 +139,13 @@ function hideTooltip(tooltip) {
     if (isMobileDevice()) {
       removeClassBody();
     }
-  }, 200);
+  }, isMobile ? 300 : 200); // 300ms для мобильных, 200ms для десктопа
 
   activeTooltip = null;
   activeTrigger = null;
 }
 
-----------------------------------------
-
-// Позиционирование тултипа относительно экрана
-function positionTooltip(trigger, tooltip) {
-  const rect = trigger.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-
-  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-
-  // Для мобильных телефонов использую мобильный вид
-  if (isMobilePhone() || isNarrow) {
-    // Начальное состояние для анимации снизу вверх
-    tooltip.style.transform = 'translate(-50%, 101%)';
-    tooltip.style.bottom = '0';
-    tooltip.style.left = '50%';
-    tooltip.style.top = 'unset';
-    tooltip.style.right = 'unset';
-    tooltip.classList.add('mobile-tooltip');
-    return;
-  }
-
-  // ... остальной код без изменений ...
-}
-
--------------------------------------
-
-// Позиционирование тултипа относительно родителя с классом .js--focus-on-parent
-function positionTooltipRelativeToParent(trigger, tooltip) {
-  const rect = trigger.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-
-  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-
-  // Для мобильных телефонов использую мобильный вид
-  if (isMobilePhone() || isNarrow) {
-    // Начальное состояние для анимации снизу вверх
-    tooltip.style.transform = 'translate(-50%, 101%)';
-    tooltip.style.bottom = '0';
-    tooltip.style.left = '50%';
-    tooltip.style.top = 'unset';
-    tooltip.style.right = 'unset';
-    tooltip.classList.add('mobile-tooltip');
-    return;
-  }
-
-  // ... остальной код без изменений ...
-}
-
--------------------------------------
+---------------------------------
 // Создаю общий контейнер один раз
 function ensureTooltipContainer() {
   if (!tooltipContainer) {
@@ -151,36 +166,12 @@ function ensureTooltipContainer() {
     document.body.appendChild(tooltipContainer);
   }
   
-  // Добавляем/удаляем класс mobile-tooltip в зависимости от устройства
-  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-  if (isMobilePhone() || isNarrow) {
-    tooltipContainer.classList.add('mobile-tooltip');
-    // Для мобильных убираем центрирование контейнера
-    tooltipContainer.style.alignItems = 'flex-end';
-    tooltipContainer.style.justifyContent = 'center';
-  } else {
-    tooltipContainer.classList.remove('mobile-tooltip');
-    tooltipContainer.style.alignItems = 'center';
-    tooltipContainer.style.justifyContent = 'center';
-  }
-  
   return tooltipContainer;
 }
--------------------------------------------------
+
+----------------------------------
 // Обработчик изменения размера окна
 function handleResize() {
-  // Обновляем стили контейнера
-  if (tooltipContainer) {
-    const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-    if (isMobilePhone() || isNarrow) {
-      tooltipContainer.style.alignItems = 'flex-end';
-      tooltipContainer.style.justifyContent = 'center';
-    } else {
-      tooltipContainer.style.alignItems = 'center';
-      tooltipContainer.style.justifyContent = 'center';
-    }
-  }
-
   if (activeTooltip && activeTrigger) {
     const focusParent = activeTrigger.closest('.js--focus-on-parent');
     if (focusParent) {
@@ -198,8 +189,7 @@ function handleResize() {
   }
 }
 
---------------------------------------------------
-
+-----------------------------
 // Контейнер тултипа
 .tooltip-popup-container {
   position: fixed;
@@ -212,13 +202,12 @@ function handleResize() {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s ease;
 
   &.active {
     pointer-events: auto;
   }
 
-  // Для мобильных телефонов
+  // Для мобильных телефонов (устанавливается в JS)
   &.mobile-tooltip {
     align-items: flex-end;
     justify-content: center;
@@ -235,7 +224,7 @@ function handleResize() {
   max-width: 320px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  // УБРАЛИ transition из CSS! Управляется через JS
   font-size: 14px;
   line-height: 1.4;
   color: #333;
@@ -245,7 +234,7 @@ function handleResize() {
     pointer-events: auto;
   }
 
-  // Мобильный вид
+  // Мобильный вид — ТОЛЬКО состояния, без transition!
   &.mobile-tooltip {
     position: fixed;
     padding: 24px;
@@ -253,7 +242,7 @@ function handleResize() {
     bottom: 0;
     top: unset !important;
     left: 50%;
-    transform: translate(-50%, 101%) !important;
+    transform: translate(-50%, 101%) !important; // Начальное состояние (за пределами экрана)
     height: max-content;
     width: 101%;
     border-top-left-radius: 16px;
@@ -263,12 +252,12 @@ function handleResize() {
     max-height: 80vh;
     overflow-y: auto;
     background-color: #fff;
-    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
     &.active {
-      transform: translate(-50%, 0) !important;
+      transform: translate(-50%, 0) !important; // Конечное состояние (в пределах экрана)
     }
   }
 
   // ... остальные стили без изменений ...
 }
+
