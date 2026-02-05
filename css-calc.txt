@@ -1,649 +1,613 @@
-// content-note-new.js
+.content-note__text-new {
+&.mobile-tooltip {
+    position: fixed;
+    padding: 24px;
+    padding-top: 16px;
+    bottom: 0;
+    top: unset !important;
+    left: 50%;
+    transform: translate(-50%, 101%) !important;
+    height: max-content;
+    width: 101%;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+    background-color: #fff;
+    &.active{
+      transform: translate(-50%) !important;
+    }
+}
+
+
+-----------------------------------------------------------
+
 /* eslint-disable */
 
 // Глобальные переменные
-let activeTooltip = null;
-let activeTrigger = null;
-let tooltipContainer = null;
-let isBodyLocked = false;
-let tooltipCloseTimer = null; // Таймер для закрытия тултипа
+function RemoveClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal');
+    document.body.classList.remove('body-additional-class');
+  }
+  const scrollY = document.body.style.top;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  window.scrollTo(0, parseInt(scrollY || '0') * -1);
+}
+function AddClassBody() {
+  document.body.classList.add('body-modal');
+  document.body.classList.add('body-additional-class');
+  document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+  document.ontouchmove = (e) => {
+    e.preventDefault();
+  };
+}
 
-// Создаю общий контейнер один раз
-function ensureTooltipContainer() {
-  if (!tooltipContainer) {
-    tooltipContainer = document.createElement('div');
-    tooltipContainer.className = 'tooltip-popup-container';
-    Object.assign(tooltipContainer.style, {
+let activeDropdown = null;
+let activeTrigger = null;
+let popupContainer = null;
+const defaultType = '1';
+
+const dropdownCache = new WeakMap();
+
+// Определение мобильного/планшетного устройства по User-Agent
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+//определяю, что открыто в мобильнике
+function isMobilePhone() {
+  const ua = navigator.userAgent;
+  // iPhone (но не iPad)
+  if (/iPhone/.test(ua) && !/iPad/.test(ua)) return true;
+  // Android + Mobile — только телефоны
+  if (/Android/.test(ua) && /Mobile/.test(ua)) return true;
+  return false;
+}
+
+
+// Создаём общий контейнер один раз
+function ensurePopupContainer() {
+  if (!popupContainer) {
+    popupContainer = document.createElement('div');
+    popupContainer.className = 'soc-share-popup-container';
+    Object.assign(popupContainer.style, {
       position: 'fixed',
       top: '0',
       left: '0',
       width: '100%',
       height: '100%',
       pointerEvents: 'none',
-      zIndex: '2147483646',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      zIndex: '2147483647', // как у Яндекса — максимальный
     });
-    document.body.appendChild(tooltipContainer);
+    document.body.appendChild(popupContainer);
   }
-  
-  // Добавляем/удаляем класс mobile-tooltip в зависимости от устройства
-  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-  if (isMobilePhone() || isNarrow) {
-    tooltipContainer.classList.add('mobile-tooltip');
-  } else {
-    tooltipContainer.classList.remove('mobile-tooltip');
+  return popupContainer;
+}
+
+
+// Обработчик клика
+function handleShareClick(trigger, e) {
+  if (!trigger || typeof trigger.closest !== 'function') {
+    console.warn('Некорректный триггер:', trigger);
+    return;
   }
-  
-  return tooltipContainer;
-}
+  e.preventDefault();
+  const wrapper = trigger.closest('.js--soc-list-wrapper-share');
+  if (!wrapper) return;
 
-// Функции блокировки/разблокировки скролла
-function addClassBody() {
-  if (isBodyLocked) return;
-  isBodyLocked = true;
-  document.body.classList.add('body-modal', 'body-additional-class');
-}
-
-function removeClassBody() {
-  if (!document.body.classList.contains('body-modal-modals')) {
-    document.body.classList.remove('body-modal', 'body-additional-class');
-  }
-  isBodyLocked = false;
-}
-
-// Определяю мобильное или планшетное устройства
-function isMobileDevice() {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-
-function isMobilePhone() {
-  const ua = navigator.userAgent;
-  if (/iPhone/.test(ua) && !/iPad/.test(ua)) return true;
-  if (/Android/.test(ua) && /Mobile/.test(ua)) return true;
-  return false;
-}
-
-// Созданю тултип
-function createTooltip(content, trigger) {
-  const tooltip = document.createElement('div');
-  tooltip.className = 'content-note__text-new';
-  tooltip.style.cssText = `
-    opacity: 0;
-    pointerEvents: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-  `;
-
-  // Добавляем классы из триггера, начинающиеся с 'class-for-tooltip-'
-  if (trigger) {
-    const triggerClasses = Array.from(trigger.classList);
-    const tooltipClasses = triggerClasses.filter(className =>
-      className.startsWith('class-for-tooltip-')
-    );
-    if (tooltipClasses.length > 0) {
-      tooltip.classList.add(...tooltipClasses);
-    }
-  }
-
-  // Проверяю, содержит ли контент HTML
-  const hasHTML = /<[^>]+>/.test(content);
-  const textLength = content.replace(/<[^>]+>/g, '').length;
-
-  // Определяю тип позиционирования
-  // Тултип сбоку только если:
-  // 1. У триггера есть класс aside-location
-  // 2. В контенте нет HTML
-  // 3. Длина текста <= 40 символов
-  if (trigger && trigger.classList.contains('aside-location') && !hasHTML && textLength <= 40) {
-    tooltip.classList.add('location-side');
-  }
-
-  // Добавляю контент
-  tooltip.innerHTML = content;
-
-  return tooltip;
-}
-
-// Общая функция для вертикального позиционирования тултипа
-function positionTooltipVertically(rect, tooltip, offset = 4) {
-  const viewportHeight = window.innerHeight;
-  const topOffset = rect.top + rect.height / 2;
-
-  if (viewportHeight / 2 < topOffset) {
-    // Иконка ниже середины экрана → тултип сверху
-    tooltip.style.top = 'auto';
-    tooltip.style.bottom = `${viewportHeight - rect.top + (offset + 6)}px`;
-    tooltip.classList.add('up');
-    tooltip.classList.remove('down');
-  } else {
-    // Иконка выше середины экрана → тултип снизу
-    tooltip.style.top = `${rect.bottom - (offset - 13)}px`;
-    tooltip.style.bottom = 'auto';
-    tooltip.classList.add('down');
-    tooltip.classList.remove('up');
-  }
-}
-
-// Позиционирование тултипа относительно экрана
-function positionTooltip(trigger, tooltip) {
-  const rect = trigger.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-
-  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-
-  // Для мобильных телефонов использую мобильный вид
-  if (isMobilePhone() || isNarrow) {
-    tooltip.style.transform = 'translate(-50%, -50%)';
-    tooltip.classList.add('mobile-tooltip');
+  if (activeDropdown && activeTrigger === trigger) {
+    hideDropdown(activeDropdown);
     return;
   }
 
-  // Сбрасываю позиционирование
-  tooltip.style.left = '';
-  tooltip.style.right = '';
-  tooltip.style.top = '';
-  tooltip.style.bottom = '';
-  tooltip.style.transform = '';
-
-  // Измеряю размеры тултипа
-  const originalDisplay = tooltip.style.display;
-  tooltip.style.display = 'block';
-  tooltip.style.opacity = '0';
-  const tooltipRect = tooltip.getBoundingClientRect();
-  const tooltipWidth = tooltipRect.width;
-  const tooltipHeight = tooltipRect.height;
-  tooltip.style.display = originalDisplay;
-  tooltip.style.opacity = '';
-
-  // Определяю позиционирование для короткого текста
-  if (tooltip.classList.contains('location-side')) {
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const offset = 10; // отступ от иконки
-
-    // Основное позиционирование - зависит от положения иконки относительно середины экрана
-    if (viewportWidth / 2 < centerX) {
-      // Иконка правее середины → тултип слева от иконки
-      // Проверяем, что тултип не вылезает за левый край
-      if (rect.left - tooltipWidth - offset >= 0) {
-        // Помещается слева → показываем слева
-        tooltip.style.right = `${viewportWidth - rect.left + (offset - 15)}px`;
-        tooltip.classList.add('left');
-        tooltip.classList.remove('right');
-      } else {
-        // Не помещается слева → показываем справа
-        tooltip.style.left = `${rect.right + offset}px`;
-        tooltip.classList.add('right');
-        tooltip.classList.remove('left');
-      }
-    } else {
-      // Иконка левее середины → тултип справа от иконки
-      // Проверяем, что тултип не вылезает за правый край
-      if (rect.right + tooltipWidth + offset <= viewportWidth) {
-        // Помещается справа → показываем справа
-        tooltip.style.left = `${rect.right + offset}px`;
-        tooltip.classList.add('right');
-        tooltip.classList.remove('left');
-      } else {
-        // Не помещается справа → показываем слева
-        tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
-        tooltip.classList.add('left');
-        tooltip.classList.remove('right');
-      }
-    }
-
-    // Вертикальное позиционирование (по центру иконки)
-    tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
-    tooltip.classList.remove('up', 'down');
-
-    return;
+  if (activeDropdown) {
+    hideDropdown(activeDropdown);
   }
 
-  // Для длинного текста использую стандартное позиционирование
+  let dropdown = dropdownCache.get(wrapper);
+  if (!dropdown) {
+    // Получаю данные ОДИН РАЗ
+    const rawUrl = wrapper.dataset.url || location.href;
+    const rawText = wrapper.dataset.text || document.title;
+    const rawImage = wrapper.dataset.image || '';
 
-  // Горизонтальное позиционирование
-  // Если центр иконки правее середины экрана → тултип слева от иконки
-  // Если центр иконки левее середины экрана → тултип справа от иконки
-  const leftOffset = rect.left + rect.width / 2;
-  const offset = 4; // отступ от иконки
-
-  if (viewportWidth / 2 < leftOffset) {
-    // Иконка правее середины → тултип слева от иконки - прижимаем к ПРАВОМУ краю иконки
-    tooltip.style.left = 'auto';
-    tooltip.style.right = `${viewportWidth - rect.right + (offset - 21)}px`;
-    tooltip.classList.add('left');
-    tooltip.classList.remove('right');
-  } else {
-    // Иконка левее середины → тултип справа от иконки - прижимаем к ЛЕВОМУ краю иконки
-    tooltip.style.left = `${rect.left - offset}px`;
-    tooltip.style.right = 'auto';
-    tooltip.classList.add('right');
-    tooltip.classList.remove('left');
+    dropdown = createShareDropdown(wrapper, rawUrl, rawText, rawImage);
+    ensurePopupContainer().appendChild(dropdown);
+    dropdownCache.set(wrapper, dropdown);
   }
 
-  // Вертикальное позиционирование - используем общую функцию
-  positionTooltipVertically(rect, tooltip, offset);
+  showDropdown(dropdown, trigger);
 }
 
-// Позиционирование тултипа относительно родителя с классом .js--focus-on-parent
-function positionTooltipRelativeToParent(trigger, tooltip) {
-  const rect = trigger.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
+//отправка данных
+function shareAjax(id, type = defaultType,element_count, count){
+  BX.ajax({
+    url: '/local/components/dev/likes/templates/mini/ajax.php',
+    data: {
+      element_id : id,
+      type : type,
+      share : 'Y'
+    },
+    method: 'POST',
+    dataType: 'html',
+    timeout: 30,
+    async: true,
+    processData: true,
+    scriptsRunFirst: true,
+    emulateOnload: true,
+    start: true,
+    cache: false,
+    onsuccess: function(data){
+      element_count.textContent=count + 1;
+    },
+    onfailure: function(){
 
-  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
-
-  // Для мобильных телефонов использую мобильный вид
-  if (isMobilePhone() || isNarrow) {
-    tooltip.style.transform = 'translate(-50%, -50%)';
-    tooltip.classList.add('mobile-tooltip');
-    return;
-  }
-
-  // Сбрасываю позиционирование
-  tooltip.style.left = '';
-  tooltip.style.right = '';
-  tooltip.style.top = '';
-  tooltip.style.bottom = '';
-  tooltip.style.transform = '';
-
-  // Измеряю размеры тултипа
-  const originalDisplay = tooltip.style.display;
-  tooltip.style.display = 'block';
-  tooltip.style.opacity = '0';
-  const tooltipRect = tooltip.getBoundingClientRect();
-  const tooltipWidth = tooltipRect.width;
-  const tooltipHeight = tooltipRect.height;
-  tooltip.style.display = originalDisplay;
-  tooltip.style.opacity = '';
-
-  // Находим родителя с классом .js--focus-on-parent
-  const focusParent = trigger.closest('.js--focus-on-parent');
-  if (!focusParent) {
-    // Если родителя нет, используем обычное позиционирование
-    positionTooltip(trigger, tooltip);
-    return;
-  }
-
-  const parentRect = focusParent.getBoundingClientRect();
-
-  // Определяю позиционирование для короткого текста
-  if (tooltip.classList.contains('location-side')) {
-    const iconCenterInParent = rect.left - parentRect.left + rect.width / 2;
-    const parentCenter = parentRect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const offset = 10;
-
-    // Горизонтальное позиционирование
-    if (iconCenterInParent > parentCenter) {
-      // Иконка правее середины родителя → тултип слева от иконки
-      // Проверяем, что тултип не выходит за левую границу родителя
-      if (rect.left - tooltipWidth - offset >= parentRect.left) {
-        tooltip.style.right = `${viewportWidth - rect.left + (offset - 15)}px`;
-        tooltip.classList.add('left');
-        tooltip.classList.remove('right');
-      } else {
-        // Не помещается слева → показываем справа
-        tooltip.style.left = `${rect.right + offset}px`;
-        tooltip.classList.add('right');
-        tooltip.classList.remove('left');
-      }
-    } else {
-      // Иконка левее середины родителя → тултип справа от иконки
-      // Проверяем, что тултип не выходит за правую границу родителя
-      if (rect.right + tooltipWidth + offset <= parentRect.right) {
-        tooltip.style.left = `${rect.right + offset}px`;
-        tooltip.classList.add('right');
-        tooltip.classList.remove('left');
-      } else {
-        // Не помещается справа → показываем слева
-        tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
-        tooltip.classList.add('left');
-        tooltip.classList.remove('right');
-      }
     }
-
-    // Вертикальное позиционирование (по центру иконки)
-    tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
-    tooltip.classList.remove('up', 'down');
-
-    return;
-  }
-
-  // Для длинного текста используем стандартное позиционирование
-
-  // Горизонтальное позиционирование (относительно родителя)
-  const iconCenterInParent = rect.left - parentRect.left + rect.width / 2;
-  const parentCenter = parentRect.width / 2;
-  const offset = 4;
-
-  if (iconCenterInParent > parentCenter) {
-    // Иконка правее середины родителя → тултип слева от иконки
-    // Проверяем, что тултип не выходит за левую границу родителя
-    if (rect.left - tooltipWidth - offset >= parentRect.left) {
-      tooltip.style.left = 'auto';
-      tooltip.style.right = `${viewportWidth - rect.right + (offset - 20)}px`;
-      tooltip.classList.add('left');
-      tooltip.classList.remove('right');
-    } else {
-      // Не помещается слева → показываем справа
-      tooltip.style.left = `${rect.left - offset}px`;
-      tooltip.style.right = 'auto';
-      tooltip.classList.add('right');
-      tooltip.classList.remove('left');
-    }
-  } else {
-    // Иконка левее середины родителя → тултип справа от иконки
-    // Проверяем, что тултип не выходит за правую границу родителя
-    if (rect.right + tooltipWidth + offset <= parentRect.right) {
-      tooltip.style.left = `${rect.left - offset}px`;
-      tooltip.style.right = 'auto';
-      tooltip.classList.add('right');
-      tooltip.classList.remove('left');
-    } else {
-      // Не помещается справа → показываем слева
-      tooltip.style.left = 'auto';
-      tooltip.style.right = `${viewportWidth - rect.right + offset}px`;
-      tooltip.classList.add('left');
-      tooltip.classList.remove('right');
-    }
-  }
-
-  // Вертикальное позиционирование - используем общую функцию
-  positionTooltipVertically(rect, tooltip, offset);
+  });
 }
 
-// Показ тултипа
-function showTooltip(trigger, content) {
-  // Закрываю предыдущий тултип, если он есть
-  if (activeTooltip) {
-    hideTooltip(activeTooltip);
-  }
+// Показ popup-а
+function showDropdown(dropdown, trigger) {
+  dropdown.style.display = 'block';
+  dropdown.style.opacity = '0';
+  dropdown.style.pointerEvents = 'none';
 
-  // Создаю новый тултип с контентом из data-content-text блока на который навели
-  // Передаю триггер для проверки класса aside-location
-  const tooltip = createTooltip(content, trigger);
-  ensureTooltipContainer().appendChild(tooltip);
+  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
 
-  // Определяю, какую функцию позиционирования использовать
-  const focusParent = trigger.closest('.js--focus-on-parent');
-  if (focusParent) {
-    // Позиционируем относительно родителя
-    positionTooltipRelativeToParent(trigger, tooltip);
-  } else {
-    // Позиционируем относительно экрана
-    positionTooltip(trigger, tooltip);
-  }
+  positionDropdown(trigger, dropdown);
 
-  // Показываю с анимацией небольшой
   requestAnimationFrame(() => {
+    if (popupContainer) {
+      popupContainer.classList.add('active');
+    }
+    dropdown.classList.remove('active');
+
     requestAnimationFrame(() => {
-      tooltip.style.opacity = '1';
-      tooltip.style.pointerEvents = 'auto';
-      tooltip.classList.add('active');
+      if (isMobilePortrait) {
+        dropdown.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      } else {
+        dropdown.style.transition = 'opacity 0.2s ease';
+      }
+
+      dropdown.classList.add('active');
+
+      if (isMobileDevice()) {
+        AddClassBody();
+        if (popupContainer) popupContainer.classList.add('mobile-share');
+        dropdown.classList.add('mobile-share');
+      }
+
+      // Добавляю класс ТОЛЬКО для телефонов
+      if (isMobilePhone()) {
+        dropdown.classList.add('mobile-phone-device');
+      }
+
+      dropdown.style.opacity = '1';
+      dropdown.style.pointerEvents = 'auto';
     });
   });
 
-  // Сохраняю ссылки на текущий тултип
-  activeTooltip = tooltip;
+  activeDropdown = dropdown;
   activeTrigger = trigger;
-
-  // Для мобильных добавляю блокировку скролла
-  if (isMobileDevice()) {
-    addClassBody();
+  if (!isMobileDevice()) {
+    window.addEventListener('scroll', onScroll, { passive: true });
   }
 }
 
-// Скрытие тултипа
-function hideTooltip(tooltip) {
-  if (!tooltip) return;
+// Скрытие popup-а
+function hideDropdown(dropdown) {
+  if (!dropdown) return;
 
-  // Отменяю таймер закрытия
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-    tooltipCloseTimer = null;
+  const isMobilePortrait = isMobileDevice() && window.matchMedia('(max-width: 480px)').matches;
+
+  dropdown.style.pointerEvents = 'none';
+
+  if (isMobilePortrait) {
+    dropdown.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  } else {
+    dropdown.style.transition = 'opacity 0.2s ease';
   }
 
-  tooltip.style.pointerEvents = 'none';
-  tooltip.style.opacity = '0';
-  tooltip.classList.remove('active');
+  dropdown.classList.remove('active');
 
   setTimeout(() => {
-    if (tooltip.parentNode) {
-      tooltip.parentNode.removeChild(tooltip);
-    }
+    dropdown.style.display = 'none';
+    dropdown.style.transition = '';
 
-    // Разблокирую скролл для мобильных
-    if (isMobileDevice()) {
-      removeClassBody();
+    if (popupContainer) popupContainer.classList.remove('active');
+    if (dropdown.classList.contains('mobile-share')) {
+      RemoveClassBody();
+      if (popupContainer) popupContainer.classList.remove('mobile-share');
+      dropdown.classList.remove('mobile-share');
     }
-  }, 200);
+  }, 300); // ← 300 мс — гарантирует завершение анимации
 
-  activeTooltip = null;
+  activeDropdown = null;
   activeTrigger = null;
+  window.removeEventListener('scroll', onScroll);
 }
 
-// ОБРАБОТЧИК НАВЕДЕНИЯ
-function handleMouseOver(e) {
-  // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || typeof e.target.closest !== 'function') return;
+// Позиционирование popup-а (мгновенно, без transition!)
+function positionDropdown(trigger, dropdown) {
+  const rect = trigger.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
 
-  // Нахожу именно тот элемент, на который навели
-  const trigger = e.target.closest('.js--content-note-new');
-  if (!trigger) return;
-
-  // === Проверяю, есть ли класс для полного отключения тултипа ===
-  if (trigger.classList.contains('not-use-tooltip')) {
-    return;
-  }
-
-  // === Проверяю, есть ли класс для отключения на мобильных ===
-  if (isMobileDevice() && trigger.classList.contains('not-use-tooltip-mobile')) {
-    return;
-  }
-
-  // Читаю контент именно из этого элемента
-  const content = trigger.dataset.contentText || '';
-
-  // === Дополнительная проверка на пустой контент ===
-  if (!content || content.trim() === '') {
-    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
-    return;
-  }
-
-  // Если уже открыт тултип для этого же блока - ничего не делаю
-  if (activeTooltip && activeTrigger === trigger) {
-    return;
-  }
-
-  // Отменяю предыдущий таймер закрытия
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-    tooltipCloseTimer = null;
-  }
-
-  // Показываю тултип с контентом из именно блока по который навели
-  showTooltip(trigger, content);
-}
-
-// ОБРАБОТЧИК УХОДА МЫШИ (использую mouseout - работает надёжнее для этой задачи)
-function handleMouseOut(e) {
-  // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || typeof e.target.closest !== 'function') return;
-
-  const trigger = e.target.closest('.js--content-note-new');
-  const relatedTarget = e.relatedTarget || e.toElement;
-
-  // Проверяю, что relatedTarget существует и имеет метод closest
-  const isTooltip = relatedTarget &&
-    typeof relatedTarget.closest === 'function' &&
-    relatedTarget.closest('.content-note__text-new');
-
-  // Если уходим не с нашего триггера или уходим на сам тултип - ничего не делаем
-  if (!trigger || isTooltip) {
-    return;
-  }
-
-  // Отменяю предыдущий таймер
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-  }
-
-  // Задержка перед скрытием для плавности
-  tooltipCloseTimer = setTimeout(() => {
-    if (activeTooltip && activeTrigger === trigger) {
-      hideTooltip(activeTooltip);
-    }
-    tooltipCloseTimer = null;
-  }, 150);
-}
-
-// ОБРАБОТЧИК УХОДА МЫШИ С ТУЛТИПА
-function handleTooltipMouseOut(e) {
-  // Проверяю, что уходим именно с тултипа
-  if (!e.target || typeof e.target.closest !== 'function') return;
-
-  const tooltip = e.target.closest('.content-note__text-new');
-  if (!tooltip || tooltip !== activeTooltip) {
-    return;
-  }
-
-  const relatedTarget = e.relatedTarget || e.toElement;
-
-  // Проверяю, куда уходим - если на иконку-триггер, то не закрываем
-  const isTrigger = relatedTarget &&
-    typeof relatedTarget.closest === 'function' &&
-    relatedTarget.closest('.js--content-note-new');
-
-  // Если уходим на триггер - ничего не делаем
-  if (isTrigger) {
-    return;
-  }
-
-  // Отменяю предыдущий таймер
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-  }
-
-  // Закрываем тултип, так как уходим не на триггер
-  tooltipCloseTimer = setTimeout(() => {
-    if (activeTooltip) {
-      hideTooltip(activeTooltip);
-    }
-    tooltipCloseTimer = null;
-  }, 150);
-}
-
-// ОБРАБОТЧИК КЛИКА ДЛЯ МОБИЛЬНЫХ
-function handleClick(e) {
-  // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || typeof e.target.closest !== 'function') return;
-
-  const trigger = e.target.closest('.js--content-note-new');
-  if (!trigger) return;
-
-  //  Проверяю, есть ли класс для полного отключения тултипа
-  if (trigger.classList.contains('not-use-tooltip')) {
-    return;
-  }
-
-  //  Проверяю, есть ли класс для отключения на всех тач-устройствах (телефоны + планшеты)
-  if (isMobileDevice() && trigger.classList.contains('not-use-tooltip-mobile')) {
-    return;
-  }
-
-  //  Читаю контент именно из этого элемента
-  const content = trigger.dataset.contentText || '';
-
-  //  Дополнительная проверка на пустой контент
-  if (!content || content.trim() === '') {
-    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
-    return;
-  }
-
-  // Предотвращаю стандартное поведение
-  e.preventDefault();
-
-  // Если тултип уже открыт для этого же триггера - закрываем
-  if (activeTooltip && activeTrigger === trigger) {
-    hideTooltip(activeTooltip);
-    return;
-  }
-
-  // Показываю тултип с контентом из блока по которому кликнули
-  showTooltip(trigger, content);
-}
-
-// Обработчик клика вне тултипа
-function handleClickOutside(e) {
-  if (!activeTooltip) return;
-
-  const clickedInside = activeTooltip.contains(e.target) ||
-    (activeTrigger && activeTrigger.contains(e.target));
-
-  if (!clickedInside) {
-    hideTooltip(activeTooltip);
-  }
-}
-
-// Обработчик изменения размера окна
-function handleResize() {
-  if (activeTooltip && activeTrigger) {
-    const focusParent = activeTrigger.closest('.js--focus-on-parent');
-    if (focusParent) {
-      positionTooltipRelativeToParent(activeTrigger, activeTooltip);
-    } else {
-      positionTooltip(activeTrigger, activeTooltip);
-    }
-  }
-
-  // Для мобильных устройств закрываю тултип при изменении ориентации
+  const isMobileOrTablet = isMobileDevice();
   const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+  const isMobileShare = dropdown.classList.contains('mobile-share');
 
-  if (isMobilePhone() && !isNarrow && activeTooltip) {
-    hideTooltip(activeTooltip);
+  if (isMobileOrTablet || isNarrow || isMobileShare) {
+    return;
+  }
+
+  // Сбрасываем transform
+  dropdown.style.transform = 'none';
+
+  // Измеряем ширину и высоту
+  const originalDisplay = dropdown.style.display;
+  dropdown.style.display = 'block';
+  dropdown.style.opacity = '0';
+  const dropdownRect = dropdown.getBoundingClientRect();
+  const dropdownWidth = dropdownRect.width;
+  const dropdownHeight = dropdownRect.height;
+  dropdown.style.display = originalDisplay;
+  dropdown.style.opacity = '';
+
+  // Горизонтальное позиционирование (как у вас)
+  let left = rect.left;
+  if (left + dropdownWidth > viewportWidth - 10) {
+    left = rect.left - dropdownWidth + 10;
+    if (left < 10) left = 10;
+  }
+
+  // Вертикальное позиционирование
+  let top = rect.top + rect.height + 10; // под кнопкой
+
+  // Если не помещается снизу → показываем СВЕРХУ
+  if (top + dropdownHeight > viewportHeight - 10) {
+    top = rect.top - dropdownHeight - 10;
+    // Защита: не уходим за верхний край
+    if (top < 10) top = 10;
+  }
+
+  dropdown.style.transform = `translate(${left}px, ${top}px)`;
+}
+
+// Обработчик скролла — мгновенный, как у Яндекса
+function onScroll() {
+  if (activeDropdown && activeTrigger) {
+    positionDropdown(activeTrigger, activeDropdown);
   }
 }
 
-// Инициализация
-export default function contentNoteNew() {
-  //  Закрываю тултип при скролле
-  const handleScroll = () => {
-    if (activeTooltip) {
-      hideTooltip(activeTooltip);
+// Создание popup-а (внутри fixed-контейнера)
+function createShareDropdown(wrapper, rawUrl, rawText, rawImage) {
+  const servicesStr = (wrapper.dataset.services || '').trim();
+  let services = [];
+  if (servicesStr) {
+    try {
+      services = JSON.parse(servicesStr);
+    } catch (_) {
+      let cleaned = servicesStr.trim();
+      if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+        cleaned = cleaned.slice(1, -1).trim();
+      }
+      services = cleaned.split(',').map(s => s.trim()).filter(Boolean);
     }
+  }
+  if (!Array.isArray(services)) services = [];
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'soc-list__share';
+  Object.assign(dropdown.style, {
+    opacity: '0',
+    pointerEvents: 'none',
+  });
+
+  // Мобильный хедер (без изменений)
+  const mobileHeader = document.createElement('div');
+  mobileHeader.className = 'soc-list__mobile-header';
+
+  const urlText = document.createElement('p');
+  urlText.textContent = rawText;
+
+  const closeBtn = document.createElement('div');
+  closeBtn.className = 'soc-list__mobile-header-close js--soc-list-mobile-header-close';
+
+  const closeIcon = document.createElement('div');
+  closeIcon.className = 'soc-list__mobile-header-close-icon';
+
+  closeBtn.appendChild(closeIcon);
+  mobileHeader.appendChild(urlText);
+  mobileHeader.appendChild(closeBtn);
+
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideDropdown(dropdown);
+  });
+
+  dropdown.appendChild(mobileHeader);
+
+  // Список сервисов
+  const ul = document.createElement('ul');
+  const serviceTitles = {
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram',
+    vkontakte: 'ВКонтакте',
+    max: 'MAX',
+    odnoklassniki: 'Одноклассники',
   };
 
-  // Добавляю обработчики событий
-  document.addEventListener('mouseover', handleMouseOver);
-  // Использую mouseout вместо mouseleave - работает надёжнее для этой задачи
-  // document.addEventListener('mouseout', handleMouseOut);
-  // Добавляю обработчик ухода с тултипа
-  // document.addEventListener('mouseout', handleTooltipMouseOut);
-  document.addEventListener('click', handleClickOutside);
-  window.addEventListener('resize', handleResize);
+  services.forEach(service => {
+    const title = serviceTitles[service];
+    if (!title) return;
 
-  // Скролл страницы
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  // Прокрутка колёсиком мыши
-  document.addEventListener('wheel', handleScroll, { passive: true });
+    const li = document.createElement('li');
+    // const item = document.createElement('div');
+    // item.className = 'soc-list__share-item';
 
-  // Для мобильных устройств использую клик вместо наведения
-  const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
-    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+    const item = document.createElement('a');
+    item.className = 'soc-list__share-item';
+    item.href = getShareUrl(service, { rawUrl, rawText, rawImage });
+    item.target = '_blank';
+    item.rel = 'noopener noreferrer';
 
-  if (isIOS || isMobileDevice()) {
-    document.addEventListener('touchstart', handleClick, { passive: false });
-    // Свайп на мобильных
-    document.addEventListener('touchmove', handleScroll, { passive: true });
-  }
+    const icon = document.createElement('div');
+    icon.className = `soc-list__share-icon ${service}-icon-share`;
 
-  // Обработчик для закрытия по клику на крестики в мобильном тултипе
-  document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('js--close-mobile-tooltip') && activeTooltip) {
-      hideTooltip(activeTooltip);
-    }
+    const span = document.createElement('span');
+    span.className = 'soc-list__share-title';
+    span.textContent = title;
+
+    item.appendChild(icon);
+    item.appendChild(span);
+    li.appendChild(item);
+
+
+    //поменял
+
+    // Обработчик соцсетей — с AJAX
+    // item.addEventListener('click', (ev) => {
+    //   ev.stopPropagation();
+    //
+    //   // 1. Отправляем AJAX
+    //   let data_id = wrapper.dataset.id || '0';
+    //   let data_el_type = wrapper.dataset.elType || defaultType;
+    //   let element_count = wrapper.querySelector('.js-likes-share');
+    //   if (element_count) {
+    //     const count = parseInt(element_count.textContent) || 0;
+    //     shareAjax(data_id, data_el_type, element_count, count);
+    //   }
+    //
+    //   // 2. Открываем шеринг
+    //   const shareUrl = getShareUrl(service, { rawUrl, rawText, rawImage });
+    //   window.open(shareUrl, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
+    //
+    //   // 3. Закрываем popup
+    //   hideDropdown(dropdown);
+    // });
+
+    item.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      // Только AJAX — открытие делает браузер автоматически
+      let data_id = wrapper.dataset.id || '0';
+      let data_el_type = wrapper.dataset.elType || defaultType;
+      let element_count = wrapper.querySelector('.js-likes-share');
+      if (element_count) {
+        const count = parseInt(element_count.textContent) || 0;
+        shareAjax(data_id, data_el_type, element_count, count);
+      }
+      hideDropdown(dropdown);
+    });
+
+    ul.appendChild(li);
   });
+
+  // === Кнопка "Другие" ===
+  // const isMobileOrTablet = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  // if (navigator.share && isMobileOrTablet) {
+  //   const otherLi = document.createElement('li');
+  //   const otherDiv = document.createElement('div');
+  //   otherDiv.className = 'soc-list__share-item soc-list__share-other';
+  //
+  //   const otherIcon = document.createElement('div');
+  //   otherIcon.className = 'soc-list__share-icon other-icon-share';
+  //
+  //   const otherTitle = document.createElement('span');
+  //   otherTitle.className = 'soc-list__share-title';
+  //   otherTitle.textContent = 'Другие';
+  //
+  //   otherDiv.appendChild(otherIcon);
+  //   otherDiv.appendChild(otherTitle);
+  //   otherLi.appendChild(otherDiv);
+  //   ul.appendChild(otherLi);
+  //
+  //   otherDiv.addEventListener('click', (ev) => {
+  //     ev.stopPropagation();
+  //     navigator.share({
+  //       title: rawText || document.title,
+  //       text: rawText || '',
+  //       url: rawUrl || location.href
+  //     })
+  //       .then(() => {
+  //         // Успешно поделились → AJAX + закрытие
+  //         let data_id = wrapper.dataset.id || '0';
+  //         let data_el_type = wrapper.dataset.elType || defaultType;
+  //         let element_count = wrapper.querySelector('.js-likes-share');
+  //         if (element_count) {
+  //           const count = parseInt(element_count.textContent) || 0;
+  //           shareAjax(data_id, data_el_type, element_count, count);
+  //         }
+  //         hideDropdown(dropdown);
+  //       })
+  //       .catch(err => {
+  //         if (err.name !== 'AbortError') {
+  //           console.warn('Web Share failed:', err);
+  //         }
+  //       });
+  //   });
+  // }
+
+  // Копирование
+  const copyLi = document.createElement('li');
+  const copyDiv = document.createElement('div');
+  copyDiv.className = 'soc-list__copy-link';
+
+  const copyIcon = document.createElement('div');
+  copyIcon.className = 'soc-list__share-icon copy-link';
+
+  const copyTitle = document.createElement('span');
+  copyTitle.className = 'soc-list__share-title';
+  copyTitle.textContent = 'Скопировать ссылку';
+
+  copyDiv.appendChild(copyIcon);
+  copyDiv.appendChild(copyTitle);
+  copyLi.appendChild(copyDiv);
+  ul.appendChild(copyLi);
+
+  dropdown.appendChild(ul);
+
+  // Обработчик копирования — с AJAX
+  copyDiv.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    const copy = () => {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        return navigator.clipboard.writeText(rawUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = rawUrl;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+      }
+    };
+
+    copy()
+      .then(() => {
+        // AJAX при успешном копировании
+        let data_id = wrapper.dataset.id || '0';
+        let data_el_type = wrapper.dataset.elType || defaultType;
+        let element_count = wrapper.querySelector('.js-likes-share');
+        if (element_count) {
+          const count = parseInt(element_count.textContent) || 0;
+          shareAjax(data_id, data_el_type, element_count, count);
+        }
+
+        copyTitle.textContent = 'Скопировано';
+        setTimeout(() => {
+          if (activeDropdown === dropdown) {
+            hideDropdown(dropdown);
+          }
+        }, 500);
+      })
+      .catch(err => {
+        console.warn('Не удалось скопировать:', err);
+        copyTitle.textContent = 'Ошибка';
+        setTimeout(() => {
+          if (copyTitle.textContent === 'Ошибка') {
+            copyTitle.textContent = 'Скопировать ссылку';
+          }
+        }, 1500);
+      });
+  });
+
+  // Закрытие по клику вне (без изменений)
+  const onClickOutside = (ev) => {
+    if (!activeDropdown || activeDropdown !== dropdown) return;
+    const clickedInside = dropdown.contains(ev.target) || ev.target.closest('.js--soc-list-share');
+    if (clickedInside) return;
+    hideDropdown(dropdown);
+    const clickedOnLink = ev.target.closest('a[href]');
+    if (clickedOnLink) {
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+  };
+  document.addEventListener('click', onClickOutside);
+  dropdown._cleanup = () => document.removeEventListener('click', onClickOutside);
+
+  // Измерение ширины (без изменений)
+  setTimeout(() => {
+    const temp = document.createElement('div');
+    Object.assign(temp.style, {
+      position: 'absolute',
+      visibility: 'hidden',
+      pointerEvents: 'none',
+      width: 'max-content',
+      opacity: '0',
+    });
+    temp.innerHTML = dropdown.innerHTML;
+    document.body.appendChild(temp);
+    const width = temp.getBoundingClientRect().width;
+    dropdown.dataset.popupWidth = width;
+    document.body.removeChild(temp);
+  }, 0);
+
+  return dropdown;
 }
+
+// Генерация share-ссылок
+function getShareUrl(service, { rawUrl, rawText, rawImage }) {
+  const url = encodeURIComponent(rawUrl);
+  const text = encodeURIComponent(rawText);
+  const image = encodeURIComponent(rawImage);
+
+  switch (service) {
+    case 'whatsapp':
+      return `https://api.whatsapp.com/send?text=${text} ${url}&utm_source=share2`;
+    case 'telegram':
+      return `https://t.me/share/url?url=${url}&text=${text}&utm_source=share2`;
+    case 'vkontakte':
+      return `https://vk.com/share.php?url=${url}&title=${text}&image=${image}&noparse=true&utm_source=share2`;
+    case 'max':
+      return `https://max.ru/:share?text=${url}&utm_source=share2`;
+    case 'odnoklassniki':
+      return `https://connect.ok.ru/offer?url=${url}&title=${text}&imageUrl=${image}&utm_source=share2`;
+    default:
+      return '#';
+  }
+}
+
+// Инициализация кнопок
+export default function shareSocList() {
+  document.addEventListener('click', function (e) {
+    const trigger = e.target.closest('.js--soc-list-share');
+    if (trigger) {
+      handleShareClick(trigger, e);
+    }
+  }, true);
+}
+
+
+//Начало
+------------------------------------------------------------
+
+.soc-list__share.mobile-share.mobile-phone-device {
+    bottom: 0;
+    top: unset !important;
+    left: 50%;
+    transform: translate(-50%, 101%) !important;
+    padding-top: 16px;
+    height: max-content;
+    width: 101%;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.soc-list__share.mobile-share.mobile-phone-device.active {
+    transform: translate(-50%) !important;
+}
+
