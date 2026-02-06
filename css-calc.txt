@@ -1,81 +1,24 @@
-// Инициализация
-export default function contentNoteNew() {
-  //  Закрываю тултип при скролле
-  const handleScroll = () => {
-    if (activeTooltip) {
-      hideTooltip(activeTooltip);
-    }
-  };
+function hideTooltip(tooltip) {
 
-  // Добавляю обработчики событий
-  document.addEventListener('mouseover', handleMouseOver);
-  // Использую mouseout вместо mouseleave - работает надёжнее для этой задачи
-  document.addEventListener('mouseout', handleMouseOut);
-  // Добавляю обработчик ухода с тултипа
-  document.addEventListener('mouseout', handleTooltipMouseOut);
-  document.addEventListener('click', handleClickOutside);
-  window.addEventListener('resize', handleResize);
-
-  // === НОВЫЙ: Закрываем тултип мгновенно при клике на иконку с модалкой (только десктоп) ===
-  document.addEventListener('click', (e) => {
-    // Проверяем, что это не мобильное устройство
-    if (isMobileDevice()) return;
-    
-    // Проверяем, что кликнули на иконку тултипа
-    const trigger = e.target.closest('.js--content-note-new');
-    if (!trigger) return;
-    
-    // Проверяем, есть ли класс .js--modal-opener у иконки или её родителя
-    const hasModalOpener = trigger.classList.contains('js--modal-opener') || 
-                          trigger.closest('.js--modal-opener');
-    
-    if (hasModalOpener && activeTooltip) {
-      // Мгновенно закрываем тултип без задержки
-      hideTooltip(activeTooltip);
-    }
-  });
-
-  // Скролл страницы
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  // Прокрутка колёсиком мыши
-  document.addEventListener('wheel', handleScroll, { passive: true });
-
-  // Для мобильных устройств использую клик вместо наведения
-  const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
-    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-
-  if (isIOS || isMobileDevice()) {
-    document.addEventListener('touchstart', handleClick, { passive: false });
-    // Свайп на мобильных
-    document.addEventListener('touchmove', handleScroll, { passive: true });
+/ Устанавливаем transition ДО удаления класса active
+  if (isMobile) {
+    tooltip.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  } else {
+    // tooltip.style.transition = 'opacity 0.2s ease';  убрал
   }
 
-  // Обработчик для закрытия по клику на крестики в мобильном тултипе
-  document.addEventListener('click', (e) => {
-    // Закрытие по крестику (псевдоэлемент ::after)
-    if (activeTooltip && activeTooltip.classList.contains('mobile-tooltip')) {
-      const rect = activeTooltip.getBoundingClientRect();
-      const closeButtonRect = {
-        top: rect.top + 12,
-        right: rect.right - 16,
-        width: 32,
-        height: 32
-      };
+setTimeout(() => {
+    if (tooltip.parentNode) {
+      tooltip.parentNode.removeChild(tooltip);
 
-      if (
-        e.clientX >= closeButtonRect.right - closeButtonRect.width &&
-        e.clientX <= closeButtonRect.right &&
-        e.clientY >= closeButtonRect.top &&
-        e.clientY <= closeButtonRect.top + closeButtonRect.height
-      ) {
-        hideTooltip(activeTooltip);
-        return;
+      if (!tooltipContainer.querySelector('.content-note__text-new')) {
+        tooltipContainer.classList.remove('active');
+        tooltipContainer.classList.remove('mobile-tooltip');
       }
     }
 
-    // Закрытие по клику на затемнённый фон контейнера
-    if (e.target === tooltipContainer && tooltipContainer.classList.contains('mobile-tooltip')) {
-      hideTooltip(activeTooltip);
+    if (isMobileDevice()) {
+      removeClassBody();
     }
-  });
-}
+  // }, isMobile ? 300 : 200);
+  }, isMobile ? 300 : 0); поменял на 0
