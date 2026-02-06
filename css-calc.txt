@@ -1,13 +1,35 @@
+// Скрытие тултипа
 function hideTooltip(tooltip) {
+  if (!tooltip) return;
 
-/ Устанавливаем transition ДО удаления класса active
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+    tooltipCloseTimer = null;
+  }
+
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+  const isMobile = isMobilePhone() || isNarrow;
+
+  // === Устанавливаем переход ТОЛЬКО для мобильных ===
   if (isMobile) {
     tooltip.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
   } else {
-    // tooltip.style.transition = 'opacity 0.2s ease';  убрал
+    // Для десктопа убираем переход и удаляем мгновенно
+    tooltip.style.transition = 'none';
   }
 
-setTimeout(() => {
+  tooltip.style.pointerEvents = 'none';
+
+  // === Устанавливаем прозрачность ТОЛЬКО для десктопа ===
+  if (!isMobile) {
+    tooltip.style.opacity = '0';
+  }
+
+  // Удаляем активный класс
+  tooltip.classList.remove('active');
+
+  // === Таймаут: 300мс для мобильных, 0мс для десктопа ===
+  setTimeout(() => {
     if (tooltip.parentNode) {
       tooltip.parentNode.removeChild(tooltip);
 
@@ -20,5 +42,8 @@ setTimeout(() => {
     if (isMobileDevice()) {
       removeClassBody();
     }
-  // }, isMobile ? 300 : 200);
-  }, isMobile ? 300 : 0); поменял на 0
+  }, isMobile ? 300 : 0);
+
+  activeTooltip = null;
+  activeTrigger = null;
+}
