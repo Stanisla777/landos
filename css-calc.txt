@@ -1,134 +1,42 @@
-// ОБРАБОТЧИК НАВЕДЕНИЯ
-function handleMouseOver(e) {
-  // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || typeof e.target.closest !== 'function') return;
-
-  // === НАХОЖУ ТРИГГЕР: ищем .js--content-note-new, включая самого элемента и его потомков ===
-  const trigger = e.target.closest('.js--content-note-new');
-  if (!trigger) return;
-
-  // === Проверяю, есть ли класс для полного отключения тултипа ===
-  if (trigger.classList.contains('not-use-tooltip')) {
-    return;
+{
+ "name": "Консультационный центр ДОМ.РФ",
+  "short_name": "СПРОСИ.ДОМ.РФ",
+ "icons": [
+  {
+   "src": "/dist/img/favicon/android-icon-36x36.png",
+   "sizes": "36x36",
+   "type": "image/png",
+   "density": "0.75"
+  },
+  {
+   "src": "/dist/img/favicon/android-icon-48x48.png",
+   "sizes": "48x48",
+   "type": "image/png",
+   "density": "1.0"
+  },
+  {
+   "src": "/dist/img/favicon/android-icon-72x72.png",
+   "sizes": "72x72",
+   "type": "image/png",
+   "density": "1.5"
+  },
+  {
+   "src": "/dist/img/favicon/android-icon-96x96.png",
+   "sizes": "96x96",
+   "type": "image/png",
+   "density": "2.0"
+  },
+  {
+   "src": "/dist/img/favicon/android-icon-144x144.png",
+   "sizes": "144x144",
+   "type": "image/png",
+   "density": "3.0"
+  },
+  {
+   "src": "/dist/img/favicon/android-icon-192x192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "density": "4.0"
   }
-
-  // === Проверяю, есть ли класс для отключения на мобильных ===
-  if (isMobileDevice() && trigger.classList.contains('not-use-tooltip-mobile')) {
-    return;
-  }
-
-  // Читаю контент именно из этого элемента
-  const content = trigger.dataset.contentText || '';
-
-  // === Дополнительная проверка на пустой контент ===
-  if (!content || content.trim() === '') {
-    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
-    return;
-  }
-
-  // Если уже открыт тултип для этого же блока - ничего не делаю
-  if (activeTooltip && activeTrigger === trigger) {
-    return;
-  }
-
-  // Отменяю предыдущий таймер закрытия
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-    tooltipCloseTimer = null;
-  }
-
-  // Показываю тултип с контентом из именно блока по который навели
-  showTooltip(trigger, content);
+ ]
 }
-
------------------------------------------------------------------------------
-
-// ОБРАБОТЧИК УХОДА МЫШИ
-function handleMouseOut(e) {
-  // Проверяю, что e.target существует и имеет метод closest
-  if (!e.target || typeof e.target.closest !== 'function') return;
-
-  // === НАХОЖУ ТРИГГЕР: ищем .js--content-note-new, включая самого элемента и его потомков ===
-  const trigger = e.target.closest('.js--content-note-new');
-  
-  // === КРИТИЧЕСКИ ВАЖНО: проверяем, что уходим именно с триггера или его потомков ===
-  const relatedTarget = e.relatedTarget || e.toElement;
-  
-  // Если уходим на потомка триггера - ничего не делаем
-  if (trigger && relatedTarget && trigger.contains(relatedTarget)) {
-    return;
-  }
-  
-  // Если уходим на потомка тултипа - ничего не делаем
-  if (activeTooltip && relatedTarget && activeTooltip.contains(relatedTarget)) {
-    return;
-  }
-
-  // Проверяю, что relatedTarget существует и имеет метод closest
-  const isTooltip = relatedTarget &&
-    typeof relatedTarget.closest === 'function' &&
-    relatedTarget.closest('.content-note__text-new');
-
-  // Если уходим не с нашего триггера или уходим на сам тултип - ничего не делаем
-  if (!trigger || isTooltip) {
-    return;
-  }
-
-  // Отменяю предыдущий таймер
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-  }
-
-  // Задержка перед скрытием для плавности
-  tooltipCloseTimer = setTimeout(() => {
-    if (activeTooltip && activeTrigger === trigger) {
-      hideTooltip(activeTooltip);
-    }
-    tooltipCloseTimer = null;
-  }, 150);
-}
-
---------------------------------------------------------------------------
-
-// ОБРАБОТЧИК УХОДА МЫШИ С ТУЛТИПА
-function handleTooltipMouseOut(e) {
-  // Проверяю, что уходим именно с тултипа
-  if (!e.target || typeof e.target.closest !== 'function') return;
-
-  const tooltip = e.target.closest('.content-note__text-new');
-  if (!tooltip || tooltip !== activeTooltip) {
-    return;
-  }
-
-  const relatedTarget = e.relatedTarget || e.toElement;
-
-  // === КРИТИЧЕСКИ ВАЖНО: проверяем, уходим ли мы на потомка тултипа ===
-  if (relatedTarget && tooltip.contains(relatedTarget)) {
-    // Уходим на вложенный элемент внутри тултипа - не закрываем
-    return;
-  }
-
-  // Проверяю, куда уходим - если на иконку-триггер, то не закрываем
-  const isTrigger = relatedTarget &&
-    typeof relatedTarget.closest === 'function' &&
-    relatedTarget.closest('.js--content-note-new');
-
-  // Если уходим на триггер - ничего не делаем
-  if (isTrigger) {
-    return;
-  }
-
-  // Отменяю предыдущий таймер
-  if (tooltipCloseTimer) {
-    clearTimeout(tooltipCloseTimer);
-  }
-
-  // Закрываем тултип, так как уходим не на триггер и не на потомка
-  tooltipCloseTimer = setTimeout(() => {
-    if (activeTooltip) {
-      hideTooltip(activeTooltip);
-    }
-    tooltipCloseTimer = null;
-  }, 150);
-}
-
