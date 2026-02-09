@@ -1,39 +1,88 @@
- <div class="time-added__wrapper">
-   <p class="time-added"><span class="time-added__label">Опубликовано </span><span class="time-added__date">31.03.2024</span></p>
-   <p class="time-added"><span class="time-added__label">Обновлено </span><span class="time-added__date">31.03.2024</span></p>
-</div>
+// ОБРАБОТЧИК НАВЕДЕНИЯ
+function handleMouseOver(e) {
+  // Проверяю, что e.target существует и имеет метод closest
+  if (!e.target || typeof e.target.closest !== 'function') return;
 
-.time-added__wrapper {
-  display: block;
-  margin-bottom: 16px;
+  // === НАХОЖУ ТРИГГЕР: ищем .js--content-note-new, включая самого элемента и его потомков ===
+  const trigger = e.target.closest('.js--content-note-new');
+  if (!trigger) return;
 
-  // Делаем .time-added inline, чтобы они вели себя как слова
-  .time-added {
-    display: inline;
-    margin: 0;
-    white-space: normal; // разрешаем перенос внутри
-
-    .time-added__label {
-      white-space: nowrap; // "Обновлено" не рвётся
-    }
-
-    .time-added__date {
-      //margin-left: 4px;
-    }
-
-    // Разделитель между блоками
-    &:not(:last-child)::after {
-      content: "|";
-      margin: 0 6px;
-      color: #6d6d6d;
-    }
+  // === Проверяю, есть ли класс not-use-tooltip у триггера или его потомков ===
+  const hasNotUseTooltip = trigger.classList.contains('not-use-tooltip') || 
+                          trigger.querySelector('.not-use-tooltip');
+  if (hasNotUseTooltip) {
+    return;
   }
-}
-.time-added{
-  font-family: $ff-medium;
-  font-size: 14px;
-  line-height: 143%;
-  color: #6d6d6d;
-  margin-bottom: 16px;
 
+  // === Проверяю, есть ли класс для отключения на мобильных ===
+  if (isMobileDevice() && trigger.classList.contains('not-use-tooltip-mobile')) {
+    return;
+  }
+
+  // Читаю контент именно из этого элемента
+  const content = trigger.dataset.contentText || '';
+
+  // === Дополнительная проверка на пустой контент ===
+  if (!content || content.trim() === '') {
+    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
+    return;
+  }
+
+  // Если уже открыт тултип для этого же блока - ничего не делаю
+  if (activeTooltip && activeTrigger === trigger) {
+    return;
+  }
+
+  // Отменяю предыдущий таймер закрытия
+  if (tooltipCloseTimer) {
+    clearTimeout(tooltipCloseTimer);
+    tooltipCloseTimer = null;
+  }
+
+  // Показываю тултип с контентом из именно блока по который навели
+  showTooltip(trigger, content);
+}
+
+-------------------------------------------------------------------------------------------
+
+// ОБРАБОТЧИК КЛИКА ДЛЯ МОБИЛЬНЫХ
+function handleClick(e) {
+  // Проверяю, что e.target существует и имеет метод closest
+  if (!e.target || typeof e.target.closest !== 'function') return;
+
+  const trigger = e.target.closest('.js--content-note-new');
+  if (!trigger) return;
+
+  // === Проверяю, есть ли класс not-use-tooltip у триггера или его потомков ===
+  const hasNotUseTooltip = trigger.classList.contains('not-use-tooltip') || 
+                          trigger.querySelector('.not-use-tooltip');
+  if (hasNotUseTooltip) {
+    return;
+  }
+
+  // === Проверяю, есть ли класс для отключения на всех тач-устройствах (телефоны + планшеты) ===
+  if (isMobileDevice() && trigger.classList.contains('not-use-tooltip-mobile')) {
+    return;
+  }
+
+  // === Читаю контент именно из этого элемента ===
+  const content = trigger.dataset.contentText || '';
+
+  // === Дополнительная проверка на пустой контент ===
+  if (!content || content.trim() === '') {
+    console.warn('Тултип не показан: отсутствует или пустой атрибут data-content-text', trigger);
+    return;
+  }
+
+  // Предотвращаю стандартное поведение
+  e.preventDefault();
+
+  // Если тултип уже открыт для этого же триггера - закрываем
+  if (activeTooltip && activeTrigger === trigger) {
+    hideTooltip(activeTooltip);
+    return;
+  }
+
+  // Показываю тултип с контентом из блока по которому кликнули
+  showTooltip(trigger, content);
 }
