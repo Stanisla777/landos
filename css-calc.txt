@@ -1,28 +1,24 @@
 function initTelegramBlockIfNeeded() {
-    const el = document.getElementById('telegram-block');
+  const el = document.getElementById('telegram-block');
 
-    // Защита 1: уже инициализирован
-    // eslint-disable-next-line no-underscore-dangle
-    if (el && el.__vue_initialized) {
-      return;
-    }
+  // Если элемента нет — выходим
+  if (!el) return;
 
-    // Защита 2: уже содержит отрендеренный контент (article.telegram)
-    if (el && el.querySelector('article.telegram')) {
-      return;
-    }
+  // Защита 1: уже инициализирован
+  if (el.__vue_initialized) return;
 
-    // Защита 3: нет шаблона <telegram-block>
-    if (el && !el.querySelector('telegram-block')) {
-      return;
-    }
+  // Защита 2: уже отрендерен
+  if (el.querySelector('article.telegram')) return;
 
-    // Инициализируем
-    // eslint-disable-next-line no-new
-    new Vue({
-      el: '#telegram-block',
-      components: { 'telegram-block': TelegramBlock }
-    });
-    // eslint-disable-next-line no-underscore-dangle
-    el.__vue_initialized = true;
-  }
+  // Защита 3: нет шаблона <telegram-block>
+  if (!el.querySelector('telegram-block')) return;
+
+  // Инициализируем
+  new Vue({
+    el: '#telegram-block',
+    components: { 'telegram-block': TelegramBlock }
+  });
+
+  // Теперь безопасно — el точно существует
+  el.__vue_initialized = true;
+}
