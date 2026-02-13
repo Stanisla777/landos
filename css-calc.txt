@@ -1,22 +1,27 @@
-//ввод простого числа с ограничением
-    simplyNumber(count,e) {
-      let element;
-      if (e instanceof Event) {
-        element = e.currentTarget;
-      }
-      else if(e instanceof HTMLElement ) {
-        element = e;
-      }
-      this.dataFieldIncome = this.dataFieldIncome.replace(/[^\d]/g, '');
+simplyWords(maxLength, e) {
+  let element;
+  if (e instanceof Event) {
+    element = e.currentTarget;
+  } else if (e instanceof HTMLElement) {
+    element = e;
+  }
 
-      if (this.dataFieldIncome.length > 0 && this.dataFieldIncome[0] === '0'){
-        this.dataFieldIncome = '1' +  this.dataFieldIncome.slice(1)
-      }
+  // Оставляем: русские буквы, пробелы, дефис
+  // Убираем всё остальное (включая цифры, если решите — см. ниже)
+  this.dataFieldIncome = this.dataFieldIncome.replace(/[^\sа-яА-ЯёЁ\-]/gu, '');
 
-      if (parseInt(this.dataFieldIncome) > count) {
-        this.dataFieldIncome = count
-      }
-      this.dataField=this.dataFieldIncome
+  // Приводим множественные пробелы к одному и убираем пробелы по краям
+  this.dataFieldIncome = this.dataFieldIncome
+    .replace(/\s+/g, ' ')   // несколько пробелов → один
+    .trim();                // убрать пробелы в начале и конце
 
+  // Ограничение по длине
+  if (maxLength && this.dataFieldIncome.length > maxLength) {
+    this.dataFieldIncome = this.dataFieldIncome.slice(0, maxLength);
+    // После обрезки снова уберём возможный пробел в конце
+    this.dataFieldIncome = this.dataFieldIncome.trim();
+  }
 
-    },
+  this.dataField = this.dataFieldIncome;
+}
+
