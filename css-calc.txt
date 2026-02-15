@@ -1,3 +1,64 @@
-<svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z" fill="#252628" />
-</svg>
+// Созданю тултип
+function createTooltip(content, trigger) {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'content-note__text-new';
+
+  // Добавляем классы из триггера, начинающиеся с 'class-for-tooltip-'
+  if (trigger) {
+    const triggerClasses = Array.from(trigger.classList);
+    const tooltipClasses = triggerClasses.filter(className =>
+      className.startsWith('class-for-tooltip-')
+    );
+    if (tooltipClasses.length > 0) {
+      tooltip.classList.add(...tooltipClasses);
+    }
+  }
+
+  // Проверяю, содержит ли контент HTML
+  const hasHTML = /<[^>]+>/.test(content);
+  const textLength = content.replace(/<[^>]+>/g, '').length;
+
+  // Определяю тип позиционирования
+  if (trigger && trigger.classList.contains('aside-location') && !hasHTML && textLength <= 40) {
+    tooltip.classList.add('location-side');
+  }
+
+  // === СОЗДАЁМ СТРУКТУРУ МОБИЛЬНОГО ТУЛТИПА ===
+  const isNarrow = window.matchMedia('(max-width: 480px)').matches;
+  const isMobile = isMobilePhone() || isNarrow;
+
+  if (isMobile) {
+    // Мобильная структура
+    const header = document.createElement('div');
+    header.className = 'select-list__head';
+
+    // === ДОБАВЛЯЕМ ЗАГОЛОВОК ТОЛЬКО ЕСЛИ ОН ЗАДАН ===
+    if (trigger && trigger.dataset.contentTitle && trigger.dataset.contentTitle.trim()) {
+      const title = document.createElement('p');
+      title.textContent = trigger.dataset.contentTitle.trim();
+      header.appendChild(title);
+    }
+
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'select-list__head-close js--content-note-text-new-close';
+    // === ВСТАВЛЯЕМ SVG ВНУТРЬ КНОПКИ ===
+    closeBtn.innerHTML = `
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z" fill="#252628" />
+      </svg>
+    `;
+    header.appendChild(closeBtn);
+
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'select-list__wr-search mor-rep-calculators__wr-search';
+    contentWrapper.innerHTML = content;
+
+    tooltip.appendChild(header);
+    tooltip.appendChild(contentWrapper);
+  } else {
+    // Обычная структура для десктопа
+    tooltip.innerHTML = content;
+  }
+
+  return tooltip;
+}
