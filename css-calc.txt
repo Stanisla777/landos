@@ -1,26 +1,12 @@
-mutationCalculateResult(state){
-      state.average_family_income = (state.family_income / 12) / state.family_count // Cреднедушевой доход семьи
-      if (state.selected_region!==null) {
-        state.cost_living_capital = state.region_data[state.selected_region][0] // Прожиточный минимум на душу населения
-        if (state.average_family_income > state.cost_living_capital) {
-          state.allow_benifit=false
-        }
-        else {
-          state.allow_benifit=true
-        }
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
 
-        //прожточные минимумы для детей и беременных
-        Vue.set(state.benefits_child,'min',state.region_data[state.selected_region][2] * 0.5)
-        Vue.set(state.benefits_child,'max',state.region_data[state.selected_region][2])
+const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
+    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
 
-        Vue.set(state.benefits_pregnant,'min',state.region_data[state.selected_region][1] * 0.5)
-        Vue.set(state.benefits_pregnant,'max',state.region_data[state.selected_region][1])
-      }
-
-      Vue.set(state.answers_to_send,'region',state.selected_region)
-      Vue.set(state.answers_to_send,'numberFamily',state.family_count)
-      Vue.set(state.answers_to_send,'familyIncome',state.family_income)
-      Vue.set(state.answers_to_send,'benefitFor',state.whom_counting)
-
-    },
-
+  if (isIOS || isMobileDevice()) {
+    document.addEventListener('touchstart', handleClick, { passive: false });
+    // Свайп на мобильных - НЕ закрываем тултип
+    // document.addEventListener('touchmove', handleScroll, { passive: true });
+  }
