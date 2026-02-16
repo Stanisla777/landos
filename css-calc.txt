@@ -1,9 +1,26 @@
-this.$nextTick(() => {
-      if (this.answers) {
-        const valueObject = this.answers.benefitFor
-        if (valueObject) {
-         this.$refs.BenefitFor.querySelector(`input[type="radio"][value="${valueObject}"]`).setAttribute('checked','checked');
+mutationCalculateResult(state){
+      state.average_family_income = (state.family_income / 12) / state.family_count // Cреднедушевой доход семьи
+      if (state.selected_region!==null) {
+        state.cost_living_capital = state.region_data[state.selected_region][0] // Прожиточный минимум на душу населения
+        if (state.average_family_income > state.cost_living_capital) {
+          state.allow_benifit=false
         }
+        else {
+          state.allow_benifit=true
+        }
+
+        //прожточные минимумы для детей и беременных
+        Vue.set(state.benefits_child,'min',state.region_data[state.selected_region][2] * 0.5)
+        Vue.set(state.benefits_child,'max',state.region_data[state.selected_region][2])
+
+        Vue.set(state.benefits_pregnant,'min',state.region_data[state.selected_region][1] * 0.5)
+        Vue.set(state.benefits_pregnant,'max',state.region_data[state.selected_region][1])
       }
-    });
+
+      Vue.set(state.answers_to_send,'region',state.selected_region)
+      Vue.set(state.answers_to_send,'numberFamily',state.family_count)
+      Vue.set(state.answers_to_send,'familyIncome',state.family_income)
+      Vue.set(state.answers_to_send,'benefitFor',state.whom_counting)
+
+    },
 
