@@ -58,7 +58,6 @@ function isMobilePhone() {
 }
 
 // Созданю тултип
-// Созданю тултип
 function createTooltip(content, trigger) {
   const tooltip = document.createElement('div');
   tooltip.className = 'content-note__text-new';
@@ -79,7 +78,11 @@ function createTooltip(content, trigger) {
   const textLength = content.replace(/<[^>]+>/g, '').length;
 
   // Определяю тип позиционирования
-  if (trigger && trigger.classList.contains('aside-location') && !hasHTML && textLength <= 40) {
+  // Тултип сбоку если:
+  // 1. У триггера есть класс aside-location И 
+  // 2. (текст короткий БЕЗ HTML ИЛИ есть класс always-aside)
+  if (trigger && trigger.classList.contains('aside-location') && 
+      (!hasHTML && textLength <= 40 || trigger.classList.contains('always-aside'))) {
     tooltip.classList.add('location-side');
   }
 
@@ -177,43 +180,56 @@ function positionTooltip(trigger, tooltip) {
   // Определяю позиционирование для короткого текста
   if (tooltip.classList.contains('location-side')) {
     const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
     const offset = 10; // отступ от иконки
 
-    // Основное позиционирование - зависит от положения иконки относительно середины экрана
+    // Горизонтальное позиционирование
     if (viewportWidth / 2 < centerX) {
       // Иконка правее середины → тултип слева от иконки
-      // Проверяем, что тултип не вылезает за левый край
       if (rect.left - tooltipWidth - offset >= 0) {
-        // Помещается слева → показываем слева
         tooltip.style.right = `${viewportWidth - rect.left + (offset - 15)}px`;
         tooltip.classList.add('left');
         tooltip.classList.remove('right');
       } else {
-        // Не помещается слева → показываем справа
         tooltip.style.left = `${rect.right + offset}px`;
         tooltip.classList.add('right');
         tooltip.classList.remove('left');
       }
     } else {
       // Иконка левее середины → тултип справа от иконки
-      // Проверяем, что тултип не вылезает за правый край
       if (rect.right + tooltipWidth + offset <= viewportWidth) {
-        // Помещается справа → показываем справа
         tooltip.style.left = `${rect.right + offset}px`;
         tooltip.classList.add('right');
         tooltip.classList.remove('left');
       } else {
-        // Не помещается справа → показываем слева
         tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
         tooltip.classList.add('left');
         tooltip.classList.remove('right');
       }
     }
 
-    // Вертикальное позиционирование (по центру иконки)
-    tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
-    tooltip.classList.remove('up', 'down');
+    // === ВЕРТИКАЛЬНОЕ ПОЗИЦИОНИРОВАНИЕ ДЛЯ always-aside ===
+    if (trigger && trigger.classList.contains('always-aside')) {
+      const centerY = rect.top + rect.height / 2;
+      
+      if (viewportHeight / 2 < centerY) {
+        // Иконка в нижней половине экрана → прижимаем НИЗ тултипа к НИЗУ иконки
+        tooltip.style.top = 'auto';
+        tooltip.style.bottom = `${viewportHeight - rect.bottom}px`;
+        tooltip.classList.add('up');
+        tooltip.classList.remove('down');
+      } else {
+        // Иконка в верхней половине экрана → прижимаем ВЕРХ тултипа к ВЕРХУ иконки
+        tooltip.style.top = `${rect.top}px`;
+        tooltip.style.bottom = 'auto';
+        tooltip.classList.add('down');
+        tooltip.classList.remove('up');
+      }
+    } else {
+      // Обычное центрирование по вертикали
+      const centerY = rect.top + rect.height / 2;
+      tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
+      tooltip.classList.remove('up', 'down');
+    }
 
     return;
   }
@@ -289,41 +305,56 @@ function positionTooltipRelativeToParent(trigger, tooltip) {
   if (tooltip.classList.contains('location-side')) {
     const iconCenterInParent = rect.left - parentRect.left + rect.width / 2;
     const parentCenter = parentRect.width / 2;
-    const centerY = rect.top + rect.height / 2;
     const offset = 10;
 
     // Горизонтальное позиционирование
     if (iconCenterInParent > parentCenter) {
       // Иконка правее середины родителя → тултип слева от иконки
-      // Проверяем, что тултип не выходит за левую границу родителя
       if (rect.left - tooltipWidth - offset >= parentRect.left) {
         tooltip.style.right = `${viewportWidth - rect.left + (offset - 15)}px`;
         tooltip.classList.add('left');
         tooltip.classList.remove('right');
       } else {
-        // Не помещается слева → показываем справа
         tooltip.style.left = `${rect.right + offset}px`;
         tooltip.classList.add('right');
         tooltip.classList.remove('left');
       }
     } else {
       // Иконка левее середины родителя → тултип справа от иконки
-      // Проверяем, что тултип не выходит за правую границу родителя
       if (rect.right + tooltipWidth + offset <= parentRect.right) {
         tooltip.style.left = `${rect.right + offset}px`;
         tooltip.classList.add('right');
         tooltip.classList.remove('left');
       } else {
-        // Не помещается справа → показываем слева
         tooltip.style.right = `${viewportWidth - rect.left + offset}px`;
         tooltip.classList.add('left');
         tooltip.classList.remove('right');
       }
     }
 
-    // Вертикальное позиционирование (по центру иконки)
-    tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
-    tooltip.classList.remove('up', 'down');
+    // === ВЕРТИКАЛЬНОЕ ПОЗИЦИОНИРОВАНИЕ ДЛЯ always-aside ===
+    if (trigger && trigger.classList.contains('always-aside')) {
+      const centerY = rect.top + rect.height / 2;
+      
+      if (viewportHeight / 2 < centerY) {
+        // Иконка в нижней половине экрана → прижимаем НИЗ тултипа к НИЗУ иконки
+        tooltip.style.top = 'auto';
+        tooltip.style.bottom = `${viewportHeight - rect.bottom}px`;
+        tooltip.classList.add('up');
+        tooltip.classList.remove('down');
+      } else {
+        // Иконка в верхней половине экрана → прижимаем ВЕРХ тултипа к ВЕРХУ иконки
+        tooltip.style.top = `${rect.top}px`;
+        tooltip.style.bottom = 'auto';
+        tooltip.classList.add('down');
+        tooltip.classList.remove('up');
+      }
+    } else {
+      // Обычное центрирование по вертикали
+      const centerY = rect.top + rect.height / 2;
+      tooltip.style.top = `${centerY - tooltipHeight / 2}px`;
+      tooltip.classList.remove('up', 'down');
+    }
 
     return;
   }
@@ -337,14 +368,12 @@ function positionTooltipRelativeToParent(trigger, tooltip) {
 
   if (iconCenterInParent > parentCenter) {
     // Иконка правее середины родителя → тултип слева от иконки
-    // Проверяем, что тултип не выходит за левую границу родителя
     if (rect.left - tooltipWidth - offset >= parentRect.left) {
       tooltip.style.left = 'auto';
       tooltip.style.right = `${viewportWidth - rect.right + (offset - 20)}px`;
       tooltip.classList.add('left');
       tooltip.classList.remove('right');
     } else {
-      // Не помещается слева → показываем справа
       tooltip.style.left = `${rect.left - offset}px`;
       tooltip.style.right = 'auto';
       tooltip.classList.add('right');
@@ -352,14 +381,12 @@ function positionTooltipRelativeToParent(trigger, tooltip) {
     }
   } else {
     // Иконка левее середины родителя → тултип справа от иконки
-    // Проверяем, что тултип не выходит за правую границу родителя
     if (rect.right + tooltipWidth + offset <= parentRect.right) {
       tooltip.style.left = `${rect.left - offset}px`;
       tooltip.style.right = 'auto';
       tooltip.classList.add('right');
       tooltip.classList.remove('left');
     } else {
-      // Не помещается справа → показываем слева
       tooltip.style.left = 'auto';
       tooltip.style.right = `${viewportWidth - rect.right + offset}px`;
       tooltip.classList.add('left');
@@ -617,7 +644,6 @@ function handleTooltipMouseOut(e) {
   }, 150);
 }
 
-
 // ОБРАБОТЧИК КЛИКА ДЛЯ МОБИЛЬНЫХ
 function handleClick(e) {
   // Проверяю, что e.target существует и имеет метод closest
@@ -734,7 +760,7 @@ export default function contentNoteNew() {
     }
   });
 
-  //Закрытие по кнопке в мобильном тултипе
+  // === Закрытие по кнопке в мобильном тултипе (с обработкой клика на дочерние элементы) ===
   document.addEventListener('click', (e) => {
     // Ищем ближайший элемент с классом кнопки закрытия
     const closeBtn = e.target.closest('.js--content-note-text-new-close');
