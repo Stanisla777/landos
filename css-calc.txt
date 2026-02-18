@@ -1,94 +1,56 @@
-numberFormattingThousandths(count, e) {
-  const target = e.target;
-  let start = target.selectionStart;
-  let end = target.selectionEnd;
-  let valueBefore = target.value;
+<template>
+  <input
+    ref="incomeInput"
+    type="text"
+    inputmode="decimal"
+    placeholder="Введите сумму"
+    :value="dataFieldIncome"
+    @input="onInput"
+  />
+</template>
 
-  // Получаем "сырое" значение из события
-  let rawValue = e.target.value;
+<script>
+import IMask from 'imask';
 
-  // Если поле пустое — сбрасываем
-  if (!rawValue) {
-    this.dataFieldIncome = '';
-    return;
-  }
-
-  // Убираем всё кроме цифр, точки и запятой
-  let cleaned = rawValue.replace(/[^\d.,]/g, '');
-
-  // Обработка случая, когда введена только запятая/точка
-  if (cleaned === ',' || cleaned === '.') {
-    this.dataFieldIncome = '0,';
-    this.$nextTick(() => {
-      target.setSelectionRange(2, 2); // после "0,"
-    });
-    return;
-  }
-
-  // Заменяем запятую на точку для парсинга
-  let normalized = cleaned.replace(/,/g, '.');
-
-  // Разделяем на части
-  let parts = normalized.split('.');
-  let integerPart = parts[0] || '0';
-  let decimalPart = parts[1] ? parts[1].slice(0, 2) : '';
-
-  // Собираем число
-  let numericStr = decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
-  let num = Number(numericStr);
-
-  if (isNaN(num)) {
-    this.dataFieldIncome = '';
-    return;
-  }
-
-  // Ограничение по максимуму
-  if (num > count) {
-    num = count;
-    num = Math.round(num * 100) / 100;
-  }
-
-  // Форматируем
-  const formatter = new Intl.NumberFormat('ru-RU', {
-    minimumFractionDigits: decimalPart ? decimalPart.length : 0,
-    maximumFractionDigits: 2
-  });
-
-  let formatted = formatter.format(num);
-
-  // 🔥 ВЫЧИСЛЯЕМ НОВУЮ ПОЗИЦИЮ КУРСОРА
-  let newStart = this.calculateCursorPosition(valueBefore, formatted, start);
-  let newEnd = newStart;
-
-  // Обновляем значение
-  this.dataFieldIncome = formatted;
-
-  // Восстанавливаем курсор
-  this.$nextTick(() => {
-    target.setSelectionRange(newStart, newEnd);
-  });
-},
-calculateCursorPosition(oldValue, newValue, cursorPos) {
-  // Убираем пробелы из обоих значений для сравнения "логической" позиции
-  let oldClean = oldValue.replace(/\s/g, '');
-  let newClean = newValue.replace(/\s/g, '');
-
-  // Находим, сколько символов было до курсора в "чистом" старом значении
-  let charsBeforeCursor = oldClean.slice(0, cursorPos).length;
-
-  // Теперь считаем, где эта позиция в новом значении (с учётом пробелов)
-  let newCursorPos = 0;
-  let counted = 0;
-
-  for (let i = 0; i < newValue.length; i++) {
-    if (newValue[i] !== ' ') {
-      if (counted === charsBeforeCursor) {
-        break;
-      }
-      counted++;
+export default {
+  data() {
+    return {
+      dataFieldIncome: '',
+      maskRef: null
     }
-    newCursorPos++;
-  }
+  },
+  mounted() {
+    this.initMask();
+  },
+  beforeDestroy() {
+    if (this.maskRef) {
+      this.maskRef.destroy();
+    }
+  },
+  methods: {
+    initMask() {
+      this.maskRef = IMask(this.$refs.incomeInput, {
+        mask: Number,
+        thousandsSeparator: ' ',
+        radix: ',',               // десятичный разделитель — запятая
+        mapToRadix: ['.'],       // принимать точку как запятую
+        scale: 2,                // макс. 2 знака после запятой
+        signed: false,
+        normalizeZeros: false,
+        min: 0,
+        max: this.stgMax,        // ваше ограничение
+        autofix: 'pad',          // автоматически исправлять (например, "10," → "10,00" при потере фокуса)
+      });
 
-  return newCursorPos;
-},
+      // Слушаем изменения от маски
+      this.maskRef.on('accept', () => {
+        this.dataFieldIncome = this.maskRef.value;
+      });
+    },
+    onInput(e) {
+      // Не нужно ничего делать — маска сама обрабатывает ввод
+      // Но если нужно — можно прочитать e.target.value
+    }
+  }
+}
+</script>
