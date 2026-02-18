@@ -1,16 +1,27 @@
 numberFormattingThousandths(count, e) {
   const target = e.target;
-  let position = target.selectionStart;
+  let start = target.selectionStart;
+  let end = target.selectionEnd;
+  let valueBefore = target.value;
 
-  // 🔥 Берём значение ИЗ СОБЫТИЯ, а не из this.dataFieldIncome!
+  // Получаем "сырое" значение из события
   let rawValue = e.target.value;
 
-  // Убираем всё, кроме цифр, точки и запятой
+  // Если поле пустое — сбрасываем
+  if (!rawValue) {
+    this.dataFieldIncome = '';
+    return;
+  }
+
+  // Убираем всё кроме цифр, точки и запятой
   let cleaned = rawValue.replace(/[^\d.,]/g, '');
 
-  // Если строка пустая — сбрасываем
-  if (cleaned === '') {
-    this.dataFieldIncome = '';
+  // Обработка случая, когда введена только запятая/точка
+  if (cleaned === ',' || cleaned === '.') {
+    this.dataFieldIncome = '0,';
+    this.$nextTick(() => {
+      target.setSelectionRange(2, 2); // после "0,"
+    });
     return;
   }
 
@@ -26,16 +37,7 @@ numberFormattingThousandths(count, e) {
   let numericStr = decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
   let num = Number(numericStr);
 
-  // Защита от NaN
   if (isNaN(num)) {
-    // Возможно, пользователь ввёл только ",", тогда сохраняем "0,"
-    if (cleaned === ',' || cleaned === '.') {
-      this.dataFieldIncome = '0,';
-      this.$nextTick(() => {
-        target.setSelectionRange(2, 2); // после "0,"
-      });
-      return;
-    }
     this.dataFieldIncome = '';
     return;
   }
@@ -52,10 +54,41 @@ numberFormattingThousandths(count, e) {
     maximumFractionDigits: 2
   });
 
-  this.dataFieldIncome = formatter.format(num);
+  let formatted = formatter.format(num);
 
-  // Восстанавливаем курсор (простой вариант — в конец)
+  // 🔥 ВЫЧИСЛЯЕМ НОВУЮ ПОЗИЦИЮ КУРСОРА
+  let newStart = this.calculateCursorPosition(valueBefore, formatted, start);
+  let newEnd = newStart;
+
+  // Обновляем значение
+  this.dataFieldIncome = formatted;
+
+  // Восстанавливаем курсор
   this.$nextTick(() => {
-    target.setSelectionRange(this.dataFieldIncome.length, this.dataFieldIncome.length);
+    target.setSelectionRange(newStart, newEnd);
   });
-}
+},
+calculateCursorPosition(oldValue, newValue, cursorPos) {
+  // Убираем пробелы из обоих значений для сравнения "логической" позиции
+  let oldClean = oldValue.replace(/\s/g, '');
+  let newClean = newValue.replace(/\s/g, '');
+
+  // Находим, сколько символов было до курсора в "чистом" старом значении
+  let charsBeforeCursor = oldClean.slice(0, cursorPos).length;
+
+  // Теперь считаем, где эта позиция в новом значении (с учётом пробелов)
+  let newCursorPos = 0;
+  let counted = 0;
+
+  for (let i = 0; i < newValue.length; i++) {
+    if (newValue[i] !== ' ') {
+      if (counted === charsBeforeCursor) {
+        break;
+      }
+      counted++;
+    }
+    newCursorPos++;
+  }
+
+  return newCursorPos;
+},
