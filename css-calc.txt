@@ -1,13 +1,32 @@
-cfunction isMobilePhone() {
-  // Устройство с тачем И маленьким экраном → считаем смартфоном
-  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 1;
-  const isNarrow = window.innerWidth <= 768;
-  return hasTouch && isNarrow;
-}
+input(
+        type="text"
+        inputmode="numeric"
+        placeholder="Введите сумму"
+        v-model="dataFieldIncome"
+        ref="realtyInput"
+        @input="numberFormattingThousandths(stgMax, $event)"
+      
+      )
 
-if (isMobilePhone()) {
-  element.addEventListener('click', toggleTooltip);
-} else {
-  // использовать :hover или mouseenter/mouseleave
-}
+numberFormattingThousandths(count,e) {
+      const element = e.currentTarget;
+      const target = e.target
+      let position = target.selectionStart;
+      const val = parseFloat(this.dataFieldIncome.replace(/\s/g, ''))
+      this.dataFieldIncome = new Intl.NumberFormat("ru-RU").format(val);
 
+      if (e.inputType==="deleteContentBackward"){
+        target.selectionEnd = position;
+      }
+      if (this.dataFieldIncome=='не число') {
+        this.dataFieldIncome=''
+      }
+      if (this.dataFieldIncome.length > 0 && this.dataFieldIncome[0] === '0'){
+        this.dataFieldIncome = '1' +  this.dataFieldIncome.slice(1)
+      }
+
+      if (this.dataFieldIncome.replace(/\s/g, '') > count){
+        this.dataFieldIncome=(count).toFixed(0)
+          .toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+      }
+    },
