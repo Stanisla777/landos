@@ -1,56 +1,15 @@
-<template>
-  <input
-    ref="incomeInput"
-    type="text"
-    inputmode="decimal"
-    placeholder="Введите сумму"
-    :value="dataFieldIncome"
-    @input="onInput"
-  />
-</template>
+answers='{"region":"г.Москва","numberFamily":"2","familyIncome":"390000","benefitFor":"pregnant"}'
 
-<script>
-import IMask from 'imask';
-
-export default {
-  data() {
-    return {
-      dataFieldIncome: '',
-      maskRef: null
-    }
-  },
-  mounted() {
+mounted() {
     this.initMask();
-  },
-  beforeDestroy() {
-    if (this.maskRef) {
-      this.maskRef.destroy();
-    }
-  },
-  methods: {
-    initMask() {
-      this.maskRef = IMask(this.$refs.incomeInput, {
-        mask: Number,
-        thousandsSeparator: ' ',
-        radix: ',',               // десятичный разделитель — запятая
-        mapToRadix: ['.'],       // принимать точку как запятую
-        scale: 2,                // макс. 2 знака после запятой
-        signed: false,
-        normalizeZeros: false,
-        min: 0,
-        max: this.stgMax,        // ваше ограничение
-        autofix: 'pad',          // автоматически исправлять (например, "10," → "10,00" при потере фокуса)
-      });
+    this.$nextTick(() => {
+      if (this.answers && this.region_not===false) {
+        const valueObject = parseInt(this.answers.familyIncome)
+        if (valueObject) {
+          this.dataFieldIncome=new Intl.NumberFormat("ru-RU").format(Math.abs(valueObject.toFixed(2)));
+        }
+      }
+    });
 
-      // Слушаем изменения от маски
-      this.maskRef.on('accept', () => {
-        this.dataFieldIncome = this.maskRef.value;
-      });
-    },
-    onInput(e) {
-      // Не нужно ничего делать — маска сама обрабатывает ввод
-      // Но если нужно — можно прочитать e.target.value
-    }
+
   }
-}
-</script>
