@@ -1,52 +1,53 @@
 numberFormattingThousandths(count, e) {
-  const target = e.target;
-  let position = target.selectionStart;
+      const target = e.target;
+      let position = target.selectionStart;
 
-  // 1. Получаем "сырое" значение из v-model (оно уже обновлено Vue)
-  let rawValue = this.dataFieldIncome;
+      // 1. Получаем "сырое" значение из v-model (оно уже обновлено Vue)
+      let rawValue = this.dataFieldIncome;
+      console.log(rawValue);
 
-  // 2. Убираем всё, кроме цифр, точки и запятой
-  let cleaned = rawValue.replace(/[^\d.,]/g, '');
+      // 2. Убираем всё, кроме цифр, точки и запятой
+      let cleaned = rawValue.replace(/[^\d.,]/g, '');
 
-  // 3. Заменяем запятую на точку (для парсинга)
-  let normalized = cleaned.replace(/,/g, '.');
+      // 3. Заменяем запятую на точку (для парсинга)
+      let normalized = cleaned.replace(/,/g, '.');
 
-  // 4. Разделяем на целую и дробную часть
-  let parts = normalized.split('.');
-  let integerPart = parts[0] || '0';
-  let decimalPart = parts[1] ? parts[1].slice(0, 2) : ''; // макс. 2 знака
+      // 4. Разделяем на целую и дробную часть
+      let parts = normalized.split('.');
+      let integerPart = parts[0] || '0';
+      let decimalPart = parts[1] ? parts[1].slice(0, 2) : ''; // макс. 2 знака
 
-  // 5. Собираем число для парсинга
-  let numericStr = decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
-  let num = Number(numericStr);
+      // 5. Собираем число для парсинга
+      let numericStr = decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
+      let num = Number(numericStr);
 
-  // 6. Проверка на NaN
-  if (isNaN(num)) {
-    this.dataFieldIncome = '';
-    return;
-  }
+      // 6. Проверка на NaN
+      if (isNaN(num)) {
+        this.dataFieldIncome = '';
+        return;
+      }
 
-  // 7. Ограничение по максимуму
-  if (num > count) {
-    num = count;
-    // Убедимся, что у count не больше 2 знаков после запятой
-    num = Math.round(num * 100) / 100;
-  }
+      // 7. Ограничение по максимуму
+      if (num > count) {
+        num = count;
+        // Убедимся, что у count не больше 2 знаков после запятой
+        num = Math.round(num * 100) / 100;
+      }
 
-  // 8. Форматируем с помощью Intl.NumberFormat
-  const formatter = new Intl.NumberFormat('ru-RU', {
-    minimumFractionDigits: decimalPart ? decimalPart.length : 0,
-    maximumFractionDigits: 2
-  });
+      // 8. Форматируем с помощью Intl.NumberFormat
+      const formatter = new Intl.NumberFormat('ru-RU', {
+        minimumFractionDigits: decimalPart ? decimalPart.length : 0,
+        maximumFractionDigits: 2
+      });
 
-  this.dataFieldIncome = formatter.format(num);
+      this.dataFieldIncome = formatter.format(num);
 
-  // 9. Восстанавливаем позицию курсора (простой способ — в конец)
-  // Более точное восстановление — сложно, но можно улучшить при необходимости
-  this.$nextTick(() => {
-    // Простой вариант: курсор в конец
-    target.setSelectionRange(this.dataFieldIncome.length, this.dataFieldIncome.length);
-    
-    // Если нужно точнее — можно сохранять offset до/после, но это хрупко
-  });
-}
+      // 9. Восстанавливаем позицию курсора (простой способ — в конец)
+      // Более точное восстановление — сложно, но можно улучшить при необходимости
+      this.$nextTick(() => {
+        // Простой вариант: курсор в конец
+        target.setSelectionRange(this.dataFieldIncome.length, this.dataFieldIncome.length);
+
+        // Если нужно точнее — можно сохранять offset до/после, но это хрупко
+      });
+    },
