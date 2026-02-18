@@ -1,15 +1,11 @@
-answers='{"region":"г.Москва","numberFamily":"2","familyIncome":"390000","benefitFor":"pregnant"}'
-
 mounted() {
-    this.initMask();
-    this.$nextTick(() => {
-      if (this.answers && this.region_not===false) {
-        const valueObject = parseInt(this.answers.familyIncome)
-        if (valueObject) {
-          this.dataFieldIncome=new Intl.NumberFormat("ru-RU").format(Math.abs(valueObject.toFixed(2)));
-        }
-      }
-    });
+  this.initMask(); // создаёт this.maskRef
 
-
+  if (this.answers && this.region_not === false) {
+    const valueObject = parseFloat(this.answers.familyIncome); // ← лучше parseFloat, если могут быть дроби
+    if (!isNaN(valueObject) && valueObject > 0) {
+      this.maskRef.value = valueObject; // imask сам отформатирует: 390000 → "390 000"
+      // this.dataFieldIncome обновится автоматически через событие 'accept'
+    }
   }
+}
