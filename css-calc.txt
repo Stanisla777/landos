@@ -1,13 +1,17 @@
+// content-note-new.js
+/* eslint-disable */
+
+/*
 aside-location — тултип сбоку (только для короткого текста ≤40 символов без HTML)
 always-aside — тултип сбоку даже при длинном тексте/HTML, с вертикальной привязкой к краям иконки
 Обычное позиционирование сверху/снизу для остальных случаев
 ---управление отображением:
-not-use-tooltip — полное отключение тултипа (проверка на триггере и его потомках)
+  not-use-tooltip — полное отключение тултипа (проверка на триггере и его потомках)
 not-use-tooltip-mobile — отключение только на мобильных устройствах
 class-for-tooltip-* — копирование классов из триггера в тултип для стилизации
 
-// content-note-new.js
-/* eslint-disable */
+ */
+
 
 // Глобальные переменные
 let activeTooltip = null;
@@ -87,10 +91,10 @@ function createTooltip(content, trigger) {
 
   // Определяю тип позиционирования
   // Тултип сбоку если:
-  // 1. У триггера есть класс aside-location И 
+  // 1. У триггера есть класс aside-location И
   // 2. (текст короткий БЕЗ HTML ИЛИ есть класс always-aside)
-  if (trigger && trigger.classList.contains('aside-location') && 
-      (!hasHTML && textLength <= 40 || trigger.classList.contains('always-aside'))) {
+  if (trigger && trigger.classList.contains('aside-location') &&
+    (!hasHTML && textLength <= 40 || trigger.classList.contains('always-aside'))) {
     tooltip.classList.add('location-side');
   }
 
@@ -218,7 +222,7 @@ function positionTooltip(trigger, tooltip) {
     // === ВЕРТИКАЛЬНОЕ ПОЗИЦИОНИРОВАНИЕ ДЛЯ always-aside ===
     if (trigger && trigger.classList.contains('always-aside')) {
       const centerY = rect.top + rect.height / 2;
-      
+
       if (viewportHeight / 2 < centerY) {
         // Иконка в нижней половине экрана → прижимаем НИЗ тултипа к НИЗУ иконки
         tooltip.style.top = 'auto';
@@ -227,7 +231,7 @@ function positionTooltip(trigger, tooltip) {
         tooltip.classList.remove('down');
       } else {
         // Иконка в верхней половине экрана → прижимаем ВЕРХ тултипа к ВЕРХУ иконки
-        tooltip.style.top = `${rect.top}px`;
+        tooltip.style.top = `${rect.top - 5}px`;
         tooltip.style.bottom = 'auto';
         tooltip.classList.add('down');
         tooltip.classList.remove('up');
@@ -343,16 +347,16 @@ function positionTooltipRelativeToParent(trigger, tooltip) {
     // === ВЕРТИКАЛЬНОЕ ПОЗИЦИОНИРОВАНИЕ ДЛЯ always-aside ===
     if (trigger && trigger.classList.contains('always-aside')) {
       const centerY = rect.top + rect.height / 2;
-      
+
       if (viewportHeight / 2 < centerY) {
         // Иконка в нижней половине экрана → прижимаем НИЗ тултипа к НИЗУ иконки
         tooltip.style.top = 'auto';
-        tooltip.style.bottom = `${viewportHeight - rect.bottom}px`;
+        tooltip.style.bottom = `${(viewportHeight - rect.bottom) - 15}px`;
         tooltip.classList.add('up');
         tooltip.classList.remove('down');
       } else {
         // Иконка в верхней половине экрана → прижимаем ВЕРХ тултипа к ВЕРХУ иконки
-        tooltip.style.top = `${rect.top}px`;
+        tooltip.style.top = `${rect.top - 15}px`;
         tooltip.style.bottom = 'auto';
         tooltip.classList.add('down');
         tooltip.classList.remove('up');
@@ -744,8 +748,8 @@ export default function contentNoteNew() {
 
   // Добавляю обработчики событий
   document.addEventListener('mouseover', handleMouseOver);
-  document.addEventListener('mouseout', handleMouseOut);
-  document.addEventListener('mouseout', handleTooltipMouseOut);
+  // document.addEventListener('mouseout', handleMouseOut);
+  // document.addEventListener('mouseout', handleTooltipMouseOut);
   document.addEventListener('click', handleClickOutside);
   window.addEventListener('resize', handleResize);
 
@@ -800,4 +804,3 @@ export default function contentNoteNew() {
     }
   });
 }
-
