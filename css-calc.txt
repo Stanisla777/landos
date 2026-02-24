@@ -1,53 +1,22 @@
-initMask() {
-  this.maskRef = IMask(this.$refs.incomeInput, {
-    mask: Number,
-    thousandsSeparator: ' ',
-    radix: ',',
-    mapToRadix: ['.'],
-    scale: 2,
-    signed: false,
-    normalizeZeros: false,
-    min: 0,
-    max: this.stgMax,
-    autofix: 'pad',
-  });
-
-  this.maskRef.on('accept', () => {
-    this.dataFieldIncome = this.maskRef.value;
-  });
-
-  // Вешаем blur напрямую на input
-  this.$refs.incomeInput.addEventListener('blur', this.handleBlurFix);
-},
 handleBlurFix() {
   setTimeout(() => {
     if (!this.maskRef) return;
 
     const unmasked = this.maskRef.unmaskedValue;
-
-    if (!unmasked || unmasked === '0' || unmasked === '') {
-      return;
-    }
+    if (!unmasked || unmasked === '0' || unmasked === '') return;
 
     const num = parseFloat(unmasked);
     if (isNaN(num)) return;
 
+    let finalNum = num;
     if (num > this.stgMax) {
-      this.maskRef.typedValue = this.stgMax;
-    } else {
-      this.maskRef.typedValue = num;
+      finalNum = this.stgMax;
     }
 
+    // 🔑 Ключевой момент: устанавливаем unmaskedValue как строку
+    this.maskRef.unmaskedValue = String(finalNum);
+
+    // Обновляем ваше data-поле
     this.dataFieldIncome = this.maskRef.value;
   }, 10);
 }
-
-beforeDestroy() {
-  if (this.$refs.incomeInput) {
-    this.$refs.incomeInput.removeEventListener('blur', this.handleBlurFix);
-  }
-  if (this.maskRef) {
-    this.maskRef.destroy();
-  }
-}
-
