@@ -1,6 +1,6 @@
 handleBlurFix() {
   setTimeout(() => {
-    if (!this.maskRef) return;
+    if (!this.maskRef || !this.$refs.incomeInput) return;
 
     const unmasked = this.maskRef.unmaskedValue;
     if (!unmasked || unmasked === '0' || unmasked === '') return;
@@ -13,10 +13,13 @@ handleBlurFix() {
       finalNum = this.stgMax;
     }
 
-    // 🔑 Ключевой момент: устанавливаем unmaskedValue как строку
-    this.maskRef.unmaskedValue = String(finalNum);
+    // Форматируем число как строку БЕЗ ведущих нулей
+    const cleanUnmasked = String(finalNum); // например: "98"
 
-    // Обновляем ваше data-поле
+    // Устанавливаем значение через value (а не unmaskedValue)
+    this.maskRef.value = cleanUnmasked; // imask сам применит форматирование
+    this.maskRef.updateValue(); // ← 🔑 КЛЮЧЕВОЙ МЕТОД
+
     this.dataFieldIncome = this.maskRef.value;
   }, 10);
 }
