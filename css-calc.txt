@@ -1,51 +1,5 @@
-initMask() {
-  this.maskRef = IMask(this.$refs.incomeInput, {
-    mask: Number,
-    thousandsSeparator: ' ',
-    radix: ',',
-    mapToRadix: ['.'],
-    scale: 2,
-    signed: false,
-    normalizeZeros: false,
-    min: 0,
-    max: this.stgMax,
-    autofix: 'pad',
-  });
-
-  // Слушаем изменения от маски (для реактивности)
-  this.maskRef.on('accept', () => {
-    this.dataFieldIncome = this.maskRef.value;
-  });
-
-  // Исправляем ведущие нули при потере фокуса
-  this.$refs.incomeInput.addEventListener('blur', this.fixLeadingZeros);
-},
-
-// Метод для исправления значения
-fixLeadingZeros() {
-  const unmasked = this.maskRef.unmaskedValue; // например: "00123.45" или "00455"
-
-  if (!unmasked || unmasked === '0' || unmasked === '') {
-    return;
-  }
-
-  // Преобразуем в число → это автоматически уберёт ведущие нули
-  const numValue = parseFloat(unmasked);
-
-  // Проверяем лимит
-  if (numValue > this.stgMax) {
-    this.maskRef.typedValue = this.stgMax;
-    this.dataFieldIncome = this.maskRef.value;
-    return;
-  }
-
-  // Устанавливаем "чистое" число обратно — imask сам отформатирует его
-  this.maskRef.typedValue = numValue;
-  this.dataFieldIncome = this.maskRef.value;
-},
-
 beforeDestroy() {
-  if (this.$refs.incomeInput) {
-    this.$refs.incomeInput.removeEventListener('blur', this.fixLeadingZeros);
+    if (this.maskRef) {
+      this.maskRef.destroy();
+    }
   }
-}
