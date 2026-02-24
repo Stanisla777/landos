@@ -1,9 +1,7 @@
 handleBlurFix() {
-  // Сохраняем текущее "сырое" значение ДО того, как imask его "заморозит"
   const rawValue = this.maskRef.unmaskedValue;
 
-  // Обрабатываем сразу, без setTimeout
-  if (!rawValue || rawValue === '0' || rawValue === '') return;
+  if (!rawValue || rawValue === '') return;
 
   const num = parseFloat(rawValue);
   if (isNaN(num)) return;
@@ -13,20 +11,21 @@ handleBlurFix() {
     finalNum = this.stgMax;
   }
 
-  // Принудительно устанавливаем значение ЧЕРЕЗ DOM + имитируем input
+  // 🔑 Явно обрабатываем ноль: даже если было "0000", должно стать "0"
+  if (finalNum === 0) {
+    this.$refs.incomeInput.value = '0';
+    this.dataFieldIncome = '0';
+    this.$refs.incomeInput.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
+
   const formatted = finalNum.toLocaleString('ru-RU', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
     useGrouping: true
   }).replace(/\./g, ',');
 
-  // Устанавливаем напрямую в input
   this.$refs.incomeInput.value = formatted;
-
-  // Генерируем событие input, чтобы imask и Vue "узнали" об изменении
   this.$refs.incomeInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-  // Обновляем ваше data-поле
   this.dataFieldIncome = formatted;
 }
-
