@@ -2,9 +2,10 @@ handleBlurFix() {
   setTimeout(() => {
     if (!this.maskRef || !this.$refs.incomeInput) return;
 
-    const unmasked = this.maskRef.unmaskedValue;
+    const unmasked = this.maskRef.unmaskedValue; // например: "22.02"
     if (!unmasked || unmasked === '0' || unmasked === '') return;
 
+    // Парсим как число с плавающей точкой
     const num = parseFloat(unmasked);
     if (isNaN(num)) return;
 
@@ -13,12 +14,9 @@ handleBlurFix() {
       finalNum = this.stgMax;
     }
 
-    // Форматируем число как строку БЕЗ ведущих нулей
-    const cleanUnmasked = String(finalNum); // например: "98"
-
-    // Устанавливаем значение через value (а не unmaskedValue)
-    this.maskRef.value = cleanUnmasked; // imask сам применит форматирование
-    this.maskRef.updateValue(); // ← 🔑 КЛЮЧЕВОЙ МЕТОД
+    // 🔑 ВАЖНО: передаём ЧИСЛО напрямую в typedValue — imask сам отформатирует его правильно
+    this.maskRef.typedValue = finalNum;
+    this.maskRef.updateValue?.(); // безопасный вызов, если метод есть
 
     this.dataFieldIncome = this.maskRef.value;
   }, 10);
