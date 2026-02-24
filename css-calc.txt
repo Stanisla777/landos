@@ -1,3 +1,32 @@
-if (this.maskRef.updateValue && typeof this.maskRef.updateValue === 'function') {
-  this.maskRef.updateValue();
+handleBlurFix() {
+  // Сохраняем текущее "сырое" значение ДО того, как imask его "заморозит"
+  const rawValue = this.maskRef.unmaskedValue;
+
+  // Обрабатываем сразу, без setTimeout
+  if (!rawValue || rawValue === '0' || rawValue === '') return;
+
+  const num = parseFloat(rawValue);
+  if (isNaN(num)) return;
+
+  let finalNum = num;
+  if (num > this.stgMax) {
+    finalNum = this.stgMax;
+  }
+
+  // Принудительно устанавливаем значение ЧЕРЕЗ DOM + имитируем input
+  const formatted = finalNum.toLocaleString('ru-RU', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+    useGrouping: true
+  }).replace(/\./g, ',');
+
+  // Устанавливаем напрямую в input
+  this.$refs.incomeInput.value = formatted;
+
+  // Генерируем событие input, чтобы imask и Vue "узнали" об изменении
+  this.$refs.incomeInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+  // Обновляем ваше data-поле
+  this.dataFieldIncome = formatted;
 }
+
