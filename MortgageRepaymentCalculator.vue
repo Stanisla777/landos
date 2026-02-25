@@ -1,1 +1,2403 @@
-https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/usloviya-programmy-lgotnoy-ipoteki-dlya-it-spetsialistov/
+SearchFamilyMortgagePointEntry.vue
+<template lang="pug">
+  div
+    template
+      search-family-mortgage
+</template>
+<script>
+index.js
+import '../scss/style.scss';
+import Vue from 'vue';
+import mainBannerParallax from './modules/main-banner-parallax';
+import selectsInit from './modules/selects-init';
+import menu from './modules/menu';
+import svgHandWriting from './modules/svg-hand-writing';
+import instructionDocuments from './modules/instruction-documents';
+import wasUseful from './modules/was-useful';
+import anchors from './modules/anchors';
+import expandListsItem from './modules/expand-lists-item';
+import {
+  mainBannerSlider, mainSlider, contentSlider, cardsInstructionSlider, cardsNewsSlider,
+  aboutSlider, questionsAndAnswerSliders, testSlider, mediaSlider, eventPageSlider,
+  educationalSlider, educationalSliderReviews, personalitiesSlider, slider4Col,
+  birthdayReviewsSwiper, cardHousingCooperativeSlider, housingCooperativeListSlider,
+  housingCooperativeDetailSlider, progressSlider, progressSlider4column, progressSliderPartners,
+  testPollsSlider, progressSlider2, atAdvantageSwiper, atBecomeSwiper, atSliderPartners,
+  SliderCourse, izhsMaterialSlider, izhsBunnersSlider, authorsSlider, authorsDetailedSliderDes,
+  authorsDetailedSliderMob, newMarathonScheduleSlider, cardSlider, cardSliderfoufcolumn,
+  atGameConsists, anotherThingPrizes
+} from './modules/swiper-sliders';
+import contentNote from './modules/content-note';
+import ocenkaInit from './modules/ocenka';
+import toUp from './modules/to-up';
+import headerConnection from './modules/header-connection';
+import {
+    modals, closeModal, catalogModal
+} from './modules/modals';
+import {
+    chatValidation, feedbackValidation, coursesFeedbackValidation, subscriptionValidation,
+    callValidation, phoneMask
+} from './modules/validations';
+import headerShowButtons from './modules/header-show-buttons';
+// import geolocation from './modules/geolocation';
+import ringNav from './modules/ring-nav';
+import {
+    tabFAQ, tabInstructions, tabDocuments, tabNews, tabCatalog
+} from './modules/tabs';
+import numberFormatting from './modules/about-map';
+import searchGlobal from './modules/search-global';
+import cookies from './modules/cookies';
+// import throttle from './modules/throttle';
+import {
+    subcategoryAccordion, documentAccordion, catalogAsideAccordion, coursesAccordion,
+    housingCooperativeChoosenAccordion
+} from './modules/accordions';
+import subscriptionSuccess from './modules/subscription-success';
+import rangeSliders from './modules/range-sliders';
+import catalogSort from './modules/catalog-sort';
+import setVH from './modules/setVH';
+import setImageAttr from './modules/imageAttribute';
+import loaderTest from './modules/loader-test';
+import leftSideBar from './modules/redesign-site/left-side-bar';
+
+// import KeyIndicators from './modules/KeyIndicators.vue';
+import MortgageCalc from './modules/MortgageCalc.vue';
+import TelegramBlock from './modules/TelegramBlock.vue';
+import fetchLikes from './modules/fetch-likes';
+import Test from './modules/BuiltTest.vue';
+import HousingCooperativeTest from './modules/housing-cooperative-test/HousingCooperativeTest.vue';
+
+import { checkStatusPinInput, checkStatusValidation, checkStatusTimer } from './modules/check-status';
+
+import testNumber from './modules/test-number';
+import checkId from './modules/checkbox-id';
+import playVideo from './modules/video/play-video';
+import videoWithPreview from './modules/video/video-with-preview';
+import tabElement from './modules/tabs-element';
+import activeSlideTest from './modules/active-slide-test';
+import testBuild from './modules/test-build';
+import testPopUp from './modules/test-pop-up';
+import modalCapture from './modules/modal-capture';
+import MortgageRates from './modules/mortgage-rates/MortgageRatesPointEntry.vue';
+import taxToggle from './modules/landing-tax-deducation-toggle';
+import TaxDeductionCalculator from './modules/tax-deduction-calculator/TaxDeductionCalculatorPointEntry.vue';
+import inputFieldStatus from './modules/check-status-activation-crediting';
+import tabChange from './modules/tabs-change-m';
+import educationalSection from './modules/educational';
+// import callModalWindow from './modules/call-modal-window';
+import CreditHolidaysCalculator from './modules/credit-holidays-calculator/CreditHolidaysCalculatorPointEntry.vue';
+import collectionSmallFunctions from './modules/collection-small-functions';
+import TabsCallFromColumn from './modules/tabs-call-from-column';
+import SelectListChoice from './modules/tabs-call-from-dropdown-list';
+import VPolls from './modules/polls/MainPolls.vue';
+import initializationPolls from './modules/polls/custom-scripts/initialization-polls';
+// import scrollToAddedItems from './modules/scroll-to-added-items';
+import pageProgressBar from './modules/progress-bar';
+import ItMortgageSurveys from './modules/it-mortgage-surveys/ITMortgageSurveys.vue';
+import itMortgageJs from './modules/it-mortgage-surveys/it-mortgage-js';
+import MortgageCalculator from './modules/mortgage-calculator/MortgageCalculatorPointEntry.vue';
+import breedingCalculator from './modules/breeding-calculator';
+import openUlList from './modules/preferential-developers';
+import openListInfo from './modules/block-additional-info';
+import TestN from './modules/test-n/TestN.vue';
+import vStories from './modules/stories/StoriesPointEntry.vue';
+import beesenderAddMessage from './modules/beesender-add-message';
+import beesenderNewWindow from './modules/beesender-new-window';
+import housingCooperativeFilter from './modules/housing-cooperative-filter';
+import popupGallery from './modules/popup-gallery';
+import { housingCooperativeMapList, housingCooperativeMapDetail } from './modules/housing-cooperative-maps';
+import housingCooperativeButtons from './modules/housing-cooperative-buttons';
+import status450InformMail from './modules/status-450-inform-mail';
+import marathonDetail from './modules/marathon-detail';
+import marathonNewDetail from './modules/marathon-new-detail';
+import VPollsMarathon from './modules/polls-marathon/MainPolls.vue';
+import initializationMarathonPolls from './modules/polls-marathon/custom-scripts/initialization-marathon-polls';
+import Tags from './modules/tags';
+import DduCalculator from './modules/ddu-calculator/DduCalculator.vue';
+import dropdownTopic from './modules/mailing-page';
+import RefinancingCalculator from './modules/refinancing-calculator/RefinancingCalculatorPointEntry.vue';
+import ItMortgageSurveysOneRequest from './modules/it-mortgage-surveys-one-request/ITMortgageSurveysPointEntry.vue';
+import breadCrumbs from './modules/bread-crumbs';
+import CreditCalculator from './modules/credit-calculator/CreditCalculatorPointEntry.vue';
+import TaxDeductionCalculatorOld from './modules/tax-deduction-calculator-old/TaxDeductionCalculatorOldPointEntry.vue';
+import progressRs from './modules/progress-rs';
+import GameddTask from './modules/another-thing/TestNEntryPointEntry.vue';
+import anotherThing from './modules/anotherThing';
+import callGameTest from './modules/another-thing/custom-scripts/call-game-test';
+import GameddRegistration from './modules/another-thing-registration/AnotherThingRegistrationPointEntry.vue';
+import substituteStepChange from './modules/another-thing-registration/custom-scripts/substitute-step-change';
+import countdownPage from './modules/countdown-page';
+import progressBarNew from './modules/progress-bar-new';
+import GameddNotifications from './modules/another-thing-notifications/GameddNotificationsPointEntry.vue';
+import jsCallModal from './modules/js--call-modal';
+import atBeesender from './modules/at-beesender';
+import ApexChartProgressCompany from './modules/ApexChartProgressCompany.vue';
+import izhsPage from './modules/izhsPage';
+import MinSport from './modules/minsport/MinsportPointEntry.vue';
+import ApexChartAt from './modules/another-thing-end/ApexChartsAt.vue';
+import atEndForm from './modules/another-thing-end/form/at-end-form';
+import formRating from './modules/form-rating';
+// eslint-disable-next-line import/no-named-as-default
+import VOcenka from './modules/vue-ocenka-test/Ocenka.vue';
+import universalForm from './modules/universal-form/universal-form';
+import housingCooperativeDropdown from './modules/housing-cooperative-dropdown';
+import additionDropDown from './modules/addition-dropDown';
+import izhsSendForm from './modules/izhs-send-form';
+import keyIndicatorsNewSource from './modules/redesign-site/main-page/key-indicators-new-source';
+import snowFall from './modules/snow-fall';
+import yandexSearch from './modules/redesign-site/yandex-search';
+import headerMenu from './modules/redesign-site/header-menu';
+import footerDropDown from './modules/redesign-site/footer-drop-down';
+import pageLoader from './modules/redesign-site/page-loader';
+import chatBot from './modules/redesign-site/chat-bot';
+import SelectWithSearch from './modules/vue-component-templates/select-with-search';
+import catalogNew from './modules/catalog-new';
+import windowResizeDropDown from './modules/TemplateScript/window-resize-drop-down';
+import CatalogNewSendForm from './modules/catalog-new-send-form';
+import StatusByKadastr from './modules/StatusByKadastr.vue';
+// import taxDeductionNew from './modules/calc-tax-deduction-new/tax-deduction-new';
+import SingleCalculator from './modules/single-calculator/SingleCalculatorEntry.vue';
+import marathon2024 from './modules/marathon-2024/marathon-2024';
+import marathon2024TestInn from './modules/marathon-2024/marathon-2024-test-inn';
+import Marathon2024Test from './modules/marathon-2024-test/TestNEntryPointEntry.vue';
+import marathon2024Button from './modules/marathon-2024/marathon-2024-test-button';
+import marathon2024Rating from './modules/marathon-2024/marathon-2024-rating';
+import instruction from './modules/redesign-site/instruction/instruction';
+import commentsTexarea from './modules/comments-component/comments-texarea';
+import hoverCheckboxLink from './modules/TemplateScript/hover-checkbox-link';
+import MortgageRepaymentCalculator from './modules/calculator-dosrochnogo-mortgage-repayment/MortgageRepaymentCalculatorEntry.vue';
+import SearchFamilyMortgage from './modules/search-family-mortgage/SearchFamilyMortgagePointEntry.vue';
+import formRatingUniversal from './modules/universal-form/form-rating-universal';
+import formUseFulnessSurvey from './modules/universal-form/usefulness-survey';
+import speakerInit from './modules/another-thing-2025-2/another-thing-2025-speaker';
+import accordeonHeight from './modules/another-thing-2025-2/accordeon';
+import scrollMenu from './modules/another-thing-2025-2/scrollMenu';
+import mobilePrize from './modules/another-thing-2025-2/mobile-prize';
+import counterThing from './modules/another-thing-2025-2/counter';
+import parallaxThing from './modules/another-thing-2025-2/parallax';
+import parallaxSeveral from './modules/another-thing-2025-2/parallax-several';
+import animationShow from './modules/another-thing-2025-2/animation-show';
+import swiperReviews from './modules/another-thing-2025-2/swiper-reviews';
+import formReportRadioOther from './modules/another-thing-2025-2/form-report-click-radio-other';
+import slideConstructor from './modules/constructor-swiper';
+import scrollToUp from './modules/redesign-site/scroll-to-up';
+import FamilyMortgageCalculator from './modules/family-mortgage-calculator/FamilyMortgageCalculatorPointEntry.vue';
+import marathon2025Shedule from './modules/marathon-2025/marathon-2025-shedule';
+import tooltipMobile from './modules/open-tooltip-mobile';
+import SearchEasternArcticMortgage from './modules/search-eastern-arctic-mortgage/SearchEasternArcticMortgage.vue';
+import shareSocList from './modules/share-soc-list';
+import copyCitation from './modules/copy-citation';
+
+Vue.config.productionTip = false;
+window.selectsInit = selectsInit;
+
+document.addEventListener('DOMContentLoaded', () => {
+    window.phoneMask = phoneMask;
+    window.closeModal = closeModal;
+    window.questionsAndAnswerSliders = questionsAndAnswerSliders;
+    window.fetchLikes = fetchLikes;
+    window.checkStatusTimer = checkStatusTimer;
+    window.modals = modals;
+    window.housingCooperativeMapList = housingCooperativeMapList;
+    window.housingCooperativeMapDetail = housingCooperativeMapDetail;
+    window.popupGallery = popupGallery;
+    window.universalForm = universalForm;
+    window.cardSliderfoufcolumn = cardSliderfoufcolumn;
+    mainBannerSlider();
+    mainBannerParallax();
+    mainSlider();
+    selectsInit();
+    menu();
+    svgHandWriting();
+    cardsInstructionSlider();
+    cardsNewsSlider();
+    subcategoryAccordion();
+    documentAccordion();
+    coursesAccordion();
+    catalogAsideAccordion();
+    contentSlider();
+    aboutSlider();
+    questionsAndAnswerSliders();
+    instructionDocuments();
+    wasUseful();
+    anchors();
+    newMarathonScheduleSlider();
+    contentNote();
+    tabInstructions();
+    tabDocuments();
+    tabNews();
+    tabFAQ();
+    tabCatalog();
+    toUp();
+    headerConnection();
+    modals();
+    catalogModal();
+    phoneMask();
+    feedbackValidation();
+    coursesFeedbackValidation();
+    subscriptionValidation();
+    chatValidation();
+    callValidation();
+    headerShowButtons();
+//  geolocation();
+    ringNav();
+    numberFormatting();
+    searchGlobal();
+    setImageAttr();
+    cookies();
+    subscriptionSuccess();
+    rangeSliders();
+    catalogSort();
+    fetchLikes();
+    setVH();
+    checkStatusPinInput();
+    checkStatusValidation();
+    checkStatusTimer();
+    testSlider();
+    testNumber();
+    checkId();
+    playVideo();
+    videoWithPreview();
+    mediaSlider();
+    tabElement();
+    activeSlideTest();
+    testBuild();
+    testPopUp();
+    eventPageSlider();
+    loaderTest();
+    leftSideBar();
+    modalCapture();
+    taxToggle();
+    inputFieldStatus();
+    tabChange();
+    SelectListChoice();
+    educationalSlider();
+    educationalSliderReviews();
+    educationalSection();
+    personalitiesSlider();
+    collectionSmallFunctions();
+    TabsCallFromColumn();
+    slider4Col();
+    birthdayReviewsSwiper();
+    pageProgressBar();
+    itMortgageJs();
+    initializationPolls();
+    breedingCalculator();
+    expandListsItem();
+    openUlList();
+    openListInfo();
+    beesenderAddMessage();
+    beesenderNewWindow();
+    housingCooperativeFilter();
+    popupGallery();
+    housingCooperativeListSlider();
+    housingCooperativeDetailSlider();
+    cardHousingCooperativeSlider();
+//  housingCooperativeRequestValidation();
+    housingCooperativeChoosenAccordion();
+    housingCooperativeMapList();
+    housingCooperativeMapDetail();
+    housingCooperativeButtons();
+    status450InformMail();
+    marathonDetail();
+    marathonNewDetail();
+    initializationMarathonPolls();
+    Tags();
+    dropdownTopic();
+    breadCrumbs();
+    progressRs();
+    progressSlider();
+    progressSlider2();
+    progressSlider4column();
+    progressSliderPartners();
+    atAdvantageSwiper();
+    atBecomeSwiper();
+    atSliderPartners();
+    anotherThing();
+    callGameTest();
+    substituteStepChange();
+    countdownPage();
+    progressBarNew();
+    jsCallModal();
+    atBeesender();
+    SliderCourse();
+    testPollsSlider();
+    izhsMaterialSlider();
+    izhsPage();
+    izhsBunnersSlider();
+    formRating();
+    authorsSlider();
+    authorsDetailedSliderDes();
+    authorsDetailedSliderMob();
+    universalForm();
+    snowFall();
+    additionDropDown();
+    housingCooperativeDropdown();
+    yandexSearch();
+    catalogNew();
+    windowResizeDropDown();
+    headerMenu();
+    footerDropDown();
+    pageLoader();
+    chatBot();
+    instruction();
+    cardSlider();
+    cardSliderfoufcolumn();
+    commentsTexarea();
+//    slideConstructor();
+    marathon2024();
+    hoverCheckboxLink();
+    atGameConsists();
+    formRatingUniversal();
+    formUseFulnessSurvey();
+    scrollToUp();
+    anotherThingPrizes();
+    accordeonHeight();
+    scrollMenu();
+    mobilePrize();
+    counterThing();
+    parallaxThing();
+    parallaxSeveral();
+    animationShow();
+    swiperReviews();
+    slideConstructor();
+    formReportRadioOther();
+    tooltipMobile();
+    shareSocList();
+    copyCitation();
+
+// scrollToAddedItems();
+// callModalWindow();
+//  window.addEventListener('resize', throttle(menu, 1000));
+
+    /**
+     * запускает функцию, когда есть необходимый id на странице
+     * @param {Object} obj - Информация по функции и ее id
+     * @param {String} obj.id - идентификатор для запуска функции
+     * @param {Function} obj.fn - функция, которую необходимо запустить
+     */
+    // eslint-disable-next-line no-unused-vars
+    function initVueApp(obj) {
+        const app = document.getElementById(obj.id);
+        if (app) {
+            obj.fn();
+        }
+    }
+
+    // Устаревшее приложение для
+    // блока ключевых показателей с данными из БД ЕИСЖС
+    // function initKeyIndicator() {
+    //     // eslint-disable-next-line no-new
+    //     new Vue({
+    //         el: '#appKi',
+    //         components: {
+    //             'key-indicators': KeyIndicators
+    //         }
+    //     });
+    // }
+
+    function initMrotgageCalc() {
+        // eslint-disable-next-line no-new
+        new Vue({
+            el: '#m-calc',
+            components: {
+                'mortgage-calc': MortgageCalc
+            }
+        });
+    }
+
+  // eslint-disable-next-line no-unused-vars
+    function test() {
+      // eslint-disable-next-line no-new
+      new Vue({
+        el: '#test',
+        components: {
+          test: Test
+        }
+      });
+    }
+
+    // eslint-disable-next-line no-unused-vars
+    function initMortgageRates() {
+          // eslint-disable-next-line no-new
+          new Vue({
+            el: '#v-mortgage-rates',
+            components: {
+              'mortgage-rates': MortgageRates
+            }
+          });
+        }
+    // eslint-disable-next-line no-unused-vars
+    // function initTelegramBlock() {
+    //     // eslint-disable-next-line no-new
+    //     new Vue({
+    //         el: '#telegram-block',
+    //         components: {
+    //             'telegram-block': TelegramBlock
+    //         }
+    //     });
+    // }
+  function initTelegramBlockIfNeeded() {
+    const el = document.getElementById('telegram-block');
+
+    // Защита 1: уже инициализирован
+    // eslint-disable-next-line no-underscore-dangle
+    if (el && el.__vue_initialized) {
+      return;
+    }
+
+    // Защита 2: уже содержит отрендеренный контент (article.telegram)
+    if (el && el.querySelector('article.telegram')) {
+      return;
+    }
+
+    // Защита 3: нет шаблона <telegram-block>
+    if (el && !el.querySelector('telegram-block')) {
+      return;
+    }
+
+    // Инициализируем
+    // eslint-disable-next-line no-new
+    new Vue({
+      el: '#telegram-block',
+      components: { 'telegram-block': TelegramBlock }
+    });
+    // eslint-disable-next-line no-underscore-dangle
+    el.__vue_initialized = true;
+  }
+
+  // Делаем доступной извне (для бэкенда)
+    window.initTelegramBlockIfNeeded = initTelegramBlockIfNeeded;
+    initTelegramBlockIfNeeded();
+    function initStatusByKadastr() {
+        // eslint-disable-next-line no-new
+        new Vue({
+            el: '#status-by-kadastr',
+            components: {
+                'status-by-kadastr': StatusByKadastr
+            }
+        });
+    }
+
+    // eslint-disable-next-line no-unused-vars
+        function initTaxDeductionCalculator() {
+              // eslint-disable-next-line no-new
+              new Vue({
+                el: '#v-tax-calculator',
+                components: {
+                  'tax-calculator': TaxDeductionCalculator
+                }
+              });
+            }
+
+    // eslint-disable-next-line no-unused-vars
+        function initCreditHolidaysCalculator() {
+              // eslint-disable-next-line no-new
+              new Vue({
+                el: '#v-credit-holidays-calculator',
+                components: {
+                  'credit-holidays-calculator': CreditHolidaysCalculator
+                }
+              });
+            }
+
+    // eslint-disable-next-line no-unused-vars
+        function initITMortgageSurveys() {
+              // eslint-disable-next-line no-new
+              new Vue({
+                el: '#v-mortgage-surveys',
+                components: {
+                  'it-mortgage-surveys': ItMortgageSurveys
+                }
+              });
+            }
+    // eslint-disable-next-line no-unused-vars
+        function initMortgageCalculator() {
+              // eslint-disable-next-line no-new
+              new Vue({
+                el: '#v-mortgage-calculator',
+                components: {
+                  'mortgage-calculator': MortgageCalculator
+                }
+              });
+            }
+
+    // eslint-disable-next-line no-unused-vars
+      // function initPolls() {
+            // eslint-disable-next-line no-new
+            // new Vue({
+              // el: '#v-polls',
+              // components: {
+                // 'v-polls': VPolls
+              // }
+            // });
+        // }
+
+    // eslint-disable-next-line no-unused-vars
+          function initStories() {
+                // eslint-disable-next-line no-new
+                new Vue({
+                  el: '#v-stories',
+                  components: {
+                    'v-stories': vStories
+                  }
+                });
+            }
+
+    // eslint-disable-next-line no-unused-vars
+      function initHousingCooperativeTest() {
+            // eslint-disable-next-line no-new
+            new Vue({
+              el: '#housing-cooperative-test',
+              components: {
+                'housing-cooperative-test': HousingCooperativeTest
+              }
+            });
+        }
+
+    // eslint-disable-next-line no-unused-vars
+      function initPollsMarathon() {
+            // eslint-disable-next-line no-new
+            new Vue({
+              el: '#v-polls-marathon',
+              components: {
+                'v-polls-marathon': VPollsMarathon
+              }
+            });
+        }
+
+    // eslint-disable-next-line no-unused-vars
+        function initRefinancingCalculator() {
+            // eslint-disable-next-line no-new
+            new Vue({
+              el: '#v-refinancing-calculator',
+              components: {
+                'refinancing-calculator': RefinancingCalculator
+              }
+            });
+        }
+
+    // eslint-disable-next-line no-unused-vars
+        function initItMortgageSurveysOneRequest() {
+          // eslint-disable-next-line no-new
+          new Vue({
+            el: '#v-mortgage-surveys-one-request',
+            components: {
+              'it-mortgage-surveys-one-request': ItMortgageSurveysOneRequest
+            }
+          });
+        }
+
+    // eslint-disable-next-line no-unused-vars
+      function initDduCalculator() {
+            // eslint-disable-next-line no-new
+            new Vue({
+              el: '#v-ddu-calculator',
+              components: {
+                'ddu-calculator': DduCalculator
+              }
+            });
+          }
+
+    // eslint-disable-next-line no-unused-vars
+        function initCreditCalculator() {
+            // eslint-disable-next-line no-new
+            new Vue({
+              el: '#v-credit-calculator',
+              components: {
+                'credit-calculator': CreditCalculator
+              }
+            });
+        }
+
+    // eslint-disable-next-line no-unused-vars
+        function initFamilyMortgageCalculator() {
+            // eslint-disable-next-line no-new
+            new Vue({
+              el: '#v-family-mortgage-calculator',
+              components: {
+                'family-mortgage-calculator': FamilyMortgageCalculator
+              }
+            });
+        }
+
+    // eslint-disable-next-line no-unused-vars
+        function initTaxDeductionCalculatorOld() {
+              // eslint-disable-next-line no-new
+              new Vue({
+                el: '#v-tax-calculator-old',
+                components: {
+                  'tax-calculator-old': TaxDeductionCalculatorOld
+                }
+              });
+            }
+
+    // eslint-disable-next-line no-unused-vars
+        function initGameddRegistration() {
+              // eslint-disable-next-line no-new
+              new Vue({
+                el: '#v-gamedd-registration',
+                components: {
+                  'gamedd-registration': GameddRegistration
+                }
+              });
+            }
+    // eslint-disable-next-line no-unused-vars
+        function initGameddNotifications() {
+              // eslint-disable-next-line no-new
+              new Vue({
+                el: '#v-gamedd-notifications',
+                components: {
+                  'gamedd-notifications': GameddNotifications
+                }
+              });
+            }
+    // eslint-disable-next-line no-unused-vars
+        function initApexChartProgressCompany() {
+              // eslint-disable-next-line no-new
+              new Vue({
+                el: '#schedule-circle',
+                components: {
+                  'apex-chart-progress-company': ApexChartProgressCompany
+                }
+              });
+            }
+    // eslint-disable-next-line no-unused-vars
+        function initMinSport() {
+          // eslint-disable-next-line no-new
+          new Vue({
+            el: '#v-minsport',
+            components: {
+              'min-sport': MinSport
+            }
+          });
+        }
+    // eslint-disable-next-line no-unused-vars
+        function initApexChartAt() {
+          // eslint-disable-next-line no-new
+          new Vue({
+            el: '#another-thing-end',
+            components: {
+              'apex-chart-at': ApexChartAt
+            }
+          });
+        }
+    // eslint-disable-next-line no-unused-vars
+        function initOcenka() {
+          // eslint-disable-next-line no-new
+          new Vue({
+            el: '#v-ocenka',
+            components: {
+              'v-ocenka': VOcenka
+            }
+          });
+        }
+    // eslint-disable-next-line no-unused-vars
+        function initSingleCalculator() {
+        const el = document.getElementById('v-single-calculator');
+        if (!el) {
+          console.log('Element #v-single-calculator not found');
+          return;
+        }
+
+        // Защита от повторной инициализации
+        // eslint-disable-next-line no-underscore-dangle
+        if (el.__vue__) {
+          console.log('Vue already initialized on #v-single-calculator');
+          return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 3; // 2 попытки обычно достаточно
+
+        function initialize() {
+          attempts++;
+          console.log(`Initializing SingleCalculator Vue app, attempt ${attempts}`);
+
+          try {
+            // eslint-disable-next-line no-new
+            new Vue({
+              el: '#v-single-calculator',
+              components: {
+                'single-calculator': SingleCalculator
+              },
+              // eslint-disable-next-line no-unused-vars
+              errorCaptured(err, vm, info) {
+                console.warn('Vue error in SingleCalculator:', err.message);
+                // false = не блокируем приложение для некритических ошибок
+                return false;
+              }
+            });
+
+            console.log('✅ SingleCalculator initialized successfully');
+          } catch (error) {
+            console.error(`❌ Failed to initialize SingleCalculator (attempt ${attempts}):`, error);
+
+            if (attempts < maxAttempts) {
+              const delay = attempts * 500; // 500ms, 1000ms
+              console.log(`🔄 Retrying in ${delay}ms...`);
+              setTimeout(initialize, delay);
+            } else {
+              console.error('💥 All initialization attempts failed');
+            }
+          }
+        }
+
+        // Запускаем с небольшой задержкой для стабильности
+        setTimeout(initialize, 100);
+      }
+    // eslint-disable-next-line no-unused-vars
+        function initMortgageRepaymentCalculator() {
+          // eslint-disable-next-line no-new
+          new Vue({
+            el: '#v-mortgage-repayment-calculator',
+            components: {
+              'mortgage-repayment-calculator': MortgageRepaymentCalculator
+            }
+          });
+        }
+    // eslint-disable-next-line no-unused-vars
+        function initSearchFamilyMortgage() {
+          // eslint-disable-next-line no-new
+          new Vue({
+            el: '#search-family-mortgage',
+            components: {
+              'search-family-mortgage': SearchFamilyMortgage
+            }
+          });
+        }
+    // eslint-disable-next-line no-unused-vars
+        function initSearchEasternArcticMortgage() {
+          // eslint-disable-next-line no-new
+          new Vue({
+            el: '#search-eastern-arctic-mortgage',
+            components: {
+              'search-eastern-arctic-mortgage': SearchEasternArcticMortgage
+            }
+          });
+        }
+
+    const obj = [
+        {
+            id: 'app',
+            fn: ocenkaInit
+        },
+        // Устаревшее приложение для
+        // блока ключевых показателей с данными из БД ЕИСЖС
+        // {
+        //     id: 'appKi',
+        //     fn: initKeyIndicator
+        // },
+        {
+            id: 'm-calc',
+            fn: initMrotgageCalc
+        },
+        {
+          id: 'test',
+          fn: test
+        },
+        {
+          id: 'v-mortgage-rates',
+          fn: initMortgageRates
+        },
+        // {
+        //     id: 'telegram-block',
+        //     fn: initTelegramBlock
+        // },
+        {
+          id: 'status-by-kadastr',
+          fn: initStatusByKadastr
+        },
+        {
+          id: 'v-tax-calculator',
+          fn: initTaxDeductionCalculator
+        },
+        {
+          id: 'v-credit-holidays-calculator',
+          fn: initCreditHolidaysCalculator
+        },
+        {
+          id: 'v-mortgage-surveys',
+          fn: initITMortgageSurveys
+        },
+        // {
+          // id: 'v-polls',
+          // fn: initPolls
+        // },
+        {
+          id: 'v-mortgage-calculator',
+          fn: initMortgageCalculator
+        },
+        {
+          id: 'v-stories',
+          fn: initStories
+        },
+        {
+          id: 'housing-cooperative-test',
+          fn: initHousingCooperativeTest
+        },
+        {
+          id: 'v-polls-marathon',
+          fn: initPollsMarathon
+        },
+        {
+          id: 'v-refinancing-calculator',
+          fn: initRefinancingCalculator
+        },
+        {
+          id: 'v-mortgage-surveys-one-request',
+          fn: initItMortgageSurveysOneRequest
+        },
+        {
+          id: 'v-ddu-calculator',
+          fn: initDduCalculator
+        },
+        {
+          id: 'v-credit-calculator',
+          fn: initCreditCalculator
+        },
+        {
+          id: 'v-family-mortgage-calculator',
+          fn: initFamilyMortgageCalculator
+        },
+        {
+          id: 'v-tax-calculator-old',
+          fn: initTaxDeductionCalculatorOld
+        },
+        {
+          id: 'v-gamedd-registration',
+          fn: initGameddRegistration
+        },
+        {
+          id: 'v-gamedd-notifications',
+          fn: initGameddNotifications
+        },
+        {
+          id: 'schedule-circle',
+          fn: initApexChartProgressCompany
+        },
+        {
+          id: 'v-minsport',
+          fn: initMinSport
+        },
+        {
+          id: 'another-thing-end',
+          fn: initApexChartAt
+        },
+        {
+          id: 'at-form-end',
+          fn: atEndForm
+        },
+        {
+          id: 'form-rating',
+          fn: formRating
+        },
+        {
+          id: 'modal-housing-cooperative-request',
+          fn: izhsSendForm
+        },
+        {
+          id: 'v-ocenka',
+          fn: initOcenka
+        },
+        {
+          id: 'key-indicators',
+          fn: keyIndicatorsNewSource
+        },
+        {
+          id: 'select-with-search',
+          fn: SelectWithSearch
+        },
+        {
+          id: 'modal-catalog-new-request',
+          fn: CatalogNewSendForm
+        },
+        // {
+          // id: 'tax-deduction-new',
+          // fn: taxDeductionNew
+        // },
+        {
+          id: 'v-single-calculator',
+          fn: initSingleCalculator
+        },
+        {
+          id: 'modal-marathon-test-inn',
+          fn: marathon2024TestInn
+        },
+        {
+          id: 'marathon-new-last--wr-countdown',
+          fn: marathon2024Button
+        },
+        {
+          id: 'marathon-rating',
+          fn: marathon2024Rating
+        },
+        {
+          id: 'v-mortgage-repayment-calculator',
+          fn: initMortgageRepaymentCalculator
+        },
+        {
+          id: 'search-family-mortgage',
+          fn: initSearchFamilyMortgage
+        },
+        {
+          id: 'search-eastern-arctic-mortgage',
+          fn: initSearchEasternArcticMortgage
+        },
+        {
+          id: 'another-thing-speaker',
+          fn: speakerInit
+        },
+        // {
+        //   id: 'form-rating-universal',
+        //   fn: formRatingUniversal
+        // },
+        // {
+        //     id: 'form-rating-universal',
+        //     fn: formRatingUniversal
+        // },
+        {
+          id: 'marathon-2025-shedule',
+          fn: marathon2025Shedule
+        },
+
+    ];
+
+    // for (let i = 0; i < obj.length; i += 1) {
+    //     initVueApp(obj[i]);
+    // }
+  function waitForVueApp(id, initFn) {
+    const el = document.getElementById(id);
+    // eslint-disable-next-line no-underscore-dangle
+    if (el && !el.__vue_initialized) {
+      initFn();
+      // eslint-disable-next-line no-underscore-dangle
+      el.__vue_initialized = true;
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      const element = document.getElementById(id);
+      // eslint-disable-next-line no-underscore-dangle
+      if (element && !element.__vue_initialized) {
+        observer.disconnect();
+        initFn();
+        // eslint-disable-next-line no-underscore-dangle
+        element.__vue_initialized = true;
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+// Использование:
+  obj.forEach((item) => {
+    waitForVueApp(item.id, item.fn);
+  });
+
+  // создание несколько экземпляров vue для вызова тестов в них
+  const vueTestRoots = document.querySelectorAll('.js-test-n');
+
+  if (vueTestRoots.length) {
+    for (let i = 0; i < vueTestRoots.length; i += 1) {
+      vueTestRoots[i].id = `test-n-${i}`;
+
+      // eslint-disable-next-line no-new
+      new Vue({
+        el: `#test-n-${i}`,
+        components: {
+          'test-n': TestN,
+        }
+      });
+    }
+  }
+
+  // создание несколько экземпляров vue для вызова тестов в них
+    const vuePolls = document.querySelectorAll('.js-polls-n');
+
+    if (vuePolls.length) {
+      for (let i = 0; i < vuePolls.length; i += 1) {
+        vuePolls[i].classList.add(`js__polls-n-${i}`);
+
+        // eslint-disable-next-line no-new
+        new Vue({
+          el: `.js__polls-n-${i}`,
+          components: {
+            'v-polls': VPolls,
+          }
+        });
+      }
+    }
+
+  // создание несколько экземпляров vue для вызова тестов в них
+    const vueTestAnotherThing = document.querySelectorAll('.js-test-another-thing');
+
+    if (vueTestAnotherThing.length) {
+      for (let i = 0; i < vueTestAnotherThing.length; i += 1) {
+        vueTestAnotherThing[i].id = `test-n-${i}`;
+
+        // eslint-disable-next-line no-new
+        new Vue({
+          el: `#test-n-${i}`,
+          components: {
+            'gamedd-task': GameddTask,
+          }
+        });
+      }
+    }
+
+  // создание несколько экземпляров vue для вызова тестов в них
+      const vueMarathon2024Test = document.querySelectorAll('.js-test-marathon-2024');
+
+      if (vueMarathon2024Test.length) {
+        for (let i = 0; i < vueMarathon2024Test.length; i += 1) {
+          vueMarathon2024Test[i].id = `test-n-${i}`;
+
+          // eslint-disable-next-line no-new
+          new Vue({
+            el: `#test-n-${i}`,
+            components: {
+              'marathon-2024-test': Marathon2024Test,
+            }
+          });
+        }
+      }
+});
+
+
+
+// import DduCalculator from './DduCalculator.vue';
+import Storage from './development-tools/state.vue';
+const SearchFamilyMortgage = () => import ("./SearchFamilyMortgage.vue");
+
+
+export default {
+  name: 'SearchFamilyMortgagePointEntry',
+  data(){
+    return {
+
+    }
+  },
+  methods:{
+  },
+  mounted(){
+    let title = this.$el.getAttribute('title-hint')
+    if (title&&title!=='') {
+      try {
+        Storage.dispatch('ActionTitle',title)
+      } catch (error) {
+        console.log('Ошибка при парсинге');
+      }
+    }
+
+  },
+  computed:{
+  },
+  watch:{
+  },
+  components:{
+    SearchFamilyMortgage
+  }
+};
+</script>
+<style scoped>
+</style>
+
+
+
+-----------------------------------------
+
+
+
+<template lang="pug">
+  div
+    .minsport__block
+      p.minsport__block-title
+        | Проверьте возможность приобретения квартиры на вторичном рынке в городах с низким объемом жилищного строительства для программы Дальневосточная и арктическая ипотека. Сервис не применим к населенным пунктам Магаданской области и Чукотского автономного округа
+        span.content-note.js--content-note(v-if="title!==null")
+          | ?
+          span.content-note__text
+            | {{title}}
+      .minsport__wr-search-field(ref="inputSearchWrapper")
+        .select-list__wrapper.search-family-mortgage__wrapper-input-search.js--only-mobile-fixed(ref="selectListWrapper")
+          .select__background(
+            ref="windowBackground"
+            @click="closeList"
+          )
+          .input-field-wrapper.js--search-family-mortgage-mask(
+            v-show="!desctop_input_searh"
+            ref="inputSearch"
+            @focusin="focusIn"
+            @focusout="focusOut"
+          )
+            input(
+              type="text"
+              :placeholder="placeholder"
+              :value="inpValue"
+              @keyup="keyUpField"
+            )
+            .input-field-wrapper__input-clear.js--clear-calc-tax(
+              @click="clearField" ref="clearInput"
+            )
+          .input-field-wrapper.mobile-searh.js--search-family-mortgage-mask(
+            v-show="desctop_input_searh"
+            @click="openMobileList"
+          )
+            p(
+              :class="inpValueMobileClick!==placeholder?'active':''"
+            ) {{inpValueMobileClick}}
+
+          .minsport__container-mobile.select-list__selection-window.modal-special-styles.js--openlist-body(
+            ref="selectList"
+            :class="screenWidth > 480&&request_result!==null&&request_result.code>=400?'error-dn':screenWidth > 480&&resultDaData.length===0?'error-dn':''"
+
+          )
+           .minsport__container-wr-mobile
+              .select-list__head
+                p Название города
+                .select-list__head-close(@click="closeList")
+                  svg(width='10', height='10', viewbox='0 0 10 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                    path(fill-rule='evenodd', clip-rule='evenodd', d='M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z', fill='#252628')
+
+              .input-field-wrapper__mobile-container-input(v-show="desctop_input_searh")
+                .input-field-wrapper.js--search-family-mortgage-mask-mobile(
+                  @focusin="focusIn"
+                  @focusout="focusOut"
+                )
+                  input(
+                    :placeholder="placeholder"
+                    :value="inpValue"
+                    type="text"
+                    @keyup="keyUpField"
+                  )
+                  .input-field-wrapper__input-clear.js--clear-calc-tax(
+                    @click="clearField" ref="clearInputMobile"
+                  )
+              .select-list__wr-search(ref="selectListSearch")
+                .select-list__search-item(
+                  v-for="item in resultDaData"
+                  :data-town="item.name"
+                  :data-oktmo="item.oktmo"
+                  @click="selectItemTown"
+                )
+                  p {{item.name}}
+
+                .search-family-mortgage__block-result.select-list__search-item(
+                  v-if="screenWidth<=480&&request_result!==null&&request_result.code>=400"
+                )
+                  .search-family-mortgage__block-result-icon
+                    svg(xmlns='http://www.w3.org/2000/svg', width='24', height='24', fill='none')
+                      path(fill-rule='evenodd', clip-rule='evenodd', d='M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM0 12C0 5.373 5.373 0 12 0s12 5.373 12 12-5.373 12-12 12S0 18.627 0 12z', fill='#de4a2a')
+                      path(fill-rule='evenodd', clip-rule='evenodd', d='M12 5a1 1 0 011 1v8a1 1 0 11-2 0V6a1 1 0 011-1z', fill='#de4a2a')
+                      path(d='M13 18a1 1 0 11-2 0 1 1 0 012 0z', fill='#de4a2a')
+                  p {{request_result.description}}
+
+
+        .btn_s.black.disabled(
+          v-if="!btn_active || (request_result!==null&&request_result.code>=400)"
+          :class="preload_btn===true?'submitting':''"
+        ) Проверить
+        .btn_s.black(
+          v-else
+          @click="sendingResult"
+          ref="btnSend"
+          :class="preload_btn===true?'submitting':''"
+        ) Проверить
+
+    .minsport__container-result
+      .mortgage-surveys__final-block-refusal(v-if="request_result!==null && request_result.code===200")
+        .search-family-mortgage__block-result
+          .search-family-mortgage__block-result-icon
+            svg(xmlns='http://www.w3.org/2000/svg', width='24', height='24', viewbox='0 0 24 24', fill='none')
+              path(fill-rule='evenodd', clip-rule='evenodd', d='M15.663 3.77342C13.8902 2.98352 11.9096 2.78783 10.0166 3.21555C8.12351 3.64326 6.41942 4.67145 5.15845 6.14678C3.89749 7.62211 3.14721 9.46552 3.01951 11.4021C2.89181 13.3387 3.39354 15.2646 4.44987 16.8928C5.50619 18.5209 7.06051 19.764 8.88102 20.4365C10.7015 21.1091 12.6907 21.1752 14.5518 20.6249C16.413 20.0746 18.0464 18.9375 19.2084 17.3831C20.3705 15.8286 20.9989 13.9402 21 11.9994V11.08C21 10.5277 21.4477 10.08 22 10.08C22.5523 10.08 23 10.5277 23 11.08V12C22.9986 14.3721 22.2305 16.6807 20.8103 18.5806C19.39 20.4804 17.3936 21.8703 15.1189 22.5428C12.8442 23.2154 10.413 23.1346 8.18792 22.3126C5.96285 21.4906 4.06312 19.9713 2.77206 17.9813C1.48099 15.9914 0.86777 13.6374 1.02384 11.2705C1.17992 8.90358 2.09693 6.65052 3.63811 4.84734C5.17929 3.04416 7.26206 1.78748 9.57581 1.26472C11.8896 0.74196 14.3103 0.981129 16.477 1.94656C16.9815 2.17134 17.2082 2.76252 16.9834 3.26699C16.7587 3.77146 16.1675 3.9982 15.663 3.77342ZM22.7068 3.29253C23.0975 3.68286 23.0978 4.31602 22.7075 4.70674L12.7075 14.7167C12.52 14.9044 12.2656 15.0099 12.0003 15.01C11.735 15.0101 11.4805 14.9047 11.2929 14.7171L8.2929 11.7171C7.90237 11.3266 7.90237 10.6934 8.2929 10.3029C8.68342 9.91236 9.31659 9.91236 9.70711 10.3029L11.9997 12.5954L21.2925 3.29323C21.6829 2.90251 22.316 2.9022 22.7068 3.29253Z', fill='#82BF00')
+          p.mortgage-surveys__final-attention.success {{request_result.description}}
+
+      .mortgage-surveys__final-block-refusal(v-if="request_result!==null && request_result.code!==200&&(request_result.code<400)")
+        .search-family-mortgage__block-result
+            .search-family-mortgage__block-result-icon
+              svg(xmlns='http://www.w3.org/2000/svg', width='24', height='24', fill='none')
+                path(fill-rule='evenodd', clip-rule='evenodd', d='M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM0 12C0 5.373 5.373 0 12 0s12 5.373 12 12-5.373 12-12 12S0 18.627 0 12z', fill='#EEA20F')
+                path(fill-rule='evenodd', clip-rule='evenodd', d='M12 5a1 1 0 011 1v8a1 1 0 11-2 0V6a1 1 0 011-1z', fill='#EEA20F')
+                path(d='M13 18a1 1 0 11-2 0 1 1 0 012 0z', fill='#EEA20F')
+            p.mortgage-surveys__final-attention.error {{request_result.description}}
+      .mortgage-surveys__final-block-refusal(v-if="request_result!==null && (request_result.code>=400)")
+        .search-family-mortgage__block-result
+          .search-family-mortgage__block-result-icon
+            svg(xmlns='http://www.w3.org/2000/svg', width='24', height='24', fill='none')
+              path(fill-rule='evenodd', clip-rule='evenodd', d='M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zM0 12C0 5.373 5.373 0 12 0s12 5.373 12 12-5.373 12-12 12S0 18.627 0 12z', fill='#de4a2a')
+              path(fill-rule='evenodd', clip-rule='evenodd', d='M12 5a1 1 0 011 1v8a1 1 0 11-2 0V6a1 1 0 011-1z', fill='#de4a2a')
+              path(d='M13 18a1 1 0 11-2 0 1 1 0 012 0z', fill='#de4a2a')
+          p.mortgage-surveys__final-attention.error {{request_result.description}}
+
+    #yandex-captcha-family-mortgage.captcha-element
+
+</template>
+<script>
+import Storage from '../development-tools/state.vue';
+import bodyLockMobileFilter from '../../redesign-site/body-lock-mobile-filter.js';
+import bodyUnlockMobileFilter from '../../redesign-site/body-unlock-mobile-filter.js';
+import windowResizeDropDown from '../../TemplateScript/window-resize-drop-down.js';
+import vComponentSuccess from './v-component-success.vue';
+import vComponentFailureNotFound from './v-component-failure-not-found.vue';
+import vComponentFailureOtherError from './v-component-failure-other-error.vue';
+import IMask from 'imask';
+import contentNote from '../../content-note';
+let maskInput;
+let maskInputMobile;
+
+export default {
+  name: 'v-component-v-component-search-family-mortgage',
+  data(){
+    return {
+      placeholder:'Введите название города',
+      inpValue:'',
+      inpValueMobileClick:'',
+      // btn_active:false, //убрать
+      oktmo:null,
+      input_errors:false,
+      array_errors:[
+        {
+          wrong_language:'недопустимый символ для ввода данных'
+        }
+      ],
+      error_text:'',
+      screenWidth : window.innerWidth,
+      screenHeight: window.innerHeight,
+      desctop_input_searh:false,
+      timeout:null,
+      captcha_id:null,
+      isMobile: null,
+
+    }
+  },
+  methods:{
+
+
+
+    closeBlock() {
+      window.removeEventListener('resize', this.updateModalHeight);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', this.updateModalHeight);
+      }
+      this.$refs.selectList.querySelector('.js--search-family-mortgage-mask-mobile input').removeEventListener('focus', this.handleInputFocus);
+      this.$refs.selectList.querySelector('.js--search-family-mortgage-mask-mobile input').removeEventListener('blur', this.handleInputBlur);
+
+    },
+
+    openMobileList(el){
+      const element = el.currentTarget;
+      bodyLockMobileFilter(this.$refs.selectListWrapper);
+      this.$refs.selectListWrapper.classList.add('open')
+
+      // Добавляем обработчики
+      this.$nextTick(() => {
+        this.updateModalHeight();
+
+        // Добавляем обработчики
+        window.addEventListener('resize', this.updateModalHeight);
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', this.updateModalHeight);
+        }
+      });
+    },
+
+    updateModalHeight() {
+      // Задержка для корректного определения высоты после анимации
+      setTimeout(() => {
+        const modal = this.$refs.selectList;
+        if (!modal) return;
+
+        // Сбрасываем высоту для динамического расчета
+        modal.style.height = '';
+
+        // Получаем актуальную высоту видимой области
+        const visualHeight = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+
+        // Устанавливаем минимальную высоту
+        if (this.isMobile){
+          modal.style.minHeight = `${visualHeight}px`;
+        }
+
+      }, 300);
+    },
+
+    handleInputFocus() {
+      // Дополнительная проверка для Android
+      if (/android/i.test(navigator.userAgent)) {
+        setTimeout(this.updateModalHeight, 500);
+      }
+    },
+
+    handleInputBlur() {
+      // Возвращаем исходную высоту
+      this.updateModalHeight();
+    },
+
+    closeList(el){
+      this.$refs.selectListWrapper.classList.remove('open')
+      this.closeBlock()
+      bodyUnlockMobileFilter(this.$refs.selectListWrapper)
+      window.removeEventListener('resize', this.updateModalHeight);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', this.updateModalHeight);
+      }
+      this.$refs.selectList.querySelector('.js--search-family-mortgage-mask-mobile input').removeEventListener('focus', this.handleInputFocus);
+      this.$refs.selectList.querySelector('.js--search-family-mortgage-mask-mobile input').removeEventListener('blur', this.handleInputBlur);
+    },
+
+
+    captchaInit() {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-mortgage', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          this.sendingResultToApi(token)
+        },
+      });
+    },
+    sendingResult(){
+      if (this.btn_active){
+        Storage.dispatch('ActionStandingButton')
+        Storage.dispatch('ActionButtonActive',false)
+        this.captchaInit();
+        let recaptchaKey = null;
+        if(typeof conf !== 'undefined'){
+          recaptchaKey = conf.smartcaptcha_key
+        }
+        if ((typeof recaptchaKey !== 'undefined') && recaptchaKey!==null) {
+          window.smartCaptcha.execute(this.captcha_id);
+        }
+      }
+    },
+    sendingResultToApi(token){
+      this.$refs.selectListWrapper.classList.remove('open')
+      this.closeBlock()
+      Storage.dispatch('ActionGetResult',[this.oktmo,token])
+    },
+
+    liveSearch(el){
+
+      // const element = el.target
+      // this.inpValue = element.value;
+
+      // this.inpValue=this.inpValue.trim()
+      // if(this.inpValue.length >0&&this.inpValue!==''){
+      //   this.$refs.clearInput.classList.add('active')
+      // }
+      // else if(this.inpValue.length ===0) {
+      //   this.$refs.clearInput.classList.remove('active')
+      // }
+      //
+      // if (element.value.length >25){
+      //   element.value=element.value.substring(0,25)
+      // }
+      // if (this.inpValue.length >3){
+      //   Storage.dispatch('ActionGetDaData',this.inpValue)
+      // }
+
+
+
+
+      // const start = element.selectionStart
+      // const end = element.selectionEnd
+      // const NewValue = element.value.replace(/[^A-Za-za-zА-Яа-я-]/g,'');
+      // if(element.value!==NewValue){
+      //   element.value = NewValue
+      //   element.setSelectionRange(
+      //     Math.min(start, NewValue.length),
+      //     Math.min(end, NewValue.length)
+      //   )
+      // }
+
+
+
+      // if(this.inpValue.match(/^[а-яёa-z0-9_\-"'.№«» ]+$/i)){
+      //   element.closest('.js--search-family-mortgage-mask').classList.remove('error')
+      // }
+      // else if(!this.inpValue.match(/^[а-яёa-z0-9_\-"'.№«» ]+$/i)&&this.inpValue.length!==0){
+      //   element.closest('.js--search-family-mortgage-mask').classList.add('error')
+      // }
+      // if(this.inpValue.length>0){
+      //   this.$refs.inputSearch.classList.add('active-input')
+      // }
+      // else {
+      //   this.$refs.inputSearch.classList.remove('active-input')
+      //   Storage.dispatch('ActionNullQueryResult')
+      // }
+      // if (this.inpValue.length >=10&&this.inpValue.length<=12&&!isNaN(this.inpValue)&&this.inpValue.match(/^[а-яёa-z0-9_\-"'.№«» ]+$/i)){
+      //   this.btn_active=true
+      // }
+      // else if (this.inpValue.length <10||this.inpValue.length>12&&!isNaN(this.inpValue)){
+      //   this.btn_active=false
+      // }
+      // if (this.inpValue.length >=4&&isNaN(this.inpValue)&&this.inpValue.match(/^[а-яёa-z0-9_\-"'.№«» ]+$/i)){
+      //   this.btn_active=true
+      // }
+      // else if(this.inpValue.length <4&&isNaN(this.inpValue)){
+      //   this.btn_active=false
+      // }
+    },
+    inputValidation(){
+      let key_word = this
+      const input_status = document.querySelectorAll('.js--search-family-mortgage-mask input');
+      const maskOptions = {
+        // mask: /^[a-zA-Zа-яёА-ЯЁ0-9,. -]+$/,
+        // mask: /^(?!.*[.,-]{2})[a-zA-Zа-яёА-ЯЁ0-9., \-]*$/,
+
+        mask: /^(?!.*([., -])\1)[a-zA-Zа-яёА-ЯЁ0-9., \-]*$/
+
+        // mask:/^(?!.*(,,|\.\.|  ))[a-zA-Zа-яёА-ЯЁ0-9,.\s]*$/,
+
+
+      };
+      for (const item of input_status) {
+        maskInput = IMask(item, maskOptions);
+      }
+
+      maskInput.on('accept',()=>{
+
+        key_word.inpValue = maskInput.value;
+        // key_word.inpValue=key_word.inpValue.trim()
+        if(key_word.inpValue.length >0&&key_word.inpValue!==''){
+          key_word.$refs.clearInput.classList.add('active')
+        }
+        else if(key_word.inpValue.length ===0) {
+          key_word.$refs.clearInput.classList.remove('active')
+          Storage.dispatch('ActionRemoveError')
+        }
+
+        if (maskInput.value.length >80){
+          maskInput.value=maskInput.value.substring(0,80)
+        }
+
+        if (maskInput.value.length < 3){
+          Storage.dispatch('ActionButtonActive',false)
+          key_word.oktmo=null
+        }
+
+
+        // if (this.oktmo!==null) {
+        //   this.oktmo = null
+        // }
+        if (key_word.inpValue.length >=3){
+          if (key_word.timeout) clearTimeout(key_word.timeout)
+          key_word.timeout = setTimeout(() => {
+            Storage.dispatch('ActionGetDaData',key_word.inpValue)
+          }, 500)
+        }
+      })
+    },
+    inputValidationMobile(){
+      let key_word = this
+      const input_status = document.querySelectorAll('.js--search-family-mortgage-mask-mobile input');
+      const maskOptions = {
+        mask: /^(?!.*([., -])\1)[a-zA-Zа-яёА-ЯЁ0-9., \-]*$/
+      };
+      for (const item of input_status) {
+        maskInputMobile = IMask(item, maskOptions);
+      }
+
+      maskInputMobile.on('accept',()=>{
+        key_word.inpValue = maskInputMobile.value;
+        // key_word.inpValue=key_word.inpValue.trim()
+        if(key_word.inpValue.length >0&&key_word.inpValue!==''){
+          key_word.$refs.clearInputMobile.classList.add('active')
+
+        }
+        else if(key_word.inpValue.length ===0) {
+          key_word.$refs.clearInputMobile.classList.remove('active')
+          Storage.dispatch('ActionRemoveError')
+        }
+
+        if (maskInputMobile.value.length >80){
+          maskInputMobile.value=maskInputMobile.value.substring(0,80)
+        }
+        if (maskInput.value.length < 3){
+          Storage.dispatch('ActionButtonActive',false)
+          key_word.oktmo=null
+        }
+
+        // if (this.oktmo!==null) {
+        //   this.oktmo = null
+        // }
+        if (key_word.inpValue.length >=3){
+          if (key_word.timeout) clearTimeout(key_word.timeout)
+          key_word.timeout = setTimeout(() => {
+            Storage.dispatch('ActionGetDaData',key_word.inpValue)
+          }, 500)
+        }
+      })
+    },
+
+    selectItemTown(e){
+      const element = e.currentTarget
+      const data_name_town = element.getAttribute('data-town')
+      this.oktmo = element.getAttribute('data-oktmo')
+      maskInput.value=data_name_town
+      this.inpValueMobileClick = data_name_town
+      Storage.dispatch('ActionButtonActive',true)
+      this.flag=1
+      this.$refs.selectListWrapper.classList.remove('open')
+      this.closeBlock()
+      bodyUnlockMobileFilter(this.$refs.selectListWrapper)
+
+    },
+    clearField(el) {
+      this.oktmo = null
+
+
+      const element = el.currentTarget;
+      maskInput.value = ''
+      maskInputMobile.value=''
+      element.classList.remove('active')
+      this.inpValue=''
+      this.inpValueMobileClick = this.placeholder
+      Storage.dispatch('ActionButtonActive',false)
+
+      Storage.dispatch('ActionRemoveError')
+      if (this.screenWidth > 480) {
+        this.$refs.selectListWrapper.classList.remove('open')
+        this.closeBlock()
+      }
+    },
+
+    // отправка данных для получения подсказки с городами
+    // срабатывает на события input, paste
+    // правда this.inpValue обновляется с опозданием, из-за этого не всегда логика работает корректно
+
+    //Стас - закомментировал для проверки
+    inputField(el){
+
+      if (this.oktmo!==null) {
+        this.oktmo = null
+      }
+
+      if (this.inpValue.length >=3){
+        if (this.timeout) clearTimeout(this.timeout)
+        this.timeout = setTimeout(() => {
+          Storage.dispatch('ActionGetDaData',this.inpValue)
+        }, 500)
+      }
+    },
+
+    //нажатие интер И отправка данных в дадата
+    keyUpField(el){
+
+      if (this.oktmo!==null) {
+        this.oktmo = null
+      }
+      //
+      // // Убрал из-за ложных срабатываний при нажатии на функциональные клавиши (стрелки курсора например).
+      // if (this.inpValue.length >=3){
+      //   console.log('@keyUpField() el',el)
+      //   if (this.timeout) clearTimeout(this.timeout)
+      //   this.timeout = setTimeout(() => {
+      //     Storage.dispatch('ActionGetDaData',this.inpValue)
+      //   }, 500)
+      // }
+      //
+      //
+      //
+      // if(el.code =='Enter'){
+      //   if(this.$refs.btnSend){
+      //     this.$refs.btnSend.click()
+      //   }
+      // }
+    },
+    focusIn(el){
+      const element = el.currentTarget
+      element.classList.add('active')
+      this.flag=0
+      if(this.inpValue.length > 3 && this.resultDaData.length>0) {
+        this.$refs.selectListWrapper.classList.add('open')
+        // this.$refs.selectListWrapper.classList.add('open')
+      }
+    },
+    focusOut(el){
+      const element = el.currentTarget
+      element.classList.remove('active')
+    },
+    updateScreenWidth() {
+      this.screenWidth = window.innerWidth;
+      this.screenHeight = window.innerHeight;
+    },
+  },
+  computed:{
+    resultDaData(){
+      return Storage.getters.RESULTDADATA
+    },
+    resultDaDataCode(){
+      return Storage.getters.RESULTDADATACODE
+    },
+
+    erroNotFoundTown(){
+      return Storage.getters.EERORNOTFOUNDTOWN
+    },
+    request_result(){
+      return Storage.getters.REQUESTRESULT
+    },
+    preload_btn(){
+      return Storage.getters.PRELOADBTN
+    },
+    btn_active(){
+      return Storage.getters.BTNACTIVE
+    },
+    title(){
+      return Storage.getters.TITLE
+    },
+
+
+  },
+  watch:{
+    resultDaData(){
+      if (this.resultDaData.length>0&&this.flag!==1){
+        this.$refs.selectListWrapper.classList.add('open')
+      }
+    },
+    screenWidth(){
+      if (this.screenWidth <= 480) {
+        this.desctop_input_searh=true
+      } else{
+        this.desctop_input_searh=false
+        if(this.$refs.selectListSearch.querySelectorAll('.select-list__search-item').length===0) {
+          if(this.$refs.selectListWrapper.classList.contains('open')) {
+            this.$refs.selectListWrapper.classList.remove('open')
+            this.closeBlock()
+          }
+        }
+      }
+    }
+  },
+  components:{
+    vComponentSuccess,
+    vComponentFailureNotFound,
+    vComponentFailureOtherError
+  },
+  mounted(){
+    contentNote();
+
+    this.isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // this.$refs.selectList.style.height = this.initialHeight;
+    this.inpValueMobileClick = this.placeholder
+    this.inputValidation()
+    this.inputValidationMobile()
+    window.addEventListener('resize', this.updateScreenWidth)
+    this.updateScreenWidth();
+    this.desctop_input_searh = this.screenWidth <= 480;
+    windowResizeDropDown()
+
+    // Для Яндекс.Браузера и Safari
+    this.$refs.selectList.querySelector('.js--search-family-mortgage-mask-mobile input').addEventListener('focus', this.handleInputFocus);
+    this.$refs.selectList.querySelector('.js--search-family-mortgage-mask-mobile input').addEventListener('blur', this.handleInputBlur);
+
+  },
+  beforeDestroy() {
+
+  }
+};
+</script>
+<style scoped>
+</style>
+
+content-note.js
+/* eslint-disable */
+//import AddClassBody from './redesign-site/disallow-body-scrolling';
+// import RemoveClassBody from './redesign-site/allow-body-scrolling';
+// Флаг, чтобы не дублировать обработчик клика
+let mobileTooltipClickListenerAdded = false;
+let isBodyLocked = false;
+
+
+/*
+
+если хотим, чтобы у тултипа была стрелка
+элементу content-note добавляем класс .js--with-arrow
+
+если не хотим, чтобы была стрелка
+элементу content-note__text добавляем класс .without-arrow
+у элемента content-note убираем класс .js--without-arrow
+
+если хотим, чтобы тултип был белый content-note нужно добавить класс white
+
+чтобы тултип ориентировалмя не на края экрана, а блока в котором он находится
+нужно родитедю добавить класс .js--focus-on-parent
+
+если хотим, чтобы тултип открывался в мобилке по старому, а не всплывал снизу до блоку content-note
+добавляем класс .js--ussual-mobile-tooltip -> .content-note.js--ussual-mobile-tooltip
+
+СТАРОЕ РАСПОЛОЖЕНИЕ ТУЛТИПОВ, НА ДЕСКТОПЕ И МОБИЛЕ ПОКАЗЫВАЮТСЯ ПО ХОВЕРУ
+<p> Какой-то текст
+  <span class="content-note js--with-arrow js--content-note">?
+      <span class="content-note__text">
+          Какое-то описание Какое-то описание Какое-то описание Какое-то описание
+          Какое-то описание Какое-то описание Какое-то описание Какое-то описание
+      </span>
+  </span>
+<p>
+
+
+
+ТАЙТЛЫ ПО UI НА ДЕСКТОПЕ ВСПЛЫВАШКА НА МОБИЛЕ ВСПЛЫВАЕТ СНИЗУ ЗАНИМАЕТ ВСЮ ШИРИНУ ЭКРАНА
+ТУЛТИПЫ ДЛЯ ДЕСКТОПА
+иконка .content-note должна иметь класс .desctop
+
+
+ТУЛТИП ДЛЯ МОБИЛОК
+иконка .content-note должна иметь класс .mobile.js--open-mobile-tooltip
+родитель должен иметь класс .js--tooltip-parent
+
+
+*/
+
+// === Функции блокировки/разблокировки скролла ===
+function AddClassBody() {
+  if (isBodyLocked) return;
+  isBodyLocked = true;
+  document.body.classList.add('body-modal', 'body-additional-class');
+}
+
+function RemoveClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal', 'body-additional-class');
+  }
+  isBodyLocked = false;
+}
+
+// === Закрытие при resize ===
+function handleResize() {
+  const currentWidth = window.innerWidth;
+  const wrapper = document.querySelector('.js--mobile-tooltip-wrapper');
+  if (currentWidth >= 480 && wrapper) {
+    const tooltip = wrapper.querySelector('.js--tooltip-mobile');
+    const background = wrapper.querySelector('.select__background-tooltip');
+    if (tooltip) tooltip.classList.remove('active');
+    if (background) background.classList.remove('active');
+    setTimeout(() => {
+      if (wrapper.parentNode) wrapper.remove();
+    }, 400);
+    RemoveClassBody();
+  }
+}
+
+// === Основная функция ===
+export default function contentNote() {
+  const notes = document.querySelectorAll('.js--content-note');
+  if (notes.length === 0) return;
+
+  // Обработчики событий — ОДИН РАЗ
+
+  // if (!mobileTooltipClickListenerAdded) {
+  //   // ←←← CLICK: ТОЛЬКО ДЛЯ ЗАКРЫТИЯ
+  //   document.addEventListener('click', (e) => {
+  //     if (e.target.classList.contains('js--close-mobile-tooltip-2')) {
+  //       const wrapper = e.target.closest('.js--mobile-tooltip-wrapper');
+  //       if (wrapper) {
+  //         const tooltip = wrapper.querySelector('.js--tooltip-mobile');
+  //         const background = wrapper.querySelector('.select__background-tooltip');
+  //         if (tooltip) tooltip.classList.remove('active');
+  //         if (background) background.classList.remove('active');
+  //         setTimeout(() => {
+  //           if (wrapper.parentNode) wrapper.remove();
+  //         }, 400);
+  //       } else {
+  //         document.querySelectorAll('.js--mobile-tooltip-wrapper').forEach(el => el.remove());
+  //       }
+  //       RemoveClassBody();
+  //     }
+  //   });
+  //
+  //   // ←←← TOUCHEND: ОТКРЫТИЕ НА ANDROID
+  //   document.addEventListener('touchend', (e) => {
+  //     const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
+  //       (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+  //     if (isIOS) return; // iOS handled by touchstart
+  //
+  //     const icon = e.target.closest('.js--content-note');
+  //     if (!icon) return;
+  //     e.preventDefault();
+  //
+  //     const windowWidth = window.innerWidth;
+  //     if (windowWidth < 480 && !icon.classList.contains('js--ussual-mobile-tooltip')) {
+  //       const textEl = icon.querySelector('.content-note__text');
+  //       const textContent = (textEl && textEl.innerHTML) ? textEl.innerHTML.trim() : '';
+  //       if (textContent) {
+  //         createMobileTooltip(icon, textContent);
+  //       }
+  //     }
+  //   });
+  //
+  //   mobileTooltipClickListenerAdded = true;
+  // }
+
+
+  if (!mobileTooltipClickListenerAdded) {
+    // ←←← CLICK: ЗАКРЫТИЕ ПО КРЕСТИКУ И ПО ССЫЛКЕ
+    document.addEventListener('click', (e) => {
+      // ←←← НОВОЕ: закрытие при клике по ссылке внутри тултипа
+      const linkInTooltip = e.target.closest('.js--mobile-tooltip-wrapper a');
+      if (linkInTooltip) {
+        const wrapper = e.target.closest('.js--mobile-tooltip-wrapper');
+        if (wrapper) {
+          const tooltip = wrapper.querySelector('.js--tooltip-mobile');
+          const background = wrapper.querySelector('.select__background-tooltip');
+          if (tooltip) tooltip.classList.remove('active');
+          if (background) background.classList.remove('active');
+          setTimeout(() => {
+            if (wrapper.parentNode) wrapper.remove();
+          }, 400);
+          RemoveClassBody();
+        }
+        return; // ← ссылка работает normally
+      }
+
+      // ←←← СТАРОЕ: закрытие по крестику/фону
+      if (e.target.classList.contains('js--close-mobile-tooltip-2')) {
+        const wrapper = e.target.closest('.js--mobile-tooltip-wrapper');
+        if (wrapper) {
+          const tooltip = wrapper.querySelector('.js--tooltip-mobile');
+          const background = wrapper.querySelector('.select__background-tooltip');
+          if (tooltip) tooltip.classList.remove('active');
+          if (background) background.classList.remove('active');
+          setTimeout(() => {
+            if (wrapper.parentNode) wrapper.remove();
+          }, 400);
+        } else {
+          document.querySelectorAll('.js--mobile-tooltip-wrapper').forEach(el => el.remove());
+        }
+        RemoveClassBody();
+      }
+    });
+
+    // ←←← TOUCHEND: ОТКРЫТИЕ НА ANDROID
+    document.addEventListener('touchend', (e) => {
+      const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
+        (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+      if (isIOS) return;
+
+      const icon = e.target.closest('.js--content-note');
+      if (!icon) return;
+      e.preventDefault();
+
+      const windowWidth = window.innerWidth;
+      if (windowWidth < 480 && !icon.classList.contains('js--ussual-mobile-tooltip')) {
+        const textEl = icon.querySelector('.content-note__text');
+        const textContent = (textEl && textEl.innerHTML) ? textEl.innerHTML.trim() : '';
+        if (textContent) {
+          createMobileTooltip(icon, textContent);
+        }
+      }
+    });
+
+    mobileTooltipClickListenerAdded = true;
+  }
+
+
+
+
+
+
+
+  // === Создание мобильного тултипа ===
+  // function createMobileTooltip(icon, textContent) {
+  //   document.querySelectorAll('.js--mobile-tooltip-wrapper').forEach(el => el.remove());
+  //
+  //   const background = document.createElement('div');
+  //   background.className = 'select__background select__background-tooltip js--close-mobile-tooltip-2';
+  //
+  //   const tooltip = document.createElement('span');
+  //   tooltip.className = 'tooltip-mobile js--tooltip-mobile';
+  //   tooltip.innerHTML = `
+  //     <div class="select-list__head">
+  //       <div class="select-list__head-close select-list__css-icon js--close-mobile-tooltip-2"></div>
+  //     </div>
+  //     <div class="select-list__wr-search mor-rep-calculators__wr-search">${textContent}</div>
+  //   `;
+  //
+  //   tooltip.style.cssText = `
+  //     opacity: 0;
+  //     visibility: hidden;
+  //     transform: translateY(100%);
+  //   `;
+  //   background.style.cssText = `
+  //     opacity: 0;
+  //     visibility: hidden;
+  //   `;
+  //
+  //   const wrapper = document.createElement('div');
+  //   wrapper.className = 'js--mobile-tooltip-wrapper';
+  //   wrapper.appendChild(tooltip);
+  //   wrapper.appendChild(background);
+  //   document.body.appendChild(wrapper);
+  //
+  //   background.style.pointerEvents = 'none';
+  //
+  //
+  //   setTimeout(() => {
+  //     tooltip.style.cssText = '';
+  //     background.style.cssText = 'pointer-events: none;';
+  //
+  //     requestAnimationFrame(() => {
+  //       requestAnimationFrame(() => {
+  //         void tooltip.offsetHeight;
+  //         void background.offsetHeight;
+  //         tooltip.classList.add('active');
+  //         background.classList.add('active');
+  //         setTimeout(() => {
+  //           background.style.pointerEvents = '';
+  //         }, 300);
+  //       });
+  //     });
+  //   }, 10);
+  //
+  //   AddClassBody();
+  //   return tooltip;
+  // }
+
+
+  function createMobileTooltip(icon, textContent) {
+    document.querySelectorAll('.js--mobile-tooltip-wrapper').forEach(el => el.remove());
+
+    const background = document.createElement('div');
+    background.className = 'select__background select__background-tooltip js--close-mobile-tooltip-2';
+
+    const tooltip = document.createElement('span');
+    tooltip.className = 'tooltip-mobile js--tooltip-mobile';
+    tooltip.innerHTML = `
+    <div class="select-list__head">
+      <div class="select-list__head-close select-list__css-icon js--close-mobile-tooltip-2"></div>
+    </div>
+    <div class="select-list__wr-search mor-rep-calculators__wr-search">${textContent}</div>
+  `;
+
+    // Начальное состояние с !important
+    tooltip.style.cssText = `
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: translateY(100%) !important;
+  `;
+    background.style.cssText = `
+    opacity: 0 !important;
+    visibility: hidden !important;
+  `;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'mobile-tooltip-wrapper js--mobile-tooltip-wrapper';
+    wrapper.appendChild(tooltip);
+    wrapper.appendChild(background);
+    document.body.appendChild(wrapper);
+
+    background.style.pointerEvents = 'none';
+
+    setTimeout(() => {
+      // ←←← УДАЛЯЕМ !important И ЯВНО ЗАДАЁМ НАЧАЛЬНОЕ СОСТОЯНИЕ
+      tooltip.style.opacity = '0';
+      tooltip.style.visibility = 'hidden';
+      tooltip.style.transform = 'translateY(100%)';
+      background.style.opacity = '0';
+      background.style.visibility = 'hidden';
+      background.style.pointerEvents = 'none';
+
+      // Принудительный reflow
+      getComputedStyle(tooltip).opacity;
+      getComputedStyle(background).opacity;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // ←←← ЯВНО УДАЛЯЕМ НАЧАЛЬНЫЕ СТИЛИ ПЕРЕД АНИМАЦИЕЙ
+          tooltip.style.opacity = '';
+          tooltip.style.visibility = '';
+          tooltip.style.transform = '';
+          background.style.opacity = '';
+          background.style.visibility = '';
+
+          tooltip.classList.add('active');
+          background.classList.add('active');
+
+          setTimeout(() => {
+            background.style.pointerEvents = '';
+          }, 300);
+        });
+      });
+    }, 10);
+
+    AddClassBody();
+    return tooltip;
+  }
+
+
+  // === Вспомогательные функции ===
+  function resetTooltipStyles(tooltip) {
+    if (!tooltip) return;
+    tooltip.style.left = '';
+    tooltip.style.right = '';
+    tooltip.style.top = '';
+    tooltip.style.bottom = '';
+    tooltip.style.transform = '';
+    tooltip.style.inset = '';
+  }
+
+  function adjustTooltipArrow(icon) {
+    const tooltip = icon.querySelector('.content-note__text');
+    if (!tooltip) return;
+    tooltip.classList.remove('left', 'right');
+    const leftStyle = tooltip.style.left;
+    const rightStyle = tooltip.style.right;
+    if (leftStyle && leftStyle !== 'auto' && leftStyle !== '') {
+      tooltip.classList.add('right');
+    } else if (rightStyle && rightStyle !== 'auto' && rightStyle !== '') {
+      tooltip.classList.add('left');
+    }
+    if (!icon.classList.contains('js--without-arrow')) {
+      if (tooltip.classList.contains('right')) {
+        const currentLeft = parseFloat(tooltip.style.left) || 0;
+        tooltip.style.left = (currentLeft - 6) + 'px';
+      }
+      const topStyle = tooltip.style.top;
+      const bottomStyle = tooltip.style.bottom;
+      if (topStyle && topStyle !== 'auto' && topStyle !== '') {
+        const currentTop = parseFloat(topStyle) || 0;
+        tooltip.style.top = (currentTop + 25) + 'px';
+      } else if (bottomStyle && bottomStyle !== 'auto' && bottomStyle !== '') {
+        const currentBottom = parseFloat(bottomStyle) || 0;
+        tooltip.style.bottom = (currentBottom + 25) + 'px';
+      }
+    }
+  }
+
+  // === iOS: touchstart ===
+  const isIOS = (/(iPad|iPhone|iPod)/.test(navigator.userAgent) && !window.MSStream) ||
+    (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
+  if (isIOS) {
+    document.addEventListener('touchstart', (e) => {
+      const icon = e.target.closest('.js--content-note');
+      if (!icon) return;
+
+      setTimeout(() => {
+        notes.forEach(note => {
+          note.classList.remove('active');
+          const textEl = note.querySelector('.content-note__text');
+          if (textEl) {
+            textEl.classList.remove('active', 'without-arrow');
+            resetTooltipStyles(textEl);
+          }
+        });
+
+        const windowWidth = window.innerWidth;
+        const textEl = icon.querySelector('.content-note__text');
+        const textContent = (textEl && textEl.innerHTML) ? textEl.innerHTML.trim() : '';
+
+        if (windowWidth < 480 && !icon.classList.contains('js--ussual-mobile-tooltip')) {
+          createMobileTooltip(icon, textContent);
+          e.preventDefault();
+          return;
+        }
+
+        icon.classList.add('active');
+        const tooltip = textEl;
+        if (!tooltip) return;
+        tooltip.classList.add('active');
+
+        // --- Логика позиционирования без изменений ---
+        const rect = icon.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        const topOffset = rect.top + rect.height / 2;
+        const focusParent = icon.closest('.js--focus-on-parent');
+
+        if (focusParent) {
+          const parentRect = focusParent.getBoundingClientRect();
+          const iconCenterInParent = rect.left - parentRect.left + rect.width / 2;
+          const parentCenter = parentRect.width / 2;
+          if (iconCenterInParent > parentCenter) {
+            tooltip.style.left = 'auto';
+            tooltip.style.right = '-4px';
+          } else {
+            tooltip.style.left = '4px';
+            tooltip.style.right = 'auto';
+          }
+          if (windowWidth < 480) {
+            void tooltip.offsetWidth;
+            const tRect = tooltip.getBoundingClientRect();
+            const doesNotFit = tRect.left < 16 || tRect.right > (windowWidth - 16);
+            if (doesNotFit) {
+              tooltip.style.inset = 'unset';
+              tooltip.style.transform = `translateX(${
+                -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
+              }px)`;
+              tooltip.classList.add('without-arrow');
+            } else {
+              tooltip.classList.remove('without-arrow');
+            }
+          }
+        } else if (
+          icon.closest('.js--courses-accord-content') ||
+          icon.closest('.js--element-overflow') ||
+          icon.closest('.js--element-overflow-x')
+        ) {
+          const parent = icon.parentElement;
+          const parentPos = parent.getBoundingClientRect();
+          const relativePosLeftElement = rect.left - parentPos.left;
+          const parentWidth = parent.offsetWidth;
+          if (parentWidth / 2 < relativePosLeftElement) {
+            tooltip.style.left = 'auto';
+            tooltip.style.right = '-4px';
+          } else {
+            tooltip.style.left = '4px';
+            tooltip.style.right = 'auto';
+          }
+          if (windowWidth < 480) {
+            void tooltip.offsetWidth;
+            const tRect = tooltip.getBoundingClientRect();
+            const doesNotFit = tRect.left < 16 || tRect.right > (windowWidth - 16);
+            if (doesNotFit) {
+              tooltip.style.inset = 'unset';
+              tooltip.style.transform = `translateX(${
+                -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
+              }px)`;
+              tooltip.classList.add('without-arrow');
+            } else {
+              tooltip.classList.remove('without-arrow');
+            }
+          }
+        } else {
+          const leftOffset = rect.left + rect.width / 2;
+          if (windowWidth / 2 < leftOffset) {
+            tooltip.style.left = 'auto';
+            tooltip.style.right = '-4px';
+          } else {
+            tooltip.style.left = '4px';
+            tooltip.style.right = 'auto';
+          }
+          if (windowWidth < 480) {
+            void tooltip.offsetWidth;
+            const tRect = tooltip.getBoundingClientRect();
+            const doesNotFit = tRect.left < 16 || tRect.right > (windowWidth - 16);
+            if (doesNotFit) {
+              tooltip.style.inset = 'unset';
+              tooltip.style.transform = `translateX(${
+                -((rect.left - tooltip.offsetWidth / 2 + 7) - (windowWidth / 2 - tooltip.offsetWidth / 2))
+              }px)`;
+              tooltip.classList.add('without-arrow');
+            } else {
+              tooltip.classList.remove('without-arrow');
+            }
+          }
+        }
+
+        if (
+          icon.closest('.js--courses-accord-content') ||
+          icon.closest('.js--element-overflow')
+        ) {
+          const notesParentBounding = icon.closest('.js--courses-accord-content').getBoundingClientRect();
+          const locationDifference = rect.top - notesParentBounding.top;
+          const heightTooltip = tooltip.offsetHeight;
+          if (heightTooltip >= locationDifference) {
+            tooltip.style.top = 'calc(100% + 4px)';
+            tooltip.style.bottom = 'auto';
+          } else if (windowHeight / 2 < topOffset) {
+            tooltip.style.top = 'auto';
+            tooltip.style.bottom = 'calc(100% + 4px)';
+          } else {
+            tooltip.style.top = 'calc(100% + 4px)';
+            tooltip.style.bottom = 'auto';
+          }
+        } else {
+          if (windowHeight / 2 > topOffset) {
+            tooltip.classList.remove('up');
+            tooltip.classList.add('down');
+            tooltip.style.top = 'calc(100% + 4px)';
+            tooltip.style.bottom = 'auto';
+          } else {
+            tooltip.classList.remove('down');
+            tooltip.classList.add('up');
+            tooltip.style.top = 'auto';
+            tooltip.style.bottom = 'calc(100% + 4px)';
+          }
+        }
+
+        adjustTooltipArrow(icon);
+      }, 0);
+    });
+  }
+
+  // === Desktop: mouseover ===
+  document.addEventListener('mouseover', (e) => {
+    if (e.target.classList.contains('js--content-note')) {
+      notes.forEach(note => {
+        if (note !== e.target) {
+          note.classList.remove('active');
+          const textEl = note.querySelector('.content-note__text');
+          if (textEl) {
+            textEl.classList.remove('active', 'without-arrow');
+            resetTooltipStyles(textEl);
+          }
+        }
+      });
+
+      const windowWidth = window.innerWidth;
+      const textEl = e.target.querySelector('.content-note__text');
+      const textContent = (textEl && textEl.innerHTML) ? textEl.innerHTML.trim() : '';
+
+      if (windowWidth < 480 && !e.target.classList.contains('js--ussual-mobile-tooltip')) {
+        createMobileTooltip(e.target, textContent);
+        return;
+      }
+
+      e.target.classList.add('active');
+      const tooltip = textEl;
+      if (!tooltip) return;
+      tooltip.classList.add('active');
+
+      // ... (логика позиционирования без изменений)
+      const rect = e.target.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const topOffset = rect.top + rect.height / 2;
+      const leftOffset = rect.left + rect.width / 2;
+      const focusParent = e.target.closest('.js--focus-on-parent');
+
+      if (focusParent) {
+        const parentRect = focusParent.getBoundingClientRect();
+        const iconCenterInParent = rect.left - parentRect.left + rect.width / 2;
+        const parentCenter = parentRect.width / 2;
+        if (iconCenterInParent > parentCenter) {
+          tooltip.style.left = 'auto';
+          tooltip.style.right = '-4px';
+        } else {
+          tooltip.style.left = '4px';
+          tooltip.style.right = 'auto';
+        }
+        if (windowWidth < 480) {
+          void tooltip.offsetWidth;
+          const tRect = tooltip.getBoundingClientRect();
+          const doesNotFit = tRect.left < 16 || tRect.right > (windowWidth - 16);
+          if (doesNotFit) {
+            tooltip.style.left = '0';
+            tooltip.style.transform = `translateX(${
+              -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
+            }px)`;
+            tooltip.classList.add('without-arrow');
+          } else {
+            tooltip.classList.remove('without-arrow');
+          }
+        }
+      } else if (
+        e.target.closest('.js--courses-accord-content') ||
+        e.target.closest('.js--element-overflow') ||
+        e.target.closest('.js--element-overflow-x')
+      ) {
+        const parent = e.target.parentElement;
+        const parentPos = parent.getBoundingClientRect();
+        const relativePosLeftElement = rect.left - parentPos.left;
+        const parentWidth = parent.offsetWidth;
+        if (parentWidth / 2 < relativePosLeftElement) {
+          tooltip.style.left = 'auto';
+          tooltip.style.right = '-4px';
+        } else {
+          tooltip.style.left = '4px';
+          tooltip.style.right = 'auto';
+        }
+        if (windowWidth < 480) {
+          void tooltip.offsetWidth;
+          const tRect = tooltip.getBoundingClientRect();
+          const doesNotFit = tRect.left < 16 || tRect.right > (windowWidth - 16);
+          if (doesNotFit) {
+            tooltip.style.left = '0';
+            tooltip.style.transform = `translateX(${
+              -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
+            }px)`;
+            tooltip.classList.add('without-arrow');
+          } else {
+            tooltip.classList.remove('without-arrow');
+          }
+        }
+      } else {
+        if (windowWidth / 2 < leftOffset) {
+          tooltip.style.left = 'auto';
+          tooltip.style.right = '-4px';
+        } else {
+          tooltip.style.left = '4px';
+          tooltip.style.right = 'auto';
+        }
+        if (windowWidth < 480) {
+          void tooltip.offsetWidth;
+          const tRect = tooltip.getBoundingClientRect();
+          const doesNotFit = tRect.left < 16 || tRect.right > (windowWidth - 16);
+          if (doesNotFit) {
+            tooltip.style.left = '0';
+            tooltip.style.transform = `translateX(${
+              -(leftOffset - 28) + (windowWidth / 2 - 40) - (tooltip.offsetWidth / 2 - 15)
+            }px)`;
+            tooltip.classList.add('without-arrow');
+          } else {
+            tooltip.classList.remove('without-arrow');
+          }
+        }
+      }
+
+      if (
+        e.target.closest('.js--courses-accord-content') ||
+        e.target.closest('.js--element-overflow')
+      ) {
+        const notesParentBounding = e.target.closest('.js--courses-accord-content').getBoundingClientRect();
+        const locationDifference = rect.top - notesParentBounding.top;
+        const heightTooltip = tooltip.offsetHeight;
+        if (heightTooltip >= locationDifference) {
+          tooltip.style.top = 'calc(100% + 4px)';
+          tooltip.style.bottom = 'auto';
+        } else if (windowHeight / 2 < topOffset) {
+          tooltip.style.top = 'auto';
+          tooltip.style.bottom = 'calc(100% + 4px)';
+        } else {
+          tooltip.style.top = 'calc(100% + 4px)';
+          tooltip.style.bottom = 'auto';
+        }
+      } else {
+        if (windowHeight / 2 > topOffset) {
+          tooltip.classList.remove('up');
+          tooltip.classList.add('down');
+          tooltip.style.top = 'calc(100% + 4px)';
+          tooltip.style.bottom = 'auto';
+        } else {
+          tooltip.classList.remove('down');
+          tooltip.classList.add('up');
+          tooltip.style.top = 'auto';
+          tooltip.style.bottom = 'calc(100% + 4px)';
+        }
+      }
+
+      adjustTooltipArrow(e.target);
+    }
+
+    if (e.target.closest && e.target.closest('.content-note__text')) {
+      const root = e.target.closest('.js--content-note');
+      if (root) {
+        root.classList.add('active');
+        const textEl = root.querySelector('.content-note__text');
+        if (textEl) textEl.classList.add('active');
+      }
+    }
+  });
+
+  // === Desktop: mouseout ===
+  document.addEventListener('mouseout', (e) => {
+    const from = e.relatedTarget || e.toElement;
+    const currentTooltip = e.target.closest && e.target.closest('.js--content-note');
+    const fromInsideSameTooltip = from && from.closest && from.closest('.js--content-note');
+    if (currentTooltip && !fromInsideSameTooltip) {
+      currentTooltip.classList.remove('active');
+      const textEl = currentTooltip.querySelector('.content-note__text');
+      if (textEl) {
+        textEl.classList.remove('active', 'without-arrow');
+        resetTooltipStyles(textEl);
+      }
+    }
+  });
+
+  window.addEventListener('resize', handleResize);
+}
+
+
+
+
+
