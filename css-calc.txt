@@ -1,105 +1,37 @@
-/* Делаем модалку flex-контейнером */
+/* 1. Родитель-модалка: flex-контейнер с ограничением высоты */
 .select-list__selection-window.js--openlist-body {
   display: flex;
   flex-direction: column;
-  min-height: 100%; /* Занимает всю высоту, заданную через JS */
-  
-  /* Фиксируем шапку и поиск */
-  > .select-list__head,
-  > .calculator-single-benefit__wrapper-search {
-    flex: 0 0 auto;
-  }
-  
-  /* Список занимает всё оставшееся место */
-  > .select-list__wr-search {
-    flex: 1 1 auto;
-    min-height: 0; /* 🔑 Критично для скролла внутри flex */
-    
-    overflow-y: auto;
-    overflow-x: hidden;
-    
-    /* 🔑 Предотвращает "резиновый" скролл и прокрутку страницы */
-    overscroll-behavior: contain;
-    
-    /* Плавный скролл на iOS */
-    -webkit-overflow-scrolling: touch;
-    
-    /* Отступ снизу, чтобы последний пункт не прилипал к краю */
-    padding-bottom: 20px;
-  }
+  min-height: 100%; /* Заполняет высоту, заданную через JS */
+  height: 100%;     /* 🔑 Критично: ограничивает высоту для flex-детей */
+  overflow: hidden; /* 🔑 Обрезает всё, что вылезает за границы */
 }
 
-----------------------------------
+/* 2. Фиксируем шапку и поиск — они не должны сжиматься */
+.select-list__selection-window.js--openlist-body > .select-list__head,
+.select-list__selection-window.js--openlist-body > .calculator-single-benefit__wrapper-search {
+  flex: 0 0 auto;
+}
 
+/* 3. Список: занимает всё оставшееся место + скролл */
 .select-list__wr-search {
-  /* ... стили выше ... */
-  overscroll-behavior: contain; /* 🔑 Блокирует передачу скролла на body */
+  flex: 1 1 auto;
+  min-height: 0;        /* 🔑 Позволяет сжиматься меньше контента */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain; /* Блокирует "резиновый" скролл на body */
+  -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+  
+  /* Отступ снизу, чтобы последний пункт не прилипал к краю */
+  padding-bottom: 20px;
+  
+  /* 🔑 Гарантирует, что контент не вылезет за границы */
+  position: relative;
 }
 
-/* Убираем старое ограничение */
-.select-list__wr-search {
-  max-height: none; /* Отменяем 287px */
+/* 4. Элементы списка: предотвращаем схлопывание */
+.select-list__search-item {
+  /* Если элементы могут схлопываться — добавляем min-height */
+  min-height: 1px;
+  /* Или фиксируем padding/margin, если они есть */
 }
-
----------------------
-
-// В файле body-lock-mobile-filter.js (или аналогичном)
-export default function bodyLockMobileFilter(element) {
-  // Ваш существующий код...
-  
-  // 🔑 Дополнительно для iOS: блокируем touchmove на body
-  document.body.style.touchAction = 'none';
-  document.body.style.overscrollBehavior = 'none';
-}
-
-export function bodyUnlockMobileFilter(element) {
-  // Ваш существующий код...
-  
-  // 🔑 Снимаем блокировку
-  document.body.style.touchAction = '';
-  document.body.style.overscrollBehavior = '';
-}
-
------------------------------------------------
-
-updateModalHeight() {
-  setTimeout(() => {
-    const modal = this.$refs.selectList;
-    const listContainer = this.$refs.wrSearch;
-    if (!modal || !listContainer) return;
-
-    modal.style.height = '';
-    listContainer.style.paddingBottom = ''; // Сброс
-
-    const visualHeight = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-    const windowHeight = window.innerHeight;
-
-    if (this.isMobile) {
-      if (windowHeight - visualHeight > 100) {
-        // 🔑 Клавиатура открыта
-        modal.style.minHeight = `${windowHeight}px`;
-        
-        // Добавляем отступ = высота клавиатуры + запас
-        const keyboardHeight = windowHeight - visualHeight;
-        listContainer.style.paddingBottom = `${keyboardHeight + 20}px`;
-      } else {
-        // Клавиатуры нет — обычный режим
-        modal.style.minHeight = `${visualHeight}px`;
-        listContainer.style.paddingBottom = '20px'; // Базовый отступ
-      }
-    }
-  }, 50);
-},
-
------------------------------------------------
-
-closeList(){
-  // ... ваш код ...
-  
-  // 🔑 Сбрасываем padding списка
-  if (this.$refs.wrSearch) {
-    this.$refs.wrSearch.style.paddingBottom = '';
-  }
-  
-  // ... остальной код ...
-},
