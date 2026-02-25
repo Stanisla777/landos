@@ -1,19 +1,131 @@
-initAgeMask() {
-  this.ageMaskRef = IMask(this.$refs.ageInput, {
-    mask: Number,
-    min: 0,
-    max: 30,
-    thousandsSeparator: '', // отключаем разделители
-    radix: '.',             // не используется, но лучше указать
-    mapToRadix: [],         // не принимаем никакие символы как разделитель
-    scale: 0,               // только целые числа
-    signed: false,
-    normalizeZeros: true,
-    autofix: 'clamp',       // 🔑 ключевой параметр: автоматически "зажимает" значение в [min, max]
-  });
+<template lang="pug">
+  .calculator__container-block
+    .calculator__row-title-container
+      p.calculator__row-title Количество членов семьи
+      span.content-note.aside-location.always-aside.always-right.class-for-tooltip-calculator.js--content-note-new(
+        v-if="transfer_tooltip!==null&&transfer_tooltip['number-family']&&transfer_tooltip['number-family']['info']!==''"
+        data-content-title="Количество членов семьи"
+        :data-content-text="transfer_tooltip['number-family']['info']"
+      )
 
-  // Синхронизация с data
-  this.ageMaskRef.on('accept', () => {
-    this.dataFieldAge = this.ageMaskRef.value;
-  });
-},
+    .calc-tax-deduc-new__col-input.js--tex-deduc-input
+      input(
+        inputmode="numeric"
+        :value="dataFieldCount"
+        type="text"
+        ref="dataFieldCount"
+        placeholder="от 1 до 30"
+        @paste="inputPast"
+        @blur="moveAnotherElement"
+        @focus="inpFocus"
+      )
+      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
+        :class="dataFieldCount!=='' ? 'active' : ''"
+        @click="cleaerField"
+      )
+    p.calculator__label-under-input Введите количество членов семьи
+
+
+
+
+
+</template>
+<script>
+import eventBus from '../development-tools/eventBus.vue';
+import noUiSlider from 'nouislider';
+import Storage from '../development-tools/state.vue';
+import numberFormatting from '../mixin/necessaryMethods.js';
+import IMask from 'imask';
+import onlyNumbers from '../custom-scripts/only-numbers.js'
+export default {
+  name: 'v-number-family',
+  mixins: [numberFormatting],
+  data(){
+    return {
+      dataFieldCount: '', // количество семьи
+      dataFieldForCalculation: 0,
+      ageMaskRef: null
+
+    }
+  },
+  methods:{
+    initAgeMask() {
+      this.ageMaskRef = IMask(this.$refs.dataFieldCount, {
+        mask: Number,
+        min: 0,
+        max: 30,
+        thousandsSeparator: '', // отключаем разделители
+        radix: '.',             // не используется, но лучше указать
+        mapToRadix: [],         // не принимаем никакие символы как разделитель
+        scale: 0,               // только целые числа
+        signed: false,
+        normalizeZeros: true,
+        autofix: 'clamp',       // 🔑 ключевой параметр: автоматически "зажимает" значение в [min, max]
+      });
+
+      // Синхронизация с data
+      this.ageMaskRef.on('accept', () => {
+        this.dataFieldCount = this.ageMaskRef.value;
+      });
+    },
+
+
+
+
+    inputPast(el){
+      const element = el.currentTarget;
+      let element_val = (el.clipboardData || window.clipboardData).getData('text');
+      if ( element_val.search(/[^0-9]/g) != -1 ) {
+        el.preventDefault();
+      }
+    },
+    cleaerField(){
+      this.dataFieldCount=''
+      if (this.ageMaskRef) {
+        this.ageMaskRef.value = '';
+      }
+    }
+  },
+  mounted(){
+    this.initAgeMask()
+    this.$nextTick(() => {
+      if (this.answers && this.region_not===false) {
+        const valueObject = this.answers.numberFamily
+        if (valueObject) {
+          // this.dataFieldCount=valueObject
+          this.ageMaskRef.unmaskedValue = valueObject;
+        }
+      }
+    });
+
+  },
+  computed:{
+    transfer_tooltip(){
+      return Storage.getters.TRANSFERTOOLTIP
+    },
+    answers(){
+      return Storage.getters.ANSWERS
+    },
+    region_not(){
+      return Storage.getters.REGIONNOT
+    },
+
+  },
+  watch:{
+    dataFieldCount(){
+      if (this.dataFieldCount!==''){
+        Storage.dispatch('ActionCountFamily',this.dataFieldCount)
+        Storage.dispatch('ActionRegionNot',false)
+      }
+      else {
+        Storage.dispatch('ActionCountFamily',null)
+      }
+    }
+  },
+  created(){
+  },
+  components:{}
+};
+</script>
+<style scoped>
+</style>
