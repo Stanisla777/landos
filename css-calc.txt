@@ -1,246 +1,105 @@
-<script>
-import Storage from '../development-tools/state.vue';
-import numberFormatting from '../mixin/necessaryMethods.js';
-import mixinLiveSearch from '../../mixinForVueComponent/mixinLiveSearch';
-import mixinSimplyWord from '../../mixinForVueComponent/mixinMaskSimplyWord';
-import bodyUnlockMobileFilter from "../../redesign-site/body-unlock-mobile-filter";
-export default {
-  name: 'v-number-family',
-  mixins: [numberFormatting,mixinLiveSearch,mixinSimplyWord],
-  data(){
-    return {
-      dataField: '', // Стоимость недвижимости
-      selectedRegion:null, //выбранный регион
-      searchPlaceholder:'Выберите регион',
-      region:["Белгородская область","Московская область", "Калужская область"],
-      isMobile: null,
-      originalWindowHeight: null,
+/* Делаем модалку flex-контейнером */
+.select-list__selection-window.js--openlist-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%; /* Занимает всю высоту, заданную через JS */
+  
+  /* Фиксируем шапку и поиск */
+  > .select-list__head,
+  > .calculator-single-benefit__wrapper-search {
+    flex: 0 0 auto;
+  }
+  
+  /* Список занимает всё оставшееся место */
+  > .select-list__wr-search {
+    flex: 1 1 auto;
+    min-height: 0; /* 🔑 Критично для скролла внутри flex */
+    
+    overflow-y: auto;
+    overflow-x: hidden;
+    
+    /* 🔑 Предотвращает "резиновый" скролл и прокрутку страницы */
+    overscroll-behavior: contain;
+    
+    /* Плавный скролл на iOS */
+    -webkit-overflow-scrolling: touch;
+    
+    /* Отступ снизу, чтобы последний пункт не прилипал к краю */
+    padding-bottom: 20px;
+  }
+}
+
+----------------------------------
+
+.select-list__wr-search {
+  /* ... стили выше ... */
+  overscroll-behavior: contain; /* 🔑 Блокирует передачу скролла на body */
+}
+
+/* Убираем старое ограничение */
+.select-list__wr-search {
+  max-height: none; /* Отменяем 287px */
+}
+
+---------------------
+
+// В файле body-lock-mobile-filter.js (или аналогичном)
+export default function bodyLockMobileFilter(element) {
+  // Ваш существующий код...
+  
+  // 🔑 Дополнительно для iOS: блокируем touchmove на body
+  document.body.style.touchAction = 'none';
+  document.body.style.overscrollBehavior = 'none';
+}
+
+export function bodyUnlockMobileFilter(element) {
+  // Ваш существующий код...
+  
+  // 🔑 Снимаем блокировку
+  document.body.style.touchAction = '';
+  document.body.style.overscrollBehavior = '';
+}
+
+-----------------------------------------------
+
+updateModalHeight() {
+  setTimeout(() => {
+    const modal = this.$refs.selectList;
+    const listContainer = this.$refs.wrSearch;
+    if (!modal || !listContainer) return;
+
+    modal.style.height = '';
+    listContainer.style.paddingBottom = ''; // Сброс
+
+    const visualHeight = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    const windowHeight = window.innerHeight;
+
+    if (this.isMobile) {
+      if (windowHeight - visualHeight > 100) {
+        // 🔑 Клавиатура открыта
+        modal.style.minHeight = `${windowHeight}px`;
+        
+        // Добавляем отступ = высота клавиатуры + запас
+        const keyboardHeight = windowHeight - visualHeight;
+        listContainer.style.paddingBottom = `${keyboardHeight + 20}px`;
+      } else {
+        // Клавиатуры нет — обычный режим
+        modal.style.minHeight = `${visualHeight}px`;
+        listContainer.style.paddingBottom = '20px'; // Базовый отступ
+      }
     }
-  },
-  methods:{
+  }, 50);
+},
 
+-----------------------------------------------
 
-    openMobileList(el){
-      const element = el.currentTarget;
-      this.$nextTick(() => {
-        // Сохраняем исходную высоту окна при открытии
-        if (this.isMobile) {
-          this.originalWindowHeight = window.innerHeight;
-        }
-
-        this.updateModalHeight();
-
-        // Добавляем обработчики изменения размера
-        window.addEventListener('resize', this.updateModalHeight);
-        if (window.visualViewport) {
-          window.visualViewport.addEventListener('resize', this.updateModalHeight);
-        }
-      });
-    },
-
-    updateModalHeight() {
-      setTimeout(() => {
-        const modal = this.$refs.selectList;
-        if (!modal) return;
-
-        // Сбрасываем высоту для динамического расчета
-        modal.style.height = '';
-
-        const visualHeight = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-        const windowHeight = window.innerHeight;
-
-        // ✅ На мобильном: защищаемся от сжатия при появлении клавиатуры
-        if (this.isMobile) {
-          // Если visualViewport уменьшился более чем на 100px — скорее всего, открылась клавиатура
-          if (windowHeight - visualHeight > 100) {
-            // Используем полную высоту окна, а не уменьшенную viewport'ом
-            modal.style.minHeight = `${windowHeight}px`;
-          } else {
-            // Обычный resize — используем актуальную высоту
-            modal.style.minHeight = `${visualHeight}px`;
-          }
-        }
-      }, 50); // Уменьшили таймаут для более быстрой реакции
-    },
-    handleInputFocus() {
-      // ✅ Дополнительная проверка для Android — клавиатура появляется с задержкой
-      if (/android/i.test(navigator.userAgent)) {
-        setTimeout(this.updateModalHeight, 300);
-      }
-    },
-
-    handleInputBlur() {
-      // ✅ При потере фокуса (клавиатура скрылась) — пересчитываем высоту
-      this.updateModalHeight();
-    },
-
-    closeList(){
-      // Удаляем обработчики
-      window.removeEventListener('resize', this.updateModalHeight);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', this.updateModalHeight);
-      }
-      // ✅ Удаляем обработчики фокуса/блюра с инпута
-      if (this.$refs.selectList) {
-        const mobileInput = this.$refs.ContainerForSearch.querySelector('input');
-        if (mobileInput) {
-          mobileInput.removeEventListener('focus', this.handleInputFocus);
-          mobileInput.removeEventListener('blur', this.handleInputBlur);
-        }
-      }
-
-      // Сбрасываем сохранённую высоту
-      this.originalWindowHeight = null;
-    },
-
-
-
-
-    liveSearch(el) {
-      const input_search = el.currentTarget;
-      this.sampleliveSearchNew(input_search)
-    },
-    sampleliveSearchNew(input_search) {
-      const parent = input_search.closest('.js--search-container');
-
-      if (parent) {
-        // const val = input_search.getAttribute('data-search');
-        const val = this.dataField;
-        // eslint-disable-next-line camelcase
-        const array_label = parent.querySelectorAll('.js--searh-item');
-        for (let i = 0; i < array_label.length; i++) {
-          const reg = new RegExp(val, 'gi');
-          const text = array_label[i].textContent;
-
-          //если вдруг скажут выделять букавки в том, что нашли
-          // if (!array_label[i].classList.contains('js--select-item-checkbox')){
-          //   const box = array_label[i];
-          //   let text_box = box.innerHTML;
-          //   text_box = text.replace(/(<span class="highlight">|<\/span>)/gim, '');
-          //   box.innerHTML = text_box.replace(reg, '<span class="highlight">$&</span>');
-          // }
-
-          if (text.match(reg)) {
-            array_label[i].style.display = 'block';
-            array_label[i].classList.add('active-search');
-          } else {
-            array_label[i].style.display = 'none';
-            array_label[i].classList.remove('active-search');
-          }
-        }
-        // eslint-disable-next-line max-len,camelcase
-        const array_label_active = parent.querySelectorAll('.js--searh-item.active-search');
-        // eslint-disable-next-line camelcase
-        const array_error = parent.querySelectorAll('.js--search-error');
-        if (array_label_active.length === 0) {
-          // eslint-disable-next-line no-shadow,no-undef,camelcase
-          const wrapper_list = parent.querySelector('.js--select-list');
-
-          if (array_error.length === 0) {
-            // eslint-disable-next-line camelcase
-            const element_error = document.createElement('p');
-            element_error.classList.add('input__error');
-            element_error.classList.add('js--search-error');
-            element_error.innerHTML = 'ничего не найдено'
-            if (parent.querySelector('.js--container-for-error')){
-              parent.querySelector('.js--container-for-error').append(element_error);
-              parent.querySelector('.js--container-for-error').classList.add('input_error');
-            }
-            else {
-              parent.append(element_error);
-              parent.classList.add('input_error');
-            }
-          }
-        } if ((array_label_active.length !== 0 && array_error.length !== 0)) {
-          // eslint-disable-next-line no-undef
-          parent.querySelector('.js--search-error').remove();
-        }
-      }
-    },
-
-    inputPast(e){
-      const element = e.currentTarget;
-      let element_val = (e.clipboardData || window.clipboardData).getData('text');
-      if ( element_val.search(/[^0-9]/g) != -1 ) {
-        e.preventDefault();
-      }
-    },
-    selectRegion(element){
-      this.$refs.clearBtn.classList.add('active');
-      this.selectedRegion = element.getAttribute('data-value');
-      Storage.dispatch('ActionGetRegion',this.selectedRegion);
-      Storage.dispatch('ActionRegionNot',false);
-      this.closeList();
-    },
-    cleaerField(fun,e){
-      e.stopPropagation();
-      if (fun === 'region'){
-        this.$refs.clearBtn.classList.remove('active')
-        this.$refs.fieldSelectedRegion.textContent=this.searchPlaceholder
-        this.selectedRegion=null
-        if (this.$refs.wrSearch.querySelector('.js--openlist-item.active')) {
-          this.$refs.wrSearch.querySelector('.js--openlist-item.active').classList.remove('active')
-        }
-        Storage.dispatch('ActionGetRegion',null)
-      }
-      this.dataField=""
-      if (this.$refs.ContainerForSearch.querySelector('.js--search-error')) {
-        this.$refs.ContainerForSearch.querySelector('.js--search-error').remove();
-      }
-
-      const array_label = this.$refs.selectWrapperSearhRegion.querySelectorAll('.js--searh-item');
-      array_label.forEach(item=>{
-        item.style.display = 'block';
-        item.classList.add('active-search');
-
-      })
-    },
-  },
-  mounted(){
-    this.$nextTick(() => {
-      this.isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (this.answers) {
-        const valueObject = this.answers.region
-        if (valueObject) {
-          if (this.$refs.wrSearch.querySelector(`.js--searh-item[data-value="${valueObject}"]`)) {
-            const element = this.$refs.wrSearch.querySelector(`.js--searh-item[data-value="${valueObject}"]`)
-            element.classList.add('active');
-            this.$refs.fieldSelectedRegion.textContent=valueObject
-            this.selectRegion(element);
-          }
-          else {
-            Storage.dispatch('ActionRegionNot',true)
-          }
-        }
-      }
-      //Для Android/Safari: обрабатываем фокус на поле поиска в мобильной модалке
-      if (this.isMobile && this.$refs.selectList) {
-        const mobileInput = this.$refs.ContainerForSearch.querySelector('input');
-        if (mobileInput) {
-          mobileInput.addEventListener('focus', this.handleInputFocus);
-          mobileInput.addEventListener('blur', this.handleInputBlur);
-        }
-      }
-    });
-  },
-  computed:{
-    massive_region(){
-      return Storage.getters.MASSIVEREGION
-    },
-
-
-
-    transfer_tooltip(){
-      return Storage.getters.TRANSFERTOOLTIP
-    },
-    answers(){
-      return Storage.getters.ANSWERS || null;
-    },
-  },
-  watch:{
-  },
-  created(){
-  },
-  components:{}
-};
-</script>
+closeList(){
+  // ... ваш код ...
+  
+  // 🔑 Сбрасываем padding списка
+  if (this.$refs.wrSearch) {
+    this.$refs.wrSearch.style.paddingBottom = '';
+  }
+  
+  // ... остальной код ...
+},
