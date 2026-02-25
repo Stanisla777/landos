@@ -3,38 +3,31 @@ import Storage from '../development-tools/state.vue';
 import numberFormatting from '../mixin/necessaryMethods.js';
 import mixinLiveSearch from '../../mixinForVueComponent/mixinLiveSearch';
 import mixinSimplyWord from '../../mixinForVueComponent/mixinMaskSimplyWord';
-import bodyLockMobileFilter from "../../redesign-site/body-lock-mobile-filter";
 import bodyUnlockMobileFilter from "../../redesign-site/body-unlock-mobile-filter";
-import contentNote from '../../modules/content-note';
-
 export default {
   name: 'v-number-family',
-  mixins: [numberFormatting, mixinLiveSearch, mixinSimplyWord],
+  mixins: [numberFormatting,mixinLiveSearch,mixinSimplyWord],
   data(){
     return {
       dataField: '', // Стоимость недвижимости
-      selectedRegion: null, // выбранный регион
-      searchPlaceholder: 'Выберите регион',
-      region: ["Белгородская область","Московская область", "Калужская область"],
+      selectedRegion:null, //выбранный регион
+      searchPlaceholder:'Выберите регион',
+      region:["Белгородская область","Московская область", "Калужская область"],
       isMobile: null,
-      originalWindowHeight: null, // ✅ Для защиты от сжатия при клавиатуре
+      originalWindowHeight: null,
     }
   },
-  methods: {
+  methods:{
+
 
     openMobileList(el){
       const element = el.currentTarget;
-
-      // ✅ Блокируем скролл тела страницы
-      bodyLockMobileFilter(this.$refs.selectWrapperSearhRegion);
-      this.$refs.selectWrapperSearhRegion.classList.add('open');
-
       this.$nextTick(() => {
-        // ✅ Сохраняем исходную высоту окна при открытии
+        // Сохраняем исходную высоту окна при открытии
         if (this.isMobile) {
           this.originalWindowHeight = window.innerHeight;
         }
-        
+
         this.updateModalHeight();
 
         // Добавляем обработчики изменения размера
@@ -69,7 +62,6 @@ export default {
         }
       }, 50); // Уменьшили таймаут для более быстрой реакции
     },
-
     handleInputFocus() {
       // ✅ Дополнительная проверка для Android — клавиатура появляется с задержкой
       if (/android/i.test(navigator.userAgent)) {
@@ -83,44 +75,50 @@ export default {
     },
 
     closeList(){
-      this.$refs.selectWrapperSearhRegion.classList.remove('open');
-      
-      // ✅ Разблокируем скролл
-      bodyUnlockMobileFilter(this.$refs.selectWrapperSearhRegion);
-      
       // Удаляем обработчики
       window.removeEventListener('resize', this.updateModalHeight);
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', this.updateModalHeight);
       }
-      
       // ✅ Удаляем обработчики фокуса/блюра с инпута
       if (this.$refs.selectList) {
-        const mobileInput = this.$refs.selectList.querySelector('.js--search-family-mortgage-mask-mobile input');
+        const mobileInput = this.$refs.ContainerForSearch.querySelector('input');
         if (mobileInput) {
           mobileInput.removeEventListener('focus', this.handleInputFocus);
           mobileInput.removeEventListener('blur', this.handleInputBlur);
         }
       }
-      
+
       // Сбрасываем сохранённую высоту
       this.originalWindowHeight = null;
     },
+
+
+
 
     liveSearch(el) {
       const input_search = el.currentTarget;
       this.sampleliveSearchNew(input_search)
     },
-    
     sampleliveSearchNew(input_search) {
       const parent = input_search.closest('.js--search-container');
 
       if (parent) {
+        // const val = input_search.getAttribute('data-search');
         const val = this.dataField;
+        // eslint-disable-next-line camelcase
         const array_label = parent.querySelectorAll('.js--searh-item');
         for (let i = 0; i < array_label.length; i++) {
           const reg = new RegExp(val, 'gi');
           const text = array_label[i].textContent;
+
+          //если вдруг скажут выделять букавки в том, что нашли
+          // if (!array_label[i].classList.contains('js--select-item-checkbox')){
+          //   const box = array_label[i];
+          //   let text_box = box.innerHTML;
+          //   text_box = text.replace(/(<span class="highlight">|<\/span>)/gim, '');
+          //   box.innerHTML = text_box.replace(reg, '<span class="highlight">$&</span>');
+          // }
 
           if (text.match(reg)) {
             array_label[i].style.display = 'block';
@@ -130,13 +128,16 @@ export default {
             array_label[i].classList.remove('active-search');
           }
         }
+        // eslint-disable-next-line max-len,camelcase
         const array_label_active = parent.querySelectorAll('.js--searh-item.active-search');
+        // eslint-disable-next-line camelcase
         const array_error = parent.querySelectorAll('.js--search-error');
-        
         if (array_label_active.length === 0) {
+          // eslint-disable-next-line no-shadow,no-undef,camelcase
           const wrapper_list = parent.querySelector('.js--select-list');
 
           if (array_error.length === 0) {
+            // eslint-disable-next-line camelcase
             const element_error = document.createElement('p');
             element_error.classList.add('input__error');
             element_error.classList.add('js--search-error');
@@ -150,7 +151,8 @@ export default {
               parent.classList.add('input_error');
             }
           }
-        } else if ((array_label_active.length !== 0 && array_error.length !== 0)) {
+        } if ((array_label_active.length !== 0 && array_error.length !== 0)) {
+          // eslint-disable-next-line no-undef
           parent.querySelector('.js--search-error').remove();
         }
       }
@@ -163,63 +165,57 @@ export default {
         e.preventDefault();
       }
     },
-    
     selectRegion(element){
-      this.$refs.clearBtn.classList.add('active')
-      this.selectedRegion = element.getAttribute('data-value')
-      Storage.dispatch('ActionGetRegion', this.selectedRegion)
-      Storage.dispatch('ActionRegionNot', false)
+      this.$refs.clearBtn.classList.add('active');
+      this.selectedRegion = element.getAttribute('data-value');
+      Storage.dispatch('ActionGetRegion',this.selectedRegion);
+      Storage.dispatch('ActionRegionNot',false);
+      this.closeList();
     },
-    
-    cleaerField(fun, e){
+    cleaerField(fun,e){
       e.stopPropagation();
       if (fun === 'region'){
         this.$refs.clearBtn.classList.remove('active')
-        this.$refs.fieldSelectedRegion.textContent = this.searchPlaceholder
-        this.selectedRegion = null
+        this.$refs.fieldSelectedRegion.textContent=this.searchPlaceholder
+        this.selectedRegion=null
         if (this.$refs.wrSearch.querySelector('.js--openlist-item.active')) {
           this.$refs.wrSearch.querySelector('.js--openlist-item.active').classList.remove('active')
         }
-        Storage.dispatch('ActionGetRegion', null)
+        Storage.dispatch('ActionGetRegion',null)
       }
-      this.dataField = ""
+      this.dataField=""
       if (this.$refs.ContainerForSearch.querySelector('.js--search-error')) {
         this.$refs.ContainerForSearch.querySelector('.js--search-error').remove();
       }
 
       const array_label = this.$refs.selectWrapperSearhRegion.querySelectorAll('.js--searh-item');
-      array_label.forEach(item => {
+      array_label.forEach(item=>{
         item.style.display = 'block';
         item.classList.add('active-search');
+
       })
     },
   },
-  
   mounted(){
-    // ✅ Инициализируем тултипы (после фикса content-note.js это безопасно)
-    contentNote();
-    
     this.$nextTick(() => {
       this.isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
       if (this.answers) {
         const valueObject = this.answers.region
         if (valueObject) {
           if (this.$refs.wrSearch.querySelector(`.js--searh-item[data-value="${valueObject}"]`)) {
             const element = this.$refs.wrSearch.querySelector(`.js--searh-item[data-value="${valueObject}"]`)
             element.classList.add('active');
-            this.$refs.fieldSelectedRegion.textContent = valueObject
+            this.$refs.fieldSelectedRegion.textContent=valueObject
             this.selectRegion(element);
           }
           else {
-            Storage.dispatch('ActionRegionNot', true)
+            Storage.dispatch('ActionRegionNot',true)
           }
         }
       }
-      
-      // ✅ Для Android/Safari: обрабатываем фокус на поле поиска в мобильной модалке
+      //Для Android/Safari: обрабатываем фокус на поле поиска в мобильной модалке
       if (this.isMobile && this.$refs.selectList) {
-        const mobileInput = this.$refs.selectList.querySelector('.js--search-family-mortgage-mask-mobile input');
+        const mobileInput = this.$refs.ContainerForSearch.querySelector('input');
         if (mobileInput) {
           mobileInput.addEventListener('focus', this.handleInputFocus);
           mobileInput.addEventListener('blur', this.handleInputBlur);
@@ -227,44 +223,24 @@ export default {
       }
     });
   },
-  
-  beforeDestroy() {
-    // ✅ Удаляем глобальные обработчики при уничтожении компонента
-    window.removeEventListener('resize', this.updateModalHeight);
-    if (window.visualViewport) {
-      window.visualViewport.removeEventListener('resize', this.updateModalHeight);
-    }
-    
-    // ✅ Удаляем обработчики фокуса/блюра с инпута
-    if (this.$refs.selectList) {
-      const mobileInput = this.$refs.selectList.querySelector('.js--search-family-mortgage-mask-mobile input');
-      if (mobileInput) {
-        mobileInput.removeEventListener('focus', this.handleInputFocus);
-        mobileInput.removeEventListener('blur', this.handleInputBlur);
-      }
-    }
-  },
-  
   computed:{
     massive_region(){
       return Storage.getters.MASSIVEREGION
     },
 
+
+
     transfer_tooltip(){
       return Storage.getters.TRANSFERTOOLTIP
     },
-    
     answers(){
       return Storage.getters.ANSWERS || null;
     },
   },
-  
   watch:{
   },
-  
   created(){
   },
-  
   components:{}
 };
 </script>
