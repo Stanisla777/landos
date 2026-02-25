@@ -1,131 +1,34 @@
-<template lang="pug">
-  .calculator__container-block
-    .calculator__row-title-container
-      p.calculator__row-title Количество членов семьи
-      span.content-note.aside-location.always-aside.always-right.class-for-tooltip-calculator.js--content-note-new(
-        v-if="transfer_tooltip!==null&&transfer_tooltip['number-family']&&transfer_tooltip['number-family']['info']!==''"
-        data-content-title="Количество членов семьи"
-        :data-content-text="transfer_tooltip['number-family']['info']"
-      )
+initAgeMask() {
+  this.ageMaskRef = IMask(this.$refs.dataFieldCount, {
+    mask: Number,
+    min: 0,
+    max: 999999, // ← временно ставим большое число, чтобы не блокировать ввод
+    scale: 0,
+    signed: false,
+    thousandsSeparator: '',
+    radix: '.',
+    mapToRadix: [],
+    normalizeZeros: true,
+    autofix: false, // отключаем, если не поддерживается
+  });
 
-    .calc-tax-deduc-new__col-input.js--tex-deduc-input
-      input(
-        inputmode="numeric"
-        :value="dataFieldCount"
-        type="text"
-        ref="dataFieldCount"
-        placeholder="от 1 до 30"
-        @paste="inputPast"
-        @blur="moveAnotherElement"
-        @focus="inpFocus"
-      )
-      .calc-tax-deduc-new__input-clear.js--clear-calc-tax(
-        :class="dataFieldCount!=='' ? 'active' : ''"
-        @click="cleaerField"
-      )
-    p.calculator__label-under-input Введите количество членов семьи
-
-
-
-
-
-</template>
-<script>
-import eventBus from '../development-tools/eventBus.vue';
-import noUiSlider from 'nouislider';
-import Storage from '../development-tools/state.vue';
-import numberFormatting from '../mixin/necessaryMethods.js';
-import IMask from 'imask';
-import onlyNumbers from '../custom-scripts/only-numbers.js'
-export default {
-  name: 'v-number-family',
-  mixins: [numberFormatting],
-  data(){
-    return {
-      dataFieldCount: '', // количество семьи
-      dataFieldForCalculation: 0,
-      ageMaskRef: null
-
+  this.ageMaskRef.on('accept', () => {
+    const unmasked = this.ageMaskRef.unmaskedValue;
+    if (!unmasked) {
+      this.dataFieldCount = '';
+      return;
     }
-  },
-  methods:{
-    initAgeMask() {
-      this.ageMaskRef = IMask(this.$refs.dataFieldCount, {
-        mask: Number,
-        min: 0,
-        max: 30,
-        thousandsSeparator: '', // отключаем разделители
-        radix: '.',             // не используется, но лучше указать
-        mapToRadix: [],         // не принимаем никакие символы как разделитель
-        scale: 0,               // только целые числа
-        signed: false,
-        normalizeZeros: true,
-        autofix: 'clamp',       // 🔑 ключевой параметр: автоматически "зажимает" значение в [min, max]
-      });
 
-      // Синхронизация с data
-      this.ageMaskRef.on('accept', () => {
-        this.dataFieldCount = this.ageMaskRef.value;
-      });
-    },
+    let num = parseInt(unmasked, 10);
+    if (isNaN(num)) num = 0;
 
-
-
-
-    inputPast(el){
-      const element = el.currentTarget;
-      let element_val = (el.clipboardData || window.clipboardData).getData('text');
-      if ( element_val.search(/[^0-9]/g) != -1 ) {
-        el.preventDefault();
-      }
-    },
-    cleaerField(){
-      this.dataFieldCount=''
-      if (this.ageMaskRef) {
-        this.ageMaskRef.value = '';
-      }
+    // Ограничиваем до 30
+    if (num > 30) {
+      num = 30;
+      // Принудительно обновляем поле
+      this.ageMaskRef.unmaskedValue = '30';
     }
-  },
-  mounted(){
-    this.initAgeMask()
-    this.$nextTick(() => {
-      if (this.answers && this.region_not===false) {
-        const valueObject = this.answers.numberFamily
-        if (valueObject) {
-          // this.dataFieldCount=valueObject
-          this.ageMaskRef.unmaskedValue = valueObject;
-        }
-      }
-    });
 
-  },
-  computed:{
-    transfer_tooltip(){
-      return Storage.getters.TRANSFERTOOLTIP
-    },
-    answers(){
-      return Storage.getters.ANSWERS
-    },
-    region_not(){
-      return Storage.getters.REGIONNOT
-    },
-
-  },
-  watch:{
-    dataFieldCount(){
-      if (this.dataFieldCount!==''){
-        Storage.dispatch('ActionCountFamily',this.dataFieldCount)
-        Storage.dispatch('ActionRegionNot',false)
-      }
-      else {
-        Storage.dispatch('ActionCountFamily',null)
-      }
-    }
-  },
-  created(){
-  },
-  components:{}
-};
-</script>
-<style scoped>
-</style>
+    this.dataFieldCount = this.ageMaskRef.value;
+  });
+}
