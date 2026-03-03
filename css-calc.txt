@@ -1,8 +1,277 @@
-"scripts": {
-  "dev": "rspack build --mode development && prettier --print-width=120 --parser html --write dist/*.html",
-  "build": "rspack build --mode production",
-  "start": "rspack serve --mode development --open --port 8080",
-  "lint": "eslint --ext .js, --ignore-path .gitignore ."
+npm install -D @rspack/core @rspack/cli @rspack/plugin-html
+
+
+/* eslint-disable */
+const path = require('path');
+const fs = require('fs');
+const rspack = require('@rspack/core');
+const { HtmlRspackPlugin } = require('@rspack/plugin-html');
+const { VueLoaderPlugin } = require('vue-loader');
+
+// ============================================================================
+// Функция для генерации HTML плагинов из Pug-шаблонов
+// ============================================================================
+function generateHtmlPlugins(templateDir) {
+  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return templateFiles.map((item) => {
+    const parts = item.split('.');
+    const name = parts[0];
+    const extension = parts[1];
+    return new HtmlRspackPlugin({
+      filename: `${name}.html`,
+      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
+      inject: false
+    });
+  });
 }
 
+// ============================================================================
+// Основная конфигурация
+// ============================================================================
+const config = {
+  // ----------------------------------------------------------------------------
+  // 1. Entry Points (сохраняем вашу структуру чанков)
+  // ----------------------------------------------------------------------------
+  entry: {
+    all: ['./src/js/index.js'],                    // → bundle.js (legacy)
+    'general-style': ['./src/scss/general-style.scss'],  // → general-style.css
+    instruction: ['./src/scss/instruction.scss'],   // → instruction.css
+    'general-js': './src/js/general.js',            // → general.bundle.js
+    'instruction-js': './src/js/instruction.js'     // → instruction.bundle.js
+  },
+
+  // ----------------------------------------------------------------------------
+  // 2. Output
+  // ----------------------------------------------------------------------------
+  output: {
+    filename: './js/[name].bundle.js',
+    publicPath: '/dist/',
+    clean: true,  // Встроенная очистка dist (аналог CleanWebpackPlugin)
+    path: path.resolve(__dirname, 'dist'),
+  },
+
+  // ----------------------------------------------------------------------------
+  // 3. КЛЮЧЕВОЕ ДЛЯ VUE 2: Отключаем нативный CSS Rspack
+  // ----------------------------------------------------------------------------
+  // Чтобы vue-loader@15 мог корректно обрабатывать стили внутри .vue файлов
+  experiments: {
+    css: false
+  },
+
+  // ----------------------------------------------------------------------------
+  // 4. Mode & Optimization
+  // ----------------------------------------------------------------------------
+  mode: 'production',
+
+  optimization: {
+    minimize: true,
+    // Rspack использует swc по умолчанию, Terser не нужен
+    splitChunks: {
+      cacheGroups: {
+        defaultVendors: false,  // ← ЭТО КЛЮЧЕВОЕ (как у вас было)
+        vendor: {
+          test: /[\\/]node_modules[\\/](vue|axios|vue-axios|swiper|imask)[\\/]/,
+          name: 'vendor-script',
+          chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
+          enforce: true
+        }
+      }
+    }
+  },
+
+  performance: {
+    hints: false
+  },
+
+  // ----------------------------------------------------------------------------
+  // 5. Module Rules
+  // ----------------------------------------------------------------------------
+  module: {
+    rules: [
+      // Vue 2 компоненты
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader'
+      },
+      
+      // SCSS/CSS (с type: 'javascript/auto' для Vue 2)
+      {
+        test: /\.(sass|scss)$/,
+        include: path.resolve(__dirname, 'src/scss'),
+        use: [
+          rspack.CssExtractRspackPlugin.loader,  // Замена MiniCssExtractPlugin.loader
+          {
+            loader: 'css-loader',
+            options: {
+              sourceMap: true,
+              url: false
+            }
+          },
+          {
+            loader: 'postcss-loader',
+            options: {
+              sourceMap: true,
+              postcssOptions: {
+                plugins: [
+                  require('cssnano')({
+                    preset: ['default', { discardComments: { removeAll: true } }]
+                  })
+                ]
+              }
+            }
+          },
+          {
+            loader: 'sass-loader',
+            options: {
+              sourceMap: true
+              // Если понадобится dart-sass:
+              // implementation: require('sass')
+            }
+          }
+        ],
+        type: 'javascript/auto'  // ← Важно для совместимости vue-loader@15
+      },
+      
+      // Pug шаблоны
+      {
+        test: /\.pug$/,
+        oneOf: [
+          {
+            include: path.resolve(__dirname, 'src/pug/'),
+            exclude: /\.vue$/,
+            use: ['pug-loader']
+          },
+          {
+            use: ['pug-plain-loader']
+          }
+        ]
+      },
+      
+      // JavaScript с Babel
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      },
+      
+      // Source maps для JS
+      {
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
+      }
+      
+      // cache-loader, eslint-loader убираем (Rspack делает это быстрее внутри)
+    ]
+  },
+
+  // ----------------------------------------------------------------------------
+  // 6. Plugins
+  // ----------------------------------------------------------------------------
+  plugins: [
+    // Vue 2 loader плагин
+    new VueLoaderPlugin(),
+    
+    // Извлечение CSS в отдельные файлы
+    new rspack.CssExtractRspackPlugin({
+      filename: './css/[name].css'
+    }),
+    
+    // Копирование статики (шрифты, изображения)
+    new rspack.CopyRspackPlugin({
+      patterns: [
+        { from: './src/fonts', to: './fonts' },
+        { from: './src/img', to: './img' }
+      ]
+    }),
+    
+    // ----------------------------------------------------------------------------
+    // Кастомный плагин: переименование all.bundle.js → bundle.js
+    // ----------------------------------------------------------------------------
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('RenameMainToBundle', (compilation) => {
+          const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
+          const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
+          if (fs.existsSync(mainPath)) {
+            fs.renameSync(mainPath, bundlePath);
+            console.log('✅ all.bundle.js → bundle.js');
+          }
+        });
+      }
+    },
+    
+    // ----------------------------------------------------------------------------
+    // Кастомный плагин: удаление JS от CSS-only entry
+    // ----------------------------------------------------------------------------
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', (compilation) => {
+          const cssOnlyEntries = [
+            'general-style',
+            'instruction'
+          ];
+          cssOnlyEntries.forEach((name) => {
+            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
+            if (fs.existsSync(jsPath)) {
+              fs.unlinkSync(jsPath);
+              console.log(`🧹 Удалён: ${name}.bundle.js`);
+            }
+          });
+        });
+      }
+    }
+  ],
+
+  // ----------------------------------------------------------------------------
+  // 7. Resolve
+  // ----------------------------------------------------------------------------
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.js'  // В production заменится на vue.min.js
+    }
+  },
+
+  // ----------------------------------------------------------------------------
+  // 8. Devtool
+  // ----------------------------------------------------------------------------
+  devtool: 'source-map',
+
+  // ----------------------------------------------------------------------------
+  // 9. DevServer (для npm run start)
+  // ----------------------------------------------------------------------------
+  devServer: {
+    static: {
+      directory: path.join(__dirname, 'dist'),
+    },
+    port: 8080,        // Ваш привычный порт
+    hot: true,         // Hot Module Replacement
+    open: false,       // Открывается через CLI флаг --open в package.json
+    historyApiFallback: true,
+    // Watch за изменениями в Pug шаблонах
+    watchFiles: ['src/pug/**/*.pug', 'src/**/*'],
+  },
+};
+
+// ============================================================================
+// Экспорт конфигурации с учётом режима (development/production)
+// ============================================================================
+module.exports = (env, argv) => {
+  if (argv.mode === 'production') {
+    // Production настройки
+    config.resolve.alias.vue = 'vue/dist/vue.min.js';
+    config.devtool = 'eval-source-map';  // Быстрее для продакшен маппинга
+    // CleanRspackPlugin не нужен, так как output.clean: true
+  } else {
+    // Development настройки
+    config.mode = 'development';
+    config.devtool = 'cheap-module-source-map';
+    // Добавляем HTML плагины для генерации страниц из Pug
+    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
+  }
+  
+  return config;
+};
 
