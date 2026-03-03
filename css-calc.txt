@@ -1,15 +1,23 @@
-const NormalModule = require('webpack/lib/NormalModule');
-const BasicEffectRulePlugin = require('webpack/lib/rules/BasicEffectRulePlugin');
-const BasicMatcherRulePlugin = require('webpack/lib/rules/BasicMatcherRulePlugin');
-const UseEffectRulePlugin = require('webpack/lib/rules/UseEffectRulePlugin');
-const RuleSetCompiler = require('webpack/lib/rules/RuleSetCompiler');
-let objectMatcherRulePlugins = [];
-try {
-    const ObjectMatcherRulePlugin = require('webpack/lib/rules/ObjectMatcherRulePlugin');
-    objectMatcherRulePlugins.push(new ObjectMatcherRulePlugin('assert', 'assertions'), new ObjectMatcherRulePlugin('descriptionData'));
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const util_1 = require("./util");
+const NS = 'vue-loader';
+class Plugin {
+    apply(compiler) {
+        let Ctor;
+        if ((0, util_1.testWebpack5)(compiler)) {
+            // webpack5 and upper
+            Ctor = require('./pluginWebpack5').default;
+        }
+        else {
+            // webpack4 and lower
+            Ctor = require('./pluginWebpack4').default;
+        }
+        new Ctor().apply(compiler);
+    }
 }
-catch (e) {
-    const DescriptionDataMatcherRulePlugin = require('webpack/lib/rules/DescriptionDataMatcherRulePlugin');
+Plugin.NS = NS;
+exports.default = Plugin;
 
 
 
