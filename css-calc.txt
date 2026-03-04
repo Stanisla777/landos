@@ -31,7 +31,6 @@ const config = {
       cacheGroups: {
         defaultVendors: false,
         vendor: {
-          // ✅ Убрали vue из теста — алиас должен работать
           test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
           name: 'vendor-script',
           chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
@@ -47,7 +46,7 @@ const config = {
     rules: [
       {
         test: /\.vue$/,
-        use: [{
+        use: [{ 
           loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
         }]
       },
@@ -83,14 +82,6 @@ const config = {
   },
 
   plugins: [
-    // ✅ DefinePlugin для Vue 3 feature flags (ОБЯЗАТЕЛЬНО!)
-    // new rspack.DefinePlugin({
-    //   __VUE_OPTIONS_API__: JSON.stringify(true),
-    //   __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
-    //   __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
-    //   'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
-    // }),
-
     new rspack.CssExtractRspackPlugin({ filename: './css/[name].css' }),
     new rspack.CopyRspackPlugin({
       patterns: [
@@ -128,8 +119,8 @@ const config = {
 
   resolve: {
     alias: {
-      // ✅ ESM-сборка для bundlers (требует DefinePlugin выше!)
-      vue: 'vue/dist/vue.runtime.global.js'
+      // ✅ ОДИНАКОВАЯ сборка для dev и prod (runtime-only, ESM)
+      vue: 'vue/dist/vue.runtime.esm-bundler.js'
     },
     extensions: ['.js', '.vue', '.json']
   },
@@ -147,28 +138,26 @@ const config = {
 };
 
 module.exports = (env, argv) => {
-  // Создаём DefinePlugin с правильным NODE_ENV
+  // ✅ Создаём DefinePlugin с правильными значениями
   const definePlugin = new rspack.DefinePlugin({
-    __VUE_OPTIONS_API__: 'true',
-    __VUE_PROD_DEVTOOLS__: 'false',
-    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
-    'process.env.NODE_ENV': JSON.stringify(argv.mode === 'production' ? 'production' : 'development')
+    __VUE_OPTIONS_API__: JSON.stringify(true),
+    __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+    'process.env.NODE_ENV': JSON.stringify(argv.mode)
   });
 
   if (argv.mode === 'production') {
-    config.resolve.alias.vue = 'vue/dist/vue.global.prod.js';  // ← Меньше размер
+    // ✅ Production: ТОТ ЖЕ алиас, просто включаем минификацию
+    config.resolve.alias.vue = 'vue/dist/vue.runtime.esm-bundler.js';
     config.devtool = 'eval-source-map';
     config.optimization.minimize = true;
-    config.plugins.push(new rspack.DefinePlugin({ /* production флаги */ }));
   } else {
     config.mode = 'development';
     config.devtool = 'cheap-module-source-map';
   }
 
-  // Добавляем DefinePlugin в начало массива плагинов
+  // ✅ Добавляем DefinePlugin в начало массива плагинов
   config.plugins.unshift(definePlugin);
 
   return config;
 };
-
-
