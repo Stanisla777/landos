@@ -1,100 +1,19 @@
-bindingMeta: (descriptor.scriptSetup !== undefined && descriptor.scriptSetup !== null) 
-  ? descriptor.scriptSetup.bindings 
-  : undefined
-
-// loaders/vue-compiler-loader.js
-const { parse, compileTemplate, compileScript } = require('@vue/compiler-sfc');
-const path = require('path');
-
-module.exports = function vueCompilerLoader(source) {
-  const callback = this.async();
-  const { descriptor, errors } = parse(source, { 
-    filename: this.resourcePath 
-  });
-
-  if (errors && errors.length > 0) {
-    callback(new Error(errors[0].message));
-    return;
-  }
-
-  let output = '';
-
-  // === Script ===
-  if (descriptor.script || descriptor.scriptSetup) {
-    try {
-      const { content } = compileScript(descriptor, { 
-        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8)
-      });
-      output += content + '\n';
-    } catch (e) {
-      callback(new Error(`Script compilation error: ${e.message}`));
-      return;
-    }
-  } else {
-    output += 'export default {}\n';
-  }
-
-  // === Template ===
-  if (descriptor.template) {
-    try {
-      const { code } = compileTemplate({
-        source: descriptor.template.content,
-        filename: this.resourcePath,
-        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8),
-        compilerOptions: {
-          bindingMeta descriptor.scriptSetup?.bindings
-        }
-      });
-      output += code + '\n';
-    } catch (e) {
-      callback(new Error(`Template compilation error: ${e.message}`));
-      return;
-    }
-  }
-
-  // === Styles (просто возвращаем CSS для извлечения) ===
-  if (descriptor.styles.length > 0) {
-    const styles = descriptor.styles.map((style, index) => {
-      const scopedId = style.scoped 
-        ? `data-v-${require('crypto').createHash('md5').update(this.resourcePath + index).digest('hex').slice(0, 8)}` 
-        : '';
-      return `${scopedId ? `\n/* scoped: ${scopedId} */` : ''}\n${style.content}`;
-    }).join('\n');
-    
-    // Добавляем CSS как side-effect import для CssExtractRspackPlugin
-    output += `\nif (typeof __VUE_HMR_RUNTIME__ !== 'undefined') { __VUE_HMR_RUNTIME__.addStyle(${JSON.stringify(styles)}); }\n`;
-  }
-
-  callback(null, output);
-};
-
------------------------------
-
-// Было:
-// { test: /\.vue$/, loader: 'vue-loader' },
-
-// Стало:
-{
-  test: /\.vue$/,
-  use: [
-    {
-      loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
-    }
-  ]
-},
-
-------------------------------------------------
-
-# 1. Удалите старые зависимости
-npm uninstall vue-loader vue-template-compiler webpack webpack-cli unplugin-vue
-
-# 2. Установите новые
-npm install vue@^3.4.0 vuex@^4.0.0
-npm install -D @vue/compiler-sfc@^3.4.0 @rspack/core@^1.7.7 @rspack/cli@^1.7.7
-
-# 3. Очистите кэш и переустановите
-rm -rf node_modules package-lock.json
-npm cache clean --force
-npm install
+ERROR in ./src/js/general.js 2:1-32
+  × Cannot find module 'vue' for matched aliased key 'vue'
 
 
+ERROR in ./src/js/index.js 2:1-32
+  × Cannot find module 'vue' for matched aliased key 'vue'
+
+
+ERROR in ./src/js/lazy-instruction.js 2:1-32
+  × Cannot find module 'vue' for matched aliased key 'vue'
+
+Rspack compiled with 23 errors in 20.07 s
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (100%) emitting after emit
+ERROR in ./src/js/modules/TelegramBlock.vue 42:1-174
+  × Cannot find module 'vue' for matched aliased key 'vue'
+
+
+ERROR in ./src/js/modules/marathon-2024-test/development-tools/state.vue 2:1-22
+  × Cannot find module 'vue' for matched aliased key 'vue'
