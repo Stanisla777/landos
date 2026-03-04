@@ -1,171 +1,3 @@
-rmdir /s /q node_modules\.rspack 2>nul
-
-package.json
-{
-  "name": "start-webapck-template",
-  "version": "2.0.0",
-  "description": "Start template for generate css, js and html file",
-  "main": "src/index.js",
-  "scripts": {
-    "dev": "rspack build --mode development && node scripts/compile-pug.js && prettier --print-width=120 --parser html --write dist/*.html",
-    "build": "rspack build --mode production && node scripts/compile-pug.js",
-    "start": "rspack serve --mode development",
-    "lint": "eslint --ext .js, --ignore-path .gitignore ."
-  },
-  "devDependencies": {
-    "@babel/core": "^7.5.5",
-    "@rspack/cli": "^1.7.7",
-    "@rspack/core": "^1.7.7",
-    "@vue/compiler-sfc": "^3.4.0",
-    "babel-loader": "^8.0.6",
-    "clean-webpack-plugin": "^3.0.0",
-    "copy-webpack-plugin": "^5.0.4",
-    "css-loader": "^3.1.0",
-    "cssnano": "^4.1.10",
-    "eslint": "^6.8.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-loader": "^2.2.1",
-    "html-webpack-plugin": "^3.2.0",
-    "mini-css-extract-plugin": "^0.8.0",
-    "postcss-loader": "^3.0.0",
-    "prettier": "^1.18.2",
-    "pug": "^2.0.4",
-    "pug-loader": "^2.4.0",
-    "pug-plain-loader": "^1.1.0",
-    "sass-loader": "^7.1.0",
-    "source-map-loader": "^1.0.0",
-    "terser-webpack-plugin": "^1.4.5",
-    "vue-loader": "^17.4.0",
-    "webpack": "^4.38.0",
-    "webpack-bundle-analyzer": "^4.8.0",
-    "webpack-cli": "^3.3.6",
-    "webpack-dev-server": "^3.7.2"
-  },
-  "dependencies": {
-    "@fancyapps/ui": "^4.0.31",
-    "@vkontakte/superappkit": "^1.60.0",
-    "apexcharts": "3.54.1",
-    "autoprefixer": "^9.6.1",
-    "axios": "^0.21.4",
-    "axios-jsonp-pro": "^1.1.8",
-    "buffer-json": "^2.0.0",
-    "cache-loader": "^4.1.0",
-    "Datepicker.js": "^0.1.1",
-    "eslint-plugin-import": "^2.22.1",
-    "html2canvas": "1.3.3",
-    "imask": "^6.6.3",
-    "js-cookie": "^3.0.1",
-    "jspdf": "2.5.1",
-    "nouislider": "^14.6.3",
-    "nvm": "^0.0.4",
-    "pdfmake": "0.2.7",
-    "sass": "^1.80.4",
-    "scroll-behavior-polyfill": "^2.0.13",
-    "swiper": "^6.4.5",
-    "vanilla-calendar-pro": "^2.9.10",
-    "vue": "^3.4.0",
-    "vue-apexcharts": "1.6.2",
-    "vue-axios": "^3.2.2",
-    "vuex": "^4.0.0"
-  }
-}
-
-
-compile-pug
-/* eslint-disable */
-const { parse, compileTemplate, compileScript } = require('@vue/compiler-sfc');
-const path = require('path');
-
-module.exports = function vueCompilerLoader(source) {
-  const callback = this.async();
-  const { descriptor, errors } = parse(source, {
-    filename: this.resourcePath
-  });
-
-  if (errors && errors.length > 0) {
-    callback(new Error(errors[0].message));
-    return;
-  }
-
-  let output = '';
-
-  // === Script ===
-  if (descriptor.script || descriptor.scriptSetup) {
-    try {
-      const { content } = compileScript(descriptor, {
-        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8)
-      });
-      output += content + '\n';
-    } catch (e) {
-      callback(new Error(`Script compilation error: ${e.message}`));
-      return;
-    }
-  } else {
-    output += 'export default {}\n';
-  }
-
-  // === Template ===
-  if (descriptor.template) {
-    try {
-      const { code } = compileTemplate({
-        source: descriptor.template.content,
-        filename: this.resourcePath,
-        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8),
-        compilerOptions: {
-          bindingMeta: (descriptor.scriptSetup !== undefined && descriptor.scriptSetup !== null)
-            ? descriptor.scriptSetup.bindings
-            : undefined
-        }
-      });
-      output += code + '\n';
-    } catch (e) {
-      callback(new Error(`Template compilation error: ${e.message}`));
-      return;
-    }
-  }
-
-  // === Styles (просто возвращаем CSS для извлечения) ===
-  if (descriptor.styles.length > 0) {
-    const styles = descriptor.styles.map((style, index) => {
-      const scopedId = style.scoped
-        ? `data-v-${require('crypto').createHash('md5').update(this.resourcePath + index).digest('hex').slice(0, 8)}`
-        : '';
-      return `${scopedId ? `\n/* scoped: ${scopedId} */` : ''}\n${style.content}`;
-    }).join('\n');
-
-    // Добавляем CSS как side-effect import для CssExtractRspackPlugin
-    output += `\nif (typeof __VUE_HMR_RUNTIME__ !== 'undefined') { __VUE_HMR_RUNTIME__.addStyle(${JSON.stringify(styles)}); }\n`;
-  }
-
-  callback(null, output);
-};
----------------------
-
-compile-pug.js
-const fs = require('fs');
-const path = require('path');
-// eslint-disable-next-line import/no-extraneous-dependencies
-const pug = require('pug');
-
-const templateDir = path.resolve(__dirname, '../src/pug/views');
-const outputDir = path.resolve(__dirname, '../dist');
-
-if (!fs.existsSync(outputDir)) {
-  fs.mkdirSync(outputDir, { recursive: true });
-}
-
-const files = fs.readdirSync(templateDir).filter((f) => f.endsWith('.pug'));
-
-files.forEach((file) => {
-  const name = file.split('.')[0];
-  const templatePath = path.join(templateDir, file);
-  const html = pug.renderFile(templatePath);
-  fs.writeFileSync(path.join(outputDir, `${name}.html`), html);
-  console.log(` ${name}.html`);
-});
-
-rspack
-
 /* eslint-disable */
 const path = require('path');
 const fs = require('fs');
@@ -188,7 +20,7 @@ const config = {
   },
 
   experiments: {
-    css: false  // Отключаем нативный CSS Rspack для кастомного vue-лоадера
+    css: false
   },
 
   mode: 'production',
@@ -214,7 +46,9 @@ const config = {
     rules: [
       {
         test: /\.vue$/,
-        use: [{ loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js') }]
+        use: [{ 
+          loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
+        }]
       },
       {
         test: /\.(sass|scss)$/,
@@ -248,13 +82,6 @@ const config = {
   },
 
   plugins: [
-    // ✅ DefinePlugin для Vue 3 feature flags
-    new rspack.DefinePlugin({
-      __VUE_OPTIONS_API__: 'true',
-      __VUE_PROD_DEVTOOLS__: 'false',
-      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false'
-    }),
-
     new rspack.CssExtractRspackPlugin({ filename: './css/[name].css' }),
     new rspack.CopyRspackPlugin({
       patterns: [
@@ -292,7 +119,7 @@ const config = {
 
   resolve: {
     alias: {
-      // ✅ Vue 3: runtime-only build
+      // ✅ Vue 3: глобальная runtime-сборка (не требует feature flags)
       vue: 'vue/dist/vue.runtime.global.js'
     },
     extensions: ['.js', '.vue', '.json']
@@ -312,16 +139,13 @@ const config = {
 
 module.exports = (env, argv) => {
   if (argv.mode === 'production') {
-    // ✅ Production: тот же алиас, NODE_ENV будет 'production'
-    config.resolve.alias.vue = 'vue/dist/vue.runtime.esm-bundler.js';
+    // ✅ Production: ТОТ ЖЕ алиас, что и в dev!
+    config.resolve.alias.vue = 'vue/dist/vue.runtime.global.js';
     config.devtool = 'eval-source-map';
+    config.optimization.minimize = true;
   } else {
     config.mode = 'development';
     config.devtool = 'cheap-module-source-map';
   }
   return config;
 };
-
-
-
-
