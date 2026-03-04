@@ -1,3 +1,28 @@
- __VUE_OPTIONS_API__: 'true',
+module.exports = (env, argv) => {
+  if (argv.mode === 'production') {
+    // ✅ Production: тот же алиас + правильные флаги
+    config.resolve.alias.vue = 'vue/dist/vue.global.prod.js';  // или .js для dev
+    config.devtool = 'eval-source-map';
+    config.optimization.minimize = true;
+  } else {
+    config.mode = 'development';
+    config.devtool = 'cheap-module-source-map';
+  }
+  
+  // ✅ DefinePlugin должен быть внутри plugins массива
+  config.plugins.unshift(
+    new rspack.DefinePlugin({
+      __VUE_OPTIONS_API__: 'true',
+      __VUE_PROD_DEVTOOLS__: 'false',
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
+      'process.env.NODE_ENV': JSON.stringify(argv.mode === 'production' ? 'production' : 'development')
+    })
+  );
+  
+  return config;
+};
+
+__VUE_OPTIONS_API__: 'true',
     __VUE_PROD_DEVTOOLS__: 'false',
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false'
+
