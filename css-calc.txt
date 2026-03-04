@@ -1,11 +1,75 @@
- console.log('🔍 [VUE LOADER] Compiling:', this.resourcePath);
+// loaders/vue-compiler-loader.js
+const { parse, compileTemplate, compileScript } = require('@vue/compiler-sfc');
+const path = require('path');
 
-console.error('❌ [VUE LOADER] Parse errors:', errors);
+module.exports = function vueCompilerLoader(source) {
+  const callback = this.async();
+  
+  // 🔍 ОТЛАДКА 3: Логгируем путь к файлу
+  console.log('🔍 [VUE LOADER] Compiling:', this.resourcePath);
+  
+  const { descriptor, errors } = parse(source, { filename: this.resourcePath });
 
-console.log('🔍 [VUE LOADER] Generated import:', vueImport);
+  if (errors && errors.length > 0) {
+    console.error('❌ [VUE LOADER] Parse errors:', errors);
+    callback(new Error(errors[0].message));
+    return;
+  }
 
-console.error('❌ [VUE LOADER] Script error:', e.message);
+  // 🔍 ОТЛАДКА 4: Показываем, какой импорт генерируем
+  const vueImport = 'import { defineComponent } from "vue/dist/vue.runtime.global.js";';
+  console.log('🔍 [VUE LOADER] Generated import:', vueImport);
+  
+  let output = vueImport + '\n';
 
-console.error('❌ [VUE LOADER] Template error:', e.message);
+  // === Script ===
+  if (descriptor.script || descriptor.scriptSetup) {
+    try {
+      const { content } = compileScript(descriptor, { 
+        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8)
+      });
+      output += content + '\n';
+    } catch (e) {
+      console.error('❌ [VUE LOADER] Script error:', e.message);
+      callback(new Error(`Script compilation error: ${e.message}`));
+      return;
+    }
+  } else {
+    output += 'export default defineComponent({})\n';
+  }
 
-console.log('🔍 [VUE LOADER] Output preview:', output.substring(0, 200) + '...');
+  // === Template ===
+  if (descriptor.template) {
+    try {
+      const { code } = compileTemplate({
+        source: descriptor.template.content,
+        filename: this.resourcePath,
+        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8),
+        compilerOptions: {
+          bindingMeta: descriptor.scriptSetup ? descriptor.scriptSetup.bindings : undefined
+        }
+      });
+      output += code + '\n';
+    } catch (e) {
+      console.error('❌ [VUE LOADER] Template error:', e.message);
+      callback(new Error(`Template compilation error: ${e.message}`));
+      return;
+    }
+  }
+
+  // === Styles ===
+  if (descriptor.styles.length > 0) {
+    const styles = descriptor.styles.map((style, index) => {
+      const scopedId = style.scoped 
+        ? `data-v-${require('crypto').createHash('md5').update(this.resourcePath + index).digest('hex').slice(0, 8)}` 
+        : '';
+      return `${scopedId ? `\n/* scoped: ${scopedId} */` : ''}\n${style.content}`;
+    }).join('\n');
+    output += `\nif (typeof __VUE_HMR_RUNTIME__ !== 'undefined') { __VUE_HMR_RUNTIME__.addStyle(${JSON.stringify(styles)}); }\n`;
+  }
+
+  // 🔍 ОТЛАДКА 5: Показываем начало сгенерированного кода
+  console.log('🔍 [VUE LOADER] Output preview:', output.substring(0, 200) + '...');
+  
+  callback(null, output);
+};
