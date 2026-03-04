@@ -1,1 +1,47 @@
-https://domsite-d-sprosi.ahml1.ru/bitrix/admin/settings.php?lang=ru&mid=local.portal&mid_menu=1#authorize
+if (!empty($subscribeChannelQrImg) && !empty($subscribeChannelLink)):?>
+        <div id="telegram-block" v-cloak>
+            <telegram-block
+                qr='<?=$subscribeChannelQrImg?>'
+                mobilicon='<?=$subscribeChannelMobilIcon?>'
+                link='<?=$subscribeChannelLink?>'
+                description='<?=$subscribeChannelDescription?>'
+            ></telegram-block>
+        </div>
+    <?endif;?>
+
+Uncaught TypeError: Cannot set properties of null (setting '__vue_initialized')
+
+
+function initTelegramBlockIfNeeded() {
+    const el = document.getElementById('telegram-block');
+
+    // Защита 1: уже инициализирован
+    // eslint-disable-next-line no-underscore-dangle
+    if (el && el.__vue_initialized) {
+      return;
+    }
+
+    // Защита 2: уже содержит отрендеренный контент (article.telegram)
+    if (el && el.querySelector('article.telegram')) {
+      return;
+    }
+
+    // Защита 3: нет шаблона <telegram-block>
+    if (el && !el.querySelector('telegram-block')) {
+      return;
+    }
+
+    // Инициализируем
+    // eslint-disable-next-line no-new
+    new Vue({
+      el: '#telegram-block',
+      components: { 'telegram-block': TelegramBlock }
+    });
+    // eslint-disable-next-line no-underscore-dangle
+    el.__vue_initialized = true;
+  }
+
+  // Делаем доступной извне (для бэкенда)
+  window.initTelegramBlockIfNeeded = initTelegramBlockIfNeeded;
+  initTelegramBlockIfNeeded();
+
