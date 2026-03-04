@@ -1,39 +1,63 @@
-You are running a development build of Vue.                                             vue.runtime.global.js
-Make sure to use the production build (*.prod.js) when deploying for production.
+// loaders/vue-compiler-loader.js
+const { parse, compileTemplate, compileScript } = require('@vue/compiler-sfc');
+const path = require('path');
 
-bundle.js:1 Uncaught TypeError: (0 , i.createElementVNode) is not a function
-    at ./src/js/modules/TelegramBlock.vue (bundle.js:1:982)
-./src/js/modules/TelegramBlock.vue	@	bundle.js:1
+module.exports = function vueCompilerLoader(source) {
+  const callback = this.async();
+  
+  const { descriptor, errors } = parse(source, { filename: this.resourcePath });
 
+  if (errors && errors.length > 0) {
+    callback(new Error(errors[0].message));
+    return;
+  }
 
- methods: {
-                    hideBlock() {
-                        this.setCookie("telegram", !0, 1),
-                        this.active = !1
-                    },
-                    setCookie(e, t, s) {
-                        let i = new Date;
-                        i.setTime(i.getTime() + 24 * s * 36e5),
-                        document.cookie = `${e}=${t};path=/;expires=${i.toUTCString()}`
-                    },
-                    getCookie(e) {
-                        let t = document.cookie.match(`(^|;) ?${e}=([^;]*)(;|$)`);
-                        return t ? t[2] : null
-                    }
-                }
-            }
-              , o = {
-                key: 0,
-                class: "telegram"
-            }
-              , r = {
-                class: "telegram__popup"
-            }
-              , a = {
-                class: "telegram__popup-close"
-            }
-              , l = [(0,
-            i.createElementVNode)("path", {  вот тут ошибка!!!!!!!
-                "fill-rule": "evenodd",
-                "clip-rule": "evenodd",
-                d: "M4 4.00005C4.39053
+  // ✅ Импорт через 'vue' — алиас в конфиге разрешит его правильно
+  let output = 'import { defineComponent } from "vue";\n';
+
+  // === Script ===
+  if (descriptor.script || descriptor.scriptSetup) {
+    try {
+      const { content } = compileScript(descriptor, { 
+        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8)
+      });
+      output += content + '\n';
+    } catch (e) {
+      callback(new Error(`Script compilation error: ${e.message}`));
+      return;
+    }
+  } else {
+    output += 'export default defineComponent({})\n';
+  }
+
+  // === Template ===
+  if (descriptor.template) {
+    try {
+      const { code } = compileTemplate({
+        source: descriptor.template.content,
+        filename: this.resourcePath,
+        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8),
+        compilerOptions: {
+          bindingMeta: descriptor.scriptSetup ? descriptor.scriptSetup.bindings : undefined
+        }
+      });
+      output += code + '\n';
+    } catch (e) {
+      callback(new Error(`Template compilation error: ${e.message}`));
+      return;
+    }
+  }
+
+  // === Styles ===
+  if (descriptor.styles.length > 0) {
+    const styles = descriptor.styles.map((style, index) => {
+      const scopedId = style.scoped 
+        ? `data-v-${require('crypto').createHash('md5').update(this.resourcePath + index).digest('hex').slice(0, 8)}` 
+        : '';
+      return `${scopedId ? `\n/* scoped: ${scopedId} */` : ''}\n${style.content}`;
+    }).join('\n');
+    output += `\nif (typeof __VUE_HMR_RUNTIME__ !== 'undefined') { __VUE_HMR_RUNTIME__.addStyle(${JSON.stringify(styles)}); }\n`;
+  }
+
+  callback(null, output);
+};
