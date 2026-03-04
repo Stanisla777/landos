@@ -1,25 +1,26 @@
+Смотрите, этот rspack возвращает такую ошибку vue приложения
+Uncaught TypeError: (0 , i.createElementVNode) is not a function
+    at ./src/js/modules/TelegramBlock.vue (bundle.js:1:1008)
+    at s (vue.runtime.global.js:10922:1)
+    at vue.runtime.global.js:10922:1
+    at vue.runtime.global.js:10922:1
+    at vue.runtime.global.js:10922:1
+
+и если заглянуть внутрь vue.runtime.global.js:10922:1 то увидим 
+function initDev() {
+    {
+      {
+        console.info(
+          `You are running a development build of Vue.
+Make sure to use the production build (*.prod.js) when deploying for production.`
+        );
+      }
+может это важно, а вот сам код
+
 /* eslint-disable */
 const path = require('path');
 const fs = require('fs');
 const rspack = require('@rspack/core');
-
-function compilePugToHtml(templateDir, outputPath) {
-  try {
-    const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
-    const pug = require('pug');
-    templateFiles
-      .filter(item => item.endsWith('.pug'))
-      .forEach((item) => {
-        const name = item.split('.')[0];
-        const templatePath = path.resolve(__dirname, `${templateDir}/${item}`);
-        const htmlContent = pug.renderFile(templatePath);
-        fs.writeFileSync(path.resolve(__dirname, `${outputPath}/${name}.html`), htmlContent);
-        console.log(`✅ ${name}.html`);
-      });
-  } catch (e) {
-    console.warn('⚠️ Pug компиляция:', e.message);
-  }
-}
 
 const config = {
   entry: {
@@ -49,6 +50,7 @@ const config = {
       cacheGroups: {
         defaultVendors: false,
         vendor: {
+          // ✅ Убрали vue из теста — алиас должен работать
           test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
           name: 'vendor-script',
           chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
@@ -64,7 +66,9 @@ const config = {
     rules: [
       {
         test: /\.vue$/,
-        loader: 'vue-loader'
+        use: [{
+          loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
+        }]
       },
       {
         test: /\.(sass|scss)$/,
@@ -98,6 +102,14 @@ const config = {
   },
 
   plugins: [
+    // ✅ DefinePlugin для Vue 3 feature flags (ОБЯЗАТЕЛЬНО!)
+    // new rspack.DefinePlugin({
+    //   __VUE_OPTIONS_API__: JSON.stringify(true),
+    //   __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+    //   __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+    //   'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    // }),
+
     new rspack.CssExtractRspackPlugin({ filename: './css/[name].css' }),
     new rspack.CopyRspackPlugin({
       patterns: [
@@ -135,8 +147,8 @@ const config = {
 
   resolve: {
     alias: {
-      // ✅ Vue 3: глобальная сборка — работает без feature flags!
-      vue: 'vue/dist/vue.global.js'
+      // ✅ ESM-сборка для bundlers (требует DefinePlugin выше!)
+      vue: 'vue/dist/vue.runtime.global.js'
     },
     extensions: ['.js', '.vue', '.json']
   },
@@ -154,14 +166,26 @@ const config = {
 };
 
 module.exports = (env, argv) => {
+  // Создаём DefinePlugin с правильным NODE_ENV
+  const definePlugin = new rspack.DefinePlugin({
+    __VUE_OPTIONS_API__: 'true',
+    __VUE_PROD_DEVTOOLS__: 'false',
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
+    'process.env.NODE_ENV': JSON.stringify(argv.mode === 'production' ? 'production' : 'development')
+  });
+
   if (argv.mode === 'production') {
-    config.resolve.alias.vue = 'vue/dist/vue.global.prod.js';
+    config.resolve.alias.vue = 'vue/dist/vue.global.prod.js';  // ← Меньше размер
     config.devtool = 'eval-source-map';
     config.optimization.minimize = true;
+    config.plugins.push(new rspack.DefinePlugin({ /* production флаги */ }));
   } else {
     config.mode = 'development';
     config.devtool = 'cheap-module-source-map';
   }
+
+  // Добавляем DefinePlugin в начало массива плагинов
+  config.plugins.unshift(definePlugin);
+
   return config;
 };
-
