@@ -1,5 +1,231 @@
-Я сделал console.log('🔍 [VUE LOADER] Template code preview:', code.substring(0, 500)); как вы сказали вывелось следующее
-[VUE LOADER] Template code preview: import { createElementVNode as _createElementVNode, openBlock as _openBlock, createElementBlock as _createElementBlock, createCommentVNode as _createCommentVNode } from "vue"
+/* eslint-disable */
+const path = require('path');
+const fs = require('fs');
+const rspack = require('@rspack/core');
 
-В итоге, немножко запутался, что мне сейчас сделать
+const config = {
+  entry: {
+    all: ['./src/js/index.js'],
+    'general-style': ['./src/scss/general-style.scss'],
+    instruction: ['./src/scss/instruction.scss'],
+    'general-js': './src/js/general.js',
+    'instruction-js': './src/js/instruction.js'
+  },
+
+  output: {
+    filename: './js/[name].bundle.js',
+    publicPath: '/dist/',
+    clean: true,
+    path: path.resolve(__dirname, 'dist'),
+  },
+
+  experiments: {
+    css: false
+  },
+
+  mode: 'production',
+
+  optimization: {
+    minimize: true,
+    splitChunks: {
+      cacheGroups: {
+        defaultVendors: false,
+        vendor: {
+          // ✅ Убрали vue из теста — алиас должен работать
+          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+          name: 'vendor-script',
+          chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
+          enforce: true
+        }
+      }
+    }
+  },
+
+  performance: { hints: false },
+
+  module: {
+    rules: [
+      {
+        test: /\.vue$/,
+        use: [{ 
+          loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
+        }]
+      },
+      {
+        test: /\.(sass|scss)$/,
+        include: path.resolve(__dirname, 'src/scss'),
+        use: [
+          rspack.CssExtractRspackPlugin.loader,
+          { loader: 'css-loader', options: { sourceMap: true, url: false } },
+          {
+            loader: 'postcss-loader',
+            options: {
+              sourceMap: true,
+              postcssOptions: {
+                plugins: [require('cssnano')({ preset: ['default', { discardComments: { removeAll: true } }] })]
+              }
+            }
+          },
+          { loader: 'sass-loader', options: { sourceMap: true } }
+        ],
+        type: 'javascript/auto'
+      },
+      {
+        test: /\.pug$/,
+        oneOf: [
+          { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['pug-loader'] },
+          { use: ['pug-plain-loader'] }
+        ]
+      },
+      { test: /\.js$/, exclude: /node_modules/, use: { loader: 'babel-loader' } },
+      { test: /\.js$/, enforce: 'pre', use: ['source-map-loader'] }
+    ]
+  },
+
+  plugins: [
+    // ✅ DefinePlugin для Vue 3 feature flags (ОБЯЗАТЕЛЬНО!)
+    new rspack.DefinePlugin({
+      __VUE_OPTIONS_API__: JSON.stringify(true),
+      __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    }),
+    
+    new rspack.CssExtractRspackPlugin({ filename: './css/[name].css' }),
+    new rspack.CopyRspackPlugin({
+      patterns: [
+        { from: './src/fonts', to: './fonts' },
+        { from: './src/img', to: './img' }
+      ]
+    }),
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
+          const fs = require('fs');
+          const path = require('path');
+          const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
+          const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
+          if (fs.existsSync(mainPath)) {
+            fs.renameSync(mainPath, bundlePath);
+            console.log('✅ all.bundle.js → bundle.js');
+          }
+        });
+      }
+    },
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
+          const fs = require('fs');
+          const path = require('path');
+          ['general-style', 'instruction'].forEach((name) => {
+            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
+            if (fs.existsSync(jsPath)) fs.unlinkSync(jsPath);
+          });
+        });
+      }
+    }
+  ],
+
+  resolve: {
+    alias: {
+      // ✅ ESM-сборка для bundlers (требует DefinePlugin выше!)
+      vue: 'vue/dist/vue.runtime.esm-bundler.js'
+    },
+    extensions: ['.js', '.vue', '.json']
+  },
+
+  devtool: 'source-map',
+
+  devServer: {
+    port: 8080,
+    open: true,
+    hot: true,
+    static: { directory: path.join(__dirname, 'dist') },
+    historyApiFallback: true,
+    watchFiles: ['src/pug/**/*.pug', 'src/**/*'],
+  },
+};
+
+module.exports = (env, argv) => {
+  if (argv.mode === 'production') {
+    // ✅ Production: ТОТ ЖЕ алиас!
+    config.resolve.alias.vue = 'vue/dist/vue.runtime.esm-bundler.js';
+    config.devtool = 'eval-source-map';
+    config.optimization.minimize = true;
+  } else {
+    config.mode = 'development';
+    config.devtool = 'cheap-module-source-map';
+  }
+  return config;
+};
+
+-------------------------------
+
+// loaders/vue-compiler-loader.js
+const { parse, compileTemplate, compileScript } = require('@vue/compiler-sfc');
+const path = require('path');
+
+module.exports = function vueCompilerLoader(source) {
+  const callback = this.async();
+  
+  console.log('🔍 [VUE LOADER] Compiling:', this.resourcePath);
+  
+  const { descriptor, errors } = parse(source, { filename: this.resourcePath });
+
+  if (errors && errors.length > 0) {
+    callback(new Error(errors[0].message));
+    return;
+  }
+
+  // ✅ Импорт через 'vue' — алиас разрешит его правильно
+  let output = 'import { defineComponent } from "vue";\n';
+
+  // === Script ===
+  if (descriptor.script || descriptor.scriptSetup) {
+    try {
+      const { content } = compileScript(descriptor, { 
+        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8)
+      });
+      output += content + '\n';
+    } catch (e) {
+      callback(new Error(`Script compilation error: ${e.message}`));
+      return;
+    }
+  } else {
+    output += 'export default defineComponent({})\n';
+  }
+
+  // === Template ===
+  if (descriptor.template) {
+    try {
+      const { code } = compileTemplate({
+        source: descriptor.template.content,
+        filename: this.resourcePath,
+        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8),
+        compilerOptions: {
+          bindingMeta: descriptor.scriptSetup ? descriptor.scriptSetup.bindings : undefined
+        }
+      });
+      console.log('🔍 [VUE LOADER] Template code preview:', code.substring(0, 500));
+      output += code + '\n';
+    } catch (e) {
+      callback(new Error(`Template compilation error: ${e.message}`));
+      return;
+    }
+  }
+
+  // === Styles ===
+  if (descriptor.styles.length > 0) {
+    const styles = descriptor.styles.map((style, index) => {
+      const scopedId = style.scoped 
+        ? `data-v-${require('crypto').createHash('md5').update(this.resourcePath + index).digest('hex').slice(0, 8)}` 
+        : '';
+      return `${scopedId ? `\n/* scoped: ${scopedId} */` : ''}\n${style.content}`;
+    }).join('\n');
+    output += `\nif (typeof __VUE_HMR_RUNTIME__ !== 'undefined') { __VUE_HMR_RUNTIME__.addStyle(${JSON.stringify(styles)}); }\n`;
+  }
+
+  callback(null, output);
+};
+
 
