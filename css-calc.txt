@@ -1,231 +1,1001 @@
-/* eslint-disable */
-const path = require('path');
-const fs = require('fs');
-const rspack = require('@rspack/core');
+Ошибка осталась vue приложения, терминал такой
+C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf>npm run start
+(node:97612) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
 
-const config = {
-  entry: {
-    all: ['./src/js/index.js'],
-    'general-style': ['./src/scss/general-style.scss'],
-    instruction: ['./src/scss/instruction.scss'],
-    'general-js': './src/js/general.js',
-    'instruction-js': './src/js/instruction.js'
-  },
+> start-webapck-template@2.0.0 start
+> rspack serve --mode development
 
-  output: {
-    filename: './js/[name].bundle.js',
-    publicPath: '/dist/',
-    clean: true,
-    path: path.resolve(__dirname, 'dist'),
-  },
+<i> [webpack-dev-server] Project is running at:
+<i> [webpack-dev-server] Loopback: http://localhost:8080/, http://[::1]:8080/
+<i> [webpack-dev-server] On Your Network (IPv4): http://10.209.46.11:8080/
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (10%) make
+<i> [webpack-dev-server] Content not from webpack is served from 'C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\dist' directory
+<i> [webpack-dev-server] 404s will fallback to '/index.html'
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (10%) building C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\css-loader\dist\cjs.js??ruleSet[1].rules[1].use[1]!C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\postcss
+Deprecation Warning: The legacy JS API is deprecated and will be removed in Dart Sass 2.0.0.
 
-  experiments: {
-    css: false
-  },
+More info: https://sass-lang.com/d/legacy-js-api
 
-  mode: 'production',
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
 
-  optimization: {
-    minimize: true,
-    splitChunks: {
-      cacheGroups: {
-        defaultVendors: false,
-        vendor: {
-          // ✅ Убрали vue из теста — алиас должен работать
-          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
-          name: 'vendor-script',
-          chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
-          enforce: true
-        }
-      }
-    }
-  },
+More info and automated migrator: https://sass-lang.com/d/import
 
-  performance: { hints: false },
+  ╷
+1 │ @import "modules/reset";
+  │         ^^^^^^^^^^^^^^^
+  ╵
+    stdin 1:9  root stylesheet
 
-  module: {
-    rules: [
-      {
-        test: /\.vue$/,
-        use: [{ 
-          loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
-        }]
-      },
-      {
-        test: /\.(sass|scss)$/,
-        include: path.resolve(__dirname, 'src/scss'),
-        use: [
-          rspack.CssExtractRspackPlugin.loader,
-          { loader: 'css-loader', options: { sourceMap: true, url: false } },
-          {
-            loader: 'postcss-loader',
-            options: {
-              sourceMap: true,
-              postcssOptions: {
-                plugins: [require('cssnano')({ preset: ['default', { discardComments: { removeAll: true } }] })]
-              }
-            }
-          },
-          { loader: 'sass-loader', options: { sourceMap: true } }
-        ],
-        type: 'javascript/auto'
-      },
-      {
-        test: /\.pug$/,
-        oneOf: [
-          { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['pug-loader'] },
-          { use: ['pug-plain-loader'] }
-        ]
-      },
-      { test: /\.js$/, exclude: /node_modules/, use: { loader: 'babel-loader' } },
-      { test: /\.js$/, enforce: 'pre', use: ['source-map-loader'] }
-    ]
-  },
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
 
-  plugins: [
-    // ✅ DefinePlugin для Vue 3 feature flags (ОБЯЗАТЕЛЬНО!)
-    new rspack.DefinePlugin({
-      __VUE_OPTIONS_API__: JSON.stringify(true),
-      __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
-      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
-    }),
-    
-    new rspack.CssExtractRspackPlugin({ filename: './css/[name].css' }),
-    new rspack.CopyRspackPlugin({
-      patterns: [
-        { from: './src/fonts', to: './fonts' },
-        { from: './src/img', to: './img' }
-      ]
-    }),
-    {
-      apply: (compiler) => {
-        compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
-          const fs = require('fs');
-          const path = require('path');
-          const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
-          const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
-          if (fs.existsSync(mainPath)) {
-            fs.renameSync(mainPath, bundlePath);
-            console.log('✅ all.bundle.js → bundle.js');
-          }
-        });
-      }
-    },
-    {
-      apply: (compiler) => {
-        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
-          const fs = require('fs');
-          const path = require('path');
-          ['general-style', 'instruction'].forEach((name) => {
-            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
-            if (fs.existsSync(jsPath)) fs.unlinkSync(jsPath);
-          });
-        });
-      }
-    }
-  ],
+More info and automated migrator: https://sass-lang.com/d/import
 
-  resolve: {
-    alias: {
-      // ✅ ESM-сборка для bundlers (требует DefinePlugin выше!)
-      vue: 'vue/dist/vue.runtime.esm-bundler.js'
-    },
-    extensions: ['.js', '.vue', '.json']
-  },
+  ╷
+2 │ @import "mixins/index";
+  │         ^^^^^^^^^^^^^^
+  ╵
+    stdin 2:9  root stylesheet
 
-  devtool: 'source-map',
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
 
-  devServer: {
-    port: 8080,
-    open: true,
-    hot: true,
-    static: { directory: path.join(__dirname, 'dist') },
-    historyApiFallback: true,
-    watchFiles: ['src/pug/**/*.pug', 'src/**/*'],
-  },
-};
+More info and automated migrator: https://sass-lang.com/d/import
 
-module.exports = (env, argv) => {
-  if (argv.mode === 'production') {
-    // ✅ Production: ТОТ ЖЕ алиас!
-    config.resolve.alias.vue = 'vue/dist/vue.runtime.esm-bundler.js';
-    config.devtool = 'eval-source-map';
-    config.optimization.minimize = true;
-  } else {
-    config.mode = 'development';
-    config.devtool = 'cheap-module-source-map';
-  }
-  return config;
-};
+  ╷
+3 │ @import "var/index";
+  │         ^^^^^^^^^^^
+  ╵
+    stdin 3:9  root stylesheet
 
--------------------------------
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
 
-// loaders/vue-compiler-loader.js
-const { parse, compileTemplate, compileScript } = require('@vue/compiler-sfc');
-const path = require('path');
+More info and automated migrator: https://sass-lang.com/d/import
 
-module.exports = function vueCompilerLoader(source) {
-  const callback = this.async();
-  
-  console.log('🔍 [VUE LOADER] Compiling:', this.resourcePath);
-  
-  const { descriptor, errors } = parse(source, { filename: this.resourcePath });
+  ╷
+4 │ @import "base/base";
+  │         ^^^^^^^^^^^
+  ╵
+    stdin 4:9  root stylesheet
 
-  if (errors && errors.length > 0) {
-    callback(new Error(errors[0].message));
-    return;
-  }
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
 
-  // ✅ Импорт через 'vue' — алиас разрешит его правильно
-  let output = 'import { defineComponent } from "vue";\n';
+More info and automated migrator: https://sass-lang.com/d/import
 
-  // === Script ===
-  if (descriptor.script || descriptor.scriptSetup) {
-    try {
-      const { content } = compileScript(descriptor, { 
-        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8)
-      });
-      output += content + '\n';
-    } catch (e) {
-      callback(new Error(`Script compilation error: ${e.message}`));
-      return;
-    }
-  } else {
-    output += 'export default defineComponent({})\n';
-  }
+  ╷
+5 │ @import "modules/index";
+  │         ^^^^^^^^^^^^^^^
+  ╵
+    stdin 5:9  root stylesheet
 
-  // === Template ===
-  if (descriptor.template) {
-    try {
-      const { code } = compileTemplate({
-        source: descriptor.template.content,
-        filename: this.resourcePath,
-        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8),
-        compilerOptions: {
-          bindingMeta: descriptor.scriptSetup ? descriptor.scriptSetup.bindings : undefined
-        }
-      });
-      console.log('🔍 [VUE LOADER] Template code preview:', code.substring(0, 500));
-      output += code + '\n';
-    } catch (e) {
-      callback(new Error(`Template compilation error: ${e.message}`));
-      return;
-    }
-  }
+Deprecation Warning: The legacy JS API is deprecated and will be removed in Dart Sass 2.0.0.
 
-  // === Styles ===
-  if (descriptor.styles.length > 0) {
-    const styles = descriptor.styles.map((style, index) => {
-      const scopedId = style.scoped 
-        ? `data-v-${require('crypto').createHash('md5').update(this.resourcePath + index).digest('hex').slice(0, 8)}` 
-        : '';
-      return `${scopedId ? `\n/* scoped: ${scopedId} */` : ''}\n${style.content}`;
-    }).join('\n');
-    output += `\nif (typeof __VUE_HMR_RUNTIME__ !== 'undefined') { __VUE_HMR_RUNTIME__.addStyle(${JSON.stringify(styles)}); }\n`;
-  }
+More info: https://sass-lang.com/d/legacy-js-api
 
-  callback(null, output);
-};
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
 
+More info and automated migrator: https://sass-lang.com/d/import
 
+  ╷
+1 │ @import "mixins/index";
+  │         ^^^^^^^^^^^^^^
+  ╵
+    stdin 1:9  root stylesheet
+
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+2 │ @import "var/index";
+  │         ^^^^^^^^^^^
+  ╵
+    stdin 2:9  root stylesheet
+
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+3 │ @import "components/content";
+  │         ^^^^^^^^^^^^^^^^^^^^
+  ╵
+    stdin 3:9  root stylesheet
+
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+4 │ @import "components/breadcrumbs-new";
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    stdin 4:9  root stylesheet
+
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+5 │ @import "components/redesign-site/insruction/insruction";
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    stdin 5:9  root stylesheet
+
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (48%) building C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\css-loader\dist\cjs.js??ruleSet[1].rules[1].use[1]!C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\postcss
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+8 │ $black-light:               lighten(#000, 25%) !default;
+  │                             ^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\var\_color.scss 8:29  @import
+    src\scss\var\_index.scss 1:9   @import
+    stdin 2:9                      root stylesheet
+
+Deprecation Warning: lighten() is deprecated. Suggestions:
+
+color.scale($color, $lightness: 25%)
+color.adjust($color, $lightness: 25%)
+
+More info: https://sass-lang.com/d/color-functions
+
+  ╷
+8 │ $black-light:               lighten(#000, 25%) !default;
+  │                             ^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\var\_color.scss 8:29  @import
+    src\scss\var\_index.scss 1:9   @import
+    stdin 2:9                      root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+8 │ $black-light:               lighten(#000, 25%) !default;
+  │                             ^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\var\_color.scss 8:29  @import
+    src\scss\var\_index.scss 1:9   @import
+    stdin 3:9                      root stylesheet
+
+Deprecation Warning: lighten() is deprecated. Suggestions:
+
+color.scale($color, $lightness: 25%)
+color.adjust($color, $lightness: 25%)
+
+More info: https://sass-lang.com/d/color-functions
+
+  ╷
+8 │ $black-light:               lighten(#000, 25%) !default;
+  │                             ^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\var\_color.scss 8:29  @import
+    src\scss\var\_index.scss 1:9   @import
+    stdin 3:9                      root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+10 │ $white-darken:                darken($white, 35%);
+   │                               ^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 10:19  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 2:9                       root stylesheet
+
+Deprecation Warning: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -35%)
+color.adjust($color, $lightness: -35%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+10 │ $white-darken:                darken($white, 35%);
+   │                               ^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 10:19  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 2:9                       root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+10 │ $white-darken:                darken($white, 35%);
+   │                               ^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 10:19  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 3:9                       root stylesheet
+
+Deprecation Warning: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -35%)
+color.adjust($color, $lightness: -35%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+10 │ $white-darken:                darken($white, 35%);
+   │                               ^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 10:19  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 3:9                       root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+60 │ $color-link-hover:          darken($color-text-new, 10%) !default;
+   │                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 60:29  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 2:9                       root stylesheet
+
+Deprecation Warning: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -66.2337662338%)
+color.adjust($color, $lightness: -10%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+60 │ $color-link-hover:          darken($color-text-new, 10%) !default;
+   │                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 60:29  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 2:9                       root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+60 │ $color-link-hover:          darken($color-text-new, 10%) !default;
+   │                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 60:29  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 3:9                       root stylesheet
+
+Deprecation Warning: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -66.2337662338%)
+color.adjust($color, $lightness: -10%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+60 │ $color-link-hover:          darken($color-text-new, 10%) !default;
+   │                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 60:29  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 3:9                       root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+11 │ $btn-default-border:             darken($color-accent, 1%) !default;
+   │                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_vars.scss 11:34  @import
+    src\scss\var\_index.scss 3:9   @import
+    stdin 2:9                      root stylesheet
+
+Deprecation Warning: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -2%)
+color.adjust($color, $lightness: -1%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+11 │ $btn-default-border:             darken($color-accent, 1%) !default;
+   │                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_vars.scss 11:34  @import
+    src\scss\var\_index.scss 3:9   @import
+    stdin 2:9                      root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+11 │ $btn-default-border:             darken($color-accent, 1%) !default;
+   │                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_vars.scss 11:34  @import
+    src\scss\var\_index.scss 3:9   @import
+    stdin 3:9                      root stylesheet
+
+Deprecation Warning: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -2%)
+color.adjust($color, $lightness: -1%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+11 │ $btn-default-border:             darken($color-accent, 1%) !default;
+   │                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_vars.scss 11:34  @import
+    src\scss\var\_index.scss 3:9   @import
+    stdin 3:9                      root stylesheet
+
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (52%) building C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\source-map-loader\dist\cjs.js!C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@vue\runtime-dom\dist\runtim
+Deprecation Warning: The legacy JS API is deprecated and will be removed in Dart Sass 2.0.0.
+
+More info: https://sass-lang.com/d/legacy-js-api
+
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+3 │ @import "modules/reset";
+  │         ^^^^^^^^^^^^^^^
+  ╵
+    stdin 3:9  root stylesheet
+
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+4 │ @import "mixins/index";
+  │         ^^^^^^^^^^^^^^
+  ╵
+    stdin 4:9  root stylesheet
+
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+5 │ @import "var/index";
+  │         ^^^^^^^^^^^
+  ╵
+    stdin 5:9  root stylesheet
+
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+6 │ @import "base/base";
+  │         ^^^^^^^^^^^
+  ╵
+    stdin 6:9  root stylesheet
+
+Deprecation Warning: Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+7 │ @import "modules/index";
+  │         ^^^^^^^^^^^^^^^
+  ╵
+    stdin 7:9  root stylesheet
+
+🔍 [VUE LOADER] Compiling: C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\src\js\modules\TelegramBlock.vue
+🔍 [VUE LOADER] Template code preview: import { createElementVNode as _createElementVNode, openBlock as _openBlock, createElementBlock as _createElementBlock, createCommentVNode as _createCommentVNode } from "vue"
+
+const _hoisted_1 = {
+  key: 0,
+  class: "telegram"
+}
+const _hoisted_2 = { class: "telegram__popup" }
+const _hoisted_3 = { class: "telegram__popup-close" }
+const _hoisted_4 = /*#__PURE__*/_createElementVNode("path", {
+  "fill-rule": "evenodd",
+  "clip-rule": "evenodd",
+  d: "M4 4.00005C4.39053 3.60952 5.02369 3.60952 5.4142
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (59%) building C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\source-map-loader\dist\cjs.js!C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\swiper\esm\components\core\c
+<i> [webpack-dev-middleware] wait until bundle finished: /
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+   ┌──> src\scss\components\_content.scss
+122│     margin-top: 1.25rem;
+   │     ^^^^^^^^^^^^^^^^^^^ declaration
+   ╵
+   ┌──> src\scss\mixins\_media-mixin.scss
+14 │         @media only screen and (max-width: $mobile) { @content; }
+   │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ nested rule
+   ╵
+    src\scss\components\_content.scss 122:5  @import
+    stdin 3:9                                root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+  ┌──> src\scss\components\_content.scss
+235│         font-family: $ff-medium;
+  │         ^^^^^^^^^^^^^^^^^^^^^^^ declaration
+  ╵
+  ┌──> src\scss\mixins\_media-mixin.scss
+8 │         @media only screen and (max-width: $small) { @content; }
+  │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ nested rule
+  ╵
+    src\scss\components\_content.scss 235:3  @import
+    stdin 3:9                                root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+  ┌──> src\scss\components\_content.scss
+236│         font-size: 1.125rem;//18px
+  │         ^^^^^^^^^^^^^^^^^^^ declaration
+  ╵
+  ┌──> src\scss\mixins\_media-mixin.scss
+8 │         @media only screen and (max-width: $small) { @content; }
+  │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ nested rule
+  ╵
+    src\scss\components\_content.scss 236:3  @import
+    stdin 3:9                                root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+  ┌──> src\scss\components\_content.scss
+237│         line-height: 1.44;
+  │         ^^^^^^^^^^^^^^^^^ declaration
+  ╵
+  ┌──> src\scss\mixins\_media-mixin.scss
+8 │         @media only screen and (max-width: $small) { @content; }
+  │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ nested rule
+  ╵
+    src\scss\components\_content.scss 237:3  @import
+    stdin 3:9                                root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+8 │ $black-light:               lighten(#000, 25%) !default;
+  │                             ^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\var\_color.scss 8:29  @import
+    src\scss\var\_index.scss 1:9   @import
+    stdin 5:9                      root stylesheet
+
+Deprecation Warning: lighten() is deprecated. Suggestions:
+
+color.scale($color, $lightness: 25%)
+color.adjust($color, $lightness: 25%)
+
+More info: https://sass-lang.com/d/color-functions
+
+  ╷
+8 │ $black-light:               lighten(#000, 25%) !default;
+  │                             ^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\var\_color.scss 8:29  @import
+    src\scss\var\_index.scss 1:9   @import
+    stdin 5:9                      root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+10 │ $white-darken:                darken($white, 35%);
+   │                               ^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 10:19  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 5:9                       root stylesheet
+
+Deprecation Warning: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -35%)
+color.adjust($color, $lightness: -35%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+10 │ $white-darken:                darken($white, 35%);
+   │                               ^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 10:19  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 5:9                       root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+60 │ $color-link-hover:          darken($color-text-new, 10%) !default;
+   │                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 60:29  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 5:9                       root stylesheet
+
+Deprecation Warning: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -66.2337662338%)
+color.adjust($color, $lightness: -10%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+60 │ $color-link-hover:          darken($color-text-new, 10%) !default;
+   │                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_color.scss 60:29  @import
+    src\scss\var\_index.scss 1:9    @import
+    stdin 5:9                       root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.adjust instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+   ╷
+11 │ $btn-default-border:             darken($color-accent, 1%) !default;
+   │                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_vars.scss 11:34  @import
+    src\scss\var\_index.scss 3:9   @import
+    stdin 5:9                      root stylesheet
+
+Deprecation Warning: darken() is deprecated. Suggestions:
+
+color.scale($color, $lightness: -2%)
+color.adjust($color, $lightness: -1%)
+
+More info: https://sass-lang.com/d/color-functions
+
+   ╷
+11 │ $btn-default-border:             darken($color-accent, 1%) !default;
+   │                                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\var\_vars.scss 11:34  @import
+    src\scss\var\_index.scss 3:9   @import
+    stdin 5:9                      root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+    ╷
+186 │ ┌       @media screen and (min-width: 1080px){
+187 │ │         min-height: 496px;
+188 │ │         &:before{
+189 │ │           display: none;
+190 │ │         }
+191 │ │       }
+    │ └─── nested rule
+192 │         width: 100%;
+    │         ^^^^^^^^^^^ declaration
+    ╵
+    src\scss\components\redesign-site\insruction\_insruction.scss 192:7  @import
+    stdin 5:9                                                            root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+    ╷
+235 │ ┌     @media screen and (min-width: 585px){
+236 │ │       height: 48px;
+237 │ │       display: flex;
+238 │ │       justify-content: center;
+239 │ │       align-items: center;
+240 │ │     }
+    │ └─── nested rule
+241 │       cursor:pointer;
+    │       ^^^^^^^^^^^^^^ declaration
+    ╵
+    src\scss\components\ui\_form.scss 241:5  @import
+    src\scss\components\ui\index.scss 14:9   @import
+    src\scss\components\index.scss 1:9       @import
+    stdin 8:9                                root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+    ╷
+235 │ ┌     @media screen and (min-width: 585px){
+236 │ │       height: 48px;
+237 │ │       display: flex;
+238 │ │       justify-content: center;
+239 │ │       align-items: center;
+240 │ │     }
+    │ └─── nested rule
+... │
+242 │       text-align: center;
+    │       ^^^^^^^^^^^^^^^^^^ declaration
+    ╵
+    src\scss\components\ui\_form.scss 242:5  @import
+    src\scss\components\ui\index.scss 14:9   @import
+    src\scss\components\index.scss 1:9       @import
+    stdin 8:9                                root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+    ╷
+235 │ ┌     @media screen and (min-width: 585px){
+236 │ │       height: 48px;
+237 │ │       display: flex;
+238 │ │       justify-content: center;
+239 │ │       align-items: center;
+240 │ │     }
+    │ └─── nested rule
+... │
+243 │       font-size: 16px;
+    │       ^^^^^^^^^^^^^^^ declaration
+    ╵
+    src\scss\components\ui\_form.scss 243:5  @import
+    src\scss\components\ui\index.scss 14:9   @import
+    src\scss\components\index.scss 1:9       @import
+    stdin 8:9                                root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+    ╷
+235 │ ┌     @media screen and (min-width: 585px){
+236 │ │       height: 48px;
+237 │ │       display: flex;
+238 │ │       justify-content: center;
+239 │ │       align-items: center;
+240 │ │     }
+    │ └─── nested rule
+... │
+244 │       line-height: 24px;
+    │       ^^^^^^^^^^^^^^^^^ declaration
+    ╵
+    src\scss\components\ui\_form.scss 244:5  @import
+    src\scss\components\ui\index.scss 14:9   @import
+    src\scss\components\index.scss 1:9       @import
+    stdin 8:9                                root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+    ╷
+235 │ ┌     @media screen and (min-width: 585px){
+236 │ │       height: 48px;
+237 │ │       display: flex;
+238 │ │       justify-content: center;
+239 │ │       align-items: center;
+240 │ │     }
+    │ └─── nested rule
+... │
+245 │       color:#999;
+    │       ^^^^^^^^^^ declaration
+    ╵
+    src\scss\components\ui\_form.scss 245:5  @import
+    src\scss\components\ui\index.scss 14:9   @import
+    src\scss\components\index.scss 1:9       @import
+    stdin 8:9                                root stylesheet
+
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use map.has-key instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+3 │     @if map-has-key($valueMap, $key) {
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    node_modules\@fancyapps\ui\src\Fancybox\scss\_mixins.scss 3:9  fancybox-breakpoint()
+    node_modules\@fancyapps\ui\src\Fancybox\scss\base.scss 57:3    @import
+    node_modules\@fancyapps\ui\src\Fancybox\Fancybox.scss 6:9      @import
+    src\scss\components\ui\_popup-gallery.scss 1:9                 @import
+    src\scss\components\ui\index.scss 20:9                         @import
+    src\scss\components\index.scss 1:9                             @import
+    stdin 8:9                                                      root stylesheet
+
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div($fontSize, $baseFontSize) or calc($fontSize / $baseFontSize)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
+  ╷
+6 │   @return $fontSize / $baseFontSize;
+  │           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\components\comments\form\_form.scss 6:11   calculateFontSizeToRem()
+    src\scss\components\comments\form\_form.scss 13:11  cdr()
+    src\scss\components\comments\form\_form.scss 16:14  @import
+    src\scss\components\index.scss 114:9                @import
+    stdin 8:9                                           root stylesheet
+
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div($fontSize, $baseFontSize) or calc($fontSize / $baseFontSize)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
+  ╷
+6 │   @return $fontSize / $baseFontSize;
+  │           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\components\comments\_comments.scss 6:11   calculateFontSizeToRem()
+    src\scss\components\comments\_comments.scss 13:11  cdr()
+    src\scss\components\comments\_comments.scss 16:14  @import
+    src\scss\components\index.scss 116:9               @import
+    stdin 8:9                                          root stylesheet
+
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div(random(2 * $windNoise * 10), 10) or calc(random(2 * $windNoise * 10) / 10)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
+   ╷
+50 │         $deltaLeft: random(2 * $windNoise * 10) / 10 - $windNoise + $windSpeed;
+   │                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\components\snowfall\snowfall.scss 50:15  @import
+    src\scss\components\index.scss 118:9              @import
+    stdin 8:9                                         root stylesheet
+
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div(random(2 * $sizeNoise * 10), 10) or calc(random(2 * $sizeNoise * 10) / 10)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
+   ╷
+51 │         $scale: 1 + (random(2 * $sizeNoise * 10) / 10 - $sizeNoise) / 100;
+   │                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\components\snowfall\snowfall.scss 51:16  @import
+    src\scss\components\index.scss 118:9              @import
+    stdin 8:9                                         root stylesheet
+
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div(random(2 * $sizeNoise * 10) / 10 - $sizeNoise, 100) or calc((random(2 * $sizeNoise * 10) / 10 - $sizeNoise) / 100)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
+   ╷
+51 │         $scale: 1 + (random(2 * $sizeNoise * 10) / 10 - $sizeNoise) / 100;
+   │                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ╵
+    src\scss\components\snowfall\snowfall.scss 51:15  @import
+    src\scss\components\index.scss 118:9              @import
+    stdin 8:9                                         root stylesheet
+
+Warning: 702 repetitive deprecation warnings omitted.
+
+You did not set any plugins, parser, or stringifier. Right now, PostCSS does nothing. Pick plugins for your case on https://www.postcss.parts/ and use them in postcss.config.js.
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (64%) building C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\cssExtractLoader.js!C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\css-loader\dist\cjs.
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+  ┌──> src\scss\components\_modal.scss
+76│     right: 1.5rem; //24px
+  │     ^^^^^^^^^^^^^ declaration
+  ╵
+  ┌──> src\scss\mixins\_media-mixin.scss
+8 │         @media only screen and (max-width: $small) { @content; }
+  │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ nested rule
+  ╵
+    src\scss\components\_modal.scss 76:5  @import
+    stdin 18:9                            root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+  ┌──> src\scss\components\_modal.scss
+76│     right: 1.5rem; //24px
+  │     ^^^^^^^^^^^^^ declaration
+  ╵
+  ┌──> src\scss\mixins\_media-mixin.scss
+8 │         @media only screen and (max-width: $small) { @content; }
+  │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ nested rule
+  ╵
+    src\scss\components\_modal.scss 76:5  @import
+    stdin 18:9                            root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+   ┌──> src\scss\components\_modal.scss
+76 │     right: 1.5rem; //24px
+   │     ^^^^^^^^^^^^^ declaration
+   ╵
+   ┌──> src\scss\mixins\_media-mixin.scss
+14 │         @media only screen and (max-width: $mobile) { @content; }
+   │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ nested rule
+   ╵
+    src\scss\components\_modal.scss 76:5  @import
+    stdin 18:9                            root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+  ┌──> src\scss\components\_modal.scss
+76│     right: 1.5rem; //24px
+  │     ^^^^^^^^^^^^^ declaration
+  ╵
+  ┌──> src\scss\mixins\_media-mixin.scss
+8 │         @media only screen and (max-width: $small) { @content; }
+  │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ nested rule
+  ╵
+    src\scss\components\_modal.scss 76:5  @import
+    stdin 18:9                            root stylesheet
+
+Deprecation Warning: Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+  ┌──> src\scss\components\_modal.scss
+77│     padding: 0;
+  │     ^^^^^^^^^^ declaration
+  ╵
+  ┌──> src\scss\mixins\_media-mixin.scss
+8 │         @media only screen and (max-width: $small) { @content; }
+  │         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ nested rule
+  ╵
+    src\scss\components\_modal.scss 77:5  @import
+    stdin 18:9                            root stylesheet
+
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div($fontSize, $baseFontSize) or calc($fontSize / $baseFontSize)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
+  ╷
+6 │   @return $fontSize / $baseFontSize;
+  │           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\components\comments\form\_form.scss 6:11   calculateFontSizeToRem()
+    src\scss\components\comments\form\_form.scss 13:11  cdr()
+    src\scss\components\comments\form\_form.scss 16:14  @import
+    stdin 16:9                                          root stylesheet
+
+Deprecation Warning: Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+
+Recommendation: math.div($fontSize, $baseFontSize) or calc($fontSize / $baseFontSize)
+
+More info and automated migrator: https://sass-lang.com/d/slash-div
+
+  ╷
+6 │   @return $fontSize / $baseFontSize;
+  │           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    src\scss\components\comments\_comments.scss 6:11   calculateFontSizeToRem()
+    src\scss\components\comments\_comments.scss 13:11  cdr()
+    src\scss\components\comments\_comments.scss 16:14  @import
+    stdin 17:9                                         root stylesheet
+
+Warning: 51 repetitive deprecation warnings omitted.
+
+You did not set any plugins, parser, or stringifier. Right now, PostCSS does nothing. Pick plugins for your case on https://www.postcss.parts/ and use them in postcss.config.js.
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (64%) building C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\cssExtractLoader.js!C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\css-loader\dist\cjs.
+Deprecation Warning: Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use map.has-key instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+  ╷
+3 │     @if map-has-key($valueMap, $key) {
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ╵
+    node_modules\@fancyapps\ui\src\Fancybox\scss\_mixins.scss 3:9  fancybox-breakpoint()
+    node_modules\@fancyapps\ui\src\Fancybox\scss\base.scss 57:3    @import
+    node_modules\@fancyapps\ui\src\Fancybox\Fancybox.scss 6:9      @import
+    src\scss\components\ui\_popup-gallery.scss 1:9                 @import
+    stdin 20:9                                                     root stylesheet
+
+Warning: 80 repetitive deprecation warnings omitted.
+
+You did not set any plugins, parser, or stringifier. Right now, PostCSS does nothing. Pick plugins for your case on https://www.postcss.parts/ and use them in postcss.config.js.
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (100%) emitting after emit
+Rspack compiled successfully in 18.32 s
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (0%) emitting after emit
+<i> [webpack-dev-middleware] wait until bundle finished: /img/ring-bank.png
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (9%) setup compilation
+<i> [webpack-dev-middleware] wait until bundle finished: /img/ring-sprosi.png
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (77%) sealing module and chunk tree optimization
+<i> [webpack-dev-middleware] wait until bundle finished: /img/ring-nash.png
+<i> [webpack-dev-middleware] wait until bundle finished: /img/ring-arenda.png
+<i> [webpack-dev-middleware] wait until bundle finished: /js/bundle.js
+<i> [webpack-dev-middleware] wait until bundle finished: /img/favicon/manifest.json
+<i> [webpack-dev-middleware] wait until bundle finished: /img/logo-dom-rf.svg
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (100%) emitting after emit
+Rspack compiled successfully in 1.32 s
+<i> [webpack-dev-middleware] wait until bundle finished: /dist/fonts/Gilroy-SemiBold.woff2
+<i> [webpack-dev-middleware] wait until bundle finished: /dist/fonts/Gilroy-Bold.woff2
+<i> [webpack-dev-middleware] wait until bundle finished: /dist/fonts/Gilroy-Regular.woff2
+<i> [webpack-dev-middleware] wait until bundle finished: /dist/fonts/Gilroy-Medium.woff2
+<i> [webpack-dev-middleware] wait until bundle finished: /img/
+<i> [webpack-dev-middleware] wait until bundle finished: /img/icon-loader.svg
+●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (100%) emitting after emit
+Rspack compiled successfully in 1.25 s
