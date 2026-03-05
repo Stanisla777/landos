@@ -1,300 +1,162 @@
-Uncaught ReferenceError: Vue is not defined
-    at vue.global.js:16323:1
-    at vue.global.js:16323:1
-    at vue.global.js:16323:1
-
-Uncaught TypeError: (0 , i.createElementVNode) is not a function
-    at ./src/js/modules/TelegramBlock.vue (bundle.js:1:1000)
-    at s (vue.global.js:16323:1)
-    at vue.global.js:16323:1
-    at vue.global.js:16323:1
-    at vue.global.js:16323:1
-
-
-
-
-rspack.config.js
 /* eslint-disable */
-const path = require('path');
-const fs = require('fs');
-const rspack = require('@rspack/core');
+const { parse, compileTemplate, compileScript, rewriteDefault } = require('@vue/compiler-sfc');
+const crypto = require('crypto');
 
-const config = {
-  entry: {
-    all: ['./src/js/index.js'],
-    'general-style': ['./src/scss/general-style.scss'],
-    instruction: ['./src/scss/instruction.scss'],
-    'general-js': './src/js/general.js',
-    'instruction-js': './src/js/instruction.js'
-  },
+module.exports = function vueCompilerLoader(source) {
+  const callback = this.async();
+  const filename = this.resourcePath;
+  const id = crypto.createHash('md5').update(filename).digest('hex').slice(0, 8);
 
-  output: {
-    filename: './js/[name].bundle.js',
-    publicPath: '/dist/',
-    clean: true,
-    path: path.resolve(__dirname, 'dist'),
-  },
+  console.log('🔍 [VUE LOADER] Compiling:', filename);
 
-  experiments: {
-    css: false
-  },
-
-  mode: 'production',
-
-  optimization: {
-    minimize: true,
-    splitChunks: {
-      cacheGroups: {
-        defaultVendors: false,
-        vendor: {
-          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
-          name: 'vendor-script',
-          chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
-          enforce: true
-        }
-      }
+  try {
+    const { descriptor, errors } = parse(source, { filename });
+    
+    if (errors && errors.length > 0) {
+      callback(new Error(errors[0].message));
+      return;
     }
-  },
 
-  performance: { hints: false },
+    // Компилируем script
+    let scriptContent = '';
+    if (descriptor.script) {
+      scriptContent = rewriteDefault(descriptor.script.content, '__component');
+    } else {
+      scriptContent = 'const __component = {};\n';
+    }
 
-  module: {
-    rules: [
-      {
-        test: /\.vue$/,
-        use: [{
-          loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
-        }]
-      },
-      {
-        test: /\.(sass|scss)$/,
-        include: path.resolve(__dirname, 'src/scss'),
-        use: [
-          rspack.CssExtractRspackPlugin.loader,
-          { loader: 'css-loader', options: { sourceMap: true, url: false } },
-          {
-            loader: 'postcss-loader',
-            options: {
-              sourceMap: true,
-              postcssOptions: {
-                plugins: [require('cssnano')({ preset: ['default', { discardComments: { removeAll: true } }] })]
-              }
-            }
-          },
-          { loader: 'sass-loader', options: { sourceMap: true } }
-        ],
-        type: 'javascript/auto'
-      },
-      {
-        test: /\.pug$/,
-        oneOf: [
-          { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['pug-loader'] },
-          { use: ['pug-plain-loader'] }
-        ]
-      },
-      { test: /\.js$/, exclude: /node_modules/, use: { loader: 'babel-loader' } },
-      { test: /\.js$/, enforce: 'pre', use: ['source-map-loader'] }
-    ]
-  },
+    // Компилируем template
+    let templateRender = '';
+    if (descriptor.template) {
+      const templateResult = compileTemplate({
+        source: descriptor.template.content,
+        filename,
+        id,
+        compilerOptions: {
+          scopeId: descriptor.styles.some(s => s.scoped) ? `data-v-${id}` : null,
+          bindingMetadata: descriptor.script?.bindings
+        }
+      });
+      
+      if (templateResult.errors.length) {
+        callback(new Error(templateResult.errors[0].message));
+        return;
+      }
+      
+      templateRender = templateResult.code;
+    }
 
-  plugins: [
-    // ✅ DefinePlugin с ПРАВИЛЬНЫМИ значениями (JSON.stringify!)
+    // Компилируем стили (если нужно)
+    let stylesCode = '';
+    if (descriptor.styles.length > 0) {
+      stylesCode = descriptor.styles.map((style, index) => {
+        const styleId = style.scoped ? `data-v-${id}` : '';
+        return `
+          const styleElement${index} = document.createElement('style');
+          styleElement${index}.innerHTML = ${JSON.stringify(style.content)};
+          ${styleId ? `styleElement${index}.setAttribute('scoped', '${styleId}');` : ''}
+          document.head.appendChild(styleElement${index});
+        `;
+      }).join('\n');
+    }
+
+    // Финальный код
+    const output = `
+      import { defineComponent, resolveComponent, openBlock, createElementBlock, createVNode, render } from 'vue';
+      
+      ${scriptContent}
+      
+      ${templateRender ? templateRender.replace('export function render', 'function render') : ''}
+      
+      ${stylesCode}
+      
+      const __component__ = defineComponent({
+        ...__component,
+        name: __component.name || 'AnonymousComponent',
+        render: ${templateRender ? 'render' : 'undefined'}
+      });
+      
+      export default __component__;
+    `;
+
+    callback(null, output);
+  } catch (err) {
+    callback(err);
+  }
+};
+
+-----------------------------------------
+
+alias: {
+      // Убираем алиас на глобальную сборку, используем модульную
+      vue$: 'vue/dist/vue.runtime.esm-bundler.js'
+    },
+
+    -------------
+
+    plugins: [
     new rspack.DefinePlugin({
       __VUE_OPTIONS_API__: JSON.stringify(true),
       __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
       __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
-      'process.env.NODE_ENV': JSON.stringify('development')  // ← Будет перезаписано ниже
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
     }),
 
-    new rspack.CssExtractRspackPlugin({ filename: './css/[name].css' }),
-    new rspack.CopyRspackPlugin({
-      patterns: [
-        { from: './src/fonts', to: './fonts' },
-        { from: './src/img', to: './img' }
-      ]
-    }),
-    {
-      apply: (compiler) => {
-        compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
-          const fs = require('fs');
-          const path = require('path');
-          const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
-          const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
-          if (fs.existsSync(mainPath)) {
-            fs.renameSync(mainPath, bundlePath);
-            console.log('✅ all.bundle.js → bundle.js');
-          }
-        });
-      }
-    },
-    {
-      apply: (compiler) => {
-        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
-          const fs = require('fs');
-          const path = require('path');
-          ['general-style', 'instruction'].forEach((name) => {
-            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
-            if (fs.existsSync(jsPath)) fs.unlinkSync(jsPath);
-          });
-        });
-      }
-    }
-  ],
+    ----------------------
 
-  resolve: {
-    alias: {
-      // ✅ Полная UMD-сборка — работает с любыми импортами
-      vue: 'vue/dist/vue.global.js'
-    },
-    extensions: ['.js', '.vue', '.json']
-  },
-
-  devtool: 'source-map',
-
-  devServer: {
-    port: 8080,
-    open: true,
-    hot: true,
-    static: { directory: path.join(__dirname, 'dist') },
-    historyApiFallback: true,
-    watchFiles: ['src/pug/**/*.pug', 'src/**/*'],
-  },
-};
-
-module.exports = (env, argv) => {
+    module.exports = (env, argv) => {
+  config.mode = argv.mode || 'development';
+  
   if (argv.mode === 'production') {
-    // ✅ Production: та же сборка, но prod-версия
-    config.resolve.alias.vue = 'vue/dist/vue.global.prod.js';
-    config.devtool = 'eval-source-map';
+    config.resolve.alias.vue$ = 'vue/dist/vue.runtime.esm-bundler.js';
     config.optimization.minimize = true;
-    // Обновляем NODE_ENV в DefinePlugin
-    config.plugins[0] = new rspack.DefinePlugin({
-      __VUE_OPTIONS_API__: JSON.stringify(true),
-      __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
-      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
-      'process.env.NODE_ENV': JSON.stringify('production')
-    });
-  } else {
-    config.mode = 'development';
-    config.devtool = 'cheap-module-source-map';
   }
+  
   return config;
 };
------------
-vue-compiler-loader.js
-/* eslint-disable */
-// loaders/vue-compiler-loader.js
-const { parse, compileTemplate, compileScript } = require('@vue/compiler-sfc');
-const path = require('path');
 
-module.exports = function vueCompilerLoader(source) {
-  const callback = this.async();
+npm install --save-dev @vue/compiler-sfc @babel/core @babel/preset-env babel-loader
 
-  console.log('🔍 [VUE LOADER] Compiling:', this.resourcePath);
-
-  const { descriptor, errors } = parse(source, { filename: this.resourcePath });
-
-  if (errors && errors.length > 0) {
-    callback(new Error(errors[0].message));
-    return;
-  }
-
-  // ✅ Импорт через 'vue' — алиас разрешит его правильно
-  let output = 'import { defineComponent } from "vue";\n';
-
-  // === Script ===
-  if (descriptor.script || descriptor.scriptSetup) {
-    try {
-      const { content } = compileScript(descriptor, {
-        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8)
-      });
-      output += content + '\n';
-    } catch (e) {
-      callback(new Error(`Script compilation error: ${e.message}`));
-      return;
-    }
-  } else {
-    output += 'export default defineComponent({})\n';
-  }
-
-  // === Template ===
-  if (descriptor.template) {
-    try {
-      const { code } = compileTemplate({
-        source: descriptor.template.content,
-        filename: this.resourcePath,
-        id: require('crypto').createHash('md5').update(this.resourcePath).digest('hex').slice(0, 8),
-        compilerOptions: {
-          bindingMeta: descriptor.scriptSetup ? descriptor.scriptSetup.bindings : undefined
-        }
-      });
-      console.log('🔍 [VUE LOADER] Template code preview:', code.substring(0, 500));
-      output += code + '\n';
-    } catch (e) {
-      callback(new Error(`Template compilation error: ${e.message}`));
-      return;
-    }
-  }
-
-  // === Styles ===
-  if (descriptor.styles.length > 0) {
-    const styles = descriptor.styles.map((style, index) => {
-      const scopedId = style.scoped
-        ? `data-v-${require('crypto').createHash('md5').update(this.resourcePath + index).digest('hex').slice(0, 8)}`
-        : '';
-      return `${scopedId ? `\n/* scoped: ${scopedId} */` : ''}\n${style.content}`;
-    }).join('\n');
-    output += `\nif (typeof __VUE_HMR_RUNTIME__ !== 'undefined') { __VUE_HMR_RUNTIME__.addStyle(${JSON.stringify(styles)}); }\n`;
-  }
-
-  callback(null, output);
-};
-
-index.js
-import {createApp} from 'vue';
 
 document.addEventListener('DOMContentLoaded', () => {
-function initTelegramBlockIfNeeded() {
+  function initTelegramBlockIfNeeded() {
     const el = document.getElementById('telegram-block');
 
-    // Защита 1: уже инициализирован
-    if (el && el.__vue_initialized) {
-      return;
-    }
-    // Защита 2: уже содержит отрендеренный контент
-    if (el && el.querySelector('article.telegram')) {
-      return;
-    }
-    // Защита 3: нет шаблона <telegram-block>
-    if (!el || !el.querySelector('telegram-block')) {
+    if (!el || el.__vue_initialized) {
       return;
     }
 
-    // ✅ Vue 3: createApp вместо new Vue
-    const app = createApp({
-      components: { 'telegram-block': TelegramBlock }
-    });
-    app.mount('#telegram-block');
+    // Убедимся, что элемент существует и содержит шаблон
+    if (!el.querySelector('telegram-block')) {
+      return;
+    }
 
-    el.__vue_initialized = true;
+    try {
+      const app = createApp(TelegramBlock);
+      app.mount(el);
+      el.__vue_initialized = true;
+      console.log('✅ TelegramBlock mounted');
+    } catch (err) {
+      console.error('❌ Failed to mount TelegramBlock:', err);
+    }
   }
+
   window.initTelegramBlockIfNeeded = initTelegramBlockIfNeeded;
   initTelegramBlockIfNeeded();
-      })
+});
 
-      TelegramBlock.vue
+------------------------------------
 
-      <template>
+<template>
   <article class="telegram" v-if="active">
     <div class="telegram__popup">
-      <button class="telegram__popup-close">
+      <button class="telegram__popup-close" @click="hideBlock">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"
           height="24"
           viewBox="0 0 24 24"
           fill="none"
-          @click="hideBlock"
         >
           <path
             fill-rule="evenodd"
@@ -332,7 +194,6 @@ function initTelegramBlockIfNeeded() {
 <script>
 export default {
   name: 'TelegramBlock',
-  // ✅ Vue 3: props объявлены явно
   props: {
     qr: { type: String, default: '' },
     mobilicon: { type: String, default: '' },
@@ -345,11 +206,7 @@ export default {
     };
   },
   mounted() {
-    console.log('Приложение')
-    if (this.qr) { this.qr = this.qr; }
-    if (this.mobilicon) { this.mobilicon = this.mobilicon; }
-    if (this.link) { this.link = this.link; }
-    if (this.description) { this.description = this.description; }
+    console.log('🔵 TelegramBlock mounted with props:', this.$props);
     if (!this.getCookie('telegram')) {
       this.active = true;
     }
@@ -371,4 +228,3 @@ export default {
   }
 };
 </script>
-
