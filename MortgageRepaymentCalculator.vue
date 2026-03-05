@@ -1,1 +1,12 @@
-npx pug src/pug/views/test.pug --out dist-test
+{
+  test: /\.pug$/,
+  use: [
+    'html-loader',
+    {
+      loader: 'pug-html-loader',
+      options: {
+        pretty: true
+      }
+    }
+  ]
+}
