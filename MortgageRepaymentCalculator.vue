@@ -1,4 +1,3 @@
-vue-compiler-loader.js остаётся таким же?:
 const { parse, compileTemplate, compileScript, rewriteDefault } = require('@vue/compiler-sfc');
 const crypto = require('crypto');
 
@@ -19,8 +18,12 @@ module.exports = function vueCompilerLoader(source) {
 
     // Компилируем script
     let scriptContent = '';
+    let bindings;
+    
     if (descriptor.script) {
-      scriptContent = rewriteDefault(descriptor.script.content, '__component');
+      const compiledScript = compileScript(descriptor, { id });
+      scriptContent = rewriteDefault(compiledScript.content, '__component');
+      bindings = compiledScript.bindings;
     } else {
       scriptContent = 'const __component = {};\n';
     }
@@ -34,7 +37,7 @@ module.exports = function vueCompilerLoader(source) {
         id,
         compilerOptions: {
           scopeId: descriptor.styles.some(s => s.scoped) ? `data-v-${id}` : null,
-          bindingMetadata: descriptor.script?.bindings
+          bindingMetadata: bindings
         }
       });
 
@@ -43,37 +46,62 @@ module.exports = function vueCompilerLoader(source) {
         return;
       }
 
-      templateRender = templateResult.code;
+      templateRender = templateResult.code.replace('export function render', 'function render');
     }
 
-    // Компилируем стили (если нужно)
+    // Компилируем стили с поддержкой HMR
     let stylesCode = '';
     if (descriptor.styles.length > 0) {
       stylesCode = descriptor.styles.map((style, index) => {
         const styleId = style.scoped ? `data-v-${id}` : '';
-        return `
-          const styleElement${index} = document.createElement('style');
-          styleElement${index}.innerHTML = ${JSON.stringify(style.content)};
-          ${styleId ? `styleElement${index}.setAttribute('scoped', '${styleId}');` : ''}
-          document.head.appendChild(styleElement${index});
-        `;
+        
+        // Для development добавляем HMR поддержку
+        if (process.env.NODE_ENV !== 'production') {
+          return `
+            const styleElement${index} = document.createElement('style');
+            styleElement${index}.innerHTML = ${JSON.stringify(style.content)};
+            ${styleId ? `styleElement${index}.setAttribute('scoped', '${styleId}');` : ''}
+            styleElement${index}.setAttribute('data-vue-component', '${id}');
+            document.head.appendChild(styleElement${index});
+            
+            // HMR поддержка
+            if (import.meta.hot) {
+              import.meta.hot.accept();
+            }
+          `;
+        } else {
+          // Для production просто вставляем стили
+          return `
+            const styleElement${index} = document.createElement('style');
+            styleElement${index}.innerHTML = ${JSON.stringify(style.content)};
+            ${styleId ? `styleElement${index}.setAttribute('scoped', '${styleId}');` : ''}
+            document.head.appendChild(styleElement${index});
+          `;
+        }
       }).join('\n');
+    }
+
+    // Определяем, какие импорты из vue нужны
+    const vueImports = ['defineComponent'];
+    if (templateRender) {
+      // Добавляем только те импорты, которые используются в шаблоне
+      vueImports.push('resolveComponent', 'openBlock', 'createElementBlock', 'createVNode', 'render');
     }
 
     // Финальный код
     const output = `
-      import { defineComponent, resolveComponent, openBlock, createElementBlock, createVNode, render } from 'vue';
+      import { ${vueImports.join(', ')} } from 'vue';
 
       ${scriptContent}
 
-      ${templateRender ? templateRender.replace('export function render', 'function render') : ''}
+      ${templateRender || ''}
 
       ${stylesCode}
 
       const __component__ = defineComponent({
         ...__component,
         name: __component.name || 'AnonymousComponent',
-        render: ${templateRender ? 'render' : 'undefined'}
+        ${templateRender ? 'render' : ''}
       });
 
       export default __component__;
@@ -81,6 +109,7 @@ module.exports = function vueCompilerLoader(source) {
 
     callback(null, output);
   } catch (err) {
+    console.error('❌ [VUE LOADER] Error:', err);
     callback(err);
   }
 };
