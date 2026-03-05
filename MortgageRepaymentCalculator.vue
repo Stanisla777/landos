@@ -1,3 +1,15 @@
+{
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        }
+      },
+
+
 /* eslint-disable */
 const { parse, compileTemplate, compileScript, rewriteDefault } = require('@vue/compiler-sfc');
 const crypto = require('crypto');
