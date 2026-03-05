@@ -1,3 +1,18 @@
+Uncaught ReferenceError: Vue is not defined
+    at vue.global.js:16323:1
+    at vue.global.js:16323:1
+    at vue.global.js:16323:1
+
+Uncaught TypeError: (0 , i.createElementVNode) is not a function
+    at ./src/js/modules/TelegramBlock.vue (bundle.js:1:1000)
+    at s (vue.global.js:16323:1)
+    at vue.global.js:16323:1
+    at vue.global.js:16323:1
+    at vue.global.js:16323:1
+
+
+
+
 rspack.config.js
 /* eslint-disable */
 const path = require('path');
