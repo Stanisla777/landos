@@ -1,8 +1,241 @@
 -
-                                                            var test_dual= '{"images": [], "colorTheme": "black", "title": "О двух городах", "end_text": "<p>«По́весть о двух города́х» — изданный в 1859 году исторический роман Чарльза Диккенса о временах Французской революции.<a href=\\"https://xn-h1alcedd.xnd1aqf.xn-p1ai/catalog/selskaya-ipoteka/\\"></a></p>", "end_title": "", "name": "my_poll_yes", "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], "answerlist": [{ "id": "", "title": "Выберите ответ" }, { "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], "description": "<p>Кто написал \\"Повесть о двух городах\\"?</p>", "settings": [], "layout": "0,0", "options":{ "btn_no": "Диккенс", "btn_yes": "Моэм", "correctAnswer": false },"typeOfTest": "dual"}'
-                                                            var test_img = '{"images": [{ "file": { "ID": "20647", "WIDTH": 0, "HEIGHT": 0, "SRC": "/upload/resize_cache/sprint.editor/28d/9eal7tze6penc97h5glhdjfeyw7dmv23/382_287_2/img_1666104130_3575_416_389px_curie_nobel_portrait_2_600.jpg", "ORIGIN_SRC": "/upload/sprint.editor/28d/9eal7tze6penc97h5glhdjfeyw7dmv23/img_1666104130_3575_416_389px_curie_nobel_portrait_2_600.jpg" }, "desc": "Мария Кюри", "answer": "no" }, { "file": { "ID": "20650", "WIDTH": 0, "HEIGHT": 0, "SRC": "/upload/resize_cache/sprint.editor/63e/p9696rwdqi9p7yzyjgo2u795hxak2038/382_287_2/img_1666104133_6453_601_kleopatra_vii._altes_museum_berlin1.jpg", "ORIGIN_SRC": "/upload/sprint.editor/63e/p9696rwdqi9p7yzyjgo2u795hxak2038/img_1666104133_6453_601_kleopatra_vii._altes_museum_berlin1.jpg" }, "desc": "Клеопатра", "answer": "no" }, { "file": { "ID": "20653", "WIDTH": 0, "HEIGHT": 0, "SRC": "/upload/resize_cache/sprint.editor/e6c/t6ci81vwf4hhmu07or5aqw687wcxvt6n/382_287_2/img_1666104136_752_630_lou_andreas_salom_foto_atelier_elvira.jpg", "ORIGIN_SRC": "/upload/sprint.editor/e6c/t6ci81vwf4hhmu07or5aqw687wcxvt6n/img_1666104136_752_630_lou_andreas_salom_foto_atelier_elvira.jpg" }, "desc": "Лу Саломе", "answer": "yes" }, { "file": { "ID": "20656", "WIDTH": 0, "HEIGHT": 0, "SRC": "/upload/resize_cache/sprint.editor/7cc/nb170m0922obetphy8gcb9widuha8eys/382_287_2/img_1666104139_3228_908_marie_el_onore_godefroid_portrait_of_mme_de_sta_l.jpg", "ORIGIN_SRC": "/upload/sprint.editor/7cc/nb170m0922obetphy8gcb9widuha8eys/img_1666104139_3228_908_marie_el_onore_godefroid_portrait_of_mme_de_sta_l.jpg" }, "desc": "Мадам де Сталь", "answer": "no" }], "colorTheme": "black", "title": "Разбитое сердце", "end_text": "<p>После смерти Ницше две женщины опубликовали свои воспоминания о нем. Первой - Ницше обязан всеми недоразумениями, существующими вокруг его имени. Это его сестра Элизабет Ферстер-Ницше, наследница и распорядительница его архива, слишком произвольное обращение с которым и породило нелепую легенду о Ницше как предтече национал-социализма. Другая - самый противоречивый персонаж в судьбе мыслителя: женщина, чье имя звучанием своим напоминает о библейской танцовщице - Лу Саломе.</p>", "end_title": "Ответ", "btn": "Проверить", "name": "my_poll_img", "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], "answerlist": [{ "id": "", "title": "Выберите ответ" }, { "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], "description": "<p>Кто вошёл в историю в том числе как \\"Женщина разбившая сердце Ницше\\"?</p>", "settings": [], "layout": "0,0", "options": [{ "imageSrc": "img/banner-programs-2x.png", "text": "Мария Кюри", "isCorrect": true }, { "imageSrc": "img/banner_itmortgage_main.png", "text": "Клеопатра", "isCorrect": false }, { "imageSrc": "img/banner_mortgage_marathon_2022.png", "text": "Лу Саломе", "isCorrect": true }, { "imageSrc": "img/banner_zhsk-support.png", "text": "Мадам де Сталь", "isCorrect": false }], "typeOfTest": "images"}'
-                                                            var test_multiple_choice = '{"colorTheme": "black", "description": "<p>Оттенки каких цветов плохо различаются людьми страдающим дальтонизмом</p>", "end_text": "<p>Дальтоник, человек не различающий цвета, не может различить определенные оттенки красного и зеленого. Реже люди с дальтонизмом не могут различать оттенки синего и желтого.</p>", "title": "Дальтонизм", "end_title": "Верный ответ", "btn": "Ответить", "type": "poll", "name": "my_poll_checkbox", "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], "settings": [], "layout": "0,0", "options": [{ "text": "Красный", "isCorrect": true }, { "text": "Зеленый", "isCorrect": true }, { "text": "Синий", "isCorrect": false }, { "text": "Желтый", "isCorrect": false }], "typeOfTest": "multiple-choice"}'
-                                                            var test_slider = '{"description": "<p>Что такое куча?</p>", "end_text": "<p>Парадокс кучи («Куча», «Сорит») — логический парадокс, сформулированный Евбулидом из Милета (IV век до н. э.)[1], связанный с неопределённостью предиката «быть кучей»[2].\\n</p>\\n<p>Формулировка парадокса основана на базисной предпосылке, согласно которой одно зёрнышко не образует кучи, и индуктивной предпосылке, по которой добавление одного зёрнышка к совокупности, кучей не являющейся, несущественно для образования кучи. При принятии этих предпосылок никакая совокупность из сколь угодно большого количества зёрен не будет образовывать кучи, что противоречит представлению о существовании кучи из зёрен.</p>", "end_title": "Ответить", "title": "Парадокс кучи", "colorTheme": "black", "btn": "Ответить", "name": "my_poll_slider", "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], "settings": [], "layout": "0,0", "options": {"answers": {"10000": "10 000 ₽", "20000": "20 000 ₽", "30000": "30 000 ₽", "60000": "60 000 ₽"},"correctAnswer": "60000"},"typeOfTest": "slider"}'
-                                                            var test_percent = '{"colorTheme": "black", "description": "", "end_text": "<p>Каждый охотник желает знать, где сидит фазан (вариант: где сидят фазаны) — мнемоническая фраза, используемая для запоминания основных цветов видимого спектра светового излучения. Является так называемым акростихом.</p>", "end_title": "Ответ", "title": "Где сидит фазан?", "btn": "Ответить", "name": "my_poll_checkbox_v2", "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], "settings": [], "layout": "0,0", "options": {"answers": [{ "text": "Каждый", "percentAmount": 13, "isCorrect": false }, { "text": "Охотник", "percentAmount": 4, "isCorrect": true }, { "text": "Желает", "percentAmount": 17, "isCorrect": true }, { "text": "Знать", "percentAmount": 9, "isCorrect": true }, { "text": "Где", "percentAmount": 4, "isCorrect": true }, { "text": "Сидит", "percentAmount": 13, "isCorrect": true }, { "text": "Фазан", "percentAmount": 0, "isCorrect": true }], "enough_data": true},"typeOfTest": "percent"}'
-                                                            var test_checbox = '{"colorTheme": "black", "description": "<p></p>", "end_text": "<p>Текст после ответа</p>", "end_title": "Заголовок перед ответом", "title": "Опрос с просто чекбоксами", "btn": "Текст кнопки", "type": "poll", "name": "my_poll_just_checkboxes", "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], "settings": [], "layout": "0,0", "options": [{ "text": "Первый вариант (да)", "isCorrect": true }, { "text": "Второй вариант (нет)", "isCorrect": false }, { "text": "Третий вариант (да)", "isCorrect": true }], "typeOfTest": "justcheckboxes"}'
-                                                            var test_radiobtn='{"colorTheme": "black", "description": "<p></p>", "end_text": "<p>Текст после ответа</p>", "end_title": "Заголовок перед ответом", "title": "Опрос с просто чекбоксами", "btn": "Текст кнопки", "type": "poll", "name": "my_poll_just_checkboxes", "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], "settings": [], "layout": "0,0", "options": [{ "text": "Первый вариант радиокнопки (да)", "isCorrect": true }, { "text": "Второй вариант радиокнопки (нет)", "isCorrect": true }, { "text": "Третий вариант радиокнопки (нет)", "isCorrect": false }], "typeOfTest": "justradio"}'
+  var test_dual= JSON.stringify({
+    "images": [], 
+    "colorTheme": "black", 
+    "title": "О двух городах", 
+    "end_text": "<p>«По́весть о двух города́х» — изданный в 1859 году исторический роман Чарльза Диккенса о временах Французской революции.<a href='https://xn-h1alcedd.xnd1aqf.xn-p1ai/catalog/selskaya-ipoteka/'></a></p>", 
+    "end_title": "", 
+    "name": "my_poll_yes", 
+    "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], 
+    "answerlist": [{ "id": "", "title": "Выберите ответ" }, { "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], 
+    "description": "<p>Кто написал 'Повесть о двух городах'?</p>", 
+    "settings": [], 
+    "layout": "0,0", 
+    "options":{ "btn_no": "Диккенс", "btn_yes": "Моэм", "correctAnswer": false },
+    "typeOfTest": "dual"
+  })
+  
+  var test_img = JSON.stringify({
+    "images": [{ 
+      "file": { 
+        "ID": "20647", 
+        "WIDTH": 0, 
+        "HEIGHT": 0, 
+        "SRC": "/upload/resize_cache/sprint.editor/28d/9eal7tze6penc97h5glhdjfeyw7dmv23/382_287_2/img_1666104130_3575_416_389px_curie_nobel_portrait_2_600.jpg", 
+        "ORIGIN_SRC": "/upload/sprint.editor/28d/9eal7tze6penc97h5glhdjfeyw7dmv23/img_1666104130_3575_416_389px_curie_nobel_portrait_2_600.jpg" 
+      }, 
+      "desc": "Мария Кюри", 
+      "answer": "no" 
+    }, { 
+      "file": { 
+        "ID": "20650", 
+        "WIDTH": 0, 
+        "HEIGHT": 0, 
+        "SRC": "/upload/resize_cache/sprint.editor/63e/p9696rwdqi9p7yzyjgo2u795hxak2038/382_287_2/img_1666104133_6453_601_kleopatra_vii._altes_museum_berlin1.jpg", 
+        "ORIGIN_SRC": "/upload/sprint.editor/63e/p9696rwdqi9p7yzyjgo2u795hxak2038/img_1666104133_6453_601_kleopatra_vii._altes_museum_berlin1.jpg" 
+      }, 
+      "desc": "Клеопатра", 
+      "answer": "no" 
+    }, { 
+      "file": { 
+        "ID": "20653", 
+        "WIDTH": 0, 
+        "HEIGHT": 0, 
+        "SRC": "/upload/resize_cache/sprint.editor/e6c/t6ci81vwf4hhmu07or5aqw687wcxvt6n/382_287_2/img_1666104136_752_630_lou_andreas_salom_foto_atelier_elvira.jpg", 
+        "ORIGIN_SRC": "/upload/sprint.editor/e6c/t6ci81vwf4hhmu07or5aqw687wcxvt6n/img_1666104136_752_630_lou_andreas_salom_foto_atelier_elvira.jpg" 
+      }, 
+      "desc": "Лу Саломе", 
+      "answer": "yes" 
+    }, { 
+      "file": { 
+        "ID": "20656", 
+        "WIDTH": 0, 
+        "HEIGHT": 0, 
+        "SRC": "/upload/resize_cache/sprint.editor/7cc/nb170m0922obetphy8gcb9widuha8eys/382_287_2/img_1666104139_3228_908_marie_el_onore_godefroid_portrait_of_mme_de_sta_l.jpg", 
+        "ORIGIN_SRC": "/upload/sprint.editor/7cc/nb170m0922obetphy8gcb9widuha8eys/img_1666104139_3228_908_marie_el_onore_godefroid_portrait_of_mme_de_sta_l.jpg" 
+      }, 
+      "desc": "Мадам де Сталь", 
+      "answer": "no" 
+    }], 
+    "colorTheme": "black", 
+    "title": "Разбитое сердце", 
+    "end_text": "<p>После смерти Ницше две женщины опубликовали свои воспоминания о нем. Первой - Ницше обязан всеми недоразумениями, существующими вокруг его имени. Это его сестра Элизабет Ферстер-Ницше, наследница и распорядительница его архива, слишком произвольное обращение с которым и породило нелепую легенду о Ницше как предтече национал-социализма. Другая - самый противоречивый персонаж в судьбе мыслителя: женщина, чье имя звучанием своим напоминает о библейской танцовщице - Лу Саломе.</p>", 
+    "end_title": "Ответ", 
+    "btn": "Проверить", 
+    "name": "my_poll_img", 
+    "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], 
+    "answerlist": [{ "id": "", "title": "Выберите ответ" }, { "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], 
+    "description": "<p>Кто вошёл в историю в том числе как 'Женщина разбившая сердце Ницше'?</p>", 
+    "settings": [], 
+    "layout": "0,0", 
+    "options": [{ 
+      "imageSrc": "img/banner-programs-2x.png", 
+      "text": "Мария Кюри", 
+      "isCorrect": true 
+    }, { 
+      "imageSrc": "img/banner_itmortgage_main.png", 
+      "text": "Клеопатра", 
+      "isCorrect": false 
+    }, { 
+      "imageSrc": "img/banner_mortgage_marathon_2022.png", 
+      "text": "Лу Саломе", 
+      "isCorrect": true 
+    }, { 
+      "imageSrc": "img/banner_zhsk-support.png", 
+      "text": "Мадам де Сталь", 
+      "isCorrect": false 
+    }], 
+    "typeOfTest": "images"
+  })
+  
+  var test_multiple_choice = JSON.stringify({
+    "colorTheme": "black", 
+    "description": "<p>Оттенки каких цветов плохо различаются людьми страдающим дальтонизмом</p>", 
+    "end_text": "<p>Дальтоник, человек не различающий цвета, не может различить определенные оттенки красного и зеленого. Реже люди с дальтонизмом не могут различать оттенки синего и желтого.</p>", 
+    "title": "Дальтонизм", 
+    "end_title": "Верный ответ", 
+    "btn": "Ответить", 
+    "type": "poll", 
+    "name": "my_poll_checkbox", 
+    "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], 
+    "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], 
+    "settings": [], 
+    "layout": "0,0", 
+    "options": [{ 
+      "text": "Красный", 
+      "isCorrect": true 
+    }, { 
+      "text": "Зеленый", 
+      "isCorrect": true 
+    }, { 
+      "text": "Синий", 
+      "isCorrect": false 
+    }, { 
+      "text": "Желтый", 
+      "isCorrect": false 
+    }], 
+    "typeOfTest": "multiple-choice"
+  })
+  
+  var test_slider = JSON.stringify({
+    "description": "<p>Что такое куча?</p>", 
+    "end_text": "<p>Парадокс кучи («Куча», «Сорит») — логический парадокс, сформулированный Евбулидом из Милета (IV век до н. э.)[1], связанный с неопределённостью предиката «быть кучей»[2].\n</p>\n<p>Формулировка парадокса основана на базисной предпосылке, согласно которой одно зёрнышко не образует кучи, и индуктивной предпосылке, по которой добавление одного зёрнышка к совокупности, кучей не являющейся, несущественно для образования кучи. При принятии этих предпосылок никакая совокупность из сколь угодно большого количества зёрен не будет образовывать кучи, что противоречит представлению о существовании кучи из зёрен.</p>", 
+    "end_title": "Ответить", 
+    "title": "Парадокс кучи", 
+    "colorTheme": "black", 
+    "btn": "Ответить", 
+    "name": "my_poll_slider", 
+    "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], 
+    "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], 
+    "settings": [], 
+    "layout": "0,0", 
+    "options": {
+      "answers": {
+        "10000": "10 000 ₽", 
+        "20000": "20 000 ₽", 
+        "30000": "30 000 ₽", 
+        "60000": "60 000 ₽"
+      },
+      "correctAnswer": "60000"
+    },
+    "typeOfTest": "slider"
+  })
+  
+  var test_percent = JSON.stringify({
+    "colorTheme": "black", 
+    "description": "", 
+    "end_text": "<p>Каждый охотник желает знать, где сидит фазан (вариант: где сидят фазаны) — мнемоническая фраза, используемая для запоминания основных цветов видимого спектра светового излучения. Является так называемым акростихом.</p>", 
+    "end_title": "Ответ", 
+    "title": "Где сидит фазан?", 
+    "btn": "Ответить", 
+    "name": "my_poll_checkbox_v2", 
+    "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], 
+    "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], 
+    "settings": [], 
+    "layout": "0,0", 
+    "options": {
+      "answers": [{ 
+        "text": "Каждый", 
+        "percentAmount": 13, 
+        "isCorrect": false 
+      }, { 
+        "text": "Охотник", 
+        "percentAmount": 4, 
+        "isCorrect": true 
+      }, { 
+        "text": "Желает", 
+        "percentAmount": 17, 
+        "isCorrect": true 
+      }, { 
+        "text": "Знать", 
+        "percentAmount": 9, 
+        "isCorrect": true 
+      }, { 
+        "text": "Где", 
+        "percentAmount": 4, 
+        "isCorrect": true 
+      }, { 
+        "text": "Сидит", 
+        "percentAmount": 13, 
+        "isCorrect": true 
+      }, { 
+        "text": "Фазан", 
+        "percentAmount": 0, 
+        "isCorrect": true 
+      }], 
+      "enough_data": true
+    },
+    "typeOfTest": "percent"
+  })
+  
+  var test_checbox = JSON.stringify({
+    "colorTheme": "black", 
+    "description": "<p></p>", 
+    "end_text": "<p>Текст после ответа</p>", 
+    "end_title": "Заголовок перед ответом", 
+    "title": "Опрос с просто чекбоксами", 
+    "btn": "Текст кнопки", 
+    "type": "poll", 
+    "name": "my_poll_just_checkboxes", 
+    "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], 
+    "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], 
+    "settings": [], 
+    "layout": "0,0", 
+    "options": [{ 
+      "text": "Первый вариант (да)", 
+      "isCorrect": true 
+    }, { 
+      "text": "Второй вариант (нет)", 
+      "isCorrect": false 
+    }, { 
+      "text": "Третий вариант (да)", 
+      "isCorrect": true 
+    }], 
+    "typeOfTest": "justcheckboxes"
+  })
+  
+  var test_radiobtn = JSON.stringify({
+    "colorTheme": "black", 
+    "description": "<p></p>", 
+    "end_text": "<p>Текст после ответа</p>", 
+    "end_title": "Заголовок перед ответом", 
+    "title": "Опрос с просто чекбоксами", 
+    "btn": "Текст кнопки", 
+    "type": "poll", 
+    "name": "my_poll_just_checkboxes", 
+    "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }], 
+    "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }], 
+    "settings": [], 
+    "layout": "0,0", 
+    "options": [{ 
+      "text": "Первый вариант радиокнопки (да)", 
+      "isCorrect": true 
+    }, { 
+      "text": "Второй вариант радиокнопки (нет)", 
+      "isCorrect": true 
+    }, { 
+      "text": "Третий вариант радиокнопки (нет)", 
+      "isCorrect": false 
+    }], 
+    "typeOfTest": "justradio"
+  })
