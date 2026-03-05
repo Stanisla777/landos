@@ -49,43 +49,47 @@ module.exports = function vueCompilerLoader(source) {
       templateRender = templateResult.code.replace('export function render', 'function render');
     }
 
-    // Компилируем стили с поддержкой HMR
+    // Обрабатываем стили внутри компонента
     let stylesCode = '';
     if (descriptor.styles.length > 0) {
       stylesCode = descriptor.styles.map((style, index) => {
         const styleId = style.scoped ? `data-v-${id}` : '';
+        const styleContent = JSON.stringify(style.content);
         
-        // Для development добавляем HMR поддержку
-        if (process.env.NODE_ENV !== 'production') {
-          return `
-            const styleElement${index} = document.createElement('style');
-            styleElement${index}.innerHTML = ${JSON.stringify(style.content)};
-            ${styleId ? `styleElement${index}.setAttribute('scoped', '${styleId}');` : ''}
-            styleElement${index}.setAttribute('data-vue-component', '${id}');
-            document.head.appendChild(styleElement${index});
-            
-            // HMR поддержка
-            if (import.meta.hot) {
-              import.meta.hot.accept();
+        // Добавляем инлайн стили в head
+        return `
+          (function() {
+            const styleId = 'vue-style-${id}-${index}';
+            // Проверяем, не добавлен ли уже этот стиль
+            if (!document.getElementById(styleId)) {
+              const styleElement = document.createElement('style');
+              styleElement.id = styleId;
+              styleElement.innerHTML = ${styleContent};
+              ${styleId ? `styleElement.setAttribute('scoped', '${styleId}');` : ''}
+              styleElement.setAttribute('data-vue-component', '${id}');
+              document.head.appendChild(styleElement);
+              
+              // Для HMR - удаляем старый стиль при обновлении
+              if (import.meta.hot) {
+                import.meta.hot.dispose(() => {
+                  const oldStyle = document.getElementById(styleId);
+                  if (oldStyle) oldStyle.remove();
+                });
+              }
             }
-          `;
-        } else {
-          // Для production просто вставляем стили
-          return `
-            const styleElement${index} = document.createElement('style');
-            styleElement${index}.innerHTML = ${JSON.stringify(style.content)};
-            ${styleId ? `styleElement${index}.setAttribute('scoped', '${styleId}');` : ''}
-            document.head.appendChild(styleElement${index});
-          `;
-        }
+          })();
+        `;
       }).join('\n');
     }
 
     // Определяем, какие импорты из vue нужны
     const vueImports = ['defineComponent'];
     if (templateRender) {
-      // Добавляем только те импорты, которые используются в шаблоне
-      vueImports.push('resolveComponent', 'openBlock', 'createElementBlock', 'createVNode', 'render');
+      vueImports.push('resolveComponent', 'openBlock', 'createElementBlock', 'createVNode');
+      // Проверяем, используется ли render функция
+      if (templateRender.includes('render')) {
+        vueImports.push('render');
+      }
     }
 
     // Финальный код
