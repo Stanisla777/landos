@@ -1,167 +1,85 @@
-/* eslint-disable */
-const path = require('path');
-const fs = require('fs');
-const rspack = require('@rspack/core');
+const { parse, compileTemplate, compileScript, rewriteDefault } = require('@vue/compiler-sfc');
+const crypto = require('crypto');
 
-const config = {
-  entry: {
-    all: ['./src/js/index.js'],
-    'general-style': ['./src/scss/general-style.scss'],
-    instruction: ['./src/scss/instruction.scss'],
-    'general-js': './src/js/general.js',
-    'instruction-js': './src/js/instruction.js'
-  },
+module.exports = function vueCompilerLoader(source) {
+  const callback = this.async();
+  const filename = this.resourcePath;
+  const id = crypto.createHash('md5').update(filename).digest('hex').slice(0, 8);
 
-  output: {
-    filename: './js/[name].bundle.js',
-    publicPath: '/dist/',
-    clean: true,
-    path: path.resolve(__dirname, 'dist'),
-  },
+  console.log('🔍 [VUE LOADER] Compiling:', filename);
 
-  experiments: {
-    css: false
-  },
+  try {
+    const { descriptor, errors } = parse(source, { filename });
 
-  mode: 'production',
-
-  optimization: {
-    minimize: true,
-    splitChunks: {
-      cacheGroups: {
-        defaultVendors: false,
-        vendor: {
-          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
-          name: 'vendor-script',
-          chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
-          enforce: true
-        }
-      }
+    if (errors && errors.length > 0) {
+      callback(new Error(errors[0].message));
+      return;
     }
-  },
 
-  performance: { hints: false },
-
-  module: {
-    rules: [
-      {
-        test: /\.vue$/,
-        use: [{
-          loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
-        }]
-      },
-      {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env']
-          }
-        }
-      },
-      {
-        test: /\.(sass|scss)$/,
-        include: path.resolve(__dirname, 'src/scss'),
-        use: [
-          rspack.CssExtractRspackPlugin.loader,
-          { loader: 'css-loader', options: { sourceMap: true, url: false } },
-          {
-            loader: 'postcss-loader',
-            options: {
-              sourceMap: true,
-              postcssOptions: {
-                plugins: [require('cssnano')({ preset: ['default', { discardComments: { removeAll: true } }] })]
-              }
-            }
-          },
-          { loader: 'sass-loader', options: { sourceMap: true } }
-        ],
-        type: 'javascript/auto'
-      },
-      {
-        test: /\.pug$/,
-        oneOf: [
-          { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['pug-loader'] },
-          { use: ['pug-plain-loader'] }
-        ]
-      },
-      { test: /\.js$/, exclude: /node_modules/, use: { loader: 'babel-loader' } },
-      { test: /\.js$/, enforce: 'pre', use: ['source-map-loader'] }
-    ]
-  },
-
-  plugins: [
-    // ✅ DefinePlugin с ПРАВИЛЬНЫМИ значениями (JSON.stringify!)
-    new rspack.DefinePlugin({
-      __VUE_OPTIONS_API__: JSON.stringify(true),
-      __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
-      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
-    }),
-
-    new rspack.CssExtractRspackPlugin({ filename: './css/[name].css' }),
-    new rspack.CopyRspackPlugin({
-      patterns: [
-        { from: './src/fonts', to: './fonts' },
-        { from: './src/img', to: './img' }
-      ]
-    }),
-    {
-      apply: (compiler) => {
-        compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
-          const fs = require('fs');
-          const path = require('path');
-          const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
-          const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
-          if (fs.existsSync(mainPath)) {
-            fs.renameSync(mainPath, bundlePath);
-            console.log('✅ all.bundle.js → bundle.js');
-          }
-        });
-      }
-    },
-    {
-      apply: (compiler) => {
-        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
-          const fs = require('fs');
-          const path = require('path');
-          ['general-style', 'instruction'].forEach((name) => {
-            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
-            if (fs.existsSync(jsPath)) fs.unlinkSync(jsPath);
-          });
-        });
-      }
+    // Компилируем script
+    let scriptContent = '';
+    if (descriptor.script) {
+      scriptContent = rewriteDefault(descriptor.script.content, '__component');
+    } else {
+      scriptContent = 'const __component = {};\n';
     }
-  ],
 
-  resolve: {
-    alias: {
-      // ✅ Полная UMD-сборка — работает с любыми импортами
-      vue$: 'vue/dist/vue.runtime.esm-bundler.js'
-    },
-    extensions: ['.js', '.vue', '.json']
-  },
+    // Компилируем template
+    let templateRender = '';
+    if (descriptor.template) {
+      const templateResult = compileTemplate({
+        source: descriptor.template.content,
+        filename,
+        id,
+        compilerOptions: {
+          scopeId: descriptor.styles.some(s => s.scoped) ? `data-v-${id}` : null,
+          bindingMetadata: descriptor.script?.bindings
+        }
+      });
 
-  devtool: 'source-map',
+      if (templateResult.errors.length) {
+        callback(new Error(templateResult.errors[0].message));
+        return;
+      }
 
-  devServer: {
-    port: 8080,
-    open: true,
-    hot: true,
-    static: { directory: path.join(__dirname, 'dist') },
-    historyApiFallback: true,
-    watchFiles: ['src/pug/**/*.pug', 'src/**/*'],
-  },
-};
+      templateRender = templateResult.code;
+    }
 
-module.exports = (env, argv) => {
-  config.mode = argv.mode || 'development';
+    // Компилируем стили (если нужно)
+    let stylesCode = '';
+    if (descriptor.styles.length > 0) {
+      stylesCode = descriptor.styles.map((style, index) => {
+        const styleId = style.scoped ? `data-v-${id}` : '';
+        return `
+          const styleElement${index} = document.createElement('style');
+          styleElement${index}.innerHTML = ${JSON.stringify(style.content)};
+          ${styleId ? `styleElement${index}.setAttribute('scoped', '${styleId}');` : ''}
+          document.head.appendChild(styleElement${index});
+        `;
+      }).join('\n');
+    }
 
-  if (argv.mode === 'production') {
-    config.resolve.alias.vue$ = 'vue/dist/vue.runtime.esm-bundler.js';
-    config.optimization.minimize = true;
+    // Финальный код
+    const output = `
+      import { defineComponent, resolveComponent, openBlock, createElementBlock, createVNode, render } from 'vue';
+
+      ${scriptContent}
+
+      ${templateRender ? templateRender.replace('export function render', 'function render') : ''}
+
+      ${stylesCode}
+
+      const __component__ = defineComponent({
+        ...__component,
+        name: __component.name || 'AnonymousComponent',
+        render: ${templateRender ? 'render' : 'undefined'}
+      });
+
+      export default __component__;
+    `;
+
+    callback(null, output);
+  } catch (err) {
+    callback(err);
   }
-
-  return config;
 };
