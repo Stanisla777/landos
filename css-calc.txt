@@ -1,185 +1,211 @@
-general.js
-/* eslint-disable */
-import {createApp} from 'vue';
-import setVH from './modules/setVH';
-import IMask from 'imask'
-import selectsInit from './modules/selects-init';
-import catalogNew from './modules/catalog-new';
-import universalForm from './modules/universal-form/universal-form';
-import leftSideBar from './modules/redesign-site/left-side-bar';
-import headerMenu from './modules/redesign-site/header-menu';
-import yandexSearch from './modules/redesign-site/yandex-search';
-// import TelegramBlock from './modules/TelegramBlock.vue';
-import anchors from './modules/anchors';
-import {
-  modals, closeModal, catalogModal, fullnessFieldToActiveButton
-} from './modules/modals';
-import cookies from './modules/cookies';
-import playVideo from './modules/video/play-video';
-import videoWithPreview from './modules/video/video-with-preview';
-import footerDropDown from './modules/redesign-site/footer-drop-down';
-import fetchLikes from './modules/fetch-likes';
-import scrollToUp from './modules/redesign-site/scroll-to-up';
-import copyCitation from './modules/copy-citation';
-import contentNoteNew from './modules/content-note2';
+const { defineConfig } = require('@rsbuild/core');
+const { pluginPug } = require('@rsbuild/plugin-pug');
+const { pluginSass } = require('@rsbuild/plugin-sass');
+const { pluginVue } = require('@rsbuild/plugin-vue');
+const path = require('path');
+const fs = require('fs');
 
-// Vue.config.productionTip = false;
-window.selectsInit = selectsInit;
+// Находим все pug файлы в views
+const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
+const pugFiles = fs.existsSync(pugViewsDir)
+  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
+  : [];
 
-document.addEventListener('DOMContentLoaded', () => {
-  window.closeModal = closeModal;
-  window.modals = modals;
-  window.fetchLikes = fetchLikes;
-  // window.selectsInit = selectsInit;
-  window.universalForm = universalForm;
-  setVH();
-  selectsInit();
-  catalogNew();
-  leftSideBar();
-  headerMenu();
-  yandexSearch();
-  catalogModal();
-  modals();
-  fullnessFieldToActiveButton();
-  anchors();
-  cookies();
-  playVideo();
-  videoWithPreview();
-  universalForm();
-  footerDropDown();
-  fetchLikes();
-  scrollToUp();
-  copyCitation();
-  contentNoteNew();
+// ТОЧНО КАК В WEBPACK:
+// all: index.js (все скрипты)
+// general-js: general.js (общие модули)
+// instruction-js: instruction.js (ленивая загрузка)
+const entry = {
+  'all': './src/js/index.js',
+  'general-js': './src/js/general.js',
+  'instruction-js': './src/js/instruction.js',
+  'general-style': './src/scss/general-style.scss',
+  'instruction': './src/scss/instruction.scss',
+};
 
-  // function initTelegramBlock() {
-  //   new Vue({
-  //     el: '#telegram-block',
-  //     components: { 'telegram-block': TelegramBlock }
-  //   });
-  // }
-  //
-  const obj = [
-    // {id: 'telegram-block', fn: initTelegramBlock}
-  ];
+module.exports = defineConfig({
+  plugins: [
+    pluginVue(),
+    pluginPug({
+      pretty: true,
+      basedir: path.resolve(__dirname, 'src/pug'),
+    }),
+    pluginSass({
+      sassLoaderOptions: {
+        sourceMap: true,
+        sassOptions: {
+          outputStyle: 'expanded',
+          includePaths: [
+            path.resolve(__dirname, 'src/scss'),
+            path.resolve(__dirname, 'src')
+          ],
+          quietDeps: true,
+        },
+      },
+    }),
+  ],
 
-  // function initTelegramBlockIfNeeded() {
-  //   const el = document.getElementById('telegram-block');
-  //
-  //   // Защита 1: уже инициализирован
-  //   if (el && el.__vue_initialized) {
-  //     return;
-  //   }
-  //   // Защита 2: уже содержит отрендеренный контент
-  //   if (el && el.querySelector('article.telegram')) {
-  //     return;
-  //   }
-  //   // Защита 3: нет шаблона <telegram-block>
-  //   if (!el || !el.querySelector('telegram-block')) {
-  //     return;
-  //   }
-  //
-  //   // ✅ Vue 3: createApp вместо new Vue
-  //   const app = createApp({
-  //     components: { 'telegram-block': TelegramBlock }
-  //   });
-  //   app.mount('#telegram-block');
-  //
-  //   el.__vue_initialized = true;
-  // }
-  //
-  // window.initTelegramBlockIfNeeded = initTelegramBlockIfNeeded;
-  // initTelegramBlockIfNeeded();
+  source: {
+    entry: entry,
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@img': path.resolve(__dirname, 'src/img'),
+      '@fonts': path.resolve(__dirname, 'src/fonts'),
+    },
+  },
 
-  function waitForVueApp(id, initFn) {
-    const el = document.getElementById(id);
-    if (el && !el.__vue_initialized) {
-      initFn();
-      el.__vue_initialized = true;
-      return;
-    }
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.runtime.esm-bundler.js',
+    },
+    extensions: ['.js', '.vue', '.json', '.pug'],
+  },
 
-    const observer = new MutationObserver(() => {
-      const element = document.getElementById(id);
-      if (element && !element.__vue_initialized) {
-        observer.disconnect();
-        initFn();
-        element.__vue_initialized = true;
-      }
-    });
+  output: {
+    distPath: {
+      root: 'dist',
+      js: 'js',
+      css: 'css',
+      font: 'fonts',
+      image: 'img',
+    },
+    filename: {
+      js: 'js/[name].bundle.js',
+      css: 'css/[name].css',
+      font: 'fonts/[name].[ext]',
+      image: 'img/[name].[ext]',
+    },
+    publicPath: '/dist/',
+    cleanDistPath: true,
+    copy: [
+      { from: './src/fonts', to: 'fonts' },
+      { from: './src/img', to: 'img' },
+    ],
+    sourceMap: {
+      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
+      css: true,
+    },
+  },
 
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
+  // 👇 НАСТРОЙКИ РАЗДЕЛЕНИЯ КОДА (КАК В WEBPACK)
+  performance: {
+    hints: false,
+    chunkSplit: {
+      strategy: 'split-by-module',
+      override: {
+        chunks: 'all',
+        cacheGroups: {
+          defaultVendors: false,
+          vendor: {
+            test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+            name: 'vendor-script',
+            chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
+            enforce: true,
+            priority: 10,
+          },
+        },
+      },
+    },
+  },
 
-  // obj.forEach(item => waitForVueApp(item.id, item.fn));
+  // 👇 ДЛЯ ЛЕНИВОЙ ЗАГРУЗКИ (instruction-lazy)
+  tools: {
+    cssLoader: {
+      url: false,
+    },
 
+    postcss: (config) => {
+      config.postcssOptions.plugins = [
+        require('autoprefixer'),
+        ...(process.env.NODE_ENV === 'production'
+          ? [require('cssnano')({
+            preset: ['default', {
+              discardComments: { removeAll: true },
+              normalizeWhitespace: true,
+            }]
+          })]
+          : [])
+      ];
+      return config;
+    },
 
-})
+    rspack: (config) => {
+      // Добавляем поддержку require.ensure для ленивой загрузки
+      if (!config.module) config.module = {};
+      if (!config.module.parser) config.module.parser = {};
+      config.module.parser.javascript = {
+        ...config.module.parser.javascript,
+        requireEnsure: true,
+      };
+      
+      return config;
+    },
+  },
 
-instruction.js
-/* eslint-disable */
+  dev: {
+    port: 8080,
+    open: true,
+    hmr: true,
+    liveReload: true,
+    watchFiles: {
+      paths: ['src/pug/**/*.pug', 'src/**/*'],
+      options: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
+  },
 
-// Ленивая загрузка — только если нужны элементы инструкций
-// src/js/instruction.js
-document.addEventListener('DOMContentLoaded', () => {
-  require.ensure([], (require) => {
-    require('./lazy-instruction.js');
-    console.log('✅ Instruction modules loaded');
-  }, 'instruction-lazy');
+  server: {
+    publicDir: {
+      name: 'dist',
+      watch: true,
+    },
+  },
 });
 
-lazy-instruction.js
+// ===== ГЕНЕРАЦИЯ HTML ДЛЯ ВСЕХ PUG ФАЙЛОВ =====
+const { HtmlRspackPlugin } = require('@rspack/core');
 
-/* eslint-disable */
-import {createApp} from 'vue';
-import initializationPolls from './modules/polls/custom-scripts/initialization-polls';
-// import SearchFamilyMortgage from './modules/search-family-mortgage/SearchFamilyMortgagePointEntry.vue';
-// import ItMortgageSurveysOneRequest from './modules/it-mortgage-surveys-one-request/ITMortgageSurveysPointEntry.vue';
-// import MinSport from './modules/minsport/MinsportPointEntry.vue';
-import contentNote from './modules/content-note';
-import dropDown from './modules/dropDown';
-import {
-  testPollsSlider, authorsSlider, cardSlider, cardSliderfoufcolumn,cardsInstructionSlider,
-} from './modules/swiper-sliders';
-import slideConstructor from './modules/constructor-swiper';
-// import formRating from './modules/form-rating';
-import popupGallery from './modules/popup-gallery';
-import shareSocList from './modules/share-soc-list';
-import instruction from './modules/redesign-site/instruction/instruction';
-import commentsTexarea from './modules/comments-component/comments-texarea';
+// Для каждого PUG файла создаем HTML (как в generateHtmlPlugins)
+pugFiles.forEach(file => {
+  const name = file.replace('.pug', '');
+  
+  // Не привязываемся к названиям - просто генерируем HTML
+  // Бэкенд сам решит, какие скрипты подключать
+  module.exports.plugins = module.exports.plugins || [];
+  module.exports.plugins.push(new HtmlRspackPlugin({
+    template: path.join(pugViewsDir, file),
+    filename: `${name}.html`,
+    inject: true, // Автоматически подключает все скрипты (как в webpack)
+    scriptLoading: 'defer',
+    minify: false,
+    // Не указываем chunks - пусть подключаются все
+  }));
+});
 
-function dropDownTags() {
-  const btnTags = document.querySelectorAll('.js--dropDown-btn');
-  for (const item of btnTags) {
-    item.onclick = (el) => {
-      dropDown(el.target, 0);
-    };
+// ===== ПОСТ-ОБРАБОТКА (КАК В WEBPACK) =====
+module.exports.afterBuild = (config) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  if (process.env.NODE_ENV === 'production') {
+    // Переименование all.bundle.js → bundle.js
+    const mainPath = path.resolve(__dirname, 'dist/js/all.bundle.js');
+    const bundlePath = path.resolve(__dirname, 'dist/js/bundle.js');
+    if (fs.existsSync(mainPath)) {
+      fs.renameSync(mainPath, bundlePath);
+      console.log('✅ all.bundle.js → bundle.js');
+    }
+
+    // Удаление JS от CSS-only entry (как в CleanupCSSOnlyJS)
+    const cssOnlyEntries = ['general-style', 'instruction'];
+    cssOnlyEntries.forEach((name) => {
+      const jsPath = path.resolve(__dirname, `dist/js/${name}.bundle.js`);
+      if (fs.existsSync(jsPath)) {
+        fs.unlinkSync(jsPath);
+        console.log(`🗑️ Removed ${name}.bundle.js`);
+      }
+    });
   }
-}
-
-// Вся инициализация — теперь здесь
-export function init() {
-  contentNote();
-  dropDownTags();
-  slideConstructor();
-  testPollsSlider();
-  initializationPolls();
-  authorsSlider();
-  // formRating();
-  cardSliderfoufcolumn();
-  cardSlider();
-  cardsInstructionSlider();
-  popupGallery();
-  shareSocList();
-  instruction();
-  commentsTexarea();
-
- 
-}
-
-// Автозапуск при импорте
-init();
-
-export default { init };
-
-index.js тут подключены все файлы js без исключения
+};
