@@ -1,211 +1,31 @@
-const { defineConfig } = require('@rsbuild/core');
-const { pluginPug } = require('@rsbuild/plugin-pug');
-const { pluginSass } = require('@rsbuild/plugin-sass');
-const { pluginVue } = require('@rsbuild/plugin-vue');
-const path = require('path');
-const fs = require('fs');
+C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf>npm run dev
+(node:112800) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
 
-// Находим все pug файлы в views
-const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
-const pugFiles = fs.existsSync(pugViewsDir)
-  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
-  : [];
+> start-webapck-template@2.0.0 dev
+> cross-env NODE_ENV=production rsbuild build
 
-// ТОЧНО КАК В WEBPACK:
-// all: index.js (все скрипты)
-// general-js: general.js (общие модули)
-// instruction-js: instruction.js (ленивая загрузка)
-const entry = {
-  'all': './src/js/index.js',
-  'general-js': './src/js/general.js',
-  'instruction-js': './src/js/instruction.js',
-  'general-style': './src/scss/general-style.scss',
-  'instruction': './src/scss/instruction.scss',
-};
+Rsbuild v1.7.3
 
-module.exports = defineConfig({
-  plugins: [
-    pluginVue(),
-    pluginPug({
-      pretty: true,
-      basedir: path.resolve(__dirname, 'src/pug'),
-    }),
-    pluginSass({
-      sassLoaderOptions: {
-        sourceMap: true,
-        sassOptions: {
-          outputStyle: 'expanded',
-          includePaths: [
-            path.resolve(__dirname, 'src/scss'),
-            path.resolve(__dirname, 'src')
-          ],
-          quietDeps: true,
-        },
-      },
-    }),
-  ],
+error   Failed to build.
+error   HtmlRspackPlugin looks like a webpack or Rspack plugin, please use `tools.rspack` to register it:
 
-  source: {
-    entry: entry,
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@img': path.resolve(__dirname, 'src/img'),
-      '@fonts': path.resolve(__dirname, 'src/fonts'),
-    },
-  },
-
-  resolve: {
-    alias: {
-      vue: 'vue/dist/vue.runtime.esm-bundler.js',
-    },
-    extensions: ['.js', '.vue', '.json', '.pug'],
-  },
-
-  output: {
-    distPath: {
-      root: 'dist',
-      js: 'js',
-      css: 'css',
-      font: 'fonts',
-      image: 'img',
-    },
-    filename: {
-      js: 'js/[name].bundle.js',
-      css: 'css/[name].css',
-      font: 'fonts/[name].[ext]',
-      image: 'img/[name].[ext]',
-    },
-    publicPath: '/dist/',
-    cleanDistPath: true,
-    copy: [
-      { from: './src/fonts', to: 'fonts' },
-      { from: './src/img', to: 'img' },
-    ],
-    sourceMap: {
-      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
-      css: true,
-    },
-  },
-
-  // 👇 НАСТРОЙКИ РАЗДЕЛЕНИЯ КОДА (КАК В WEBPACK)
-  performance: {
-    hints: false,
-    chunkSplit: {
-      strategy: 'split-by-module',
-      override: {
-        chunks: 'all',
-        cacheGroups: {
-          defaultVendors: false,
-          vendor: {
-            test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
-            name: 'vendor-script',
-            chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
-            enforce: true,
-            priority: 10,
-          },
-        },
-      },
-    },
-  },
-
-  // 👇 ДЛЯ ЛЕНИВОЙ ЗАГРУЗКИ (instruction-lazy)
-  tools: {
-    cssLoader: {
-      url: false,
-    },
-
-    postcss: (config) => {
-      config.postcssOptions.plugins = [
-        require('autoprefixer'),
-        ...(process.env.NODE_ENV === 'production'
-          ? [require('cssnano')({
-            preset: ['default', {
-              discardComments: { removeAll: true },
-              normalizeWhitespace: true,
-            }]
-          })]
-          : [])
-      ];
-      return config;
-    },
-
-    rspack: (config) => {
-      // Добавляем поддержку require.ensure для ленивой загрузки
-      if (!config.module) config.module = {};
-      if (!config.module.parser) config.module.parser = {};
-      config.module.parser.javascript = {
-        ...config.module.parser.javascript,
-        requireEnsure: true,
-      };
-      
-      return config;
-    },
-  },
-
-  dev: {
-    port: 8080,
-    open: true,
-    hmr: true,
-    liveReload: true,
-    watchFiles: {
-      paths: ['src/pug/**/*.pug', 'src/**/*'],
-      options: {
-        usePolling: true,
-        interval: 1000,
-      },
-    },
-  },
-
-  server: {
-    publicDir: {
-      name: 'dist',
-      watch: true,
-    },
-  },
-});
-
-// ===== ГЕНЕРАЦИЯ HTML ДЛЯ ВСЕХ PUG ФАЙЛОВ =====
-const { HtmlRspackPlugin } = require('@rspack/core');
-
-// Для каждого PUG файла создаем HTML (как в generateHtmlPlugins)
-pugFiles.forEach(file => {
-  const name = file.replace('.pug', '');
-  
-  // Не привязываемся к названиям - просто генерируем HTML
-  // Бэкенд сам решит, какие скрипты подключать
-  module.exports.plugins = module.exports.plugins || [];
-  module.exports.plugins.push(new HtmlRspackPlugin({
-    template: path.join(pugViewsDir, file),
-    filename: `${name}.html`,
-    inject: true, // Автоматически подключает все скрипты (как в webpack)
-    scriptLoading: 'defer',
-    minify: false,
-    // Не указываем chunks - пусть подключаются все
-  }));
-});
-
-// ===== ПОСТ-ОБРАБОТКА (КАК В WEBPACK) =====
-module.exports.afterBuild = (config) => {
-  const fs = require('fs');
-  const path = require('path');
-  
-  if (process.env.NODE_ENV === 'production') {
-    // Переименование all.bundle.js → bundle.js
-    const mainPath = path.resolve(__dirname, 'dist/js/all.bundle.js');
-    const bundlePath = path.resolve(__dirname, 'dist/js/bundle.js');
-    if (fs.existsSync(mainPath)) {
-      fs.renameSync(mainPath, bundlePath);
-      console.log('✅ all.bundle.js → bundle.js');
-    }
-
-    // Удаление JS от CSS-only entry (как в CleanupCSSOnlyJS)
-    const cssOnlyEntries = ['general-style', 'instruction'];
-    cssOnlyEntries.forEach((name) => {
-      const jsPath = path.resolve(__dirname, `dist/js/${name}.bundle.js`);
-      if (fs.existsSync(jsPath)) {
-        fs.unlinkSync(jsPath);
-        console.log(`🗑️ Removed ${name}.bundle.js`);
+  // rsbuild.config.ts
+  export default {
+    tools: {
+      rspack: {
+        plugins: [new HtmlRspackPlugin()]
       }
-    });
-  }
-};
+    }
+  };
+
+    at validatePlugin (file:///C:/Users/sshchegolev/PhpstormProjects/sprosi.dom.rf/node_modules/@rsbuild/core/dist/131.js:3172:19)
+    at Object.addPlugins (file:///C:/Users/sshchegolev/PhpstormProjects/sprosi.dom.rf/node_modules/@rsbuild/core/dist/131.js:3197:65)
+    at createRsbuild (file:///C:/Users/sshchegolev/PhpstormProjects/sprosi.dom.rf/node_modules/@rsbuild/core/dist/131.js:9027:17)
+    at async init_init (file:///C:/Users/sshchegolev/PhpstormProjects/sprosi.dom.rf/node_modules/@rsbuild/core/dist/131.js:9128:117)
+    at async CAC.<anonymous> (file:///C:/Users/sshchegolev/PhpstormProjects/sprosi.dom.rf/node_modules/@rsbuild/core/dist/131.js:9235:27)
+npm notice
+npm notice New major version of npm available! 10.7.0 -> 11.11.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.11.0
+npm notice To update run: npm install -g npm@11.11.0
+npm notice
