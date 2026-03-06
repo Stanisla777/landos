@@ -1,147 +1,168 @@
-Не хочет:
-error   Build errors: 
-File: .\src\scss\general-style.scss:1:1
-  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
-        │   │                                                                                                  ^
-        │   ╵
-        │   ..\..\..\..\src\scss\general-style.scss 2:98  root stylesheet
+const { defineConfig } = require('@rsbuild/core');
+const { pluginPug } = require('@rsbuild/plugin-pug');
+const { pluginSass } = require('@rsbuild/plugin-sass');
+const path = require('path');
+const fs = require('fs');
 
-File: .\src\scss\instruction.scss:1:1
-  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
-        │   │                                                                                                  ^
-        │   ╵
-        │   ..\..\..\..\src\scss\instruction.scss 2:98  root stylesheet
+// Находим все pug файлы в views
+const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
+const pugFiles = fs.existsSync(pugViewsDir)
+  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
+  : [];
 
-File: .\src\scss\style.scss:1:1
-  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
-        │   │                                                                                                  ^
-        │   ╵
-        │   ..\..\..\..\src\scss\style.scss 2:98  root stylesheet
+// Создаем entry points для JS и SCSS
+const entry = {
+  'all': './src/js/index.js',
+  'general-js': './src/js/general.js',
+  'instruction-js': './src/js/instruction.js',
+  'general-style': './src/scss/general-style.scss',
+  'instruction': './src/scss/instruction.scss',
+};
 
-File: ./src/scss/general-style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+module.exports = defineConfig({
+  plugins: [
+    pluginPug({
+      pretty: true,
+      basedir: path.resolve(__dirname, 'src/pug'),
+    }),
+    pluginSass({
+      sassLoaderOptions: {
+        sourceMap: true,
+        sassOptions: {
+          outputStyle: 'expanded',
+          includePaths: [
+            path.resolve(__dirname, 'src/scss'),
+            path.resolve(__dirname, 'src')
+          ]
+        },
+      },
+    }),
+  ],
 
-File: ./src/scss/instruction.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+  source: {
+    entry: entry,
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@img': path.resolve(__dirname, 'src/img'),
+      '@fonts': path.resolve(__dirname, 'src/fonts'),
+    },
+  },
 
-File: ./src/scss/style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+  resolve: {
+    alias: {
+      vue$: 'vue/dist/vue.runtime.esm-bundler.js',
+    },
+    extensions: ['.js', '.vue', '.json', '.pug'],
+  },
 
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
+  output: {
+    distPath: {
+      root: 'dist',
+      js: 'js',
+      css: 'css',
+      font: 'fonts',
+      image: 'img',
+    },
+    filename: {
+      js: process.env.NODE_ENV === 'production'
+        ? '[name].[contenthash].bundle.js'
+        : '[name].bundle.js',
+      css: '[name].css',
+      font: '[name].[hash:8][ext]',
+      image: '[name].[hash:8][ext]',
+    },
+    publicPath: process.env.NODE_ENV === 'production' ? '/dist/' : '/',
+    cleanDistPath: true,
+    copy: [
+      { from: './src/fonts', to: 'fonts' },
+      { from: './src/img', to: 'img' },
+    ],
+    sourceMap: {
+      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
+      css: true,
+    },
+  },
 
-error   build failed in 5.49 s
-start   building removed img\housing-cooperative\Tick.png and 170 more
-error   Build errors: 
-File: .\src\scss\general-style.scss:1:1
-  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
-        │   │                                                                                                  ^
-        │   ╵
-        │   ..\..\..\..\src\scss\general-style.scss 2:98  root stylesheet
+  html: {
+    template: ({ entryName }) => {
+      if (entryName === 'instruction') {
+        return path.join(pugViewsDir, 'instruction.pug');
+      }
+      return path.join(pugViewsDir, 'index.pug');
+    },
+    inject: 'body',
+    scriptLoading: 'defer',
+  },
 
-File: .\src\scss\instruction.scss:1:1
-  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
-        │   │                                                                                                  ^
-        │   ╵
-        │   ..\..\..\..\src\scss\instruction.scss 2:98  root stylesheet
+  // 👇 ВАЖНО: Убираем tools.bundlerChain полностью!
+  tools: {
+    postcss: (config) => {
+      config.postcssOptions.plugins = [
+        require('autoprefixer'),
+        ...(process.env.NODE_ENV === 'production'
+          ? [require('cssnano')({
+            preset: ['default', {
+              discardComments: { removeAll: true },
+              normalizeWhitespace: true,
+            }]
+          })]
+          : [])
+      ];
+      return config;
+    },
 
-File: .\src\scss\style.scss:1:1
-  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
-        │   │                                                                                                  ^
-        │   ╵
-        │   ..\..\..\..\src\scss\style.scss 2:98  root stylesheet
+    rspack: (config) => {
+      // Cache groups
+      if (!config.optimization) config.optimization = {};
+      if (!config.optimization.splitChunks) config.optimization.splitChunks = {};
+      if (!config.optimization.splitChunks.cacheGroups) config.optimization.splitChunks.cacheGroups = {};
 
-File: ./src/scss/general-style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+      config.optimization.splitChunks.cacheGroups = {
+        vendor: {
+          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+          name: 'vendor-script',
+          chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
+          enforce: true,
+          priority: 10,
+        },
+        common: {
+          name: 'common',
+          chunks: 'all',
+          minChunks: 2,
+          priority: 5,
+          reuseExistingChunk: true,
+        },
+      };
 
-File: ./src/scss/instruction.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+      return config;
+    },
+  },
 
-File: ./src/scss/style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+  performance: {
+    hints: false,
+    chunkSplit: {
+      strategy: 'split-by-module',
+    },
+  },
 
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
+  dev: {
+    port: 8080,
+    open: true,
+    hmr: true,
+    liveReload: true,
+    watchFiles: {
+      paths: ['src/pug/**/*.pug', 'src/**/*'],
+      options: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
+  },
 
-error   build failed in 0.66 s
-start   building removed src\img\at-partners-logo6.png and 899 more
-error   Build errors: 
-File: .\src\scss\general-style.scss:1:1
-  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
-        │   │                                                                                                  ^
-        │   ╵
-        │   ..\..\..\..\src\scss\general-style.scss 2:98  root stylesheet
-
-File: .\src\scss\instruction.scss:1:1
-  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
-        │   │                                                                                                  ^
-        │   ╵
-        │   ..\..\..\..\src\scss\instruction.scss 2:98  root stylesheet
-
-File: .\src\scss\style.scss:1:1
-  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
-        │   │                                                                                                  ^
-        │   ╵
-        │   ..\..\..\..\src\scss\style.scss 2:98  root stylesheet
-
-File: ./src/scss/general-style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-File: ./src/scss/instruction.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-File: ./src/scss/style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
-
-error   build failed in 0.68 s
+  server: {
+    publicDir: {
+      name: 'dist',
+      watch: true,
+    },
+  },
+});
