@@ -1,208 +1,48 @@
-const { defineConfig } = require('@rsbuild/core');
-const { pluginPug } = require('@rsbuild/plugin-pug');
-const { pluginSass } = require('@rsbuild/plugin-sass');
-const { pluginVue } = require('@rsbuild/plugin-vue');
-const path = require('path');
-const fs = require('fs');
+Не собрался, такая вот ошибка
 
-// Находим все pug файлы в views
-const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
-const pugFiles = fs.existsSync(pugViewsDir)
-  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
-  : [];
+C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf>npm run start
+(node:33480) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
 
-// Точки входа как в webpack
-const entry = {
-  'all': './src/js/index.js',
-  'general-js': './src/js/general.js',
-  'instruction-js': './src/js/instruction.js',
-  'general-style': './src/scss/general-style.scss',
-  'instruction': './src/scss/instruction.scss',
-};
+> start-webapck-template@2.0.0 start
+> cross-env NODE_ENV=development rsbuild dev
 
-module.exports = defineConfig({
-  plugins: [
-    pluginVue(),
-    pluginPug({
-      pretty: true,
-      basedir: path.resolve(__dirname, 'src/pug'),
-    }),
-    pluginSass({
-      sassLoaderOptions: {
-        sourceMap: true,
-        sassOptions: {
-          outputStyle: 'expanded',
-          includePaths: [
-            path.resolve(__dirname, 'src/scss'),
-            path.resolve(__dirname, 'src')
-          ],
-          quietDeps: true,
-        },
-      },
-    }),
-  ],
+Rsbuild v1.7.3
 
-  source: {
-    entry: entry,
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@img': path.resolve(__dirname, 'src/img'),
-      '@fonts': path.resolve(__dirname, 'src/fonts'),
-    },
-  },
+warn    [rsbuild:config] The "source.alias" config is deprecated, use "resolve.alias" instead.
+  ➜  Network:  
+  -  all               http://10.209.46.11:3000/all
+  -  general-js        http://10.209.46.11:3000/general-js
+  -  instruction-js    http://10.209.46.11:3000/instruction-js
+  -  general-style     http://10.209.46.11:3000/general-style
+  -  instruction       http://10.209.46.11:3000/instruction
 
-  resolve: {
-    alias: {
-      vue: 'vue/dist/vue.runtime.esm-bundler.js',
-    },
-    extensions: ['.js', '.vue', '.json', '.pug'],
-  },
+  ➜  Local:  
+  -  all               http://localhost:3000/all
+  -  general-js        http://localhost:3000/general-js
+  -  instruction-js    http://localhost:3000/instruction-js
+  -  general-style     http://localhost:3000/general-style
+  -  instruction       http://localhost:3000/instruction
+  ➜  press h + enter to show shortcuts
 
-  output: {
-    distPath: {
-      root: 'dist',
-      js: 'js',
-      css: 'css',
-      font: 'fonts',
-      image: 'img',
-    },
-    filename: {
-      js: 'js/[name].bundle.js',
-      css: 'css/[name].css',
-      font: 'fonts/[name].[ext]',
-      image: 'img/[name].[ext]',
-    },
-    publicPath: '/dist/',
-    cleanDistPath: true,
-    copy: [
-      { from: './src/fonts', to: 'fonts' },
-      { from: './src/img', to: 'img' },
-    ],
-    sourceMap: {
-      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
-      css: true,
-    },
-  },
+start   build started...
+error   Build error: 
+× Conflict: Multiple assets emit different content to the same filename instruction.html
 
-  performance: {
-    hints: false,
-    chunkSplit: {
-      strategy: 'split-by-module',
-      override: {
-        chunks: 'all',
-        cacheGroups: {
-          defaultVendors: false,
-          vendor: {
-            test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
-            name: 'vendor-script',
-            chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
-            enforce: true,
-            priority: 10,
-          },
-        },
-      },
-    },
-  },
+You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
 
-  tools: {
-    cssLoader: {
-      url: false,
-    },
+error   build failed in 6.76 s
+start   building removed img\courses\2x_courses_main_new2.png and 170 more
+error   Build error: 
+× Conflict: Multiple assets emit different content to the same filename instruction.html
 
-    postcss: (config) => {
-      config.postcssOptions.plugins = [
-        require('autoprefixer'),
-        ...(process.env.NODE_ENV === 'production'
-          ? [require('cssnano')({
-            preset: ['default', {
-              discardComments: { removeAll: true },
-              normalizeWhitespace: true,
-            }]
-          })]
-          : [])
-      ];
-      return config;
-    },
+You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
 
-    rspack: (config) => {
-      // Добавляем поддержку require.ensure для ленивой загрузки
-      if (!config.module) config.module = {};
-      if (!config.module.parser) config.module.parser = {};
-      config.module.parser.javascript = {
-        ...config.module.parser.javascript,
-        requireEnsure: true,
-      };
+error   build failed in 1.09 s
+start   building removed src\img\family-mortgage-icon.png and 899 more
+error   Build error: 
+× Conflict: Multiple assets emit different content to the same filename instruction.html
 
-      // 👇 ВАЖНО: Добавляем HtmlRspackPlugin сюда, а не в основной массив plugins
-      const { HtmlRspackPlugin } = require('@rspack/core');
-      
-      // Создаем HTML плагины для каждого PUG файла
-      const htmlPlugins = pugFiles.map(file => {
-        const name = file.replace('.pug', '');
-        return new HtmlRspackPlugin({
-          template: path.join(pugViewsDir, file),
-          filename: `${name}.html`,
-          inject: true,
-          scriptLoading: 'defer',
-          minify: false,
-          // Не указываем chunks - подключаются все
-        });
-      });
+You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
 
-      // Добавляем плагины в конфиг
-      config.plugins = [
-        ...(config.plugins || []),
-        ...htmlPlugins,
-      ];
-
-      return config;
-    },
-  },
-
-  dev: {
-    port: 8080,
-    open: true,
-    hmr: true,
-    liveReload: true,
-    watchFiles: {
-      paths: ['src/pug/**/*.pug', 'src/**/*'],
-      options: {
-        usePolling: true,
-        interval: 1000,
-      },
-    },
-  },
-
-  server: {
-    publicDir: {
-      name: 'dist',
-      watch: true,
-    },
-  },
-});
-
-// ===== ПОСТ-ОБРАБОТКА (КАК В WEBPACK) =====
-module.exports.afterBuild = (config) => {
-  const fs = require('fs');
-  const path = require('path');
-  
-  if (process.env.NODE_ENV === 'production') {
-    // Переименование all.bundle.js → bundle.js
-    const mainPath = path.resolve(__dirname, 'dist/js/all.bundle.js');
-    const bundlePath = path.resolve(__dirname, 'dist/js/bundle.js');
-    if (fs.existsSync(mainPath)) {
-      fs.renameSync(mainPath, bundlePath);
-      console.log('✅ all.bundle.js → bundle.js');
-    }
-
-    // Удаление JS от CSS-only entry
-    const cssOnlyEntries = ['general-style', 'instruction'];
-    cssOnlyEntries.forEach((name) => {
-      const jsPath = path.resolve(__dirname, `dist/js/${name}.bundle.js`);
-      if (fs.existsSync(jsPath)) {
-        fs.unlinkSync(jsPath);
-        console.log(`🗑️ Removed ${name}.bundle.js`);
-      }
-    });
-  }
-};
+error   build failed in 0.98 s
