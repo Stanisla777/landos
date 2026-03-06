@@ -1,1 +1,177 @@
-npm install --save-dev @rsbuild/plugin-vue
+const { defineConfig } = require('@rsbuild/core');
+const { pluginPug } = require('@rsbuild/plugin-pug');
+const { pluginSass } = require('@rsbuild/plugin-sass');
+const { pluginVue } = require('@rsbuild/plugin-vue');
+const path = require('path');
+const fs = require('fs');
+
+// Находим все pug файлы в views
+const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
+const pugFiles = fs.existsSync(pugViewsDir)
+  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
+  : [];
+
+// Создаем entry points для JS и SCSS
+const entry = {
+  'all': './src/js/index.js',
+  'general-js': './src/js/general.js',
+  'instruction-js': './src/js/instruction.js',
+  'general-style': './src/scss/general-style.scss',
+  'instruction': './src/scss/instruction.scss',
+};
+
+module.exports = defineConfig({
+  // 👇 ВСЕ НУЖНЫЕ ПЛАГИНЫ
+  plugins: [
+    pluginVue(), // для Vue компонентов
+    pluginPug({
+      pretty: true,
+      basedir: path.resolve(__dirname, 'src/pug'),
+    }),
+    pluginSass({
+      sassLoaderOptions: {
+        sourceMap: true,
+        sassOptions: {
+          outputStyle: 'expanded',
+          includePaths: [
+            path.resolve(__dirname, 'src/scss'),
+            path.resolve(__dirname, 'src')
+          ]
+        },
+      },
+    }),
+  ],
+
+  source: {
+    entry: entry,
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@img': path.resolve(__dirname, 'src/img'),
+      '@fonts': path.resolve(__dirname, 'src/fonts'),
+    },
+  },
+
+  resolve: {
+    alias: {
+      vue$: 'vue/dist/vue.runtime.esm-bundler.js',
+    },
+    extensions: ['.js', '.vue', '.json', '.pug'],
+  },
+
+  output: {
+    distPath: {
+      root: 'dist',
+      js: 'js',
+      css: 'css',
+      font: 'fonts',
+      image: 'img',
+    },
+    filename: {
+      js: process.env.NODE_ENV === 'production'
+        ? '[name].[contenthash].bundle.js'
+        : '[name].bundle.js',
+      css: '[name].css',
+      font: '[name].[hash:8][ext]',
+      image: '[name].[hash:8][ext]',
+    },
+    publicPath: process.env.NODE_ENV === 'production' ? '/dist/' : '/',
+    cleanDistPath: true,
+    copy: [
+      { from: './src/fonts', to: 'fonts' },
+      { from: './src/img', to: 'img' },
+    ],
+    sourceMap: {
+      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
+      css: true,
+    },
+  },
+
+  html: {
+    template: ({ entryName }) => {
+      if (entryName === 'instruction') {
+        return path.join(pugViewsDir, 'instruction.pug');
+      }
+      return path.join(pugViewsDir, 'index.pug');
+    },
+    inject: 'body',
+    scriptLoading: 'defer',
+  },
+
+  // 👇 КЛЮЧЕВЫЕ НАСТРОЙКИ tools
+  tools: {
+    // 👉 ЗАПРЕЩАЕМ ПРЕОБРАЗОВАНИЕ URL В CSS
+    cssLoader: {
+      url: false,
+    },
+
+    postcss: (config) => {
+      config.postcssOptions.plugins = [
+        require('autoprefixer'),
+        ...(process.env.NODE_ENV === 'production'
+          ? [require('cssnano')({
+            preset: ['default', {
+              discardComments: { removeAll: true },
+              normalizeWhitespace: true,
+            }]
+          })]
+          : [])
+      ];
+      return config;
+    },
+
+    rspack: (config) => {
+      // Cache groups
+      if (!config.optimization) config.optimization = {};
+      if (!config.optimization.splitChunks) config.optimization.splitChunks = {};
+      if (!config.optimization.splitChunks.cacheGroups) config.optimization.splitChunks.cacheGroups = {};
+
+      config.optimization.splitChunks.cacheGroups = {
+        vendor: {
+          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+          name: 'vendor-script',
+          chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
+          enforce: true,
+          priority: 10,
+        },
+        common: {
+          name: 'common',
+          chunks: 'all',
+          minChunks: 2,
+          priority: 5,
+          reuseExistingChunk: true,
+        },
+      };
+
+      return config;
+    },
+  },
+
+  performance: {
+    hints: false,
+    chunkSplit: {
+      strategy: 'split-by-module',
+    },
+  },
+
+  dev: {
+    port: 8080,
+    open: true,
+    hmr: true,
+    liveReload: true,
+    watchFiles: {
+      paths: ['src/pug/**/*.pug', 'src/**/*'],
+      options: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
+  },
+
+  server: {
+    publicDir: {
+      name: 'dist',
+      watch: true,
+    },
+  },
+});
+
