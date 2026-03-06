@@ -1,65 +1,147 @@
-tools: {
-  bundlerChain: (chain) => {
-    // Удаляем существующие правила для стилей
-    chain.module.rules.delete('scss');
-    chain.module.rules.delete('css');
-    
-    // Добавляем правило для CSS/SCSS с правильным порядком загрузчиков
-    chain.module
-      .rule('styles')
-      .test(/\.(css|scss|sass)$/)
-      .use('style-loader')
-      .loader('style-loader')
-      .end()
-      .use('css-loader')
-      .loader('css-loader')
-      .options({
-        url: false, // 👈 КЛЮЧЕВОЕ: не преобразовывать url()
-        sourceMap: true,
-        importLoaders: 1,
-      })
-      .end()
-      .use('sass-loader')
-      .loader('sass-loader')
-      .options({
-        sourceMap: true,
-        sassOptions: {
-          outputStyle: 'expanded',
-          includePaths: [
-            path.resolve(__dirname, 'src/scss'),
-            path.resolve(__dirname, 'src')
-          ]
-        },
-      });
+Не хочет:
+error   Build errors: 
+File: .\src\scss\general-style.scss:1:1
+  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+  ╰─▶   × expected "{".
+        │   ╷
+        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
+        │   │                                                                                                  ^
+        │   ╵
+        │   ..\..\..\..\src\scss\general-style.scss 2:98  root stylesheet
 
-    // Vue лоадер
-    chain.module
-      .rule('vue')
-      .test(/\.vue$/)
-      .use('vue-compiler-loader')
-      .loader(path.resolve(__dirname, 'loaders/vue-compiler-loader.js'));
+File: .\src\scss\instruction.scss:1:1
+  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+  ╰─▶   × expected "{".
+        │   ╷
+        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
+        │   │                                                                                                  ^
+        │   ╵
+        │   ..\..\..\..\src\scss\instruction.scss 2:98  root stylesheet
 
-    // Babel для JS
-    chain.module
-      .rule('js')
-      .test(/\.js$/)
-      .exclude
-      .add(/node_modules/)
-      .end()
-      .use('babel-loader')
-      .loader('babel-loader')
-      .options({
-        presets: ['@babel/preset-env'],
-      });
+File: .\src\scss\style.scss:1:1
+  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+  ╰─▶   × expected "{".
+        │   ╷
+        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
+        │   │                                                                                                  ^
+        │   ╵
+        │   ..\..\..\..\src\scss\style.scss 2:98  root stylesheet
 
-    // Source maps
-    chain.module
-      .rule('source-map')
-      .test(/\.js$/)
-      .enforce('pre')
-      .use('source-map-loader')
-      .loader('source-map-loader');
-  },
-  
-  // ... остальные настройки без изменений
-},
+File: ./src/scss/general-style.scss:1:1
+  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
+  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+
+File: ./src/scss/instruction.scss:1:1
+  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
+  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+
+File: ./src/scss/style.scss:1:1
+  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
+  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+
+Import traces (entry → error):
+  ./src/js/index.js
+  ./src/scss/style.scss ×
+
+error   build failed in 5.49 s
+start   building removed img\housing-cooperative\Tick.png and 170 more
+error   Build errors: 
+File: .\src\scss\general-style.scss:1:1
+  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+  ╰─▶   × expected "{".
+        │   ╷
+        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
+        │   │                                                                                                  ^
+        │   ╵
+        │   ..\..\..\..\src\scss\general-style.scss 2:98  root stylesheet
+
+File: .\src\scss\instruction.scss:1:1
+  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+  ╰─▶   × expected "{".
+        │   ╷
+        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
+        │   │                                                                                                  ^
+        │   ╵
+        │   ..\..\..\..\src\scss\instruction.scss 2:98  root stylesheet
+
+File: .\src\scss\style.scss:1:1
+  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+  ╰─▶   × expected "{".
+        │   ╷
+        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
+        │   │                                                                                                  ^
+        │   ╵
+        │   ..\..\..\..\src\scss\style.scss 2:98  root stylesheet
+
+File: ./src/scss/general-style.scss:1:1
+  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
+  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+
+File: ./src/scss/instruction.scss:1:1
+  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
+  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+
+File: ./src/scss/style.scss:1:1
+  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
+  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+
+Import traces (entry → error):
+  ./src/js/index.js
+  ./src/scss/style.scss ×
+
+error   build failed in 0.66 s
+start   building removed src\img\at-partners-logo6.png and 899 more
+error   Build errors: 
+File: .\src\scss\general-style.scss:1:1
+  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+  ╰─▶   × expected "{".
+        │   ╷
+        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
+        │   │                                                                                                  ^
+        │   ╵
+        │   ..\..\..\..\src\scss\general-style.scss 2:98  root stylesheet
+
+File: .\src\scss\instruction.scss:1:1
+  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+  ╰─▶   × expected "{".
+        │   ╷
+        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
+        │   │                                                                                                  ^
+        │   ╵
+        │   ..\..\..\..\src\scss\instruction.scss 2:98  root stylesheet
+
+File: .\src\scss\style.scss:1:1
+  × Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+  ╰─▶   × expected "{".
+        │   ╷
+        │ 2 │       import API from "!../../node_modules/style-loader/dist/runtime/injectStylesIntoStyleTag.js";
+        │   │                                                                                                  ^
+        │   ╵
+        │   ..\..\..\..\src\scss\style.scss 2:98  root stylesheet
+
+File: ./src/scss/general-style.scss:1:1
+  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
+  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+
+File: ./src/scss/instruction.scss:1:1
+  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
+  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+
+File: ./src/scss/style.scss:1:1
+  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
+  ╰─▶   × Error: Module build failed (from ./node_modules/@rsbuild/plugin-sass/compiled/sass-loader/index.js):
+        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
+
+Import traces (entry → error):
+  ./src/js/index.js
+  ./src/scss/style.scss ×
+
+error   build failed in 0.68 s
