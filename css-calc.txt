@@ -1,5 +1,317 @@
-[rspack-cli] [Error:   × Rspack FS Error:IO error: Error: ENOTEMPTY: directory not empty, rmdir 'C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\dist\img\app-icon'
-  │
-] {
-  code: 'GenericFailure'
-}
+/* eslint-disable */
+const path = require('path');
+const fs = require('fs');
+const rspack = require('@rspack/core');
+
+// Находим все pug файлы в views
+const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
+const pugFiles = fs.existsSync(pugViewsDir) 
+  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
+  : [];
+
+// Базовый конфиг, одинаковый для всех режимов
+const config = {
+  entry: {
+    all: ['./src/js/index.js'],
+    'general-js': './src/js/general.js',
+    'instruction-js': './src/js/instruction.js',
+    'general-style': './src/scss/general-style.scss',
+    'instruction': './src/scss/instruction.scss'
+  },
+
+  output: {
+    filename: 'js/[name].bundle.js',
+    publicPath: '/',
+    // Убираем clean: true - будем чистить вручную через плагин
+    path: path.resolve(__dirname, 'dist'),
+  },
+
+  experiments: {
+    css: false
+  },
+
+  performance: { hints: false },
+
+  optimization: {
+    minimize: false,
+    splitChunks: {
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+          name: 'vendor-script',
+          chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
+          enforce: true,
+          priority: 10
+        },
+        common: {
+          name: 'common',
+          chunks: 'all',
+          minChunks: 2,
+          priority: 5,
+          reuseExistingChunk: true
+        }
+      }
+    }
+  },
+
+  module: {
+    rules: [
+      {
+        test: /\.vue$/,
+        use: [{
+          loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
+        }]
+      },
+      {
+        test: /\.pug$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'html-loader',
+            options: {
+              sources: false,
+              esModule: false,
+            },
+          },
+          {
+            loader: 'pug-html-loader',
+            options: {
+              pretty: true,
+              basedir: path.resolve(__dirname, 'src/pug')
+            },
+          },
+        ],
+      },
+      {
+        test: /\.(sass|scss)$/,
+        include: path.resolve(__dirname, 'src/scss'),
+        use: [
+          rspack.CssExtractRspackPlugin.loader,
+          { loader: 'css-loader', options: { sourceMap: true, url: false } },
+          {
+            loader: 'postcss-loader',
+            options: {
+              sourceMap: true,
+              postcssOptions: {
+                plugins: [
+                  require('autoprefixer'),
+                ].filter(Boolean)
+              }
+            }
+          },
+          { loader: 'sass-loader', options: { sourceMap: true } }
+        ],
+        type: 'javascript/auto'
+      },
+      { 
+        test: /\.js$/, 
+        exclude: /node_modules/, 
+        use: { 
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        } 
+      },
+      { test: /\.js$/, enforce: 'pre', use: ['source-map-loader'] }
+    ]
+  },
+
+  plugins: [
+    new rspack.DefinePlugin({
+      __VUE_OPTIONS_API__: JSON.stringify(true),
+      __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    }),
+
+    new rspack.CssExtractRspackPlugin({ 
+      filename: 'css/[name].css'
+    }),
+    
+    new rspack.CopyRspackPlugin({
+      patterns: [
+        { from: './src/fonts', to: 'fonts', noErrorOnMissing: true },
+        { from: './src/img', to: 'img', noErrorOnMissing: true }
+      ]
+    }),
+  ],
+
+  resolve: {
+    alias: {
+      vue$: 'vue/dist/vue.runtime.esm-bundler.js'
+    },
+    extensions: ['.js', '.vue', '.json', '.pug']
+  },
+
+  devtool: 'source-map'
+};
+
+// Финальная настройка в зависимости от режима
+module.exports = (env, argv) => {
+  const isProduction = argv.mode === 'production';
+  
+  if (isProduction) {
+    // ========== PRODUCTION ==========
+    config.mode = 'production';
+    config.devtool = false;
+    config.optimization.minimize = true;
+    config.output.filename = 'js/[name].[contenthash].bundle.js';
+    config.output.publicPath = '/dist/';
+    
+    // Обновляем DefinePlugin
+    const definePluginIndex = config.plugins.findIndex(p => p instanceof rspack.DefinePlugin);
+    if (definePluginIndex !== -1) {
+      config.plugins[definePluginIndex] = new rspack.DefinePlugin({
+        __VUE_OPTIONS_API__: JSON.stringify(true),
+        __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+        'process.env.NODE_ENV': JSON.stringify('production')
+      });
+    }
+
+    // Добавляем cssnano для production
+    const scssRuleIndex = config.module.rules.findIndex(rule => 
+      rule.test && rule.test.toString().includes('scss')
+    );
+    if (scssRuleIndex !== -1) {
+      const postcssLoaderIndex = config.module.rules[scssRuleIndex].use.findIndex(
+        use => use.loader && use.loader.includes('postcss-loader')
+      );
+      if (postcssLoaderIndex !== -1) {
+        config.module.rules[scssRuleIndex].use[postcssLoaderIndex].options.postcssOptions.plugins.push(
+          require('cssnano')({ 
+            preset: ['default', { discardComments: { removeAll: true } }] 
+          })
+        );
+      }
+    }
+
+    // Добавляем плагин для очистки dist перед сборкой
+    config.plugins.push({
+      apply: (compiler) => {
+        compiler.hooks.beforeRun.tap('CleanDistPlugin', () => {
+          const distPath = path.resolve(__dirname, 'dist');
+          if (fs.existsSync(distPath)) {
+            // Простой способ: удаляем и создаем заново
+            fs.rmSync(distPath, { recursive: true, force: true });
+            fs.mkdirSync(distPath, { recursive: true });
+            console.log('🧹 Dist directory cleaned');
+          }
+        });
+      }
+    });
+
+    // Добавляем HTML плагины
+    pugFiles.forEach(file => {
+      const name = file.replace('.pug', '');
+      
+      let chunks = ['all', 'general-style', 'vendor-script', 'common'];
+      if (name === 'instruction') {
+        chunks = ['instruction', 'instruction-js', 'vendor-script', 'common'];
+      } else {
+        chunks.push('general-js');
+      }
+      
+      config.plugins.push(new rspack.HtmlRspackPlugin({
+        template: path.join(pugViewsDir, file),
+        filename: `${name}.html`,
+        chunks: chunks,
+        inject: 'body',
+        scriptLoading: 'defer',
+        minify: false
+      }));
+    });
+
+    // Плагины для переименования и очистки
+    config.plugins.push({
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
+          const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
+          const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
+          if (fs.existsSync(mainPath)) {
+            fs.renameSync(mainPath, bundlePath);
+            console.log('✅ all.bundle.js → bundle.js');
+          }
+        });
+      }
+    });
+
+    config.plugins.push({
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
+          ['general-style', 'instruction'].forEach((name) => {
+            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
+            if (fs.existsSync(jsPath)) {
+              fs.unlinkSync(jsPath);
+              console.log(`🗑️  Removed ${name}.bundle.js`);
+            }
+          });
+        });
+      }
+    });
+    
+  } else {
+    // ========== DEVELOPMENT ==========
+    config.mode = 'development';
+    config.devtool = 'source-map';
+    config.optimization.minimize = false;
+    config.output.filename = 'js/[name].bundle.js';
+    config.output.publicPath = '/';
+    
+    // Добавляем HTML плагины
+    pugFiles.forEach(file => {
+      const name = file.replace('.pug', '');
+      
+      let chunks = ['all', 'general-style', 'vendor-script', 'common'];
+      if (name === 'instruction') {
+        chunks = ['instruction', 'instruction-js', 'vendor-script', 'common'];
+      } else {
+        chunks.push('general-js');
+      }
+      
+      config.plugins.push(new rspack.HtmlRspackPlugin({
+        template: path.join(pugViewsDir, file),
+        filename: `${name}.html`,
+        chunks: chunks,
+        inject: 'body',
+        scriptLoading: 'defer',
+        minify: false
+      }));
+    });
+    
+    // Настройки devServer
+    config.devServer = {
+      port: 8080,
+      open: true,
+      hot: true,
+      liveReload: true,
+      watchFiles: {
+        paths: ['src/pug/**/*.pug', 'src/**/*'],
+        options: {
+          usePolling: true,
+          interval: 1000
+        }
+      },
+      static: {
+        directory: path.join(__dirname, 'dist'),
+        watch: true,
+        publicPath: '/'
+      },
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false
+        },
+        progress: true,
+        reconnect: true
+      },
+      devMiddleware: {
+        publicPath: '/',
+        writeToDisk: false
+      }
+    };
+  }
+  
+  return config;
+};
