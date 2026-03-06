@@ -1,143 +1,170 @@
 npm uninstall webpack webpack-bundle-analyzer webpack-cli webpack-dev-server clean-webpack-plugin copy-webpack-plugin html-webpack-plugin mini-css-extract-plugin terser-webpack-plugin pug-plugin pug-loader pug-plain-loader pug-html-loader html-loader cache-loader eslint-loader css-loader postcss-loader sass-loader style-loader --legacy-peer-deps
 
-сделал как вы сказали, но сборка не проходит, вот ошибки:
-error   Build errors: 
-File: ./src/scss/general-style.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @import "modules/reset";
-         · ─
-       2 │ @import "mixins/index";
-       3 │ @import "var/index";
-         ╰────
+npm install --save-dev @rsbuild/plugin-sass
 
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
+const { defineConfig } = require('@rsbuild/core');
+const { pluginPug } = require('@rsbuild/plugin-pug');
+const { pluginSass } = require('@rsbuild/plugin-sass'); // 👈 Добавляем
+const path = require('path');
+const fs = require('fs');
 
-File: ./src/scss/instruction.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @import "mixins/index";
-         · ─
-       2 │ @import "var/index";
-       3 │ @import "components/content";
-         ╰────
+// Находим все pug файлы в views
+const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
+const pugFiles = fs.existsSync(pugViewsDir)
+  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
+  : [];
 
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
+// Создаем entry points для JS и SCSS
+const entry = {
+  'all': './src/js/index.js',
+  'general-js': './src/js/general.js',
+  'instruction-js': './src/js/instruction.js',
+  'general-style': './src/scss/general-style.scss',
+  'instruction': './src/scss/instruction.scss',
+};
 
-File: ./src/scss/style.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @charset "utf-8";
-         · ─
-       2 │
-       3 │ @import "modules/reset";
-         ╰────
+module.exports = defineConfig({
+  // 👈 Добавляем оба плагина
+  plugins: [
+    pluginPug({
+      pretty: true,
+      basedir: path.resolve(__dirname, 'src/pug'),
+    }),
+    pluginSass(), // Sass плагин для обработки SCSS
+  ],
+  
+  source: {
+    entry: entry,
+  },
+  
+  resolve: {
+    alias: {
+      vue$: 'vue/dist/vue.runtime.esm-bundler.js',
+    },
+    extensions: ['.js', '.vue', '.json', '.pug'],
+  },
+  
+  output: {
+    distPath: {
+      root: 'dist',
+      js: 'js',
+      css: 'css',
+      font: 'fonts',
+      image: 'img',
+    },
+    filename: {
+      js: process.env.NODE_ENV === 'production' 
+        ? '[name].[contenthash].bundle.js' 
+        : '[name].bundle.js',
+      css: '[name].css',
+    },
+    publicPath: process.env.NODE_ENV === 'production' ? '/dist/' : '/',
+    cleanDistPath: true,
+    copy: [
+      { from: './src/fonts', to: 'fonts' },
+      { from: './src/img', to: 'img' },
+    ],
+    sourceMap: {
+      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
+      css: true,
+    },
+  },
+  
+  html: {
+    template: ({ entryName }) => {
+      if (entryName === 'instruction') {
+        return path.join(pugViewsDir, 'instruction.pug');
+      }
+      return path.join(pugViewsDir, 'index.pug');
+    },
+    inject: 'body',
+    scriptLoading: 'defer',
+  },
+  
+  tools: {
+    bundlerChain: (chain) => {
+      // Vue лоадер
+      chain.module
+        .rule('vue')
+        .test(/\.vue$/)
+        .use('vue-compiler-loader')
+        .loader(path.resolve(__dirname, 'loaders/vue-compiler-loader.js'));
+      
+      // Babel для JS
+      chain.module
+        .rule('js')
+        .test(/\.js$/)
+        .exclude.add(/node_modules/).end()
+        .use('babel-loader')
+        .loader('babel-loader')
+        .options({
+          presets: ['@babel/preset-env'],
+        });
+      
+      // Source maps
+      chain.module
+        .rule('source-map')
+        .test(/\.js$/)
+        .enforce('pre')
+        .use('source-map-loader')
+        .loader('source-map-loader');
+    },
 
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
+    rspack: (config) => {
+      // Cache groups
+      if (!config.optimization) config.optimization = {};
+      if (!config.optimization.splitChunks) config.optimization.splitChunks = {};
+      
+      config.optimization.splitChunks.cacheGroups = {
+        vendor: {
+          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+          name: 'vendor-script',
+          chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
+          enforce: true,
+          priority: 10,
+        },
+        common: {
+          name: 'common',
+          chunks: 'all',
+          minChunks: 2,
+          priority: 5,
+          reuseExistingChunk: true,
+        },
+      };
+      
+      return config;
+    },
+  },
+  
+  performance: {
+    hints: false,
+    chunkSplit: {
+      strategy: 'split-by-module',
+    },
+  },
+  
+  dev: {
+    port: 8080,
+    open: true,
+    hmr: true,
+    liveReload: true,
+    watchFiles: {
+      paths: ['src/pug/**/*.pug', 'src/**/*'],
+      options: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
+  },
+  
+  server: {
+    publicDir: {
+      name: 'dist',
+      watch: true,
+    },
+  },
+});
 
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
-
-error   build failed in 4.74 s
-start   building removed img\favicon\apple-icon-72x72.png and 170 more
-error   Build errors: 
-File: ./src/scss/general-style.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @import "modules/reset";
-         · ─
-       2 │ @import "mixins/index";
-       3 │ @import "var/index";
-         ╰────
-
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
-
-File: ./src/scss/instruction.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @import "mixins/index";
-         · ─
-       2 │ @import "var/index";
-       3 │ @import "components/content";
-         ╰────
-
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
-
-File: ./src/scss/style.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @charset "utf-8";
-         · ─
-       2 │
-       3 │ @import "modules/reset";
-         ╰────
-
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
-
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
-
-error   build failed in 0.74 s
-start   building removed src\img\test-n-image-2.jpg and 899 more
-error   Build errors: 
-File: ./src/scss/general-style.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @import "modules/reset";
-         · ─
-       2 │ @import "mixins/index";
-       3 │ @import "var/index";
-         ╰────
-
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
-
-File: ./src/scss/instruction.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @import "mixins/index";
-         · ─
-       2 │ @import "var/index";
-       3 │ @import "components/content";
-         ╰────
-
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
-
-File: ./src/scss/style.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @charset "utf-8";
-         · ─
-       2 │
-       3 │ @import "modules/reset";
-         ╰────
-
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
-
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
-
-error   build failed in 0.64 s
 
 
 
