@@ -1,48 +1,69 @@
-Не собирается. А скажите, мы близки к сборке без ошибок? Или по вашему ощущению - это ошибки, которые не дадут нам выполнить задачу?
-C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf>npm run start
-(node:69204) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
-(Use `node --trace-warnings ...` to show where the warning was created)
+tools: {
+  cssLoader: {
+    url: false,
+  },
 
-> start-webapck-template@2.0.0 start
-> cross-env NODE_ENV=development rsbuild dev
+  postcss: (config) => {
+    config.postcssOptions.plugins = [
+      require('autoprefixer'),
+      ...(process.env.NODE_ENV === 'production'
+        ? [require('cssnano')({
+          preset: ['default', {
+            discardComments: { removeAll: true },
+            normalizeWhitespace: true,
+          }]
+        })]
+        : [])
+    ];
+    return config;
+  },
 
-Rsbuild v1.7.3
+  rspack: (config) => {
+    // Добавляем поддержку require.ensure для ленивой загрузки
+    if (!config.module) config.module = {};
+    if (!config.module.parser) config.module.parser = {};
+    config.module.parser.javascript = {
+      ...config.module.parser.javascript,
+      requireEnsure: true,
+    };
 
-warn    [rsbuild:config] The "source.alias" config is deprecated, use "resolve.alias" instead.
-  ➜  Network:  
-  -  all               http://10.209.46.11:3000/all
-  -  general-js        http://10.209.46.11:3000/general-js
-  -  instruction-js    http://10.209.46.11:3000/instruction-js
-  -  general-style     http://10.209.46.11:3000/general-style
-  -  instruction       http://10.209.46.11:3000/instruction
+    // 👇 ОТКЛЮЧАЕМ АВТОМАТИЧЕСКУЮ ГЕНЕРАЦИЮ HTML ДЛЯ ENTRY ТОЧЕК
+    // 1. Проходим по всем entry и удаляем их HTML-шаблоны
+    if (config.entry) {
+      Object.keys(config.entry).forEach(entryName => {
+        // Если entry имеет объектную структуру с полем import
+        if (config.entry[entryName] && typeof config.entry[entryName] === 'object' && config.entry[entryName].import) {
+          delete config.entry[entryName].html;
+        }
+      });
+    }
 
-  ➜  Local:  
-  -  all               http://localhost:3000/all
-  -  general-js        http://localhost:3000/general-js
-  -  instruction-js    http://localhost:3000/instruction-js
-  -  general-style     http://localhost:3000/general-style
-  -  instruction       http://localhost:3000/instruction
-  ➜  press h + enter to show shortcuts
+    // 2. Глобально запрещаем генерацию HTML для entry
+    if (!config.output) config.output = {};
+    if (!config.output.filename) config.output.filename = {};
+    config.output.filename.html = false;
 
-start   build started...
-error   Build error: 
-× Conflict: Multiple assets emit different content to the same filename instruction.html
+    // 3. Добавляем HtmlRspackPlugin для генерации HTML из PUG файлов
+    const { HtmlRspackPlugin } = require('@rspack/core');
+    
+    // Создаем HTML плагины для каждого PUG файла
+    const htmlPlugins = pugFiles.map(file => {
+      const name = file.replace('.pug', '');
+      return new HtmlRspackPlugin({
+        template: path.join(pugViewsDir, file),
+        filename: `${name}.html`,
+        inject: true, // Автоматически подключает все скрипты
+        scriptLoading: 'defer',
+        minify: false,
+      });
+    });
 
-You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
+    // Добавляем плагины в конфиг
+    config.plugins = [
+      ...(config.plugins || []),
+      ...htmlPlugins,
+    ];
 
-error   build failed in 6.87 s
-start   building removed img\AMP\instruktsiya-1.png and 170 more
-error   Build error: 
-× Conflict: Multiple assets emit different content to the same filename instruction.html
-
-You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
-
-error   build failed in 1.04 s
-start   building removed src\img\house_tablet.png and 899 more
-error   Build error: 
-× Conflict: Multiple assets emit different content to the same filename instruction.html
-
-You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
-
-error   build failed in 0.93 s
-
+    return config;
+  },
+},
