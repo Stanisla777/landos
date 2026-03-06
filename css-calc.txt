@@ -1,39 +1,31 @@
-Смотрите, этот rspack возвращает такую ошибку vue приложения
-Uncaught TypeError: (0 , i.createElementVNode) is not a function
-    at ./src/js/modules/TelegramBlock.vue (bundle.js:1:1008)
-    at s (vue.runtime.global.js:10922:1)
-    at vue.runtime.global.js:10922:1
-    at vue.runtime.global.js:10922:1
-    at vue.runtime.global.js:10922:1
-
-и если заглянуть внутрь vue.runtime.global.js:10922:1 то увидим 
-function initDev() {
-    {
-      {
-        console.info(
-          `You are running a development build of Vue.
-Make sure to use the production build (*.prod.js) when deploying for production.`
-        );
-      }
-может это важно, а вот сам код
-
 /* eslint-disable */
 const path = require('path');
 const fs = require('fs');
 const rspack = require('@rspack/core');
+const pug = require('pug'); // Для продакшен прекомпиляции
 
+// Находим все pug файлы в views
+const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
+const pugFiles = fs.existsSync(pugViewsDir) 
+  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
+  : [];
+
+// Базовый конфиг, одинаковый для всех режимов
 const config = {
   entry: {
+    // Основные чанки
     all: ['./src/js/index.js'],
-    'general-style': ['./src/scss/general-style.scss'],
-    instruction: ['./src/scss/instruction.scss'],
     'general-js': './src/js/general.js',
-    'instruction-js': './src/js/instruction.js'
+    'instruction-js': './src/js/instruction.js',
+    
+    // Чанки со стилями (отдельно для каждой страницы)
+    'general-style': './src/scss/general-style.scss',
+    'instruction': './src/scss/instruction.scss'
   },
 
   output: {
-    filename: './js/[name].bundle.js',
-    publicPath: '/dist/',
+    filename: 'js/[name].bundle.js',
+    publicPath: '/',
     clean: true,
     path: path.resolve(__dirname, 'dist'),
   },
@@ -42,25 +34,29 @@ const config = {
     css: false
   },
 
-  mode: 'production',
+  performance: { hints: false },
 
   optimization: {
-    minimize: true,
+    minimize: false,
     splitChunks: {
       cacheGroups: {
-        defaultVendors: false,
         vendor: {
-          // ✅ Убрали vue из теста — алиас должен работать
           test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
           name: 'vendor-script',
-          chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
-          enforce: true
+          chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
+          enforce: true,
+          priority: 10
+        },
+        common: {
+          name: 'common',
+          chunks: 'all',
+          minChunks: 2,
+          priority: 5,
+          reuseExistingChunk: true
         }
       }
     }
   },
-
-  performance: { hints: false },
 
   module: {
     rules: [
@@ -81,7 +77,12 @@ const config = {
             options: {
               sourceMap: true,
               postcssOptions: {
-                plugins: [require('cssnano')({ preset: ['default', { discardComments: { removeAll: true } }] })]
+                plugins: [
+                  require('autoprefixer'),
+                  process.env.NODE_ENV === 'production' && require('cssnano')({ 
+                    preset: ['default', { discardComments: { removeAll: true } }] 
+                  })
+                ].filter(Boolean)
               }
             }
           },
@@ -89,57 +90,70 @@ const config = {
         ],
         type: 'javascript/auto'
       },
-      {
-        test: /\.pug$/,
-        oneOf: [
-          { include: path.resolve(__dirname, 'src/pug/'), exclude: /\.vue$/, use: ['pug-loader'] },
-          { use: ['pug-plain-loader'] }
-        ]
+      { 
+        test: /\.js$/, 
+        exclude: /node_modules/, 
+        use: { 
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        } 
       },
-      { test: /\.js$/, exclude: /node_modules/, use: { loader: 'babel-loader' } },
       { test: /\.js$/, enforce: 'pre', use: ['source-map-loader'] }
     ]
   },
 
   plugins: [
-    // ✅ DefinePlugin для Vue 3 feature flags (ОБЯЗАТЕЛЬНО!)
-    // new rspack.DefinePlugin({
-    //   __VUE_OPTIONS_API__: JSON.stringify(true),
-    //   __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
-    //   __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
-    //   'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
-    // }),
+    new rspack.DefinePlugin({
+      __VUE_OPTIONS_API__: JSON.stringify(true),
+      __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    }),
 
-    new rspack.CssExtractRspackPlugin({ filename: './css/[name].css' }),
+    new rspack.CssExtractRspackPlugin({ 
+      filename: 'css/[name].css'
+    }),
+    
     new rspack.CopyRspackPlugin({
       patterns: [
-        { from: './src/fonts', to: './fonts' },
-        { from: './src/img', to: './img' }
+        { from: './src/fonts', to: 'fonts', noErrorOnMissing: true },
+        { from: './src/img', to: 'img', noErrorOnMissing: true }
       ]
     }),
+
+    // Кастомный плагин для переименования all.bundle.js в bundle.js
     {
       apply: (compiler) => {
         compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
-          const fs = require('fs');
-          const path = require('path');
-          const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
-          const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
-          if (fs.existsSync(mainPath)) {
-            fs.renameSync(mainPath, bundlePath);
-            console.log('✅ all.bundle.js → bundle.js');
+          if (process.env.NODE_ENV === 'production') {
+            const fs = require('fs');
+            const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
+            const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
+            if (fs.existsSync(mainPath)) {
+              fs.renameSync(mainPath, bundlePath);
+              console.log('✅ all.bundle.js → bundle.js');
+            }
           }
         });
       }
     },
+
+    // Кастомный плагин для удаления ненужных JS файлов от CSS чанков
     {
       apply: (compiler) => {
         compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
-          const fs = require('fs');
-          const path = require('path');
-          ['general-style', 'instruction'].forEach((name) => {
-            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
-            if (fs.existsSync(jsPath)) fs.unlinkSync(jsPath);
-          });
+          if (process.env.NODE_ENV === 'production') {
+            const fs = require('fs');
+            ['general-style', 'instruction'].forEach((name) => {
+              const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
+              if (fs.existsSync(jsPath)) {
+                fs.unlinkSync(jsPath);
+                console.log(`🗑️  Removed ${name}.bundle.js`);
+              }
+            });
+          }
         });
       }
     }
@@ -147,45 +161,156 @@ const config = {
 
   resolve: {
     alias: {
-      // ✅ ESM-сборка для bundlers (требует DefinePlugin выше!)
-      vue: 'vue/dist/vue.runtime.global.js'
+      vue$: 'vue/dist/vue.runtime.esm-bundler.js'
     },
-    extensions: ['.js', '.vue', '.json']
+    extensions: ['.js', '.vue', '.json', '.pug']
   },
 
-  devtool: 'source-map',
-
-  devServer: {
-    port: 8080,
-    open: true,
-    hot: true,
-    static: { directory: path.join(__dirname, 'dist') },
-    historyApiFallback: true,
-    watchFiles: ['src/pug/**/*.pug', 'src/**/*'],
-  },
+  devtool: 'source-map'
 };
 
+// Финальная настройка в зависимости от режима
 module.exports = (env, argv) => {
-  // Создаём DefinePlugin с правильным NODE_ENV
-  const definePlugin = new rspack.DefinePlugin({
-    __VUE_OPTIONS_API__: 'true',
-    __VUE_PROD_DEVTOOLS__: 'false',
-    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
-    'process.env.NODE_ENV': JSON.stringify(argv.mode === 'production' ? 'production' : 'development')
-  });
-
-  if (argv.mode === 'production') {
-    config.resolve.alias.vue = 'vue/dist/vue.global.prod.js';  // ← Меньше размер
-    config.devtool = 'eval-source-map';
+  const isProduction = argv.mode === 'production';
+  
+  if (isProduction) {
+    // ========== PRODUCTION РЕЖИМ (npm run dev / npm run build) ==========
+    config.mode = 'production';
+    config.devtool = false;
     config.optimization.minimize = true;
-    config.plugins.push(new rspack.DefinePlugin({ /* production флаги */ }));
+    config.output.filename = 'js/[name].[contenthash].bundle.js';
+    config.output.publicPath = '/dist/';
+    
+    // Обновляем DefinePlugin для production
+    const definePluginIndex = config.plugins.findIndex(p => p instanceof rspack.DefinePlugin);
+    if (definePluginIndex !== -1) {
+      config.plugins[definePluginIndex] = new rspack.DefinePlugin({
+        __VUE_OPTIONS_API__: JSON.stringify(true),
+        __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+        'process.env.NODE_ENV': JSON.stringify('production')
+      });
+    }
+
+    // ===== PRODUCTION: Прекомпиляция PUG в HTML =====
+    // Удаляем правило для pug в production (оно не нужно)
+    config.module.rules = config.module.rules.filter(rule => 
+      !rule.test || rule.test.toString() !== /\.pug$/.toString()
+    );
+
+    // Создаем HTML плагины с прекомпилированным PUG
+    const productionHtmlPlugins = pugFiles.map(file => {
+      const name = file.replace('.pug', '');
+      const pugFilePath = path.join(pugViewsDir, file);
+      
+      // Прекомпилируем PUG в HTML строку
+      const compiledHtml = pug.compileFile(pugFilePath, { pretty: false })();
+      
+      let chunks = ['all', 'general-style', 'vendor-script', 'common'];
+      if (name === 'instruction') {
+        chunks = ['instruction', 'instruction-js', 'vendor-script', 'common'];
+      } else {
+        chunks.push('general-js');
+      }
+      
+      return new rspack.HtmlRspackPlugin({
+        templateContent: compiledHtml,
+        filename: `${name}.html`,
+        chunks: chunks,
+        inject: 'body',
+        scriptLoading: 'defer',
+        minify: false // HTML не минифицируем для бэкендера
+      });
+    });
+
+    config.plugins.push(...productionHtmlPlugins);
+    
   } else {
+    // ========== DEVELOPMENT РЕЖИМ (npm run start) ==========
     config.mode = 'development';
-    config.devtool = 'cheap-module-source-map';
+    config.devtool = 'source-map';
+    config.optimization.minimize = false;
+    config.output.filename = 'js/[name].bundle.js';
+    config.output.publicPath = '/';
+    
+    // ===== DEVELOPMENT: Загрузчики PUG для горячей перезагрузки =====
+    // Добавляем правило для PUG с загрузчиками
+    config.module.rules.push({
+      test: /\.pug$/,
+      exclude: /node_modules|\.vue/,
+      use: [
+        {
+          loader: 'html-loader',
+          options: {
+            sources: false,
+            esModule: false,
+          },
+        },
+        {
+          loader: 'pug-html-loader',
+          options: {
+            pretty: true,
+            basedir: path.resolve(__dirname, 'src/pug')
+          },
+        },
+      ],
+    });
+
+    // Создаем HTML плагины с использованием template (не templateContent)
+    const developmentHtmlPlugins = pugFiles.map(file => {
+      const name = file.replace('.pug', '');
+      
+      let chunks = ['all', 'general-style', 'vendor-script', 'common'];
+      if (name === 'instruction') {
+        chunks = ['instruction', 'instruction-js', 'vendor-script', 'common'];
+      } else {
+        chunks.push('general-js');
+      }
+      
+      return new rspack.HtmlRspackPlugin({
+        template: path.join(pugViewsDir, file),
+        filename: `${name}.html`,
+        chunks: chunks,
+        inject: 'body',
+        scriptLoading: 'defer',
+        minify: false
+      });
+    });
+
+    config.plugins.push(...developmentHtmlPlugins);
+    
+    // Настройки devServer для разработки с горячей перезагрузкой
+    config.devServer = {
+      port: 8080,
+      open: true,
+      hot: true,
+      liveReload: true,
+      watchFiles: {
+        paths: ['src/pug/**/*.pug', 'src/**/*'],
+        options: {
+          usePolling: true,
+          interval: 1000
+        }
+      },
+      static: {
+        directory: path.join(__dirname, 'dist'),
+        watch: true,
+        publicPath: '/'
+      },
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false
+        },
+        progress: true,
+        reconnect: true
+      },
+      devMiddleware: {
+        publicPath: '/',
+        writeToDisk: false
+      }
+    };
   }
-
-  // Добавляем DefinePlugin в начало массива плагинов
-  config.plugins.unshift(definePlugin);
-
+  
   return config;
 };
