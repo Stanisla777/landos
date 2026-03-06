@@ -1,69 +1,262 @@
-Ситуация такая, я сначала запустил продакшен npm run dev и вроде как без ошибок прошла сборка. Только смутило, что показывал не как html собирал а картинки
-ready   built in 17.8 s
+/* eslint-disable */
+//Оптимизированный, но плохо обновляются vue Приложения. Рабочий этот вариант
+const path = require('path');
+const fs = require('fs');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+// eslint-disable-next-line no-unused-vars
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
-File (web)                                                                             Size          Gzip   
-dist\js\instruction.ef46db3751d8e999.bundle.js                                         0.00 kB       0.02 kB
-dist\js\general-style.ef46db3751d8e999.bundle.js                                       0.00 kB       0.02 kB
-dist\img\icon-rent.svg                                                                 0.16 kB       0.15 kB
-dist\img\stairs-icon.png                                                               0.17 kB    
-dist\img\event-number-1.svg                                                            0.20 kB       0.17 kB
-dist\img\border-dotted.png                                                             0.22 kB    
-dist\img\more.png                                                                      0.23 kB    
-dist\img\play-icon.svg                                                                 0.23 kB       0.19 kB
-dist\img\icon-sort.svg                                                                 0.25 kB       0.19 kB
-dist\img\beesenderchat_print.svg                                                       0.26 kB       0.15 kB
-dist\img\send-button.png                                                               0.27 kB    
-dist\img\marker-ok.svg                                                                 0.29 kB       0.22 kB
-dist\img\calendar-arrow-left.svg                                                       0.29 kB       0.22 kB
-dist\img\upload-button.png                                                             0.30 kB    
-dist\img\heart-icon.svg                                                                0.32 kB       0.24 kB
-dist\js\instruction-js.f58bc7e621b08d39.bundle.js                                      0.32 kB       0.25 kB
-dist\img\event-number-4.svg                                                            0.33 kB       0.25 kB
-dist\img\favicon\browserconfig.xml                                                     0.34 kB       0.19 kB
-dist\img\beesenderchat-admin.svg 
+function generateHtmlPlugins(templateDir) {
+  const templateFiles = fs.readdirSync(path.resolve(__dirname, templateDir));
+  return templateFiles.map((item) => {
+    const parts = item.split('.');
+    const name = parts[0];
+    const extension = parts[1];
+    return new HtmlWebpackPlugin({
+      filename: `${name}.html`,
+      template: path.resolve(__dirname, `${templateDir}/${name}.${extension}`),
+      inject: false
+    });
+  });
+}
 
-Но самое главное то что в паке dist вместо страниц html которые конвертировались из pug были такие страницы:
-all.html
-general-js.html
-general-style.html
-instruction.html
-instruction-js.html
-и все с одинаковым кодом html, я так понимаю из head. fonts, img, css собрались правильно, в js правильно, только можно без подстановки цифор кэша. Вместо 370.744af336faf7ffd7.bundle.js должно быть просто bundle.js.
+const config = {
+  // entry: ['./src/js/index.js', './src/scss/style.scss'], // старое
+  entry: { // новое
+    all: ['./src/js/index.js'], // → bundle.js (legacy)
+    'general-style': ['./src/scss/general-style.scss'], // → general-style.css
+    instruction: ['./src/scss/instruction.scss'], // → instruction.css
+    'general-js': './src/js/general.js', // → general.bundle.js
+    'instruction-js': './src/js/instruction.js' // → instruction.bundle.js
+  },
+  output: {
+    filename: './js/[name].bundle.js',
+    // filename: './js/bundle.js',
 
-В режиме разработки явных ошибок не было, кроме warning типо
-File: .\src\scss\style.scss:1:1
-  ⚠ Module Warning (from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rsbuild\plugin-sass\compiled\sass-loader\index.js??clonedRuleSet-32.use[5]):
-  │ Deprecation Warning on line 50, column 14 of file:///C:/Users/sshchegolev/PhpstormProjects/sprosi.dom.rf/src/scss/components/snowfall/snowfall.scss:50:14:
-  │ Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
-  │
-  │ Recommendation: math.div(random(2 * $sizeNoise * 10) / 10 - $sizeNoise, 100) or calc((random(2 * $sizeNoise * 10) / 10 - $sizeNoise) / 100)
-  │
-  │ More info and automated migrator: https://sass-lang.com/d/slash-div
-  │
-  │ 50 |                $scale: 1 + (random(2 * $sizeNoise * 10) / 10 - $sizeNoise) / 100;
-  │
-  │
-  │ ..\..\..\..\src\scss\components\snowfall\snowfall.scss 51:15  @import
-  │ ..\..\..\..\src\scss\components\index.scss 118:9              @import
-  │ ..\..\..\..\src\scss\style.scss 8:9                           root stylesheet
-  │
+    // 2023-04-25 fix корневого пути  для корректной ленивой подгрузки apexchart и js вообще.
+    // TODO: сделать аналогичный fix корневого пути и для картинок
+    publicPath: '/dist/',
+    // path: path.resolve(__dirname, 'dist'), // с этим тоже работает
+    // filename: 'js/bundle.js' // с этим тоже работает
+  },
+  devtool: 'source-map',
+  mode: 'production',
+  //на время разработки, особенно если будут крупные изменения в vue Приложения optimization лучше комментировать
+  //будет собираться только bundle
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        parallel: true,
+        cache: true
+      })
+    ],
+    splitChunks: {
+      cacheGroups: {
+        defaultVendors: false, // ← ЭТО КЛЮЧЕВОЕ
+        vendor: {
+          test: /[\\/]node_modules[\\/](vue|axios|vue-axios|swiper|imask)[\\/]/,
+          name: 'vendor-script',
+          chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
+          enforce: true
+        }
+      }
+    }
+  },
+  performance: {
+    hints: false
+  },
+  module: {
+    rules: [
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader'
+      },
+      {
+        test: /\.(sass|scss)$/,
+        include: path.resolve(__dirname, 'src/scss'),
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {}
+          },
+          {
+            loader: 'css-loader',
+            options: {
+              sourceMap: true,
+              url: false
+            }
+          },
+          {
+            loader: 'postcss-loader',
+            options: {
+              ident: 'postcss',
+              sourceMap: true,
+              plugins: () => [
+                // eslint-disable-next-line global-require
+                require('cssnano')({
+                  preset: [
+                    'default',
+                    {
+                      discardComments: {
+                        removeAll: true
+                      }
+                    }
+                  ]
+                }),
+                // включать при сборке продакшен
+                // require('autoprefixer')({
+                //   grid: true
+                // })
+              ]
+            }
+          },
+          {
+            loader: 'sass-loader',
+            options: {
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      {
+        test: /\.pug$/,
+        oneOf: [
+          {
+            include: path.resolve(__dirname, 'src/pug/'),
+            exclude: /\.vue$/,
+            use: ['pug-loader']
+          },
+          {
+            use: ['pug-plain-loader']
+          }
+        ]
+      },
+      {
+        enforce: 'pre',
+        test: /\.js$/,
+        exclude: /node_modules/,
+        loader: 'eslint-loader',
+        options: {
+          // formatter: require("./.eslintrc.js")
+          // cache: true
+        }
+      },
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      },
+      {
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
+      },
+      {
+        test: /\.js$/,
+        use: [{
+          loader: 'cache-loader'
+        }]
+      },
+      {
+        test: /\.(sass|scss)$/,
+        use: [{
+          loader: 'cache-loader'
+        }]
+      },
+      // {
+      //   test: /\.pug$/,
+      //   use: [{
+      //     loader: 'cache-loader'
+      //   }]
+      // }
+    ]
+  },
+  plugins: [
+    new VueLoaderPlugin(),
+    new MiniCssExtractPlugin({
+      filename: './css/[name].css'
+    }),
+    new CopyWebpackPlugin([
+      {
+        from: './src/fonts',
+        to: './fonts'
+      },
+      {
+        from: './src/img',
+        to: './img'
+      }
+    ]),
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
+          // eslint-disable-next-line no-shadow,global-require
+          const fs = require('fs');
+          // eslint-disable-next-line no-shadow,global-require
+          const path = require('path');
+          const mainPath = path.resolve(__dirname, 'dist/js/all.bundle.js');
+          const bundlePath = path.resolve(__dirname, 'dist/js/bundle.js');
+          if (fs.existsSync(mainPath)) {
+            fs.renameSync(mainPath, bundlePath);
+            console.log('✅ all.bundle.js → bundle.js');
+          }
+        });
+      }
+    },
+    // удаление JS от CSS-only entry
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
+          // eslint-disable-next-line no-shadow,global-require
+          const fs = require('fs');
+          // eslint-disable-next-line no-shadow,global-require
+          const path = require('path');
 
-File: .\src\scss\style.scss:1:1
-  ⚠ Module Warning (from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rsbuild\plugin-sass\compiled\sass-loader\index.js??clonedRuleSet-32.use[5]):
-  │ 24 repetitive deprecation warnings omitted.
-  │ Run in verbose mode to see all warnings.
+          // Имена entry, которые содержат ТОЛЬКО CSS → их JS-файлы удаляем
+          const cssOnlyEntries = [
+            'general-style',
+            'instruction'
+            // Добавляйте сюда новые по мере появления:
+            // 'header',
+            // 'footer',
+            // 'news'
+          ];
 
-File: .\src\scss\style.scss:1:1
-  ⚠ Module Warning (from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rsbuild\core\compiled\postcss-loader\index.js??clonedRuleSet-32.use[3]):
-  │ (29163:5) from "autoprefixer" plugin: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
-  │
-  │ Code:
-  │   color-adjust: exact
-  │
+          cssOnlyEntries.forEach((name) => {
+            const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
+            if (fs.existsSync(jsPath)) {
+              fs.unlinkSync(jsPath);
+              // console.log(`🧹 Удалён: ${name}.bundle.js`);
+            }
+          });
+        });
+      }
+    },
+    // new BundleAnalyzerPlugin()
+  ],
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.js'
+    }
+  }
+};
 
-ready   built in 12.4 s
-start   building removed img\favicon_game_dd\apple-touch-icon-152.png and 170 more
-ready   built in 0.72 s
-start   building removed src\img\maraphone-2024-test-tablet-head.webp and 899 more
-ready   built in 0.67 s
- но и никая страница http://localhost:8080/ не откоылась. Видимо из=за того что я описывал проблему в продакшен npm run dev
+module.exports = (env, argv) => {
+  if (argv.mode === 'production') {
+    config.plugins.push(new CleanWebpackPlugin());
+    config.resolve.alias.vue = 'vue/dist/vue.min.js';
+    config.devtool = 'eval';
+    // config.publicPath = './';
+    // config.publicPath =  path.resolve(__dirname, 'dist');
+  } else {
+    config.plugins = config.plugins.concat(generateHtmlPlugins('./src/pug/views'));
+  }
+  return config;
+};
