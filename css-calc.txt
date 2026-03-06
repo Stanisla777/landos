@@ -1,147 +1,52 @@
-Уже меньше ошибок, но пока не собирает:
-error   Build errors: 
-File: .\src\scss\general-style.scss:1:1
-  × Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │ import ___CSS_LOADER_API_SOURCEMAP_IMPORT___ from "../../node_modules/css-loader/dist/runtime/sourceMaps.js";
-        │   │                                                                                                             ^
-        │   ╵
-        │   ..\..\..\..\src\scss\general-style.scss 2:109  root stylesheet
+tools: {
+  bundlerChain: (chain) => {
+    // Полностью удаляем старые правила для scss
+    chain.module.rules.delete('scss');
+    
+    // Создаем новое правило с правильным порядком
+    chain.module
+      .rule('scss')
+      .test(/\.(sass|scss)$/)
+      // Указываем тип css, чтобы Rspack обрабатывал как CSS
+      .type('css')
+      .use('sass-loader')
+      .loader('sass-loader')
+      .options({
+        sourceMap: true,
+        sassOptions: {
+          outputStyle: 'expanded',
+        },
+      })
+      .end();
 
-File: .\src\scss\instruction.scss:1:1
-  × Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │ import ___CSS_LOADER_API_SOURCEMAP_IMPORT___ from "../../node_modules/css-loader/dist/runtime/sourceMaps.js";
-        │   │                                                                                                             ^
-        │   ╵
-        │   ..\..\..\..\src\scss\instruction.scss 2:109  root stylesheet
+    // Vue лоадер
+    chain.module
+      .rule('vue')
+      .test(/\.vue$/)
+      .use('vue-compiler-loader')
+      .loader(path.resolve(__dirname, 'loaders/vue-compiler-loader.js'));
 
-File: .\src\scss\style.scss:1:1
-  × Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │ import ___CSS_LOADER_API_SOURCEMAP_IMPORT___ from "../../node_modules/css-loader/dist/runtime/sourceMaps.js";
-        │   │                                                                                                             ^
-        │   ╵
-        │   ..\..\..\..\src\scss\style.scss 2:109  root stylesheet
+    // Babel для JS
+    chain.module
+      .rule('js')
+      .test(/\.js$/)
+      .exclude
+      .add(/node_modules/)
+      .end()
+      .use('babel-loader')
+      .loader('babel-loader')
+      .options({
+        presets: ['@babel/preset-env'],
+      });
 
-File: ./src/scss/general-style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-File: ./src/scss/instruction.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-File: ./src/scss/style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
-
-error   build failed in 15.2 s
-start   building removed img\AMP\close-menu.svg and 116 more
-error   Build errors: 
-File: .\src\scss\general-style.scss:1:1
-  × Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │ import ___CSS_LOADER_API_SOURCEMAP_IMPORT___ from "../../node_modules/css-loader/dist/runtime/sourceMaps.js";
-        │   │                                                                                                             ^
-        │   ╵
-        │   ..\..\..\..\src\scss\general-style.scss 2:109  root stylesheet
-
-File: .\src\scss\instruction.scss:1:1
-  × Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │ import ___CSS_LOADER_API_SOURCEMAP_IMPORT___ from "../../node_modules/css-loader/dist/runtime/sourceMaps.js";
-        │   │                                                                                                             ^
-        │   ╵
-        │   ..\..\..\..\src\scss\instruction.scss 2:109  root stylesheet
-
-File: .\src\scss\style.scss:1:1
-  × Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │ import ___CSS_LOADER_API_SOURCEMAP_IMPORT___ from "../../node_modules/css-loader/dist/runtime/sourceMaps.js";
-        │   │                                                                                                             ^
-        │   ╵
-        │   ..\..\..\..\src\scss\style.scss 2:109  root stylesheet
-
-File: ./src/scss/general-style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-File: ./src/scss/instruction.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-File: ./src/scss/style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
-
-error   build failed in 7.76 s
-start   building removed src\img\banner_mortgage_marathon_2022.png and 953 more
-error   Build errors: 
-File: .\src\scss\general-style.scss:1:1
-  × Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │ import ___CSS_LOADER_API_SOURCEMAP_IMPORT___ from "../../node_modules/css-loader/dist/runtime/sourceMaps.js";
-        │   │                                                                                                             ^
-        │   ╵
-        │   ..\..\..\..\src\scss\general-style.scss 2:109  root stylesheet
-
-File: .\src\scss\instruction.scss:1:1
-  × Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │ import ___CSS_LOADER_API_SOURCEMAP_IMPORT___ from "../../node_modules/css-loader/dist/runtime/sourceMaps.js";
-        │   │                                                                                                             ^
-        │   ╵
-        │   ..\..\..\..\src\scss\instruction.scss 2:109  root stylesheet
-
-File: .\src\scss\style.scss:1:1
-  × Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-  ╰─▶   × expected "{".
-        │   ╷
-        │ 2 │ import ___CSS_LOADER_API_SOURCEMAP_IMPORT___ from "../../node_modules/css-loader/dist/runtime/sourceMaps.js";
-        │   │                                                                                                             ^
-        │   ╵
-        │   ..\..\..\..\src\scss\style.scss 2:109  root stylesheet
-
-File: ./src/scss/general-style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-File: ./src/scss/instruction.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-File: ./src/scss/style.scss:1:1
-  × Module build failed (from ./node_modules/@rspack/core/dist/cssExtractLoader.js):
-  ╰─▶   × Error: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3328:107
-
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
-
-error   build failed in 7.85 s
+    // Source maps
+    chain.module
+      .rule('source-map')
+      .test(/\.js$/)
+      .enforce('pre')
+      .use('source-map-loader')
+      .loader('source-map-loader');
+  },
+  
+  // ... postcss и rspack без изменений
+},
