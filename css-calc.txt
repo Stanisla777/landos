@@ -1,177 +1,69 @@
-const { defineConfig } = require('@rsbuild/core');
-const { pluginPug } = require('@rsbuild/plugin-pug');
-const { pluginSass } = require('@rsbuild/plugin-sass');
-const { pluginVue } = require('@rsbuild/plugin-vue');
-const path = require('path');
-const fs = require('fs');
+Ситуация такая, я сначала запустил продакшен npm run dev и вроде как без ошибок прошла сборка. Только смутило, что показывал не как html собирал а картинки
+ready   built in 17.8 s
 
-// Находим все pug файлы в views
-const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
-const pugFiles = fs.existsSync(pugViewsDir)
-  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
-  : [];
+File (web)                                                                             Size          Gzip   
+dist\js\instruction.ef46db3751d8e999.bundle.js                                         0.00 kB       0.02 kB
+dist\js\general-style.ef46db3751d8e999.bundle.js                                       0.00 kB       0.02 kB
+dist\img\icon-rent.svg                                                                 0.16 kB       0.15 kB
+dist\img\stairs-icon.png                                                               0.17 kB    
+dist\img\event-number-1.svg                                                            0.20 kB       0.17 kB
+dist\img\border-dotted.png                                                             0.22 kB    
+dist\img\more.png                                                                      0.23 kB    
+dist\img\play-icon.svg                                                                 0.23 kB       0.19 kB
+dist\img\icon-sort.svg                                                                 0.25 kB       0.19 kB
+dist\img\beesenderchat_print.svg                                                       0.26 kB       0.15 kB
+dist\img\send-button.png                                                               0.27 kB    
+dist\img\marker-ok.svg                                                                 0.29 kB       0.22 kB
+dist\img\calendar-arrow-left.svg                                                       0.29 kB       0.22 kB
+dist\img\upload-button.png                                                             0.30 kB    
+dist\img\heart-icon.svg                                                                0.32 kB       0.24 kB
+dist\js\instruction-js.f58bc7e621b08d39.bundle.js                                      0.32 kB       0.25 kB
+dist\img\event-number-4.svg                                                            0.33 kB       0.25 kB
+dist\img\favicon\browserconfig.xml                                                     0.34 kB       0.19 kB
+dist\img\beesenderchat-admin.svg 
 
-// Создаем entry points для JS и SCSS
-const entry = {
-  'all': './src/js/index.js',
-  'general-js': './src/js/general.js',
-  'instruction-js': './src/js/instruction.js',
-  'general-style': './src/scss/general-style.scss',
-  'instruction': './src/scss/instruction.scss',
-};
+Но самое главное то что в паке dist вместо страниц html которые конвертировались из pug были такие страницы:
+all.html
+general-js.html
+general-style.html
+instruction.html
+instruction-js.html
+и все с одинаковым кодом html, я так понимаю из head. fonts, img, css собрались правильно, в js правильно, только можно без подстановки цифор кэша. Вместо 370.744af336faf7ffd7.bundle.js должно быть просто bundle.js.
 
-module.exports = defineConfig({
-  // 👇 ВСЕ НУЖНЫЕ ПЛАГИНЫ
-  plugins: [
-    pluginVue(), // для Vue компонентов
-    pluginPug({
-      pretty: true,
-      basedir: path.resolve(__dirname, 'src/pug'),
-    }),
-    pluginSass({
-      sassLoaderOptions: {
-        sourceMap: true,
-        sassOptions: {
-          outputStyle: 'expanded',
-          includePaths: [
-            path.resolve(__dirname, 'src/scss'),
-            path.resolve(__dirname, 'src')
-          ]
-        },
-      },
-    }),
-  ],
+В режиме разработки явных ошибок не было, кроме warning типо
+File: .\src\scss\style.scss:1:1
+  ⚠ Module Warning (from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rsbuild\plugin-sass\compiled\sass-loader\index.js??clonedRuleSet-32.use[5]):
+  │ Deprecation Warning on line 50, column 14 of file:///C:/Users/sshchegolev/PhpstormProjects/sprosi.dom.rf/src/scss/components/snowfall/snowfall.scss:50:14:
+  │ Using / for division outside of calc() is deprecated and will be removed in Dart Sass 2.0.0.
+  │
+  │ Recommendation: math.div(random(2 * $sizeNoise * 10) / 10 - $sizeNoise, 100) or calc((random(2 * $sizeNoise * 10) / 10 - $sizeNoise) / 100)
+  │
+  │ More info and automated migrator: https://sass-lang.com/d/slash-div
+  │
+  │ 50 |                $scale: 1 + (random(2 * $sizeNoise * 10) / 10 - $sizeNoise) / 100;
+  │
+  │
+  │ ..\..\..\..\src\scss\components\snowfall\snowfall.scss 51:15  @import
+  │ ..\..\..\..\src\scss\components\index.scss 118:9              @import
+  │ ..\..\..\..\src\scss\style.scss 8:9                           root stylesheet
+  │
 
-  source: {
-    entry: entry,
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@img': path.resolve(__dirname, 'src/img'),
-      '@fonts': path.resolve(__dirname, 'src/fonts'),
-    },
-  },
+File: .\src\scss\style.scss:1:1
+  ⚠ Module Warning (from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rsbuild\plugin-sass\compiled\sass-loader\index.js??clonedRuleSet-32.use[5]):
+  │ 24 repetitive deprecation warnings omitted.
+  │ Run in verbose mode to see all warnings.
 
-  resolve: {
-    alias: {
-      vue$: 'vue/dist/vue.runtime.esm-bundler.js',
-    },
-    extensions: ['.js', '.vue', '.json', '.pug'],
-  },
+File: .\src\scss\style.scss:1:1
+  ⚠ Module Warning (from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rsbuild\core\compiled\postcss-loader\index.js??clonedRuleSet-32.use[3]):
+  │ (29163:5) from "autoprefixer" plugin: Replace color-adjust to print-color-adjust. The color-adjust shorthand is currently deprecated.
+  │
+  │ Code:
+  │   color-adjust: exact
+  │
 
-  output: {
-    distPath: {
-      root: 'dist',
-      js: 'js',
-      css: 'css',
-      font: 'fonts',
-      image: 'img',
-    },
-    filename: {
-      js: process.env.NODE_ENV === 'production'
-        ? '[name].[contenthash].bundle.js'
-        : '[name].bundle.js',
-      css: '[name].css',
-      font: '[name].[hash:8][ext]',
-      image: '[name].[hash:8][ext]',
-    },
-    publicPath: process.env.NODE_ENV === 'production' ? '/dist/' : '/',
-    cleanDistPath: true,
-    copy: [
-      { from: './src/fonts', to: 'fonts' },
-      { from: './src/img', to: 'img' },
-    ],
-    sourceMap: {
-      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
-      css: true,
-    },
-  },
-
-  html: {
-    template: ({ entryName }) => {
-      if (entryName === 'instruction') {
-        return path.join(pugViewsDir, 'instruction.pug');
-      }
-      return path.join(pugViewsDir, 'index.pug');
-    },
-    inject: 'body',
-    scriptLoading: 'defer',
-  },
-
-  // 👇 КЛЮЧЕВЫЕ НАСТРОЙКИ tools
-  tools: {
-    // 👉 ЗАПРЕЩАЕМ ПРЕОБРАЗОВАНИЕ URL В CSS
-    cssLoader: {
-      url: false,
-    },
-
-    postcss: (config) => {
-      config.postcssOptions.plugins = [
-        require('autoprefixer'),
-        ...(process.env.NODE_ENV === 'production'
-          ? [require('cssnano')({
-            preset: ['default', {
-              discardComments: { removeAll: true },
-              normalizeWhitespace: true,
-            }]
-          })]
-          : [])
-      ];
-      return config;
-    },
-
-    rspack: (config) => {
-      // Cache groups
-      if (!config.optimization) config.optimization = {};
-      if (!config.optimization.splitChunks) config.optimization.splitChunks = {};
-      if (!config.optimization.splitChunks.cacheGroups) config.optimization.splitChunks.cacheGroups = {};
-
-      config.optimization.splitChunks.cacheGroups = {
-        vendor: {
-          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
-          name: 'vendor-script',
-          chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
-          enforce: true,
-          priority: 10,
-        },
-        common: {
-          name: 'common',
-          chunks: 'all',
-          minChunks: 2,
-          priority: 5,
-          reuseExistingChunk: true,
-        },
-      };
-
-      return config;
-    },
-  },
-
-  performance: {
-    hints: false,
-    chunkSplit: {
-      strategy: 'split-by-module',
-    },
-  },
-
-  dev: {
-    port: 8080,
-    open: true,
-    hmr: true,
-    liveReload: true,
-    watchFiles: {
-      paths: ['src/pug/**/*.pug', 'src/**/*'],
-      options: {
-        usePolling: true,
-        interval: 1000,
-      },
-    },
-  },
-
-  server: {
-    publicDir: {
-      name: 'dist',
-      watch: true,
-    },
-  },
-});
-
+ready   built in 12.4 s
+start   building removed img\favicon_game_dd\apple-touch-icon-152.png and 170 more
+ready   built in 0.72 s
+start   building removed src\img\maraphone-2024-test-tablet-head.webp and 899 more
+ready   built in 0.67 s
+ но и никая страница http://localhost:8080/ не откоылась. Видимо из=за того что я описывал проблему в продакшен npm run dev
