@@ -1,265 +1,127 @@
-const { defineConfig } = require('@rsbuild/core');
-const { pluginPug } = require('@rsbuild/plugin-pug');
-const path = require('path');
-const fs = require('fs');
+Заменил как вы сказали, но всё равно ошибка
+error   Build errors: 
+File: ./src/scss/general-style.scss:1:1
+  × Module parse failed:
+  ╰─▶   × JavaScript parse error: Expression expected
+         ╭─[1:0]
+       1 │ @charset "UTF-8";
+         · ─
+       2 │ html, body, div, span, applet, object, iframe,
+       3 │ h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+         ╰────
 
-// Находим все pug файлы в views
-const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
-const pugFiles = fs.existsSync(pugViewsDir)
-  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
-  : [];
+  help:
+        File was processed with these loaders:
+         * C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\sass-loader\dist\cjs.js??ruleSet[1].rules[14].use[0]
+        You may need an additional loader to handle the result of these loaders.
 
-// Создаем entry points для JS и SCSS
-const entry = {
-  // JS entry points
-  all: './src/js/index.js',
-  'general-js': './src/js/general.js',
-  'instruction-js': './src/js/instruction.js',
-  
-  // SCSS entry points
-  'general-style': './src/scss/general-style.scss',
-  'instruction': './src/scss/instruction.scss',
-};
+File: ./src/scss/instruction.scss:1:1
+  × Module parse failed:
+  ╰─▶   × JavaScript parse error: Expression expected
+         ╭─[1:0]
+       1 │ @charset "UTF-8";
+         · ─
+       2 │ @font-face {
+       3 │   font-family: "Gilroy-Light";
+         ╰────
 
-module.exports = defineConfig({
-  // Плагины
-  plugins: [
-    pluginPug({
-      pretty: true,
-      basedir: path.resolve(__dirname, 'src/pug'),
-    }),
-  ],
-  
-  // Входные точки
-  source: {
-    entry: entry,
-  },
-  
-  // Настройки разрешения модулей
-  resolve: {
-    alias: {
-      vue$: 'vue/dist/vue.runtime.esm-bundler.js',
-    },
-    extensions: ['.js', '.vue', '.json', '.pug'],
-  },
-  
-  // Настройки вывода
-  output: {
-    distPath: {
-      root: 'dist',
-      js: 'js',
-      css: 'css',
-      font: 'fonts',
-      image: 'img',
-    },
-    filename: {
-      js: process.env.NODE_ENV === 'production' 
-        ? '[name].[contenthash].bundle.js' 
-        : '[name].bundle.js',
-      css: '[name].css',
-    },
-    publicPath: process.env.NODE_ENV === 'production' ? '/dist/' : '/',
-    cleanDistPath: true,
-    copy: [
-      { from: './src/fonts', to: 'fonts' },
-      { from: './src/img', to: 'img' },
-    ],
-    sourceMap: {
-      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
-      css: true,
-    },
-    // 👇 ВАЖНО: добавляем обработку CSS
-    disableCssExtract: false, // включаем извлечение CSS в отдельные файлы
-    overrideBrowserslist: ['> 0.01%', 'not dead', 'not op_mini all'], // для autoprefixer
-  },
-  
-  // 👇 ВАЖНО: добавляем правила для CSS/SCSS
-  module: {
-    rules: [
-      {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
-        type: 'css',
-      },
-      {
-        test: /\.scss$/,
-        use: [
-          'style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              importLoaders: 1,
-              sourceMap: true,
-            },
-          },
-          {
-            loader: 'postcss-loader',
-            options: {
-              sourceMap: true,
-              postcssOptions: {
-                plugins: [
-                  require('autoprefixer'),
-                  ...(process.env.NODE_ENV === 'production' 
-                    ? [require('cssnano')({ 
-                        preset: ['default', { 
-                          discardComments: { removeAll: true },
-                          normalizeWhitespace: true,
-                        }] 
-                      })] 
-                    : [])
-                ],
-              },
-            },
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              sourceMap: true,
-            },
-          },
-        ],
-      },
-    ],
-  },
-  
-  // Настройки HTML генерации
-  html: {
-    template: ({ entryName }) => {
-      // Для CSS entry points используем соответствующий pug
-      if (entryName === 'general-style') {
-        return path.join(pugViewsDir, 'index.pug');
-      }
-      if (entryName === 'instruction') {
-        return path.join(pugViewsDir, 'instruction.pug');
-      }
-      // Для JS entry points
-      const pugFile = pugFiles.find(f => f.replace('.pug', '') === entryName);
-      if (pugFile) {
-        return path.join(pugViewsDir, pugFile);
-      }
-      // По умолчанию
-      return path.join(pugViewsDir, 'index.pug');
-    },
-    inject: 'body',
-    scriptLoading: 'defer',
-  },
-  
-  // Настройки для инструментов
-  tools: {
-    bundlerChain: (chain) => {
-      // Правило для SCSS (дублируем на всякий случай, но основное через module.rules)
-      chain.module
-        .rule('scss-fallback')
-        .test(/\.(sass|scss)$/)
-        .include.add(path.resolve(__dirname, 'src/scss')).end()
-        .use('sass-loader')
-        .loader('sass-loader')
-        .options({ sourceMap: true });
-      
-      // Ваш кастомный Vue лоадер
-      chain.module
-        .rule('vue')
-        .test(/\.vue$/)
-        .use('vue-compiler-loader')
-        .loader(path.resolve(__dirname, 'loaders/vue-compiler-loader.js'));
-      
-      // Правило для JS с babel
-      chain.module
-        .rule('js')
-        .test(/\.js$/)
-        .exclude.add(/node_modules/).end()
-        .use('babel-loader')
-        .loader('babel-loader')
-        .options({
-          presets: ['@babel/preset-env'],
-        });
-      
-      // Source maps для js
-      chain.module
-        .rule('source-map')
-        .test(/\.js$/)
-        .enforce('pre')
-        .use('source-map-loader')
-        .loader('source-map-loader');
-    },
-    
-    postcss: (config) => {
-      config.postcssOptions.plugins = [
-        require('autoprefixer'),
-        ...(process.env.NODE_ENV === 'production' 
-          ? [require('cssnano')({ 
-              preset: ['default', { 
-                discardComments: { removeAll: true },
-                normalizeWhitespace: true,
-              }] 
-            })] 
-          : [])
-      ];
-      return config;
-    },
+  help:
+        File was processed with these loaders:
+         * C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\sass-loader\dist\cjs.js??ruleSet[1].rules[14].use[0]
+        You may need an additional loader to handle the result of these loaders.
 
-    rspack: (config) => {
-      // Добавляем кастомные cacheGroups
-      if (!config.optimization) config.optimization = {};
-      if (!config.optimization.splitChunks) config.optimization.splitChunks = {};
-      if (!config.optimization.splitChunks.cacheGroups) config.optimization.splitChunks.cacheGroups = {};
-      
-      config.optimization.splitChunks.cacheGroups = {
-        vendor: {
-          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
-          name: 'vendor-script',
-          chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
-          enforce: true,
-          priority: 10,
-        },
-        common: {
-          name: 'common',
-          chunks: 'all',
-          minChunks: 2,
-          priority: 5,
-          reuseExistingChunk: true,
-        },
-      };
-      
-      return config;
-    },
+File: ./src/scss/style.scss:1:1
+  × Module parse failed:
+  ╰─▶   × JavaScript parse error: Expression expected
+         ╭─[1:0]
+       1 │ @charset "UTF-8";
+         · ─
+       2 │ html, body, div, span, applet, object, iframe,
+       3 │ h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+         ╰────
+
+  help:
+        File was processed with these loaders:
+         * C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\sass-loader\dist\cjs.js??ruleSet[1].rules[14].use[0]
+        You may need an additional loader to handle the result of these loaders.
+Import traces (entry → error):
+  ./src/js/index.js
+  ./src/scss/style.scss ×
+
+error   build failed in 6.37 s
+ Пакеты проверил установлены, на всякий случай package.json:
+{
+  "name": "start-webapck-template",
+  "version": "2.0.0",
+  "description": "Start template for generate css, js and html file",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=production rsbuild build",
+    "build": "cross-env NODE_ENV=production rsbuild build",
+    "start": "cross-env NODE_ENV=development rsbuild dev",
+    "lint": "eslint --ext .js, --ignore-path .gitignore ."
   },
-  
-  // Настройки производительности
-  performance: {
-    hints: false,
-    chunkSplit: {
-      strategy: 'split-by-module',
-    },
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
+    "@rsbuild/core": "^1.7.3",
+    "@rsbuild/plugin-pug": "^1.3.2",
+    "@rspack/cli": "^1.7.7",
+    "@rspack/core": "^1.7.7",
+    "@vue/compiler-sfc": "^3.5.29",
+    "autoprefixer": "^10.4.27",
+    "babel-loader": "^8.4.1",
+    "clean-webpack-plugin": "^3.0.0",
+    "copy-webpack-plugin": "^5.0.4",
+    "cross-env": "^10.1.0",
+    "css-loader": "^3.1.0",
+    "cssnano": "^4.1.11",
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-loader": "^2.2.1",
+    "html-webpack-plugin": "^3.2.0",
+    "mini-css-extract-plugin": "^0.8.0",
+    "postcss-loader": "^3.0.0",
+    "prettier": "^1.18.2",
+    "pug": "^2.0.4",
+    "pug-loader": "^2.4.0",
+    "pug-plain-loader": "^1.1.0",
+    "pug-plugin": "^6.0.0",
+    "sass-loader": "^7.3.1",
+    "source-map-loader": "^1.0.0",
+    "style-loader": "^4.0.0",
+    "terser-webpack-plugin": "^1.4.5",
+    "webpack": "^4.38.0",
+    "webpack-bundle-analyzer": "^4.8.0",
+    "webpack-cli": "^3.3.6",
+    "webpack-dev-server": "^3.7.2"
   },
-  
-  // Настройки разработки
-  dev: {
-    port: 8080,
-    open: true,
-    hmr: true,
-    liveReload: true,
-    watchFiles: {
-      paths: ['src/pug/**/*.pug', 'src/**/*'],
-      options: {
-        usePolling: true,
-        interval: 1000,
-      },
-    },
-    client: {
-      overlay: {
-        errors: true,
-        warnings: false,
-      },
-      progress: true,
-    },
-  },
-  
-  // Серверные настройки
-  server: {
-    publicDir: {
-      name: 'dist',
-      watch: true,
-    },
-  },
-});
+  "dependencies": {
+    "@fancyapps/ui": "^4.0.31",
+    "@vkontakte/superappkit": "^1.60.0",
+    "apexcharts": "3.54.1",
+    "axios": "^0.21.4",
+    "axios-jsonp-pro": "^1.1.8",
+    "buffer-json": "^2.0.0",
+    "cache-loader": "^4.1.0",
+    "Datepicker.js": "^0.1.1",
+    "eslint-plugin-import": "^2.22.1",
+    "html-loader": "^5.1.0",
+    "html2canvas": "1.3.3",
+    "imask": "^6.6.3",
+    "js-cookie": "^3.0.1",
+    "jspdf": "2.5.1",
+    "nouislider": "^14.6.3",
+    "nvm": "^0.0.4",
+    "pdfmake": "0.2.7",
+    "pug-html-loader": "^1.1.7",
+    "sass": "^1.80.4",
+    "scroll-behavior-polyfill": "^2.0.13",
+    "swiper": "^6.4.5",
+    "vanilla-calendar-pro": "^2.9.10",
+    "vue": "^3.4.0",
+    "vue-apexcharts": "1.6.2",
+    "vue-axios": "^3.2.2",
+    "vuex": "^4.0.0"
+  }
+}
