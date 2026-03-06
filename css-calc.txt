@@ -1,73 +1,91 @@
 tools: {
-    bundlerChain: (chain) => {
-      // 👇 Добавляем resolve-url-loader для правильной обработки путей к картинкам
-      chain.module
-        .rule('scss')
-        .test(/\.(sass|scss)$/)
-        .oneOf?.clear?.() // очищаем существующие правила
-        .end()
-        .use('resolve-url-loader')
-        .loader('resolve-url-loader')
-        .options({ sourceMap: true })
-        .end()
-        .use('sass-loader')
-        .loader('sass-loader')
-        .options({
-          sourceMap: true,
-          sassOptions: {
-            outputStyle: 'expanded',
-          },
-        });
-
-      // Vue лоадер
-      chain.module
-        .rule('vue')
-        .test(/\.vue$/)
-        .use('vue-compiler-loader')
-        .loader(path.resolve(__dirname, 'loaders/vue-compiler-loader.js'));
-
-      // Babel для JS
-      chain.module
-        .rule('js')
-        .test(/\.js$/)
-        .exclude.add(/node_modules/).end()
-        .use('babel-loader')
-        .loader('babel-loader')
-        .options({
-          presets: ['@babel/preset-env'],
-        });
-
-      // Source maps
-      chain.module
-        .rule('source-map')
-        .test(/\.js$/)
-        .enforce('pre')
-        .use('source-map-loader')
-        .loader('source-map-loader');
-    },
-
-    rspack: (config) => {
-      // Cache groups
-      if (!config.optimization) config.optimization = {};
-      if (!config.optimization.splitChunks) config.optimization.splitChunks = {};
-
-      config.optimization.splitChunks.cacheGroups = {
-        vendor: {
-          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
-          name: 'vendor-script',
-          chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
-          enforce: true,
-          priority: 10,
+  bundlerChain: (chain) => {
+    // Удаляем существующее правило для scss если оно есть
+    // Просто перезаписываем его новым
+    chain.module
+      .rule('scss')
+      .test(/\.(sass|scss)$/)
+      .use('resolve-url-loader')
+      .loader('resolve-url-loader')
+      .options({ sourceMap: true })
+      .end()
+      .use('sass-loader')
+      .loader('sass-loader')
+      .options({
+        sourceMap: true,
+        sassOptions: {
+          outputStyle: 'expanded',
+          includePaths: [path.resolve(__dirname, 'src/scss')]
         },
-        common: {
-          name: 'common',
-          chunks: 'all',
-          minChunks: 2,
-          priority: 5,
-          reuseExistingChunk: true,
-        },
-      };
+      });
 
-      return config;
-    },
+    // Vue лоадер
+    chain.module
+      .rule('vue')
+      .test(/\.vue$/)
+      .use('vue-compiler-loader')
+      .loader(path.resolve(__dirname, 'loaders/vue-compiler-loader.js'));
+
+    // Babel для JS
+    chain.module
+      .rule('js')
+      .test(/\.js$/)
+      .exclude
+      .add(/node_modules/)
+      .end()
+      .use('babel-loader')
+      .loader('babel-loader')
+      .options({
+        presets: ['@babel/preset-env'],
+      });
+
+    // Source maps
+    chain.module
+      .rule('source-map')
+      .test(/\.js$/)
+      .enforce('pre')
+      .use('source-map-loader')
+      .loader('source-map-loader');
   },
+
+  postcss: (config) => {
+    config.postcssOptions.plugins = [
+      require('autoprefixer'),
+      ...(process.env.NODE_ENV === 'production' 
+        ? [require('cssnano')({ 
+            preset: ['default', { 
+              discardComments: { removeAll: true },
+              normalizeWhitespace: true,
+            }] 
+          })] 
+        : [])
+    ];
+    return config;
+  },
+
+  rspack: (config) => {
+    // Cache groups
+    if (!config.optimization) config.optimization = {};
+    if (!config.optimization.splitChunks) config.optimization.splitChunks = {};
+    if (!config.optimization.splitChunks.cacheGroups) config.optimization.splitChunks.cacheGroups = {};
+
+    config.optimization.splitChunks.cacheGroups = {
+      vendor: {
+        test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+        name: 'vendor-script',
+        chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
+        enforce: true,
+        priority: 10,
+      },
+      common: {
+        name: 'common',
+        chunks: 'all',
+        minChunks: 2,
+        priority: 5,
+        reuseExistingChunk: true,
+      },
+    };
+
+    return config;
+  },
+},
