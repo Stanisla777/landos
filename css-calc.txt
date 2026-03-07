@@ -1,69 +1,22 @@
-tools: {
-  cssLoader: {
-    url: false,
-  },
+Вот такие ошибки, сборка не проходит
+start   build started...
+error   Build error: 
+× Conflict: Multiple assets emit different content to the same filename instruction.html
 
-  postcss: (config) => {
-    config.postcssOptions.plugins = [
-      require('autoprefixer'),
-      ...(process.env.NODE_ENV === 'production'
-        ? [require('cssnano')({
-          preset: ['default', {
-            discardComments: { removeAll: true },
-            normalizeWhitespace: true,
-          }]
-        })]
-        : [])
-    ];
-    return config;
-  },
+You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
 
-  rspack: (config) => {
-    // Добавляем поддержку require.ensure для ленивой загрузки
-    if (!config.module) config.module = {};
-    if (!config.module.parser) config.module.parser = {};
-    config.module.parser.javascript = {
-      ...config.module.parser.javascript,
-      requireEnsure: true,
-    };
+error   build failed in 12.0 s
+start   building removed img\housing-cooperative\gag-1_square.png and 170 more
+error   Build error: 
+× Conflict: Multiple assets emit different content to the same filename instruction.html
 
-    // 👇 ОТКЛЮЧАЕМ АВТОМАТИЧЕСКУЮ ГЕНЕРАЦИЮ HTML ДЛЯ ENTRY ТОЧЕК
-    // 1. Проходим по всем entry и удаляем их HTML-шаблоны
-    if (config.entry) {
-      Object.keys(config.entry).forEach(entryName => {
-        // Если entry имеет объектную структуру с полем import
-        if (config.entry[entryName] && typeof config.entry[entryName] === 'object' && config.entry[entryName].import) {
-          delete config.entry[entryName].html;
-        }
-      });
-    }
+You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
 
-    // 2. Глобально запрещаем генерацию HTML для entry
-    if (!config.output) config.output = {};
-    if (!config.output.filename) config.output.filename = {};
-    config.output.filename.html = false;
+error   build failed in 1.08 s
+start   building removed src\img\point.png and 899 more
+error   Build error: 
+× Conflict: Multiple assets emit different content to the same filename instruction.html
 
-    // 3. Добавляем HtmlRspackPlugin для генерации HTML из PUG файлов
-    const { HtmlRspackPlugin } = require('@rspack/core');
-    
-    // Создаем HTML плагины для каждого PUG файла
-    const htmlPlugins = pugFiles.map(file => {
-      const name = file.replace('.pug', '');
-      return new HtmlRspackPlugin({
-        template: path.join(pugViewsDir, file),
-        filename: `${name}.html`,
-        inject: true, // Автоматически подключает все скрипты
-        scriptLoading: 'defer',
-        minify: false,
-      });
-    });
+You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
 
-    // Добавляем плагины в конфиг
-    config.plugins = [
-      ...(config.plugins || []),
-      ...htmlPlugins,
-    ];
-
-    return config;
-  },
-},
+error   build failed in 0.96 s
