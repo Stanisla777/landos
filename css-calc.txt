@@ -1,83 +1,38 @@
-tools: {
-  cssLoader: {
-    url: false,
-  },
+Я сделал 
+<html>
+<head>
+    <script defer src="/js/js/npm.axios-jsonp-pro.bundle.js"></script>
+    <script defer src="/js/js/npm.is-buffer.bundle.js"></script>
+    <script defer src="/js/js/npm.swiper.bundle.js"></script>
+    <script defer src="/js/js/npm.axios.bundle.js"></script>
+    <script defer src="/js/js/npm.imask.bundle.js"></script>
+    <script defer src="/js/js/npm.vue.bundle.js"></script>
+    <script defer src="/js/js/npm.ssr-window.bundle.js"></script>
+    <script defer src="/js/js/npm.rspack-vue-loader.bundle.js"></script>
+    <script defer src="/js/js/npm.nouislider.bundle.js"></script>
+    <script defer src="/js/js/npm.dom7.bundle.js"></script>
+    <script defer src="/js/js/npm.vue.shared.bundle.js"></script>
+    <script defer src="/js/js/npm.vue.runtime-dom.bundle.js"></script>
+    <script defer src="/js/js/npm.vue.runtime-core.bundle.js"></script>
+    <script defer src="/js/js/npm.vue.reactivity.bundle.js"></script>
+    <script defer src="/js/js/npm.fancyapps.ui.bundle.js"></script>
+    <script defer src="/js/js/134.bundle.js"></script>
+    <script defer src="/js/js/all.bundle.js"></script>
+    <script defer src="/js/js/general-js.bundle.js"></script>
+    <script defer src="/js/js/instruction-js.bundle.js"></script>
+    <script defer src="/js/js/general-style.bundle.js"></script>
+    <script defer src="/js/js/instruction.bundle.js"></script>
+    <link href="/css/css/all.css" rel="stylesheet">
+    <link href="/css/css/general-style.css" rel="stylesheet">
+    <link href="/css/css/instruction.css" rel="stylesheet">
+</head>
+<body>extends ../templates/base
 
-  postcss: (config) => {
-    config.postcssOptions.plugins = [
-      require('autoprefixer'),
-      ...(process.env.NODE_ENV === 'production'
-        ? [require('cssnano')({
-          preset: ['default', {
-            discardComments: { removeAll: true },
-            normalizeWhitespace: true,
-          }]
-        })]
-        : [])
-    ];
-    return config;
-  },
-
-  rspack: (config) => {
-    // Добавляем поддержку require.ensure для ленивой загрузки
-    if (!config.module) config.module = {};
-    if (!config.module.parser) config.module.parser = {};
-    config.module.parser.javascript = {
-      ...config.module.parser.javascript,
-      requireEnsure: true,
-    };
-
-    // 👇 РАДИКАЛЬНОЕ ОТКЛЮЧЕНИЕ ГЕНЕРАЦИИ HTML ДЛЯ ENTRY ТОЧЕК
-    // 1. Удаляем все entry, которые не должны генерировать HTML
-    if (config.entry) {
-      // Создаем новый объект entry, оставляя только те, что реально нужны как входные точки для JS/CSS
-      const newEntry = {};
-      Object.keys(config.entry).forEach(entryName => {
-        // Оставляем все entry, но помечаем, что они не должны создавать HTML
-        newEntry[entryName] = {
-          import: config.entry[entryName].import || config.entry[entryName],
-          // Явно запрещаем создавать HTML для этой entry
-          html: false,
-        };
-      });
-      config.entry = newEntry;
-    }
-
-    // 2. Глобально запрещаем генерацию HTML через output
-    if (!config.output) config.output = {};
-    if (!config.output.filename) config.output.filename = {};
-    config.output.filename.html = false;
-
-    // 3. Удаляем автоматически создаваемые HTML-плагины, если они есть
-    if (config.plugins) {
-      config.plugins = config.plugins.filter(plugin => {
-        // Фильтруем плагины, оставляем только те, что не являются встроенными HTML-генераторами
-        // Это примерный подход, может потребоваться уточнение
-        return !plugin.constructor || plugin.constructor.name !== 'HtmlRspackPlugin';
-      });
-    }
-
-    // 4. Добавляем ТОЛЬКО наши кастомные HtmlRspackPlugin
-    const { HtmlRspackPlugin } = require('@rspack/core');
-    
-    const htmlPlugins = pugFiles.map(file => {
-      const name = file.replace('.pug', '');
-      return new HtmlRspackPlugin({
-        template: path.join(pugViewsDir, file),
-        filename: `${name}.html`,
-        inject: true,
-        scriptLoading: 'defer',
-        minify: false,
-        // Не указываем chunks - подключаются все скрипты
-      });
-    });
-
-    // Добавляем наши плагины
-    config.plugins = [
-      ...(config.plugins || []),
-      ...htmlPlugins,
-    ];
-
-    return config;
-  },
-},
+block title
+    title= 'Инструкции'
+    meta(name="description" content="Описание страницы")
+block content
+   .pages-wrap
+       .pages-content.js--page-content
+           include ../includes/redesign-site/header
+           +header(0)
