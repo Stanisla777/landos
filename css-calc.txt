@@ -21,6 +21,7 @@ const entry = {
 };
 
 module.exports = defineConfig({
+  // Плагины
   plugins: [
     pluginVue(),
     pluginPug({
@@ -42,6 +43,7 @@ module.exports = defineConfig({
     }),
   ],
 
+  // Входные точки и алиасы
   source: {
     entry: entry,
     alias: {
@@ -51,6 +53,7 @@ module.exports = defineConfig({
     },
   },
 
+  // Resolve
   resolve: {
     alias: {
       vue: 'vue/dist/vue.runtime.esm-bundler.js',
@@ -58,6 +61,7 @@ module.exports = defineConfig({
     extensions: ['.js', '.vue', '.json', '.pug'],
   },
 
+  // Настройки вывода
   output: {
     distPath: {
       root: 'dist',
@@ -87,8 +91,13 @@ module.exports = defineConfig({
   // ОТКЛЮЧАЕМ АВТОМАТИЧЕСКУЮ ГЕНЕРАЦИЮ HTML
   html: {
     template: false,
+    // КЛЮЧЕВОЙ МОМЕНТ: включаем поддержку PUG через templateParameters
+    templateParameters: {
+      filters: {}
+    }
   },
 
+  // Настройки производительности и разделения кода
   performance: {
     hints: false,
     chunkSplit: {
@@ -108,11 +117,14 @@ module.exports = defineConfig({
     },
   },
 
+  // ИНСТРУМЕНТЫ (ВСЁ В ОДНОЙ СЕКЦИИ)
   tools: {
+    // CSS лоадер - не трогаем пути к картинкам
     cssLoader: {
       url: false,
     },
 
+    // PostCSS с autoprefixer и cssnano
     postcss: (config) => {
       config.postcssOptions.plugins = [
         require('autoprefixer'),
@@ -128,8 +140,14 @@ module.exports = defineConfig({
       return config;
     },
 
+    // НАСТРОЙКА HTML ПЛАГИНА - ЗАСТАВЛЯЕМ PUG РАБОТАТЬ
+    htmlPlugin: {
+      templateParameters: true
+    },
+
+    // RSPACK СПЕЦИФИЧЕСКИЕ НАСТРОЙКИ
     rspack: (config) => {
-      // Поддержка require.ensure
+      // Поддержка require.ensure для ленивой загрузки
       if (!config.module) config.module = {};
       if (!config.module.parser) config.module.parser = {};
       config.module.parser.javascript = {
@@ -140,7 +158,7 @@ module.exports = defineConfig({
       // Удаляем все существующие HTML-плагины Rsbuild
       if (config.plugins) {
         config.plugins = config.plugins.filter(plugin => {
-          const name = plugin.constructor?.name;
+          const name = plugin.constructor && plugin.constructor.name;
           return name !== 'HtmlRspackPlugin' && name !== 'HtmlPlugin';
         });
       }
@@ -165,6 +183,7 @@ module.exports = defineConfig({
     },
   },
 
+  // Настройки разработки
   dev: {
     port: 8080,
     open: true,
@@ -179,6 +198,7 @@ module.exports = defineConfig({
     },
   },
 
+  // Сервер
   server: {
     publicDir: {
       name: 'dist',
