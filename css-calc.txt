@@ -1,72 +1,177 @@
-Нет, не пошла сборка, ошибка:
-C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf>npm run dev
-(node:11524) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
-(Use `node --trace-warnings ...` to show where the warning was created)
+npm install --save-dev @rsbuild/plugin-sass @rsbuild/plugin-pug
 
-> start-webapck-template@2.0.0 dev
-> cross-env NODE_ENV=production rsbuild build
+const { defineConfig } = require('@rsbuild/core');
+const { pluginVue } = require('@rsbuild/plugin-vue');
+const { pluginSass } = require('@rsbuild/plugin-sass');
+const { pluginPug } = require('@rsbuild/plugin-pug');
+const path = require('path');
+const fs = require('fs');
 
-Rsbuild v1.7.3
+// Находим все pug файлы в views
+const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
+const pugFiles = fs.existsSync(pugViewsDir)
+  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
+  : [];
 
-warn    [rsbuild:config] The "source.alias" config is deprecated, use "resolve.alias" instead.
-info    build started...
-error   Build errors: 
-× Conflict: Multiple assets emit different content to the same filename instruction.html
+// Точки входа
+const entry = {
+  'all': './src/js/index.js',
+  'general-js': './src/js/general.js',
+  'instruction-js': './src/js/instruction.js',
+  'general-style': './src/scss/general-style.scss',
+  'instruction': './src/scss/instruction.scss',
+};
 
-You may need to adjust output.filename configuration to prevent name conflicts. (See https://rsbuild.rs/config/output/filename)
+module.exports = defineConfig({
+  // ✅ ПРАВИЛЬНЫЕ ПЛАГИНЫ
+  plugins: [
+    pluginVue(),
+    pluginSass(), // Вместо ручных правил
+    pluginPug({
+      pretty: true,
+      basedir: path.resolve(__dirname, 'src/pug'),
+    }),
+  ],
 
-File: ./src/scss/general-style.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @import "modules/reset";
-         · ─
-       2 │ @import "mixins/index";
-       3 │ @import "var/index";
-         ╰────
+  source: {
+    entry: entry,
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
 
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.runtime.esm-bundler.js',
+    },
+    extensions: ['.js', '.vue', '.json', '.pug'],
+  },
 
-File: ./src/scss/instruction.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @import "mixins/index";
-         · ─
-       2 │ @import "var/index";
-       3 │ @import "components/content";
-         ╰────
+  output: {
+    distPath: {
+      root: 'dist',
+      js: 'js',
+      css: 'css',
+      font: 'fonts',
+      image: 'img',
+    },
+    filename: {
+      js: '[name].bundle.js',
+      css: '[name].css',
+    },
+    publicPath: '/dist/',
+    cleanDistPath: true,
+    copy: [
+      { from: './src/fonts', to: 'fonts' },
+      { from: './src/img', to: 'img' },
+    ],
+    sourceMap: {
+      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
+      css: true,
+    },
+  },
 
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
+  // ✅ ОТКЛЮЧАЕМ АВТОМАТИЧЕСКИЙ HTML
+  html: false,
 
-File: ./src/scss/style.scss:1:1
-  × Module parse failed:
-  ╰─▶   × JavaScript parse error: Expression expected
-         ╭─[1:0]
-       1 │ @charset "utf-8";
-         · ─
-       2 │
-       3 │ @import "modules/reset";
-         ╰────
+  performance: {
+    hints: false,
+    chunkSplit: {
+      strategy: 'custom',
+      splitChunks: {
+        cacheGroups: {
+          defaultVendors: false,
+          vendor: {
+            test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+            name: 'vendor-script',
+            chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
+            enforce: true,
+            priority: 10,
+          },
+        },
+      },
+    },
+  },
 
-  help:
-        To enable support for Sass, use "@rsbuild/plugin-sass" (https://npmjs.com/package/@rsbuild/plugin-sass).
+  tools: {
+    cssLoader: {
+      url: false,
+    },
 
-Import traces (entry → error):
-  ./src/js/index.js
-  ./src/scss/style.scss ×
+    postcss: (config) => {
+      config.postcssOptions.plugins = [
+        require('autoprefixer'),
+        ...(process.env.NODE_ENV === 'production' ? [require('cssnano')] : [])
+      ];
+      return config;
+    },
 
-error   build failed in 1.01 s
-error   Rspack build failed.
-    at file:///C:/Users/sshchegolev/PhpstormProjects/sprosi.dom.rf/node_modules/@rsbuild/core/dist/131.js:4214:145
-    at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10949:46
-    at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:7117:113
-    at done (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\lite-tapable\dist\index.cjs:373:13)
-    at AsyncParallelHook.callAsyncStageRange (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\lite-tapable\dist\index.cjs:379:46)
-    at AsyncParallelHook.callAsync (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\lite-tapable\dist\index.cjs:101:21)
-    at Cache.shutdown (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:7170:33)
-    at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10948:28
-    at done (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\lite-tapable\dist\index.cjs:426:13)
-    at AsyncSeriesHook.callAsyncStageRange (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\lite-tapable\dist\index.cjs:432:46)
+    // ✅ ЕДИНСТВЕННОЕ МЕСТО, ГДЕ МЫ ДОБАВЛЯЕМ HTML
+    rspack: (config) => {
+      const { HtmlRspackPlugin } = require('@rspack/core');
+      
+      const htmlPlugins = pugFiles.map(file => {
+        const name = file.replace('.pug', '');
+        return new HtmlRspackPlugin({
+          template: path.join(pugViewsDir, file),
+          filename: `${name}.html`,
+          inject: true,
+          scriptLoading: 'defer',
+          minify: false,
+        });
+      });
+
+      config.plugins = [
+        ...(config.plugins || []),
+        ...htmlPlugins,
+      ];
+
+      return config;
+    },
+  },
+
+  dev: {
+    port: 8080,
+    open: true,
+    hmr: true,
+    liveReload: true,
+    watchFiles: {
+      paths: ['src/pug/**/*.pug', 'src/**/*'],
+      options: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
+  },
+
+  server: {
+    publicDir: {
+      name: 'dist',
+      watch: true,
+    },
+  },
+});
+
+// Пост-обработка
+module.exports.afterBuild = (config) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  if (process.env.NODE_ENV === 'production') {
+    const mainPath = path.resolve(__dirname, 'dist/js/all.bundle.js');
+    const bundlePath = path.resolve(__dirname, 'dist/js/bundle.js');
+    if (fs.existsSync(mainPath)) {
+      fs.renameSync(mainPath, bundlePath);
+      console.log('✅ all.bundle.js → bundle.js');
+    }
+
+    const cssOnlyEntries = ['general-style', 'instruction'];
+    cssOnlyEntries.forEach((name) => {
+      const jsPath = path.resolve(__dirname, `dist/js/${name}.bundle.js`);
+      if (fs.existsSync(jsPath)) {
+        fs.unlinkSync(jsPath);
+        console.log(`🗑️ Removed ${name}.bundle.js`);
+      }
+    });
+  }
+};
