@@ -1,43 +1,212 @@
-Я сделал 
-<html>
-<head>
-    <script defer src="/js/js/npm.axios-jsonp-pro.bundle.js"></script>
-    <script defer src="/js/js/npm.is-buffer.bundle.js"></script>
-    <script defer src="/js/js/npm.swiper.bundle.js"></script>
-    <script defer src="/js/js/npm.axios.bundle.js"></script>
-    <script defer src="/js/js/npm.imask.bundle.js"></script>
-    <script defer src="/js/js/npm.vue.bundle.js"></script>
-    <script defer src="/js/js/npm.ssr-window.bundle.js"></script>
-    <script defer src="/js/js/npm.rspack-vue-loader.bundle.js"></script>
-    <script defer src="/js/js/npm.nouislider.bundle.js"></script>
-    <script defer src="/js/js/npm.dom7.bundle.js"></script>
-    <script defer src="/js/js/npm.vue.shared.bundle.js"></script>
-    <script defer src="/js/js/npm.vue.runtime-dom.bundle.js"></script>
-    <script defer src="/js/js/npm.vue.runtime-core.bundle.js"></script>
-    <script defer src="/js/js/npm.vue.reactivity.bundle.js"></script>
-    <script defer src="/js/js/npm.fancyapps.ui.bundle.js"></script>
-    <script defer src="/js/js/134.bundle.js"></script>
-    <script defer src="/js/js/all.bundle.js"></script>
-    <script defer src="/js/js/general-js.bundle.js"></script>
-    <script defer src="/js/js/instruction-js.bundle.js"></script>
-    <script defer src="/js/js/general-style.bundle.js"></script>
-    <script defer src="/js/js/instruction.bundle.js"></script>
-    <link href="/css/css/all.css" rel="stylesheet">
-    <link href="/css/css/general-style.css" rel="stylesheet">
-    <link href="/css/css/instruction.css" rel="stylesheet">
-</head>
-<body>extends ../templates/base
+const { defineConfig } = require('@rsbuild/core');
+const { pluginPug } = require('@rsbuild/plugin-pug');
+const { pluginSass } = require('@rsbuild/plugin-sass');
+const { pluginVue } = require('@rsbuild/plugin-vue');
+const path = require('path');
+const fs = require('fs');
 
-block title
-    title= 'Инструкции'
-    meta(name="description" content="Описание страницы")
-block content
-   .pages-wrap
-       .pages-content.js--page-content
-           include ../includes/redesign-site/header
-           +header(0)
+// Находим все pug файлы в views
+const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
+const pugFiles = fs.existsSync(pugViewsDir)
+  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
+  : [];
 
-include ../includes/redesign-site/footer
-       include ../includes/cookies
-       include ../mixins/modal-back-call-new.pug
+// Точки входа как в webpack
+const entry = {
+  'all': './src/js/index.js',
+  'general-js': './src/js/general.js',
+  'instruction-js': './src/js/instruction.js',
+  'general-style': './src/scss/general-style.scss',
+  'instruction': './src/scss/instruction.scss',
+};
 
+module.exports = defineConfig({
+  plugins: [
+    pluginVue(),
+    pluginPug({
+      pretty: true,
+      basedir: path.resolve(__dirname, 'src/pug'),
+    }),
+    pluginSass({
+      sassLoaderOptions: {
+        sourceMap: true,
+        sassOptions: {
+          outputStyle: 'expanded',
+          includePaths: [
+            path.resolve(__dirname, 'src/scss'),
+            path.resolve(__dirname, 'src')
+          ],
+          quietDeps: true,
+        },
+      },
+    }),
+  ],
+
+  source: {
+    entry: entry,
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@img': path.resolve(__dirname, 'src/img'),
+      '@fonts': path.resolve(__dirname, 'src/fonts'),
+    },
+  },
+
+  resolve: {
+    alias: {
+      vue: 'vue/dist/vue.runtime.esm-bundler.js',
+    },
+    extensions: ['.js', '.vue', '.json', '.pug'],
+  },
+
+  output: {
+    distPath: {
+      root: 'dist',
+      js: 'js',
+      css: 'css',
+      font: 'fonts',
+      image: 'img',
+    },
+    filename: {
+      js: '[name].bundle.js',
+      css: '[name].css',
+      font: 'fonts/[name].[ext]',
+      image: 'img/[name].[ext]',
+    },
+    publicPath: '/dist/',
+    cleanDistPath: true,
+    copy: [
+      { from: './src/fonts', to: 'fonts' },
+      { from: './src/img', to: 'img' },
+    ],
+    sourceMap: {
+      js: process.env.NODE_ENV === 'production' ? false : 'source-map',
+      css: true,
+    },
+  },
+
+  // ОТКЛЮЧАЕМ АВТОМАТИЧЕСКУЮ ГЕНЕРАЦИЮ HTML
+  html: {
+    template: false,
+  },
+
+  performance: {
+    hints: false,
+    chunkSplit: {
+      strategy: 'custom',
+      splitChunks: {
+        cacheGroups: {
+          defaultVendors: false,
+          vendor: {
+            test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+            name: 'vendor-script',
+            chunks: (chunk) => ['general-js', 'instruction-js'].includes(chunk.name),
+            enforce: true,
+            priority: 10,
+          },
+        },
+      },
+    },
+  },
+
+  tools: {
+    cssLoader: {
+      url: false,
+    },
+
+    postcss: (config) => {
+      config.postcssOptions.plugins = [
+        require('autoprefixer'),
+        ...(process.env.NODE_ENV === 'production'
+          ? [require('cssnano')({
+            preset: ['default', {
+              discardComments: { removeAll: true },
+              normalizeWhitespace: true,
+            }]
+          })]
+          : [])
+      ];
+      return config;
+    },
+
+    rspack: (config) => {
+      // Поддержка require.ensure
+      if (!config.module) config.module = {};
+      if (!config.module.parser) config.module.parser = {};
+      config.module.parser.javascript = {
+        ...config.module.parser.javascript,
+        requireEnsure: true,
+      };
+
+      // Удаляем все существующие HTML-плагины Rsbuild
+      if (config.plugins) {
+        config.plugins = config.plugins.filter(plugin => {
+          const name = plugin.constructor?.name;
+          return name !== 'HtmlRspackPlugin' && name !== 'HtmlPlugin';
+        });
+      }
+
+      // Добавляем ТОЛЬКО наши плагины для PUG
+      const { HtmlRspackPlugin } = require('@rspack/core');
+      
+      const htmlPlugins = pugFiles.map(file => {
+        const name = file.replace('.pug', '');
+        return new HtmlRspackPlugin({
+          template: path.join(pugViewsDir, file),
+          filename: `${name}.html`,
+          inject: true,
+          scriptLoading: 'defer',
+          minify: false,
+        });
+      });
+
+      config.plugins = [...(config.plugins || []), ...htmlPlugins];
+
+      return config;
+    },
+  },
+
+  dev: {
+    port: 8080,
+    open: true,
+    hmr: true,
+    liveReload: true,
+    watchFiles: {
+      paths: ['src/pug/**/*.pug', 'src/**/*'],
+      options: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
+  },
+
+  server: {
+    publicDir: {
+      name: 'dist',
+      watch: true,
+    },
+  },
+});
+
+// Пост-обработка (переименование и удаление)
+module.exports.afterBuild = (config) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  if (process.env.NODE_ENV === 'production') {
+    const mainPath = path.resolve(__dirname, 'dist/js/all.bundle.js');
+    const bundlePath = path.resolve(__dirname, 'dist/js/bundle.js');
+    if (fs.existsSync(mainPath)) {
+      fs.renameSync(mainPath, bundlePath);
+      console.log('✅ all.bundle.js → bundle.js');
+    }
+
+    const cssOnlyEntries = ['general-style', 'instruction'];
+    cssOnlyEntries.forEach((name) => {
+      const jsPath = path.resolve(__dirname, `dist/js/${name}.bundle.js`);
+      if (fs.existsSync(jsPath)) {
+        fs.unlinkSync(jsPath);
+        console.log(`🗑️ Removed ${name}.bundle.js`);
+      }
+    });
+  }
+};
