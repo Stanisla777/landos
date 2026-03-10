@@ -2,29 +2,47 @@
 config.devServer = {
   port: 8080,
   open: true,
-  hot: true,                    // HMR для JS/CSS/Vue
-  liveReload: false,             // Отключаем авто-перезагрузку (вы сами жмёте F5)
+  hot: true,
+  liveReload: false,
   
-  // Статические файлы из dist
+  // Добавляем отслеживание EJS-файлов
+  watchFiles: {
+    paths: ['src/ejs/**/*.ejs'],
+    options: {
+      usePolling: true,
+      interval: 1000
+    }
+  },
+  
   static: {
     directory: path.join(__dirname, 'dist'),
-    watch: true,                  // Следим за изменениями в dist
+    watch: true,
     publicPath: '/'
   },
   
-  // Настройки клиента (браузера)
   client: {
     overlay: {
-      errors: true,               // Показываем ошибки поверх страницы
+      errors: true,
       warnings: false
     },
-    progress: true,                // Показываем прогресс сборки
-    reconnect: true                // Переподключаемся при падении сервера
+    progress: true,
+    reconnect: true
   },
   
-  // Настройки middleware
   devMiddleware: {
     publicPath: '/',
-    writeToDisk: false             // Не пишем на диск в режиме разработки
+    writeToDisk: false
+  },
+  
+  // Добавляем простое уведомление в консоль
+  onBeforeSetupMiddleware: (devServer) => {
+    devServer.app.use((req, res, next) => {
+      res.on('finish', () => {
+        if (req.url.includes('.ejs')) {
+          console.log('📝 EJS файл изменён — нажмите F5 для обновления');
+        }
+      });
+      next();
+    });
   }
 };
