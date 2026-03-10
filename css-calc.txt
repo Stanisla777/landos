@@ -1,42 +1,18 @@
-setupMiddlewares: (middlewares, devServer) => {
-  const fs = require('fs');
-  const path = require('path');
-  
-  const ejsDir = path.join(__dirname, 'src/ejs');
-  
-  fs.watch(ejsDir, { recursive: true }, (eventType, filename) => {
-    if (filename && filename.endsWith('.ejs')) {
-      console.log(`🔄 EJS changed: ${filename}`);
-      
-      // 1. Получаем компилятор
-      const compiler = devServer.compiler;
-      
-      // 2. Принудительно перекомпилируем проект
-      compiler.run((err, stats) => {
-        if (err) {
-          console.error('Compilation error:', err);
-          return;
-        }
-        
-        console.log('✅ Recompiled successfully');
-        
-        // 3. Отправляем клиентам команду на перезагрузку через WebSocket
-        if (devServer.webSocketServer) {
-          const clients = devServer.webSocketServer.clients;
-          clients.forEach(client => {
-            if (client.readyState === 1) { // WebSocket.OPEN
-              client.send(JSON.stringify({
-                type: 'ok'
-              }));
-            }
-          });
-        }
-        
-        // 4. Дополнительно: принудительно обновляем статические файлы
-        devServer.middleware.invalidate();
-      });
-    }
-  });
-
-  return middlewares;
-}
+EJS changed: pages\contents\instruction-content.ejs
+Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
+    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
+    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:339:22)
+    at FSWatcher.emit (node:events:517:28)
+    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
+🔄 EJS changed: pages\contents\instruction-content.ejs
+Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
+    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
+    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:339:22)
+    at FSWatcher.emit (node:events:517:28)
+    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
+🔄 EJS changed: pages\contents\instruction-content.ejs
+Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
+    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
+    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:339:22)
+    at FSWatcher.emit (node:events:517:28)
+    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
