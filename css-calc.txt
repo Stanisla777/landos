@@ -1,28 +1,43 @@
-всё равно ошибка:
-Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
-    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
-    at compile (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:343:30)
-    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:372:13)
-    at FSWatcher.emit (node:events:517:28)
-    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
-🔄 EJS changed: pages\contents\instruction-content.ejs
-Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
-    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
-    at compile (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:343:30)
-    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:372:13)
-    at FSWatcher.emit (node:events:517:28)
-    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
-🔄 EJS changed: pages\contents\instruction-content.ejs
-Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
-    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
-    at compile (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:343:30)
-    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:372:13)
-    at FSWatcher.emit (node:events:517:28)
-    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
-🔄 EJS changed: pages\contents\instruction-content.ejs
-Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
-    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
-    at compile (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:343:30)
-    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:372:13)
-    at FSWatcher.emit (node:events:517:28)
-    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
+npm install --save-dev lodash.debounce
+
+const debounce = require('lodash.debounce');
+
+setupMiddlewares: (middlewares, devServer) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  const ejsDir = path.join(__dirname, 'src/ejs');
+  
+  // Создаём debounced-функцию (ждём 300мс после последнего изменения)
+  const debouncedCompile = debounce(() => {
+    console.log('⚡ Running compilation...');
+    
+    devServer.compiler.run((err, stats) => {
+      if (err) {
+        console.error('Compilation error:', err);
+      } else {
+        console.log('✅ Recompiled successfully');
+        
+        // Отправляем сигнал на перезагрузку
+        if (devServer.webSocketServer) {
+          devServer.webSocketServer.clients.forEach((client) => {
+            if (client.readyState === 1) {
+              client.send(JSON.stringify({ type: 'ok' }));
+            }
+          });
+        }
+        
+        devServer.middleware.invalidate();
+      }
+    });
+  }, 300);
+  
+  fs.watch(ejsDir, { recursive: true }, (eventType, filename) => {
+    if (filename && filename.endsWith('.ejs')) {
+      console.log(`🔄 EJS changed: ${filename}`);
+      debouncedCompile(); // ← debounce сам позаботится о множественных вызовах
+    }
+  });
+
+  return middlewares;
+}
