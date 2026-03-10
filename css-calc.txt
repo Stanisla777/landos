@@ -1,9 +1,42 @@
-EJS changed: pages\contents\instruction-content.ejs
-🔄 EJS changed: pages\contents\instruction-content.ejs
-<i> [webpack-dev-middleware] wait until bundle finished: callback
-🔄 EJS changed: pages\contents\instruction-content.ejs
-<i> [webpack-dev-middleware] wait until bundle finished: callback
-🔄 EJS changed: pages\contents\instruction-content.ejs
-<i> [webpack-dev-middleware] wait until bundle finished: callback
-●  ━━━━━━━━━━━━━━━━━━━━━━━━━ (100%) emitting after emit
-Rspack compiled successfully in 2.02 s
+setupMiddlewares: (middlewares, devServer) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  const ejsDir = path.join(__dirname, 'src/ejs');
+  
+  fs.watch(ejsDir, { recursive: true }, (eventType, filename) => {
+    if (filename && filename.endsWith('.ejs')) {
+      console.log(`🔄 EJS changed: ${filename}`);
+      
+      // 1. Очищаем кэш файловой системы
+      const outputPath = devServer.compiler.options.output.path;
+      const htmlFiles = fs.readdirSync(outputPath)
+        .filter(f => f.endsWith('.html'));
+      
+      htmlFiles.forEach(file => {
+        const filePath = path.join(outputPath, file);
+        // Удаляем старые HTML-файлы из памяти
+        delete require.cache[require.resolve(filePath)];
+        console.log(`  🗑️ Cleared cache for ${file}`);
+      });
+      
+      // 2. Инвалидируем кэш вебпака
+      devServer.invalidate(() => {
+        console.log('✅ Cache invalidated, recompiling...');
+      });
+      
+      // 3. Отправляем сигнал на полную перезагрузку страницы
+      if (devServer.webSocketServer) {
+        devServer.webSocketServer.clients.forEach((client) => {
+          if (client.send) {
+            client.send(JSON.stringify({ 
+              type: 'force-reload'
+            }));
+          }
+        });
+      }
+    }
+  });
+
+  return middlewares;
+}
