@@ -1,266 +1,48 @@
-<%
-// Данные для хедера (можно вынести в отдельный файл данных)
-const menuLinks = [
-    {}, // пустой элемент (видимо, для отступа)
-    {
-        href: 'instructions.html',
-        txt: 'Спецпроекты',
-        subLinks: ['Проверено', 'Оформление собственности', 'Реструктуризация долга', 'Продажа', 'Ипотека', 'Эксплуатация', 'Аренда', 'Покупка', 'Льготы', 'Меры поддержки']
-    },
-    {
-        href: 'services.html',
-        txt: 'Темы',
-        subLinks: ['Проверено', 'Оформление собственности', 'Реструктуризация долга', 'Продажа', 'Ипотека', 'Эксплуатация', 'Аренда', 'Покупка', 'Льготы', 'Меры поддержки']
-    },
-    {
-        href: 'documents.html',
-        txt: 'Инструкции',
-        subLinks: ['Проверено', 'Оформление собственности', 'Реструктуризация долга', 'Продажа', 'Ипотека', 'Эксплуатация', 'Аренда', 'Покупка', 'Льготы', 'Меры поддержки']
-    },
-    {
-        href: 'documents.html',
-        txt: 'Новости',
-        subLinks: ['Проверено', 'Оформление собственности', 'Реструктуризация долга', 'Продажа', 'Ипотека', 'Эксплуатация', 'Аренда', 'Покупка', 'Льготы', 'Меры поддержки']
-    },
-    {
-        href: 'questions-and-answers.html',
-        txt: 'Сервисы',
-        subLinks: ['Проверено', 'Оформление собственности', 'Реструктуризация долга', 'Продажа', 'Ипотека', 'Эксплуатация', 'Аренда', 'Покупка', 'Льготы', 'Меры поддержки']
-    },
-    {
-        href: 'news.html',
-        txt: 'Обучение',
-        subLinks: ['Проверено', 'Оформление собственности', 'Реструктуризация долга', 'Продажа', 'Ипотека', 'Эксплуатация', 'Аренда', 'Покупка', 'Льготы', 'Меры поддержки']
-    },
-    {
-        href: 'about.html',
-        txt: 'Вопросы и ответы',
-        subLinks: ['Проверено', 'Оформление собственности', 'Реструктуризация долга', 'Продажа', 'Ипотека', 'Эксплуатация', 'Аренда', 'Покупка', 'Льготы', 'Меры поддержки']
-    },
-    {
-        href: 'about.html',
-        txt: 'Вопросы и ответы',
-        subLinks: ['Проверено', 'Оформление собственности', 'Реструктуризация долга', 'Продажа', 'Ипотека', 'Эксплуатация', 'Аренда', 'Покупка', 'Льготы', 'Меры поддержки']
+npm install --save-dev chokidar
+
+devServer: {
+  port: 8080,
+  open: true,
+  hot: true,
+  liveReload: true,
+  watchFiles: {
+    paths: ['src/ejs/**/*.ejs', 'src/pug/**/*.pug', 'src/**/*'],
+    options: {
+      usePolling: true,
+      interval: 1000
     }
-];
+  },
+  // Добавляем chokidar для надёжного отслеживания EJS
+  setupMiddlewares: (middlewares, devServer) => {
+    if (!devServer) {
+      throw new Error('webpack-dev-server is not defined');
+    }
 
-const menu = [
-    {
-        id: 0,
-        text: 'Каталог госпрограмм',
-        href: '#',
-        subMenu: [
-            { text: 'Федеральные программы поддрежки', href: '#fed' },
-            { text: 'Ипотека ', href: '#' },
-            { text: 'Реструктуризация долга', href: '#' },
-            { text: 'Льготы', href: '#' },
-            { text: 'Оформление собственноcти', href: '#' },
-            { text: 'Эксплуатация', href: '#' },
-            { text: 'Аренда', href: '#' },
-            { text: 'Продажа', href: '#' },
-            { text: 'Покупка', href: '#' },
-            { text: 'Земельные участки ', href: '#' }
-        ]
-    },
-    // ... остальные пункты меню (сократил для примера)
-];
+    const chokidar = require('chokidar');
+    
+    // Отслеживаем изменения в EJS-файлах
+    const watcher = chokidar.watch('src/ejs/**/*.ejs', {
+      ignored: /node_modules/,
+      persistent: true,
+      usePolling: true,
+      interval: 1000
+    });
 
-// Текущая активная страница (передаётся из pageData)
-const currentPage = pageType || '';
-%>
+    watcher.on('change', (path) => {
+      console.log(`🔄 EJS файл изменён: ${path}`);
+      // Отправляем сигнал на перезагрузку страницы
+      devServer.sendMessage(
+        devServer.webSocketServer.clients,
+        'static-changed'
+      );
+    });
 
-<header class="header">
-    <div class="container-pages">
-        <div class="block-container header__container">
-            <div class="header__row">
-                <div class="header__wr-logo">
-                    <div class="header__logo-colored-square">
-                        <% for (let i = 0; i < 4; i++) { %>
-                            <div class="header__logo-colored-square-item"></div>
-                        <% } %>
-                    </div>
-                    <div class="header__logo">
-                        <img src="img/logo-site.svg" alt="Логотип">
-                    </div>
-                </div>
-
-                <!-- Навигация с menuLinks -->
-                <nav class="header__nav">
-                    <% menuLinks.forEach(item => { %>
-                        <% if (item.href) { %>
-                            <div class="header__nav-item">
-                                <a 
-                                    href="<%= item.href %>" 
-                                    class="header__nav-link <%= item.txt === currentPage ? 'is-active' : '' %>"
-                                >
-                                    <%= item.txt %>
-                                </a>
-                                <% if (item.subLinks) { %>
-                                    <div class="header__nav-sublist">
-                                        <% item.subLinks.forEach(subLink => { %>
-                                            <a href="#" class="header__nav-sublink"><%= subLink %></a>
-                                        <% }) %>
-                                    </div>
-                                <% } %>
-                            </div>
-                        <% } %>
-                    <% }) %>
-                </nav>
-
-                <div class="header__tools">
-                    <div class="header__phone js--modal-opener" data-modal="#modal-back-call">
-                        <span>8 800 775-55-55</span>
-                    </div>
-                    <div class="header__wr-search js--btn-yandex-search"></div>
-
-                    <div class="header__favourites js--modal-opener" data-modal="#modal-registration-state-service-header"></div>
-
-                    <!-- Блок для неавторизованного пользователя -->
-                    <div class="header__call-personal-account-wr user-not-registered js--modal-opener" data-modal="#modal-registration-state-service-header">
-                        <div class="header__call-personal-account"></div>
-                    </div>
-
-                    <!-- Блок для авторизованного пользователя -->
-                    <div class="header__call-personal-account-wr user-registered js--parent-block-for-logging">
-                        <div class="js--overlay-for-logging header__overlay-for-logging"></div>
-                        <div class="header__call-personal-account header__call-personal-account-registered js--open-block-for-logging">
-                            <p>С</p>
-                        </div>
-                        <div class="header__block-for-logging js--body-block-for-logging">
-                            <div class="header__block-for-logging-header">
-                                <p>Щеголев Станислав Викторович</p>
-                                <div class="header__block-for-logging-close js--header-block-logging-close">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M3.41431 3.41455L12.5856 12.5858" stroke="#252628" stroke-width="2" stroke-linecap="round"/>
-                                        <path d="M3.41431 12.5862L12.5856 3.41493" stroke="#252628" stroke-width="2" stroke-linecap="round"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="header__block-for-logging-body">
-                                <ul>
-                                    <li><a href="#">Перейти в личный кабинет</a></li>
-                                    <li><a href="#">Перейти в профиль</a></li>
-                                    <li class="js--modal-opener" data-modal="#modal-exit-personal-account">Выйти</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="header__burger js--header-burger">
-                        <span></span><span></span><span></span><span></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Мобильное меню -->
-    <div class="header__mobile-menu js--mobile-menu">
-        <div class="container-pages">
-            <div class="block-container header__mobile-menu-container">
-                <!-- Неавторизованный -->
-                <div class="header__mobile-menu-autorization js--modal-opener" data-modal="#modal-registration-state-service-header">
-                    <div class="header__mobile-menu-autorization-body">
-                        <div class="header__mobile-menu-autorization-icon"></div>
-                        <p class="header__mobile-menu-autorization-des">Войти в личный кабинет</p>
-                    </div>
-                </div>
-
-                <!-- Авторизованный -->
-                <div class="header__mobile-menu-autorization">
-                    <div class="header__call-mobile-account-wr-icon">
-                        <div class="header__call-personal-account-registered"><p>С</p></div>
-                        <p class="header__call-mobile-account-des">Щеголев Станислав Викторович</p>
-                    </div>
-                    <div class="header__mobile-personal-account-body">
-                        <% [ 
-                            { text: 'Личный кабинет', href: '#' },
-                            { text: 'Настройки профиля', href: '#' },
-                            { text: 'Избранное', href: '#' }
-                        ].forEach(item => { %>
-                            <a href="<%= item.href %>" class="header__mobile-personal-account-body-item">
-                                <div class="header__call-mobile-account-wr-icon">
-                                    <div class="header__mobile-menu-autorization-icon"></div>
-                                    <p class="header__mobile-personal-account-body-des"><%= item.text %></p>
-                                </div>
-                                <div class="header__call-mobile-account-arrow"></div>
-                            </a>
-                        <% }) %>
-                    </div>
-                    <div class="header__mobile-personal-account-footer">
-                        <div class="header__mobile-personal-account-body-item js--modal-opener" data-modal="#modal-exit-personal-account">
-                            <p class="header__mobile-personal-account-footer-des">Выйти</p>
-                            <div class="header__call-mobile-account-arrow"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Мобильное меню с подменю -->
-                <div class="header__mobile-menu-wrapper">
-                    <% menu.forEach(link => { %>
-                        <div class="header__mobile-menu-item js-accordion-parent">
-                            <div class="header__mobile-menu-item-wr js--mobile-menu-btn">
-                                <a href="<%= link.href %>" class="header__mobile-menu-fon header__mobile-menu-title js--mobile-menu-link">
-                                    <%= link.text %>
-                                </a>
-                            </div>
-                            <% if (link.subMenu && link.subMenu.length) { %>
-                                <ul class="header__mobile-sub-menu js-accordion-body">
-                                    <% link.subMenu.forEach(subLink => { %>
-                                        <li><a href="<%= subLink.href %>"><%= subLink.text %></a></li>
-                                    <% }) %>
-                                </ul>
-                            <% } %>
-                        </div>
-                    <% }) %>
-                </div>
-            </div>
-        </div>
-    </div>
-</header>
-
-<!-- Яндекс.Поиск -->
-<div class="yandex-search js--yandex-search">
-    <div class="yandex-search__container">
-        <div class="container block-container yandex-search__block">
-            <div id="ya-site-form0" class="ya-site-form y-search__field ya-site-form_bg_transparent ya-site-form_inited_yes" 
-                 data-bem='{"action":"https:xn--d1aqf.xn--p1ai/search/","arrow":false,"bg":"transparent","fontsize":16,"fg":"#000000","language":"ru","logo":"rb","publicname":"Поиск по ДОМ.РФ","suggest":true,"target":"_self","tld":"ru","type":2,"usebigdictionary":false,"searchid":2914722,"input_fg":"#000000","input_bg":"#ffffff","input_fontStyle":"normal","input_fontWeight":"normal","input_placeholder":"Введите поисковый запрос","input_placeholderColor":"#000000","input_borderColor":"#7f9db9"}'>
-                <div class="ya-site-form__form">
-                    <table class="ya-site-form__wrap" cellpadding="0" cellspacing="0">
-                        <tbody>
-                            <tr>
-                                <td class="ya-site-form__search-wrap">
-                                    <table class="ya-site-form__search" cellpadding="0" cellspacing="0">
-                                        <tbody>
-                                            <tr>
-                                                <td class="ya-site-form__search-input">
-                                                    <table class="ya-site-form__search-input-layout">
-                                                        <tbody>
-                                                            <tr>
-                                                                <td class="ya-site-form__search-input-layout-l">
-                                                                    <div class="ya-site-form__input">
-                                                                        <input class="ya-site-form__input-text" name="text" type="search" value="" placeholder="Введите поисковый запрос" autocomplete="off">
-                                                                        <div class="ya-site-suggest">
-                                                                            <div class="ya-site-suggest-popup" style="display: none;"></div>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="ya-site-form__search-input-layout-r">
-                                                                    <input class="ya-site-form__submit" type="button" value="Найти">
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    return middlewares;
+  },
+  static: {
+    directory: path.join(__dirname, 'dist'),
+    watch: true,
+    publicPath: '/'
+  },
+  // ... остальные настройки
+}
