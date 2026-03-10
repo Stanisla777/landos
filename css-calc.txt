@@ -1,27 +1,111 @@
-instruction.pug
-extends ../templates/base
+base
 
-block title
-    title= 'Инструкция'
-    meta(name="description" content="Описание страницы")
-block content
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <%- include('../partials/head') %>
+    <title><%= title || 'Сайт' %></title>
+    <meta name="description" content="<%= description || 'Описание страницы' %>">
+</head>
+<body>
+    <%- include('../partials/svg-use') %>
+    <script src="https://yastatic.net/share2/share.js" async></script>
+    
+    <div class="page-wrap js-p-wrap">
+        <%- content %>
+    </div>
 
-base.pug
+    <%- include('../partials/footer') %>
+    <%- include('../partials/scripts') %>
+</body>
+</html>
 
-doctype html
-html(lang="ru")
-    head
-        block title
-            title= ''
-            meta(name="description" content="Описание страницы")
-        block style
+----------------------------------------------------
 
-    body
-        include ../mixins/svg-use
-        <script src="https://yastatic.net/share2/share.js" async=""></script>
-        .page-wrap.js-p-wrap
-            block content
+head
 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        block script
-            script(src='js/bundle.js')
+<% if (optimized) { %>
+    <!-- Оптимизированные страницы: общие стили + специфичные -->
+    <link href="css/general-style.css" rel="stylesheet">
+    <link href="css/<%= pageCss %>.css" rel="stylesheet">
+<% } else { %>
+    <!-- Неоптимизированные страницы: всё в одном -->
+    <link href="css/all.css" rel="stylesheet">
+<% } %>
+
+<!-- Фавиконки и другие общие мета-теги -->
+
+-----------------------------------------
+
+scripts.ejs
+
+<% if (pageType === 'instruction') { %>
+    <!-- Для страницы инструкции -->
+    <script src="js/vendor-script.bundle.js" defer></script>
+    <script src="js/general-js.bundle.js" defer></script>
+    <script src="js/instruction-js.bundle.js" defer></script>
+<% } else if (pageType === 'news') { %>
+    <!-- Для страницы новостей (когда будет готова) -->
+    <script src="js/vendor-script.bundle.js" defer></script>
+    <script src="js/general-js.bundle.js" defer></script>
+    <script src="js/news-js.bundle.js" defer></script>
+<% } else { %>
+    <!-- Для всех остальных страниц -->
+    <script src="js/bundle.js" defer></script>
+<% } %>
+
+------------------------------------------------в------
+
+неоптимизированная
+
+<%
+const pageData = {
+    title: 'Главная страница',
+    description: 'Описание главной страницы',
+    optimized: false,           // ← использует all.css
+    pageType: 'index',
+    content: `
+        <main>
+            <h1>Добро пожаловать!</h1>
+            <p>Это главная страница</p>
+        </main>
+    `
+};
+%>
+<%- include('../layouts/base', pageData) %>
+
+--------------------------------------------
+
+оптимизированная инструкции
+
+<%
+const pageData = {
+    title: 'Инструкция',
+    description: 'Описание страницы инструкции',
+    optimized: true,
+    pageCss: 'instruction',
+    pageType: 'instruction'
+};
+%>
+
+<%- include('../layouts/base', { 
+    ...pageData, 
+    content: include('./contents/instruction-content')  // ← подключаем содержимое
+}) %>
+
+<main>
+    <h1>Инструкция</h1>
+    <p class="description">Это параграф с классом description</p>
+    <div class="content">
+        <!-- Здесь вы спокойно используете все возможности вашей IDE -->
+        <ul>
+            <li>Пункт 1</li>
+            <li>Пункт 2</li>
+            <li>Пункт 3</li>
+        </ul>
+    </div>
+</main>
+
