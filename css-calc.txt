@@ -1,20 +1,25 @@
-Вот такую получил ошибку:
+setupMiddlewares: (middlewares, devServer) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  const ejsDir = path.join(__dirname, 'src/ejs');
+  
+  // Отслеживаем изменения во всей папке ejs
+  fs.watch(ejsDir, { recursive: true }, (eventType, filename) => {
+    if (filename && filename.endsWith('.ejs')) {
+      console.log(`🔄 EJS changed: ${filename}`);
+      
+      if (devServer.webSocketServer) {
+        devServer.webSocketServer.clients.forEach((client) => {
+          if (client.send) {
+            client.send(JSON.stringify({
+              type: 'content-changed'
+            }));
+          }
+        });
+      }
+    }
+  });
 
-C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf>npm run start
-(node:95340) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
-(Use `node --trace-warnings ...` to show where the warning was created)
-
-> start-webapck-template@2.0.0 start
-> rspack serve --mode development
-
-[rspack-cli] Error [ERR_REQUIRE_ESM]: require() of ES Module C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\chokidar\index.js from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js not supported.
-Instead change the require of index.js in C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js to a dynamic import() which is available in all CommonJS modules.
-    at setupMiddlewares (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:327:26)
-    at devServerOptions.setupMiddlewares (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\cli\dist\index.js:970:62)
-    at RspackDevServer.setupMiddlewares (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\dev-server\node_modules\webpack-dev-server\lib\Server.js:2525:34)
-    at RspackDevServer.initialize (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\dev-server\node_modules\webpack-dev-server\lib\Server.js:1800:10)
-    at async RspackDevServer.initialize (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\dev-server\dist\server.js:58:9)
-    at async RspackDevServer.start (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\dev-server\node_modules\webpack-dev-server\lib\Server.js:3451:5)
-    at async CAC.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\cli\dist\index.js:998:21) {
-  code: 'ERR_REQUIRE_ESM'
+  return middlewares;
 }
