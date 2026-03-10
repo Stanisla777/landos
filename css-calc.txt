@@ -1,48 +1,31 @@
-npm install --save-dev chokidar
-
-devServer: {
-  port: 8080,
-  open: true,
-  hot: true,
-  liveReload: true,
-  watchFiles: {
-    paths: ['src/ejs/**/*.ejs', 'src/pug/**/*.pug', 'src/**/*'],
-    options: {
-      usePolling: true,
-      interval: 1000
-    }
-  },
-  // Добавляем chokidar для надёжного отслеживания EJS
-  setupMiddlewares: (middlewares, devServer) => {
-    if (!devServer) {
-      throw new Error('webpack-dev-server is not defined');
-    }
-
-    const chokidar = require('chokidar');
-    
-    // Отслеживаем изменения в EJS-файлах
-    const watcher = chokidar.watch('src/ejs/**/*.ejs', {
-      ignored: /node_modules/,
-      persistent: true,
-      usePolling: true,
-      interval: 1000
-    });
-
-    watcher.on('change', (path) => {
-      console.log(`🔄 EJS файл изменён: ${path}`);
-      // Отправляем сигнал на перезагрузку страницы
-      devServer.sendMessage(
-        devServer.webSocketServer.clients,
-        'static-changed'
-      );
-    });
-
-    return middlewares;
-  },
-  static: {
-    directory: path.join(__dirname, 'dist'),
-    watch: true,
-    publicPath: '/'
-  },
-  // ... остальные настройки
-}
+// Настройки devServer для разработки
+    config.devServer = {
+      port: 8080,
+      open: true,
+      hot: true,
+      liveReload: true,
+      watchFiles: {
+        paths: ['src/ejs/**/*.ejs', 'src/pug/**/*.pug', 'src/**/*'],
+        options: {
+          usePolling: true,
+          interval: 1000
+        }
+      },
+      static: {
+        directory: path.join(__dirname, 'dist'),
+        watch: true,
+        publicPath: '/'
+      },
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false
+        },
+        progress: true,
+        reconnect: true
+      },
+      devMiddleware: {
+        publicPath: '/',
+        writeToDisk: false
+      }
+    };
