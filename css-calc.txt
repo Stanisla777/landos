@@ -1,31 +1,60 @@
 // Настройки devServer для разработки
-    config.devServer = {
-      port: 8080,
-      open: true,
-      hot: true,
-      liveReload: true,
-      watchFiles: {
-        paths: ['src/ejs/**/*.ejs', 'src/pug/**/*.pug', 'src/**/*'],
-        options: {
-          usePolling: true,
-          interval: 1000
-        }
-      },
-      static: {
-        directory: path.join(__dirname, 'dist'),
-        watch: true,
-        publicPath: '/'
-      },
-      client: {
-        overlay: {
-          errors: true,
-          warnings: false
-        },
-        progress: true,
-        reconnect: true
-      },
-      devMiddleware: {
-        publicPath: '/',
-        writeToDisk: false
+config.devServer = {
+  port: 8080,
+  open: true,
+  hot: true,
+  liveReload: true,
+  watchFiles: {
+    paths: ['src/ejs/**/*.ejs', 'src/pug/**/*.pug', 'src/**/*'],
+    options: {
+      usePolling: true,
+      interval: 1000
+    }
+  },
+  // 👇 Добавляем middleware для отслеживания EJS
+  setupMiddlewares: (middlewares, devServer) => {
+    // Подключаем chokidar
+    const chokidar = require('chokidar');
+    
+    // Отслеживаем изменения в EJS-файлах
+    const watcher = chokidar.watch('src/ejs/**/*.ejs', {
+      ignored: /node_modules/,
+      persistent: true,
+      usePolling: true,
+      interval: 500
+    });
+
+    // При изменении файла отправляем сигнал на перезагрузку
+    watcher.on('change', (filePath) => {
+      console.log(`🔄 EJS файл изменён: ${filePath}`);
+      
+      // Отправляем сообщение всем подключённым клиентам
+      if (devServer.webSocketServer) {
+        devServer.webSocketServer.clients.forEach((client) => {
+          client.send(JSON.stringify({
+            type: 'static-changed'
+          }));
+        });
       }
-    };
+    });
+
+    return middlewares;
+  },
+  static: {
+    directory: path.join(__dirname, 'dist'),
+    watch: true,
+    publicPath: '/'
+  },
+  client: {
+    overlay: {
+      errors: true,
+      warnings: false
+    },
+    progress: true,
+    reconnect: true
+  },
+  devMiddleware: {
+    publicPath: '/',
+    writeToDisk: false
+  }
+};
