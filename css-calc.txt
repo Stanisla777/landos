@@ -1,47 +1,34 @@
-setupMiddlewares: (middlewares, devServer) => {
-  const fs = require('fs');
-  const path = require('path');
-  
-  const ejsDir = path.join(__dirname, 'src/ejs');
-  
-  const debouncedInvalidate = debounce(() => {
-    console.log('⚡ Invalidating cache...');
-    
-    // Получаем watching объект из devServer
-    const watching = devServer.compiler.watching;
-    
-    if (watching && watching.invalidate) {
-      watching.invalidate(() => {
-        console.log('✅ Compilation finished');
-        
-        // Отправляем сигнал на перезагрузку
-        if (devServer.webSocketServer) {
-          devServer.webSocketServer.clients.forEach((client) => {
-            if (client.readyState === 1) {
-              client.send(JSON.stringify({ type: 'ok' }));
-            }
-          });
-        }
-      });
-    } else {
-      console.log('⚠️ Watching not available, falling back to full reload');
-      // Запасной вариант
-      if (devServer.webSocketServer) {
-        devServer.webSocketServer.clients.forEach((client) => {
-          if (client.readyState === 1) {
-            client.send(JSON.stringify({ type: 'content-changed' }));
-          }
-        });
-      }
+// Настройки devServer для разработки
+config.devServer = {
+  port: 8080,
+  open: true,
+  hot: true,
+  liveReload: true,
+  watchFiles: {
+    paths: ['src/ejs/**/*.ejs', 'src/pug/**/*.pug', 'src/**/*'],
+    options: {
+      usePolling: true,
+      interval: 500  // уменьшите интервал
     }
-  }, 300);
-  
-  fs.watch(ejsDir, { recursive: true }, (eventType, filename) => {
-    if (filename && filename.endsWith('.ejs')) {
-      console.log(`🔄 EJS changed: ${filename}`);
-      debouncedInvalidate();
-    }
-  });
-
-  return middlewares;
-}
+  },
+  static: {
+    directory: path.join(__dirname, 'dist'),
+    watch: {
+      usePolling: true,
+      interval: 500
+    },
+    publicPath: '/'
+  },
+  client: {
+    overlay: {
+      errors: true,
+      warnings: false
+    },
+    progress: true,
+    reconnect: true
+  },
+  devMiddleware: {
+    publicPath: '/',
+    writeToDisk: false
+  }
+};
