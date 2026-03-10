@@ -1,43 +1,343 @@
-// Настройки devServer для разработки
-config.devServer = {
-  port: 8080,
-  open: true,
-  hot: true,
-  liveReload: false,
-  
-  // Отслеживаем EJS-файлы
-  watchFiles: {
-    paths: ['src/ejs/**/*.ejs'],
-    options: {
-      usePolling: true,
-      interval: 1000
+/* eslint-disable */
+const path = require('path');
+const fs = require('fs');
+const rspack = require('@rspack/core');
+const ejs = require('ejs');
+const debounce = require('lodash.debounce');
+
+// Пути к EJS-файлам
+const ejsPagesDir = path.resolve(__dirname, 'src/ejs/pages');
+const ejsPartialsDir = path.resolve(__dirname, 'src/ejs/partials');
+
+// Находим все EJS-файлы страниц (если есть)
+const ejsPages = fs.existsSync(ejsPagesDir)
+  ? fs.readdirSync(ejsPagesDir).filter(f => f.endsWith('.ejs'))
+  : [];
+
+// Ваши существующие PUG-файлы (пока оставляем для обратной совместимости)
+const pugViewsDir = path.resolve(__dirname, 'src/pug/views');
+const pugFiles = fs.existsSync(pugViewsDir)
+  ? fs.readdirSync(pugViewsDir).filter(f => f.endsWith('.pug'))
+  : [];
+
+const config = {
+  entry: {
+    // Основные чанки как в webpack
+    all: ['./src/js/index.js'],                // → bundle.js (после переименования)
+    'general-js': './src/js/general.js',        // → general-js.bundle.js
+    'instruction-js': './src/js/instruction.js', // → instruction-js.bundle.js
+
+    // Чанки со стилями
+    'general-style': './src/scss/general-style.scss', // → general-style.css
+    'instruction': './src/scss/instruction.scss'      // → instruction.css
+  },
+
+  output: {
+    filename: 'js/[name].bundle.js',
+    publicPath: '/',
+    clean: true,
+    path: path.resolve(__dirname, 'dist'),
+  },
+
+  experiments: {
+    css: false
+  },
+
+  mode: 'development',
+
+  optimization: {
+    minimize: false,
+    splitChunks: {
+      cacheGroups: {
+        // Отключаем стандартное поведение (как в webpack)
+        defaultVendors: false,
+        // Наш vendor для общих зависимостей
+        vendor: {
+          test: /[\\/]node_modules[\\/](axios|vue-axios|swiper|imask)[\\/]/,
+          name: 'vendor-script',
+          // Важно: включаем и ленивый чанк тоже
+          chunks: (chunk) => ['general-js', 'instruction-js', 'instruction-lazy'].includes(chunk.name),
+          enforce: true,
+          priority: 10
+        }
+      }
     }
   },
-  
-  static: {
-    directory: path.join(__dirname, 'dist'),
-    watch: true,
-    publicPath: '/'
+
+  performance: { hints: false },
+
+  module: {
+    rules: [
+      {
+        test: /\.vue$/,
+        use: [{
+          loader: path.resolve(__dirname, 'loaders/vue-compiler-loader.js')
+        }]
+      },
+      {
+        test: /\.pug$/,
+        oneOf: [
+          {
+            resourceQuery: /^\?vue/,
+            use: ['pug-plain-loader']
+          },
+          {
+            include: path.resolve(__dirname, 'src/pug'),
+            use: [
+              {
+                loader: 'html-loader',
+                options: {
+                  sources: false,
+                  minimize: false,
+                  esModule: false
+                }
+              },
+              {
+                loader: 'pug-html-loader',
+                options: {
+                  pretty: true,
+                  basedir: path.resolve(__dirname, 'src/pug')
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        test: /\.(sass|scss)$/,
+        include: path.resolve(__dirname, 'src/scss'),
+        use: [
+          rspack.CssExtractRspackPlugin.loader,
+          { loader: 'css-loader', options: { sourceMap: true, url: false } },
+          {
+            loader: 'postcss-loader',
+            options: {
+              sourceMap: true,
+              postcssOptions: {
+                plugins: [
+                  require('autoprefixer'),
+                  process.env.NODE_ENV === 'production' && require('cssnano')({
+                    preset: ['default', {
+                      discardComments: { removeAll: true },
+                      normalizeWhitespace: true
+                    }]
+                  })
+                ].filter(Boolean)
+              }
+            }
+          },
+          { loader: 'sass-loader', options: { sourceMap: true } }
+        ],
+        type: 'javascript/auto'
+      },
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        }
+      },
+      { test: /\.js$/, enforce: 'pre', use: ['source-map-loader'] }
+    ]
   },
-  
-  client: {
-    overlay: {
-      errors: true,
-      warnings: false
+
+  plugins: [
+    new rspack.DefinePlugin({
+      __VUE_OPTIONS_API__: JSON.stringify(true),
+      __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    }),
+
+    new rspack.CssExtractRspackPlugin({
+      filename: 'css/[name].css'
+    }),
+
+    new rspack.CopyRspackPlugin({
+      patterns: [
+        { from: './src/fonts', to: 'fonts', noErrorOnMissing: true },
+        { from: './src/img', to: 'img', noErrorOnMissing: true }
+      ]
+    }),
+
+    // Генерируем HTML из EJS-файлов (НОВЫЕ СТРАНИЦЫ)
+    ...ejsPages.map(file => {
+      const name = file.replace('.ejs', '');
+      const templatePath = path.join(ejsPagesDir, file);
+      const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+      // Рендерим EJS с данными
+      const renderedHtml = ejs.render(templateContent, {
+        siteName: 'Мой сайт',
+        currentYear: new Date().getFullYear()
+      }, {
+        filename: templatePath,
+        views: [ejsPartialsDir]
+      });
+
+      // Определяем чанки для страницы
+      let chunks = ['all', 'general-style', 'vendor-script'];
+      if (name === 'instruction') {
+        chunks = ['instruction', 'instruction-js', 'vendor-script'];
+      } else {
+        chunks.push('general-js');
+      }
+
+      return new rspack.HtmlRspackPlugin({
+        templateContent: renderedHtml,
+        filename: `${name}.html`,
+        chunks: chunks,
+        inject: false, // ❌ НЕ подключаем скрипты автоматически
+        scriptLoading: 'defer',
+        minify: false
+      });
+    }),
+
+    // Генерируем HTML из PUG-файлов (СТАРЫЕ СТРАНИЦЫ, пока не переведены)
+    ...pugFiles.map(file => {
+      const name = file.replace('.pug', '');
+
+      let chunks = ['all', 'general-style', 'vendor-script'];
+      if (name === 'instruction') {
+        chunks = ['instruction', 'instruction-js', 'vendor-script'];
+      } else {
+        chunks.push('general-js');
+      }
+
+      return new rspack.HtmlRspackPlugin({
+        template: path.join(pugViewsDir, file),
+        filename: `${name}.html`,
+        chunks: chunks,
+        inject: false, // ❌ НЕ подключаем скрипты автоматически
+        scriptLoading: 'defer',
+        minify: false
+      });
+    }),
+
+    // Кастомный плагин для переименования all.bundle.js в bundle.js
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
+          if (process.env.NODE_ENV === 'production') {
+            const fs = require('fs');
+            const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
+            const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
+            if (fs.existsSync(mainPath)) {
+              fs.renameSync(mainPath, bundlePath);
+              console.log('✅ all.bundle.js → bundle.js');
+            }
+          }
+        });
+      }
     },
-    progress: true,
-    reconnect: true
+
+    // Кастомный плагин для удаления ненужных JS файлов от CSS чанков
+    {
+      apply: (compiler) => {
+        compiler.hooks.afterEmit.tap('CleanupCSSOnlyJS', () => {
+          if (process.env.NODE_ENV === 'production') {
+            const fs = require('fs');
+            ['general-style', 'instruction'].forEach((name) => {
+              const jsPath = path.resolve(compiler.outputPath, `js/${name}.bundle.js`);
+              if (fs.existsSync(jsPath)) {
+                fs.unlinkSync(jsPath);
+                console.log(`🗑️  Removed ${name}.bundle.js`);
+              }
+            });
+          }
+        });
+      }
+    }
+  ],
+
+  resolve: {
+    alias: {
+      vue$: 'vue/dist/vue.runtime.esm-bundler.js'
+    },
+    extensions: ['.js', '.vue', '.json', '.pug', '.ejs']
   },
-  
-  devMiddleware: {
-    publicPath: '/',
-    writeToDisk: false
-  },
-  
-  // 👇 Правильный способ добавить кастомную логику
-  setupMiddlewares: (middlewares, devServer) => {
-    // Здесь можно добавить свои middleware если нужно
-    // Но для простого логирования нам ничего не нужно
-    return middlewares;
+
+  devtool: 'source-map'
+};
+
+// Финальная настройка в зависимости от режима
+module.exports = (env, argv) => {
+  const isProduction = argv.mode === 'production';
+
+  if (isProduction) {
+    config.mode = 'production';
+    config.devtool = false;
+    config.optimization.minimize = true;
+    config.output.filename = 'js/[name].[contenthash].bundle.js';
+    config.output.publicPath = '/dist/';
+
+    // Обновляем DefinePlugin для production
+    const definePluginIndex = config.plugins.findIndex(p => p instanceof rspack.DefinePlugin);
+    if (definePluginIndex !== -1) {
+      config.plugins[definePluginIndex] = new rspack.DefinePlugin({
+        __VUE_OPTIONS_API__: JSON.stringify(true),
+        __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+        'process.env.NODE_ENV': JSON.stringify('production')
+      });
+    }
+
+  } else {
+    config.mode = 'development';
+    config.devtool = 'source-map';
+    config.optimization.minimize = false;
+    config.output.filename = 'js/[name].bundle.js';
+    config.output.publicPath = '/';
+
+    // Настройки devServer для разработки
+    // Настройки devServer для разработки
+    // Настройки devServer для разработки
+    config.devServer = {
+      port: 8080,
+      open: true,
+      hot: true,
+      liveReload: false,
+
+      // Отслеживаем EJS-файлы
+      watchFiles: {
+        paths: ['src/ejs/**/*.ejs'],
+        options: {
+          usePolling: true,
+          interval: 1000
+        }
+      },
+
+      static: {
+        directory: path.join(__dirname, 'dist'),
+        watch: true,
+        publicPath: '/'
+      },
+
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false
+        },
+        progress: true,
+        reconnect: true
+      },
+
+      devMiddleware: {
+        publicPath: '/',
+        writeToDisk: false
+      },
+
+      // 👇 Правильный способ добавить кастомную логику
+      setupMiddlewares: (middlewares, devServer) => {
+        // Здесь можно добавить свои middleware если нужно
+        // Но для простого логирования нам ничего не нужно
+        return middlewares;
+      }
+    };
   }
+
+  return config;
 };
