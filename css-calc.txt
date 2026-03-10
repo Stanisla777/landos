@@ -8,33 +8,33 @@ setupMiddlewares: (middlewares, devServer) => {
     if (filename && filename.endsWith('.ejs')) {
       console.log(`🔄 EJS changed: ${filename}`);
       
-      // 1. Очищаем кэш файловой системы
-      const outputPath = devServer.compiler.options.output.path;
-      const htmlFiles = fs.readdirSync(outputPath)
-        .filter(f => f.endsWith('.html'));
+      // 1. Получаем компилятор
+      const compiler = devServer.compiler;
       
-      htmlFiles.forEach(file => {
-        const filePath = path.join(outputPath, file);
-        // Удаляем старые HTML-файлы из памяти
-        delete require.cache[require.resolve(filePath)];
-        console.log(`  🗑️ Cleared cache for ${file}`);
+      // 2. Принудительно перекомпилируем проект
+      compiler.run((err, stats) => {
+        if (err) {
+          console.error('Compilation error:', err);
+          return;
+        }
+        
+        console.log('✅ Recompiled successfully');
+        
+        // 3. Отправляем клиентам команду на перезагрузку через WebSocket
+        if (devServer.webSocketServer) {
+          const clients = devServer.webSocketServer.clients;
+          clients.forEach(client => {
+            if (client.readyState === 1) { // WebSocket.OPEN
+              client.send(JSON.stringify({
+                type: 'ok'
+              }));
+            }
+          });
+        }
+        
+        // 4. Дополнительно: принудительно обновляем статические файлы
+        devServer.middleware.invalidate();
       });
-      
-      // 2. Инвалидируем кэш вебпака
-      devServer.invalidate(() => {
-        console.log('✅ Cache invalidated, recompiling...');
-      });
-      
-      // 3. Отправляем сигнал на полную перезагрузку страницы
-      if (devServer.webSocketServer) {
-        devServer.webSocketServer.clients.forEach((client) => {
-          if (client.send) {
-            client.send(JSON.stringify({ 
-              type: 'force-reload'
-            }));
-          }
-        });
-      }
     }
   });
 
