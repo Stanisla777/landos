@@ -1,18 +1,54 @@
-EJS changed: pages\contents\instruction-content.ejs
-Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
-    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
-    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:339:22)
-    at FSWatcher.emit (node:events:517:28)
-    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
-🔄 EJS changed: pages\contents\instruction-content.ejs
-Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
-    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
-    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:339:22)
-    at FSWatcher.emit (node:events:517:28)
-    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
-🔄 EJS changed: pages\contents\instruction-content.ejs
-Compilation error: ConcurrentCompilationError: You ran rspack twice. Each instance only supports a single concurrent compilation at a time.
-    at Compiler.run (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:10854:47)
-    at FSWatcher.<anonymous> (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\rspack.config.js:339:22)
-    at FSWatcher.emit (node:events:517:28)
-    at FSWatcher._handle.onchange (node:internal/fs/watchers:215:12)
+setupMiddlewares: (middlewares, devServer) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  const ejsDir = path.join(__dirname, 'src/ejs');
+  
+  let isCompiling = false;
+  let pendingChanges = false;
+  
+  const compile = () => {
+    if (isCompiling) {
+      pendingChanges = true;
+      return;
+    }
+    
+    isCompiling = true;
+    pendingChanges = false;
+    
+    devServer.compiler.run((err, stats) => {
+      isCompiling = false;
+      
+      if (err) {
+        console.error('Compilation error:', err);
+      } else {
+        console.log('✅ Recompiled successfully');
+        
+        if (devServer.webSocketServer) {
+          devServer.webSocketServer.clients.forEach((client) => {
+            if (client.readyState === 1) {
+              client.send(JSON.stringify({ type: 'ok' }));
+            }
+          });
+        }
+        
+        devServer.middleware.invalidate();
+      }
+      
+      // Если были изменения во время компиляции - запускаем ещё раз
+      if (pendingChanges) {
+        compile();
+      }
+    });
+  };
+  
+  fs.watch(ejsDir, { recursive: true }, (eventType, filename) => {
+    if (filename && filename.endsWith('.ejs')) {
+      console.log(`🔄 EJS changed: ${filename}`);
+      compile();
+    }
+  });
+
+  return middlewares;
+}
+
