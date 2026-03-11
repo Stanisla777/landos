@@ -1,29 +1,15 @@
-// Настройки devServer для разработки
-config.devServer = {
-  port: 8081,
-  open: false,
-  hot: true,
-  liveReload: true,
-  
-  // Статические файлы из dist
-  static: {
-    directory: path.join(__dirname, 'dist'),
-    watch: true,
-    publicPath: '/'
-  },
-  
-  // Middleware настройки
-  devMiddleware: {
-    publicPath: '/',
-    writeToDisk: true  // ← ВКЛЮЧАЕМ ЗАПИСЬ НА ДИСК
-  },
-  
-  client: {
-    overlay: {
-      errors: true,
-      warnings: false
-    },
-    progress: true,
-    reconnect: true
+// Кастомный плагин для переименования all.bundle.js в bundle.js
+{
+  apply: (compiler) => {
+    compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
+      // Убираем проверку на production - работаем всегда
+      const fs = require('fs');
+      const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
+      const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
+      if (fs.existsSync(mainPath)) {
+        fs.renameSync(mainPath, bundlePath);
+        console.log('✅ all.bundle.js → bundle.js');
+      }
+    });
   }
-};
+},
