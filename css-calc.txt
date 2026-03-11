@@ -2,25 +2,100 @@ import '../scss/style.scss';
 import { createApp } from 'vue';
 import TelegramBlock from './modules/TelegramBlock.vue';
 
-// Просто монтируем, если элемент существует
-document.addEventListener('DOMContentLoaded', () => {
-  const elements = document.querySelectorAll('telegram-block');
-  
-  elements.forEach((element, index) => {
-    // Создаём уникальный ID для каждого экземпляра
-    const id = `telegram-block-${index}`;
-    element.id = id;
-    
-    // Собираем пропсы из атрибутов
-    const props = {
-      qr: element.getAttribute('qr') || '',
-      mobilicon: element.getAttribute('mobilicon') || '',
-      link: element.getAttribute('link') || '',
-      description: element.getAttribute('description') || ''
-    };
-    
+// Хранилище инициализированных компонентов
+const initializedApps = new WeakSet();
+
+// Функция для безопасного монтирования
+function mountVueApp(component, element, props = {}) {
+  // Защита 1: уже инициализирован
+  if (element.__vue_app__ || initializedApps.has(element)) {
+    console.log('⚠️ Компонент уже инициализирован, пропускаем');
+    return;
+  }
+
+  try {
     // Создаём и монтируем приложение
-    const app = createApp(TelegramBlock, props);
-    app.mount(`#${id}`);
+    const app = createApp(component, props);
+    app.mount(element);
+    
+    // Помечаем как инициализированный
+    initializedApps.add(element);
+    element.__vue_app__ = app;
+    
+    console.log('✅ Vue компонент смонтирован', element.id || element);
+    return app;
+  } catch (error) {
+    console.error('❌ Ошибка монтирования Vue компонента:', error);
+  }
+}
+
+// Ждём загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🔍 Поиск Vue компонентов для монтирования...');
+  
+  // Находим все элементы, которые нужно превратить в Vue-приложения
+  const vueComponents = [
+    {
+      selector: 'telegram-block',
+      component: TelegramBlock,
+      // Можно добавить трансформацию пропсов, если нужно
+      getProps: (el) => ({
+        qr: el.getAttribute('qr') || '',
+        mobilicon: el.getAttribute('mobilicon') || '',
+        link: el.getAttribute('link') || '',
+        description: el.getAttribute('description') || ''
+      })
+    },
+    // Сюда будут добавляться новые компоненты
+    // {
+    //   selector: 'other-component',
+    //   component: OtherComponent,
+    //   getProps: (el) => ({ ... })
+    // }
+  ];
+
+  // Монтируем все найденные компоненты
+  vueComponents.forEach(({ selector, component, getProps }) => {
+    const elements = document.querySelectorAll(selector);
+    
+    if (elements.length === 0) {
+      console.log(`ℹ️ Элементы "${selector}" не найдены на странице`);
+      return;
+    }
+
+    elements.forEach((element, index) => {
+      // Создаём уникальный ID, если его нет
+      if (!element.id) {
+        element.id = `${selector.replace(/\W/g, '')}-${index}`;
+      }
+
+      const props = getProps(element);
+      mountVueApp(component, element, props);
+    });
   });
+});
+
+// Дополнительная защита: наблюдаем за динамически добавляемыми элементами
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      // Если добавился элемент, который нам нужен
+      if (node.nodeType === 1 && node.matches?.('telegram-block')) {
+        console.log('🔄 Обнаружен новый telegram-block, монтируем...');
+        const props = {
+          qr: node.getAttribute('qr') || '',
+          mobilicon: node.getAttribute('mobilicon') || '',
+          link: node.getAttribute('link') || '',
+          description: node.getAttribute('description') || ''
+        };
+        mountVueApp(TelegramBlock, node, props);
+      }
+    });
+  });
+});
+
+// Запускаем наблюдение за изменениями в DOM
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
 });
