@@ -1,8 +1,86 @@
+import '../scss/style.scss';
+import { createApp } from 'vue';
+import TelegramBlock from './modules/TelegramBlock.vue';
+
+// Хранилище инициализированных компонентов
+const initializedApps = new WeakSet();
+
+// Функция для безопасного монтирования
+function mountVueApp(component, element, props = {}) {
+  // Защита 1: уже инициализирован
+  if (element.__vue_app__ || initializedApps.has(element)) {
+    console.log('⚠️ Компонент уже инициализирован, пропускаем');
+    return;
+  }
+
+  try {
+    // Создаём и монтируем приложение
+    const app = createApp(component, props);
+    app.mount(element);
+    
+    // Помечаем как инициализированный
+    initializedApps.add(element);
+    element.__vue_app__ = app;
+    
+    console.log('✅ Vue компонент смонтирован', element.id || element);
+    return app;
+  } catch (error) {
+    console.error('❌ Ошибка монтирования Vue компонента:', error);
+  }
+}
+
+// Список всех Vue-компонентов для монтирования
+const vueComponents = [
+  {
+    selector: 'telegram-block',
+    component: TelegramBlock,
+    getProps: (el) => ({
+      qr: el.getAttribute('qr') || '',
+      mobilicon: el.getAttribute('mobilicon') || '',
+      link: el.getAttribute('link') || '',
+      description: el.getAttribute('description') || ''
+    })
+  }
+  // Сюда будут добавляться новые компоненты
+  // {
+  //   selector: 'other-component',
+  //   component: OtherComponent,
+  //   getProps: (el) => ({ ... })
+  // }
+];
+
+// Ждём загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🔍 Поиск Vue компонентов для монтирования...');
+  
+  // Монтируем все найденные компоненты
+  vueComponents.forEach(({ selector, component, getProps }) => {
+    const elements = document.querySelectorAll(selector);
+    
+    if (elements.length === 0) {
+      console.log(`ℹ️ Элементы "${selector}" не найдены на странице`);
+      return;
+    }
+
+    elements.forEach((element, index) => {
+      // Создаём уникальный ID, если его нет
+      if (!element.id) {
+        element.id = `${selector.replace(/\W/g, '')}-${index}`;
+      }
+
+      const props = getProps(element);
+      mountVueApp(component, element, props);
+    });
+  });
+});
+
+// Наблюдатель за динамически добавляемыми элементами (работает с тем же списком компонентов)
 const observer = new MutationObserver((mutations) => {
   mutations.forEach((mutation) => {
     mutation.addedNodes.forEach((node) => {
+      // Проверяем, является ли узел элементом (nodeType 1)
       if (node.nodeType === 1) {
-        // Проверяем все зарегистрированные компоненты
+        // Проверяем по всем зарегистрированным селекторам
         vueComponents.forEach(({ selector, component, getProps }) => {
           if (node.matches?.(selector)) {
             console.log(`🔄 Обнаружен новый ${selector}, монтируем...`);
@@ -13,4 +91,10 @@ const observer = new MutationObserver((mutations) => {
       }
     });
   });
+});
+
+// Запускаем наблюдение за изменениями в DOM
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
 });
