@@ -1,1 +1,39 @@
-npm install --save-dev ejs-loader@0.5.5 html-loader@4.1.0 --legacy-peer-deps
+const templateContent = fs.readFileSync(templatePath, 'utf8');
+console.log('📄 Содержимое EJS-файла:');
+console.log(templateContent.substring(0, 500)); // первые 500 символов
+
+const renderedHtml = ejs.render(templateContent, {
+  siteName: 'Мой сайт',
+  currentYear: new Date().getFullYear()
+}, {
+  filename: templatePath,
+  views: [ejsPartialsDir]
+});
+
+console.log('🔨 После рендеринга:');
+console.log(renderedHtml.substring(0, 500));
+
+
+
+// Добавьте временно в plugins перед другими HtmlRspackPlugin
+new rspack.HtmlRspackPlugin({
+  templateContent: `
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <div id="telegram-block">
+        <telegram-block
+          qr="img/qr-code.svg"
+          mobilicon="img/telegram-icon.jpg"
+          link="https://t.me/your-channel"
+          description="Подпишитесь на наш <br> Телеграм канал"
+        ></telegram-block>
+      </div>
+      <script src="/js/bundle.js"></script>
+    </body>
+    </html>
+  `,
+  filename: 'test.html',
+  inject: false
+})
+
