@@ -1,46 +1,109 @@
-{
-        test: /\.(sass|scss)$/,
-        include: path.resolve(__dirname, 'src/scss'),
-        use: [
-          rspack.CssExtractRspackPlugin.loader,
-          { loader: 'css-loader', options: { sourceMap: true, url: false } },
-          {
-            loader: 'postcss-loader',
-            options: {
-              sourceMap: true,
-              postcssOptions: {
-                plugins: [
-                  require('autoprefixer'),
-                  process.env.NODE_ENV === 'production' && require('cssnano')({
-                    preset: ['default', {
-                      discardComments: { removeAll: true },
-                      normalizeWhitespace: true
-                    }]
-                  })
-                ].filter(Boolean)
-              }
-            }
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              // Включаем современный компилятор
-              api: 'modern-compiler', // <-- ЭТО КЛЮЧЕВОЕ!
-              sourceMap: true,
-              // Опции передаются напрямую в Dart Sass
-              sassOptions: {
-                quietDeps: true, // Отключает предупреждения из node_modules
-                silenceDeprecations: [
-                  'import',           // Отключает предупреждения об @import
-                  'legacy-js-api',    // Отключает предупреждения о старом API
-                  'global-builtin',   // Отключает предупреждения о глобальных функциях
-                  'color-functions',  // Отключает предупреждения о darken/lighten
-                  'slash-div',        // Отключает предупреждения о делении через /
-                  'mixed-decls'       // Добавьте, если видите и эти предупреждения
-                ]
-              }
+module: {
+  rules: [
+    // Правило для SCSS внутри Vue-компонентов
+    {
+      test: /\.scss$/,
+      resourceQuery: /vue/,
+      use: [
+        'vue-style-loader',
+        {
+          loader: 'css-loader',
+          options: { 
+            sourceMap: true,
+            esModule: false 
+          }
+        },
+        {
+          loader: 'postcss-loader',
+          options: {
+            sourceMap: true,
+            postcssOptions: {
+              plugins: [
+                require('autoprefixer'),
+                process.env.NODE_ENV === 'production' && require('cssnano')({
+                  preset: ['default', {
+                    discardComments: { removeAll: true },
+                    normalizeWhitespace: true
+                  }]
+                })
+              ].filter(Boolean)
             }
           }
-        ],
-        type: 'javascript/auto'
-      }
+        },
+        {
+          loader: 'sass-loader',
+          options: {
+            api: 'modern-compiler',
+            sourceMap: true,
+            sassOptions: {
+              quietDeps: true,
+              silenceDeprecations: [
+                'import',
+                'legacy-js-api',
+                'global-builtin',
+                'color-functions',
+                'slash-div',
+                'mixed-decls'
+              ]
+            }
+          }
+        }
+      ]
+    },
+    
+    // Ваше существующее правило для глобальных SCSS-файлов
+    {
+      test: /\.(sass|scss)$/,
+      include: path.resolve(__dirname, 'src/scss'),
+      use: [
+        rspack.CssExtractRspackPlugin.loader,
+        { loader: 'css-loader', options: { sourceMap: true, url: false } },
+        {
+          loader: 'postcss-loader',
+          options: {
+            sourceMap: true,
+            postcssOptions: {
+              plugins: [
+                require('autoprefixer'),
+                process.env.NODE_ENV === 'production' && require('cssnano')({
+                  preset: ['default', {
+                    discardComments: { removeAll: true },
+                    normalizeWhitespace: true
+                  }]
+                })
+              ].filter(Boolean)
+            }
+          }
+        },
+        {
+          loader: 'sass-loader',
+          options: {
+            api: 'modern-compiler',
+            sourceMap: true,
+            sassOptions: {
+              quietDeps: true,
+              silenceDeprecations: [
+                'import',
+                'legacy-js-api',
+                'global-builtin',
+                'color-functions',
+                'slash-div',
+                'mixed-decls'
+              ]
+            }
+          }
+        }
+      ],
+      type: 'javascript/auto'
+    },
+    
+    // Правило для Vue файлов
+    {
+      test: /\.vue$/,
+      loader: 'rspack-vue-loader',
+      options: {
+        experimentalInlineMatchResource: true,
+      },
+    },
+  ]
+}
