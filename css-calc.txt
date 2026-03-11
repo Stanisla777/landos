@@ -1,4 +1,3 @@
-вот мой файл отключите там пожалуйста
 /* eslint-disable */
 const path = require('path');
 const fs = require('fs');
@@ -78,32 +77,87 @@ const config = {
           experimentalInlineMatchResource: true,
         }
       },
+      // ⚠️ ПРАВИЛО ДЛЯ PUG ЗАКОММЕНТИРОВАНО - ОНО БОЛЬШЕ НЕ ИСПОЛЬЗУЕТСЯ
+      // {
+      //   test: /\.pug$/,
+      //   oneOf: [
+      //     {
+      //       resourceQuery: /^\?vue/,
+      //       use: ['pug-plain-loader']
+      //     },
+      //     {
+      //       include: path.resolve(__dirname, 'src/pug'),
+      //       use: [
+      //         {
+      //           loader: 'html-loader',
+      //           options: {
+      //             sources: false,
+      //             minimize: false,
+      //             esModule: false
+      //           }
+      //         },
+      //         {
+      //           loader: 'pug-html-loader',
+      //           options: {
+      //             pretty: true,
+      //             basedir: path.resolve(__dirname, 'src/pug')
+      //           }
+      //         }
+      //       ]
+      //     }
+      //   ]
+      // },
+      
+      // ✅ НОВОЕ ПРАВИЛО ДЛЯ EJS - сохраняет все атрибуты
       {
-        test: /\.pug$/,
-        oneOf: [
+        test: /\.ejs$/,
+        use: [
           {
-            resourceQuery: /^\?vue/,
-            use: ['pug-plain-loader']
+            loader: 'html-loader',
+            options: {
+              sources: false,           // Не обрабатывать src атрибуты
+              minimize: false,          // Не минифицировать
+              esModule: false,          // Не использовать ES-модули
+              // Сохраняем все кастомные атрибуты
+              preprocessor: (content, loaderContext) => {
+                return content;         // Возвращаем как есть, без изменений
+              },
+              // Явно разрешаем атрибуты для telegram-block
+              attributes: {
+                list: [
+                  {
+                    tag: 'telegram-block',
+                    attribute: 'qr',
+                    type: 'src'
+                  },
+                  {
+                    tag: 'telegram-block',
+                    attribute: 'mobilicon',
+                    type: 'src'
+                  },
+                  {
+                    tag: 'telegram-block',
+                    attribute: 'link',
+                    type: 'src'
+                  },
+                  {
+                    tag: 'telegram-block',
+                    attribute: 'description',
+                    type: 'src'
+                  }
+                ]
+              }
+            }
           },
           {
-            include: path.resolve(__dirname, 'src/pug'),
-            use: [
-              {
-                loader: 'html-loader',
-                options: {
-                  sources: false,
-                  minimize: false,
-                  esModule: false
-                }
-              },
-              {
-                loader: 'pug-html-loader',
-                options: {
-                  pretty: true,
-                  basedir: path.resolve(__dirname, 'src/pug')
-                }
-              }
-            ]
+            loader: 'ejs-loader',
+            options: {
+              esModule: false,
+              variable: 'data',
+              evaluate: /<%([\s\S]+?)%>/g,
+              interpolate: /<%=([\s\S]+?)%>/g,
+              escape: /<%-([\s\S]+?)%>/g
+            }
           }
         ]
       },
@@ -134,18 +188,18 @@ const config = {
             loader: 'sass-loader',
             options: {
               // Включаем современный компилятор
-              api: 'modern-compiler', // <-- ЭТО КЛЮЧЕВОЕ!
+              api: 'modern-compiler',
               sourceMap: true,
               // Опции передаются напрямую в Dart Sass
               sassOptions: {
-                quietDeps: true, // Отключает предупреждения из node_modules
+                quietDeps: true,
                 silenceDeprecations: [
-                  'import',           // Отключает предупреждения об @import
-                  'legacy-js-api',    // Отключает предупреждения о старом API
-                  'global-builtin',   // Отключает предупреждения о глобальных функциях
-                  'color-functions',  // Отключает предупреждения о darken/lighten
-                  'slash-div',        // Отключает предупреждения о делении через /
-                  'mixed-decls'       // Добавьте, если видите и эти предупреждения
+                  'import',
+                  'legacy-js-api',
+                  'global-builtin',
+                  'color-functions',
+                  'slash-div',
+                  'mixed-decls'
                 ]
               }
             }
@@ -214,38 +268,37 @@ const config = {
         templateContent: renderedHtml,
         filename: `${name}.html`,
         chunks: chunks,
-        inject: false, // ❌ НЕ подключаем скрипты автоматически
+        inject: false,
         scriptLoading: 'defer',
         minify: false
       });
     }),
 
-    // Генерируем HTML из PUG-файлов (СТАРЫЕ СТРАНИЦЫ, пока не переведены)
-    ...pugFiles.map(file => {
-      const name = file.replace('.pug', '');
-
-      let chunks = ['all', 'general-style', 'vendor-script'];
-      if (name === 'instruction') {
-        chunks = ['instruction', 'instruction-js', 'vendor-script'];
-      } else {
-        chunks.push('general-js');
-      }
-
-      return new rspack.HtmlRspackPlugin({
-        template: path.join(pugViewsDir, file),
-        filename: `${name}.html`,
-        chunks: chunks,
-        inject: false, // ❌ НЕ подключаем скрипты автоматически
-        scriptLoading: 'defer',
-        minify: false
-      });
-    }),
+    // ⚠️ ГЕНЕРАЦИЯ HTML ИЗ PUG-ФАЙЛОВ ЗАКОММЕНТИРОВАНА
+    // ...pugFiles.map(file => {
+    //   const name = file.replace('.pug', '');
+    //
+    //   let chunks = ['all', 'general-style', 'vendor-script'];
+    //   if (name === 'instruction') {
+    //     chunks = ['instruction', 'instruction-js', 'vendor-script'];
+    //   } else {
+    //     chunks.push('general-js');
+    //   }
+    //
+    //   return new rspack.HtmlRspackPlugin({
+    //     template: path.join(pugViewsDir, file),
+    //     filename: `${name}.html`,
+    //     chunks: chunks,
+    //     inject: false,
+    //     scriptLoading: 'defer',
+    //     minify: false
+    //   });
+    // }),
 
     // Кастомный плагин для переименования all.bundle.js в bundle.js
     {
       apply: (compiler) => {
         compiler.hooks.afterEmit.tap('RenameMainToBundle', () => {
-          // Убираем проверку на production - работаем всегда
           const fs = require('fs');
           const mainPath = path.resolve(compiler.outputPath, 'js/all.bundle.js');
           const bundlePath = path.resolve(compiler.outputPath, 'js/bundle.js');
@@ -297,7 +350,6 @@ module.exports = (env, argv) => {
     config.output.filename = 'js/[name].[contenthash].bundle.js';
     config.output.publicPath = '/dist/';
 
-    // Обновляем DefinePlugin для production
     const definePluginIndex = config.plugins.findIndex(p => p instanceof rspack.DefinePlugin);
     if (definePluginIndex !== -1) {
       config.plugins[definePluginIndex] = new rspack.DefinePlugin({
@@ -315,26 +367,21 @@ module.exports = (env, argv) => {
     config.output.filename = 'js/[name].bundle.js';
     config.output.publicPath = '/';
 
-    // Настройки devServer для разработки
-    // Настройки devServer для разработки
-    // Настройки devServer для разработки
     config.devServer = {
       port: 8081,
       open: false,
       hot: true,
       liveReload: false,
 
-      // Статические файлы из dist
       static: {
         directory: path.join(__dirname, 'dist'),
         watch: true,
         publicPath: '/'
       },
 
-      // Middleware настройки
       devMiddleware: {
         publicPath: '/',
-        writeToDisk: true  // ← ВКЛЮЧАЕМ ЗАПИСЬ НА ДИСК
+        writeToDisk: true
       },
 
       client: {
