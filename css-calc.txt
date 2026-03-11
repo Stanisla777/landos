@@ -1,25 +1,26 @@
-вот такую ошибку увидел
-Uncaught runtime errors:
-×
-ERROR
-(0 , _padcom_vue3_ce_noshadow__rspack_import_2.defineCustomElementNoShadow) is not a function
-TypeError: (0 , _padcom_vue3_ce_noshadow__rspack_import_2.defineCustomElementNoShadow) is not a function
-    at ./src/js/index.js (http://localhost:8081/js/bundle.js:436:101)
-    at __webpack_require__ (http://localhost:8081/js/bundle.js:50566:29)
-    at http://localhost:8081/js/bundle.js:51743:27
-    at http://localhost:8081/js/bundle.js:51744:3
+import '../scss/style.scss';
+import { createApp } from 'vue';
+import TelegramBlock from './modules/TelegramBlock.vue';
 
-подключал так
-import { createApp, h } from 'vue';
-import { defineCustomElementNoShadow as defineCustomElement } from '@padcom/vue3-ce-noshadow';
-// Превращаем компонент в Web Component
-const TelegramBlockElement = defineCustomElement(TelegramBlock, {
-  // Опции компонента
-  configureApp(app) {
-    // Можно сконфигурировать приложение, если нужно
-  }
+// Просто монтируем, если элемент существует
+document.addEventListener('DOMContentLoaded', () => {
+  const elements = document.querySelectorAll('telegram-block');
+  
+  elements.forEach((element, index) => {
+    // Создаём уникальный ID для каждого экземпляра
+    const id = `telegram-block-${index}`;
+    element.id = id;
+    
+    // Собираем пропсы из атрибутов
+    const props = {
+      qr: element.getAttribute('qr') || '',
+      mobilicon: element.getAttribute('mobilicon') || '',
+      link: element.getAttribute('link') || '',
+      description: element.getAttribute('description') || ''
+    };
+    
+    // Создаём и монтируем приложение
+    const app = createApp(TelegramBlock, props);
+    app.mount(`#${id}`);
+  });
 });
-
-customElements.define('telegram-block', TelegramBlockElement);
-
-
