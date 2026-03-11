@@ -1,3 +1,28 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initTelegramBlockIfNeeded() {
+    const el = document.getElementById('telegram-block');
+
+    // Защита 1: уже инициализирован
+    if (el && el.__vue_initialized) {
+      return;
+    }
+    // Защита 2: уже содержит отрендеренный контент
+    if (el && el.querySelector('article.telegram')) {
+      return;
+    }
+    // Защита 3: нет шаблона <telegram-block>
+    if (!el || !el.querySelector('telegram-block')) {
+      return;
+    }
+
+    // ✅ Vue 3: createApp вместо new Vue
+    const app = createApp(TelegramBlock);
+    app.mount('#telegram-block');
+
+    el.__vue_initialized = true;
+    console.log(el.__vue_initialized);
+  }
+  window.initTelegramBlockIfNeeded = initTelegramBlockIfNeeded;
+  initTelegramBlockIfNeeded();
+
 
 
