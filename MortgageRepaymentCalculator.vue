@@ -13,7 +13,6 @@ const vueComponents = [
 -------------------------------------
 FormRatingWrapper.vue
 <template>
-  <!-- НЕТ ДОПОЛНИТЕЛЬНОГО DIV - просто слот -->
   <slot></slot>
 </template>
 
@@ -23,12 +22,6 @@ import Cookies from 'js-cookie';
 
 export default {
   name: 'FormRatingWrapper',
-  props: {
-    instanceId: {
-      type: String,
-      default: () => Math.random().toString(36).substring(7)
-    }
-  },
   data() {
     return {
       variant_placeholder: [
@@ -39,6 +32,7 @@ export default {
         'Поделитесь своими эмоциями!'
       ],
       place_holder: '',
+      array_star: [],
       rate: 0,
       textValue: '',
       show_error: false,
@@ -51,81 +45,49 @@ export default {
   computed: {
     cookie_key() {
       return `was_useful_rating_${window.location.pathname}`;
-    },
-    // Поиск элементов внутри компонента
-    $formRating() {
-      return this.$el.querySelector('.form-rating__wr-grade');
-    },
-    $textArea() {
-      return this.$el.querySelector('textarea');
-    },
-    $hiddenInput() {
-      return this.$el.querySelector('input[type="hidden"][name*="ARTICLE_USE"]');
-    },
-    $submitButton() {
-      return this.$el.querySelector('.form-rating__button');
-    },
-    $gradeItems() {
-      return this.$el.querySelectorAll('.js--grade-item');
     }
   },
   methods: {
-    // Обновление звёздочек
-    updateStars() {
-      const items = this.$gradeItems;
-      if (!items.length) return;
+    // Инициализация массива звёзд
+    initArrayStar(instanceId) {
+      this.array_star = [
+        `form-rating-input-${instanceId}-1`,
+        `form-rating-input-${instanceId}-2`,
+        `form-rating-input-${instanceId}-3`,
+        `form-rating-input-${instanceId}-4`,
+        `form-rating-input-${instanceId}-5`
+      ];
+    },
+
+    changeGrade(el, index) {
+      const element = el.currentTarget;
+      const parent = this.$refs.formRating || this.$el.querySelector('.form-rating__wr-grade');
+      this.rate = this.array_star.length - index;
       
-      for (let i = 0; i < items.length - this.rate; i++) {
-        items[i].checked = false;
+      const array_star = parent.querySelectorAll('.js--grade-item');
+      for (let i = 0; i < array_star.length - this.rate; i++) {
+        array_star[i].checked = false;
       }
       for (let i = 0; i < this.rate; i++) {
-        items[items.length - 1 - i].checked = true;
+        array_star[(array_star.length - 1) - i].checked = true;
       }
-    },
-
-    // Установка placeholder'а
-    setPlaceholder() {
-      const placeholders = [
-        this.variant_placeholder[0],
-        this.variant_placeholder[1],
-        this.variant_placeholder[2],
-        this.variant_placeholder[3],
-        this.variant_placeholder[4]
-      ];
-      this.place_holder = placeholders[this.rate - 1] || '';
       
-      if (this.$textArea) {
-        this.$textArea.placeholder = this.place_holder;
-      }
-      if (this.$hiddenInput) {
-        this.$hiddenInput.value = this.rate;
-      }
-    },
-
-    // Обработка клика по звезде
-    handleGradeClick(event, index) {
-      const items = this.$gradeItems;
-      this.rate = items.length - index;
+      // формирование плэйсхолдер
+      1 === this.rate ? this.place_holder = this.variant_placeholder[0] : 
+      2 === this.rate ? this.place_holder = this.variant_placeholder[1] : 
+      3 === this.rate ? this.place_holder = this.variant_placeholder[2] : 
+      4 === this.rate ? this.place_holder = this.variant_placeholder[3] : 
+      5 === this.rate && (this.place_holder = this.variant_placeholder[4]);
       
-      this.updateStars();
-      this.setPlaceholder();
-    },
-
-    // Обработка ввода текста
-    handleTextInput(event) {
-      const value = event.target.value.trim();
-      this.btn_active = value.length > 0;
-      
-      if (event.target.value.length <= this.max_length) {
-        this.length_error = false;
+      const hiddenInput = this.$el.querySelector('input[type="hidden"][name*="ARTICLE_USE"]');
+      if (hiddenInput) {
+        hiddenInput.value = this.rate;
       }
     },
 
-    handleTextKeyDown(event) {
+    clearField(el) {
+      this.textValue = '';
       this.show_error = false;
-      if (event.target.value.length === this.max_length) {
-        this.length_error = true;
-      }
     },
 
     showError() {
@@ -142,128 +104,168 @@ export default {
       this.length_error = false;
     },
 
-    // Загрузка сохранённой оценки из cookie
-    loadSavedRating() {
-      const saved = Cookies.get(this.cookie_key);
-      if (saved && parseInt(saved) !== 0) {
-        this.rate = parseInt(saved);
-        this.form_show = false;
-        this.$nextTick(() => {
-          this.updateStars();
-        });
+    textKeyDown(el) {
+      this.show_error = false;
+      const element = el.currentTarget;
+      if (element.value.length === this.max_length) {
+        this.length_error = true;
       }
     },
 
-    // Сохранение оценки в cookie
-    saveRating() {
+    inputIMask() {
+      const textArea = this.$el.querySelector('textarea');
+      if (!textArea) return;
+      
+      const maskOptions = {
+        mask: /\S\s?$/
+      };
+      IMask(textArea, maskOptions);
+    },
+
+    textInput(el) {
+      const element = el.currentTarget;
+      if (element.value.trim().length > 0) {
+        this.btn_active = true;
+      } else {
+        this.btn_active = false;
+      }
+      if (element.value.length <= this.max_length) {
+        this.length_error = false;
+      }
+    },
+
+    localStorageLoading() {
+      let local_stage = Cookies.get(this.cookie_key);
+      if ((local_stage !== undefined) && (parseInt(local_stage) !== 0)) {
+        const parent = this.$el.querySelector('.form-rating__wr-grade');
+        const array_star = parent.querySelectorAll('.js--grade-item');
+        for (let i = 0; i < parseInt(local_stage); i++) {
+          array_star[(array_star.length - 1) - i].checked = true;
+        }
+        this.form_show = false;
+      }
+    },
+
+    localStorageClick() {
       Cookies.set(this.cookie_key, this.rate);
     },
 
-    // Отправка формы
-    async submitForm(event) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const form = event.target.closest('form');
+    submitForm(el) {
+      el.preventDefault();
+      el.stopPropagation();
+      
+      const form = el.currentTarget.closest('form');
       if (!form) {
         console.error('Форма не найдена');
         return;
       }
-
-      const formData = new URLSearchParams(Array.from(new FormData(form))).toString();
+      
+      let formData = new URLSearchParams(Array.from(new FormData(form))).toString();
       const _success = form.querySelector('.js--webform-success');
-
-      try {
-        // Используем fetch вместо BX.ajax для современного подхода
-        const response = await fetch('/local/ajax/form.result.new.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: formData
-        });
-
-        const result = await response.json();
-
-        if (result.result) {
-          // Отправляем событие в dmpkitdl если есть
-          if (typeof window.dmpkitdl !== "undefined" && window.dmpkitdl !== null) {
-            window.dmpkitdl.push({event: 'evaluation-fos-send'});
+      
+      // Оригинальный BX.ajax (доступен глобально)
+      BX.ajax({
+        url: '/local/ajax/form.result.new.php',
+        data: formData,
+        method: 'POST',
+        dataType: 'json',
+        timeout: 30,
+        async: true,
+        processData: true,
+        scriptsRunFirst: true,
+        emulateOnload: true,
+        start: true,
+        cache: false,
+        onsuccess: (result) => {
+          if (!!result) {
+            if (result['debug'])
+              console.log(result);
+            if (result['result']) {
+              if (typeof window.dmpkitdl !== "undefined" && window.dmpkitdl !== null) {
+                window.dmpkitdl.push({event: 'evaluation-fos-send'});
+              }
+              if (_success) {
+                this.localStorageClick();
+                this.form_show = false;
+                _success.classList.add('show');
+                document.body.classList.add('modal-opened');
+                document.body.classList.add('body-modal');
+                document.body.classList.add('body-modal-modals');
+                
+                setTimeout(() => {
+                  _success.classList.remove('show');
+                  document.body.classList.remove('modal-opened');
+                  document.body.classList.remove('body-modal');
+                  document.body.classList.remove('body-modal-modals');
+                }, 10000);
+                
+                _success.addEventListener('click', function (e) {
+                  _success.classList.remove('show');
+                  document.body.classList.remove('modal-opened');
+                  document.body.classList.remove('body-modal-modals');
+                  setTimeout(() => {
+                    document.body.classList.remove('body-modal');
+                  }, 500);
+                });
+              }
+            } else {
+              if (result['errors']) {
+                console.warn(result['errors']);
+                return;
+              }
+            }
           }
-
-          this.saveRating();
-          this.form_show = false;
-
-          if (_success) {
-            _success.classList.add('show');
-            document.body.classList.add('modal-opened', 'body-modal', 'body-modal-modals');
-
-            setTimeout(() => {
-              _success.classList.remove('show');
-              document.body.classList.remove('modal-opened', 'body-modal', 'body-modal-modals');
-            }, 10000);
-
-            _success.addEventListener('click', function handler() {
-              _success.classList.remove('show');
-              document.body.classList.remove('modal-opened', 'body-modal-modals');
-              setTimeout(() => {
-                document.body.classList.remove('body-modal');
-              }, 500);
-              _success.removeEventListener('click', handler);
-            });
-          }
-        } else if (result.errors) {
-          console.warn(result.errors);
+        },
+        onfailure: function(error) {
+          console.warn(error);
         }
-      } catch (error) {
-        console.warn('Ошибка отправки формы:', error);
-      }
+      });
     }
   },
   mounted() {
-    // Инициализация IMask для textarea
-    if (this.$textArea) {
-      IMask(this.$textArea, {
-        mask: /\S\s?$/
-      });
+    const instanceId = this.$el.id || 
+                      this.$el.closest('[id]')?.id || 
+                      Math.random().toString(36).substring(7);
+    this.initArrayStar(instanceId);
+    
+    this.inputIMask();
+    this.localStorageLoading();
+
+    const gradeItems = this.$el.querySelectorAll('.js--grade-item');
+    gradeItems.forEach((item, index) => {
+      item.addEventListener('click', (e) => this.changeGrade(e, index));
+    });
+
+    const textArea = this.$el.querySelector('textarea');
+    if (textArea) {
+      textArea.addEventListener('input', this.textInput.bind(this));
+      textArea.addEventListener('keydown', this.textKeyDown.bind(this));
+      textArea.addEventListener('blur', this.endFocus.bind(this));
+      textArea.addEventListener('focus', this.beginFocus.bind(this));
     }
 
-    // Загрузка сохранённой оценки
-    this.loadSavedRating();
-
-    // Навешивание обработчиков на существующие элементы
-    if (this.$gradeItems.length) {
-      Array.from(this.$gradeItems).forEach((input, index) => {
-        input.addEventListener('click', (e) => this.handleGradeClick(e, index));
-      });
-    }
-
-    if (this.$textArea) {
-      this.$textArea.addEventListener('input', this.handleTextInput.bind(this));
-      this.$textArea.addEventListener('keydown', this.handleTextKeyDown.bind(this));
-      this.$textArea.addEventListener('blur', this.endFocus.bind(this));
-      this.$textArea.addEventListener('focus', this.beginFocus.bind(this));
-    }
-
-    if (this.$submitButton) {
-      this.$submitButton.addEventListener('click', this.submitForm.bind(this));
+    const submitBtn = this.$el.querySelector('.form-rating__button');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', this.submitForm.bind(this));
     }
   },
   beforeUnmount() {
-    // Очистка обработчиков
-    if (this.$gradeItems.length) {
-      Array.from(this.$gradeItems).forEach((input) => {
-        input.removeEventListener('click', this.handleGradeClick);
-      });
+    const gradeItems = this.$el.querySelectorAll('.js--grade-item');
+    gradeItems.forEach((item, index) => {
+      item.removeEventListener('click', this.changeGrade);
+    });
+
+    const textArea = this.$el.querySelector('textarea');
+    if (textArea) {
+      textArea.removeEventListener('input', this.textInput);
+      textArea.removeEventListener('keydown', this.textKeyDown);
+      textArea.removeEventListener('blur', this.endFocus);
+      textArea.removeEventListener('focus', this.beginFocus);
     }
-    if (this.$textArea) {
-      this.$textArea.removeEventListener('input', this.handleTextInput);
-      this.$textArea.removeEventListener('keydown', this.handleTextKeyDown);
-      this.$textArea.removeEventListener('blur', this.endFocus);
-      this.$textArea.removeEventListener('focus', this.beginFocus);
-    }
-    if (this.$submitButton) {
-      this.$submitButton.removeEventListener('click', this.submitForm);
+
+    const submitBtn = this.$el.querySelector('.form-rating__button');
+    if (submitBtn) {
+      submitBtn.removeEventListener('click', this.submitForm);
     }
   }
 };
