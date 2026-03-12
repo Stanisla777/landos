@@ -1,21 +1,274 @@
-Ошибок явных гнт, но приложение не появилось, при чём на какое-то время показался заголовок и пропал. В консоли вот  что:
-[Vue warn]: Extraneous non-props attributes (vSlots) were passed to component but could not be automatically inherited because component renders fragment or text root nodes. 
-  at <FormRatingWrapper instanceIndex=0 vSlots= {default: ƒ} >
-warn$1 @ runtime-core.esm-bundler.js:39
-renderComponentRoot @ runtime-core.esm-bundler.js:942
-componentUpdateFn @ runtime-core.esm-bundler.js:5957
-run @ reactivity.esm-bundler.js:170
-instance.update @ runtime-core.esm-bundler.js:6088
-setupRenderEffect @ runtime-core.esm-bundler.js:6098
-mountComponent @ runtime-core.esm-bundler.js:5866
-processComponent @ runtime-core.esm-bundler.js:5820
-patch @ runtime-core.esm-bundler.js:5292
-render @ runtime-core.esm-bundler.js:6608
-mount @ runtime-core.esm-bundler.js:3941
-app.mount @ runtime-dom.esm-bundler.js:1469
-mountVueApp @ index.js:226
-(anonymous) @ index.js:480
-(anonymous) @ index.js:473
-(anonymous) @ index.js:464
-index.js:237 ✅ Vue компонент смонтирован <div class=​"form-rating">​<div data-vue-wrapper data-v-app>​</div>​</div>​
-FormRatingWrapper.vue:117 Textarea не найдена, возможно слот ещё не отрендерился
+<template>
+  <div ref="wrapperRef" style="display: contents;">
+    <slot></slot>
+  </div>
+</template>
+
+<script>
+import IMask from 'imask';
+import Cookies from 'js-cookie';
+
+export default {
+  name: 'FormRatingWrapper',
+  props: {
+    instanceIndex: {
+      type: Number,
+      default: 0
+    }
+  },
+  data() {
+    return {
+      variant_placeholder: [
+        'Что разочаровало?',
+        'Какие изменения вы бы предложили?',
+        'Чем стоит дополнить?',
+        'Что показалось сложным?',
+        'Поделитесь своими эмоциями!'
+      ],
+      place_holder: '',
+      array_star: [],
+      rate: 0,
+      textValue: '',
+      show_error: false,
+      length_error: false,
+      max_length: 300,
+      btn_active: false,
+      form_show: true
+    };
+  },
+  computed: {
+    cookie_key() {
+      return `was_useful_rating_${window.location.pathname}_${this.instanceIndex}`;
+    }
+  },
+  methods: {
+    initArrayStar() {
+      this.array_star = [
+        `form-rating-input-${this.instanceIndex}-1`,
+        `form-rating-input-${this.instanceIndex}-2`,
+        `form-rating-input-${this.instanceIndex}-3`,
+        `form-rating-input-${this.instanceIndex}-4`,
+        `form-rating-input-${this.instanceIndex}-5`
+      ];
+    },
+
+    // Поиск элементов внутри компонента
+    findElement(selector) {
+      return this.$refs.wrapperRef?.querySelector?.(selector) || null;
+    },
+
+    findElements(selector) {
+      return this.$refs.wrapperRef?.querySelectorAll?.(selector) || [];
+    },
+
+    changeGrade(el, index) {
+      const parent = this.findElement('.form-rating__wr-grade');
+      if (!parent) return;
+      
+      this.rate = this.array_star.length - index;
+      
+      const array_star = parent.querySelectorAll('.js--grade-item');
+      for (let i = 0; i < array_star.length - this.rate; i++) {
+        array_star[i].checked = false;
+      }
+      for (let i = 0; i < this.rate; i++) {
+        array_star[(array_star.length - 1) - i].checked = true;
+      }
+      
+      // формирование плэйсхолдер
+      const placeholders = [
+        this.variant_placeholder[0],
+        this.variant_placeholder[1],
+        this.variant_placeholder[2],
+        this.variant_placeholder[3],
+        this.variant_placeholder[4]
+      ];
+      this.place_holder = placeholders[this.rate - 1] || '';
+      
+      const hiddenInput = this.findElement('input[type="hidden"][name*="ARTICLE_USE"]');
+      if (hiddenInput) {
+        hiddenInput.value = this.rate;
+      }
+    },
+
+    showError() {
+      this.show_error = true;
+    },
+
+    endFocus() {
+      this.show_error = false;
+      this.length_error = false;
+    },
+
+    beginFocus() {
+      this.show_error = false;
+      this.length_error = false;
+    },
+
+    textKeyDown(el) {
+      this.show_error = false;
+      const element = el.currentTarget;
+      if (element.value.length === this.max_length) {
+        this.length_error = true;
+      }
+    },
+
+    inputIMask() {
+      const textArea = this.findElement('textarea');
+      if (!textArea) {
+        console.log('Textarea не найдена, пробуем позже...');
+        return false;
+      }
+      IMask(textArea, {
+        mask: /\S\s?$/
+      });
+      return true;
+    },
+
+    textInput(el) {
+      const element = el.currentTarget;
+      if (element.value.trim().length > 0) {
+        this.btn_active = true;
+      } else {
+        this.btn_active = false;
+      }
+      if (element.value.length <= this.max_length) {
+        this.length_error = false;
+      }
+    },
+
+    localStorageLoading() {
+      let local_stage = Cookies.get(this.cookie_key);
+      if ((local_stage !== undefined) && (parseInt(local_stage) !== 0)) {
+        const array_star = this.findElements('.js--grade-item');
+        for (let i = 0; i < parseInt(local_stage); i++) {
+          array_star[(array_star.length - 1) - i].checked = true;
+        }
+        this.form_show = false;
+      }
+    },
+
+    localStorageClick() {
+      Cookies.set(this.cookie_key, this.rate);
+    },
+
+    submitForm(el) {
+      el.preventDefault();
+      el.stopPropagation();
+      
+      const form = el.currentTarget.closest('form');
+      if (!form) {
+        console.error('Форма не найдена');
+        return;
+      }
+      
+      let formData = new URLSearchParams(Array.from(new FormData(form))).toString();
+      const _success = form.querySelector('.js--webform-success');
+      
+      BX.ajax({
+        url: '/local/ajax/form.result.new.php',
+        data: formData,
+        method: 'POST',
+        dataType: 'json',
+        timeout: 30,
+        async: true,
+        processData: true,
+        scriptsRunFirst: true,
+        emulateOnload: true,
+        start: true,
+        cache: false,
+        onsuccess: (result) => {
+          if (result && result.result) {
+            if (typeof window.dmpkitdl !== "undefined") {
+              window.dmpkitdl.push({event: 'evaluation-fos-send'});
+            }
+            if (_success) {
+              this.localStorageClick();
+              this.form_show = false;
+              _success.classList.add('show');
+              document.body.classList.add('modal-opened', 'body-modal', 'body-modal-modals');
+              
+              setTimeout(() => {
+                _success.classList.remove('show');
+                document.body.classList.remove('modal-opened', 'body-modal', 'body-modal-modals');
+              }, 10000);
+              
+              _success.addEventListener('click', function handler() {
+                _success.classList.remove('show');
+                document.body.classList.remove('modal-opened', 'body-modal-modals');
+                setTimeout(() => {
+                  document.body.classList.remove('body-modal');
+                }, 500);
+                _success.removeEventListener('click', handler);
+              });
+            }
+          } else if (result && result.errors) {
+            console.warn(result.errors);
+          }
+        },
+        onfailure: function(error) {
+          console.warn(error);
+        }
+      });
+    },
+
+    initAfterRender() {
+      this.initArrayStar();
+      
+      // Пробуем найти элементы
+      const textAreaFound = this.inputIMask();
+      this.localStorageLoading();
+
+      // Даже если textarea не найдена, навешиваем обработчики на звёзды
+      const gradeItems = this.findElements('.js--grade-item');
+      gradeItems.forEach((item, index) => {
+        item.addEventListener('click', (e) => this.changeGrade(e, index));
+      });
+
+      const textArea = this.findElement('textarea');
+      if (textArea) {
+        textArea.addEventListener('input', this.textInput.bind(this));
+        textArea.addEventListener('keydown', this.textKeyDown.bind(this));
+        textArea.addEventListener('blur', this.endFocus.bind(this));
+        textArea.addEventListener('focus', this.beginFocus.bind(this));
+      }
+
+      const submitBtn = this.findElement('.form-rating__button');
+      if (submitBtn) {
+        submitBtn.addEventListener('click', this.submitForm.bind(this));
+      }
+
+      // Если textarea не найдена, пробуем ещё раз через 100мс
+      if (!textAreaFound) {
+        setTimeout(() => {
+          if (!this.findElement('textarea')) return;
+          console.log('🔄 Повторная попытка инициализации IMask');
+          this.inputIMask();
+        }, 100);
+      }
+    }
+  },
+  mounted() {
+    this.initAfterRender();
+  },
+  beforeUnmount() {
+    const gradeItems = this.findElements('.js--grade-item');
+    gradeItems.forEach((item) => {
+      item.removeEventListener('click', this.changeGrade);
+    });
+
+    const textArea = this.findElement('textarea');
+    if (textArea) {
+      textArea.removeEventListener('input', this.textInput);
+      textArea.removeEventListener('keydown', this.textKeyDown);
+      textArea.removeEventListener('blur', this.endFocus);
+      textArea.removeEventListener('focus', this.beginFocus);
+    }
+
+    const submitBtn = this.findElement('.form-rating__button');
+    if (submitBtn) {
+      submitBtn.removeEventListener('click', this.submitForm);
+    }
+  }
+};
+</script>
