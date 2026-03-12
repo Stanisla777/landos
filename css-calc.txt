@@ -1,199 +1,89 @@
 <template>
-  <div class="form-rating">
-    <p class="form-rating__title">{{ title }}</p>
-    <div class="form-rating__wr-form js--form-rating-universal">
-      <form @submit.prevent="submitForm">
-        <div class="form-rating__wr-grade" ref="formRating">
-          <div
-            v-for="(starId, index) in array_star"
-            :key="starId"
-            class="form-rating__grade-item"
-            :class="{ unactive: !form_show }"
-          >
-            <input
-              type="radio"
-              class="js--grade-item"
-              :for-raiting="count_stars - index"
-              :id="starId"
-              @click="changeGrade($event, index)"
-              :disabled="!form_show"
-            >
-            <label :for="starId"></label>
-          </div>
-        </div>
-        
-        <div class="form-rating__wr-textarea" v-show="rate !== 0 && form_show">
-          <div class="form-rating__textarea" :class="{ error: show_error || length_error }">
-            <textarea
-              v-model="textValue"
-              :placeholder="place_holder"
-              @input="textInput"
-              @keydown="textKeyDown"
-              @blur="endFocus"
-              @focus="beginFocus"
-              maxlength="300"
-            ></textarea>
-            <p class="form-rating__textarea-error" v-if="show_error">Введите комментарий</p>
-            <p class="form-rating__textarea-error" v-if="length_error">Максимальное количество символов - {{ max_length }}</p>
-          </div>
-          <input type="hidden" ref="hiddenInput" name="RATING" :value="rate">
-          <button
-            type="submit"
-            class="form-rating__button"
-            :class="{ active: btn_active }"
-            :disabled="!btn_active"
-          >
-            Отправить
-          </button>
-        </div>
-      </form>
+  <article class="telegram" v-if="active">
+    <div class="telegram__popup">
+      <button class="telegram__popup-close" @click="hideBlock">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M4 4.00005C4.39053 3.60952 5.02369 3.60952 5.41422 4.00005L11.7783 10.3642L18.1421 4.00034C18.5327 3.60981 19.1658 3.60981 19.5564 4.00034C19.9469 4.39086 19.9469 5.02403 19.5564 5.41455L13.1925 11.7784L19.5564 18.1422C19.9469 18.5327 19.9469 19.1659 19.5564 19.5564C19.1658 19.9469 18.5327 19.9469 18.1421 19.5564L11.7783 13.1926L5.41422 19.5567C5.02369 19.9472 4.39053 19.9472 4 19.5567C3.60948 19.1662 3.60948 18.533 4 18.1425L10.3641 11.7784L4 5.41426C3.60948 5.02374 3.60948 4.39057 4 4.00005Z"
+            fill="#252628"
+          />
+        </svg>
+      </button>
+      <img :src="qr" class="telegram__popup-qr" alt="">
+      <p class="telegram__popup-text" v-html="description"></p>
+      <div class="telegram__popup-block">
+        <img
+          v-if="mobilicon"
+          class="telegram__popup-block-icon"
+          :src="mobilicon"
+          alt=""
+        >
+        <p
+          class="telegram__popup-text telegram__popup-text_mobile"
+          v-html="description"
+        ></p>
+      </div>
+      <a
+        class="telegram__popup-link-button"
+        target="_blank"
+        :href="link"
+      >
+        Подписаться
+      </a>
     </div>
-  </div>
+  </article>
 </template>
 
 <script>
-import Cookies from 'js-cookie';
-
 export default {
-  name: 'FormRatingUniversal',
+  name: 'TelegramBlock',
   props: {
     instanceId: {
       type: String,
       required: true
     },
-    title: {
-      type: String,
-      default: 'Была ли полезна страница?'
-    },
-    count_stars: {
-      type: Number,
-      default: 5
-    },
-    max_stars: {
-      type: Number,
-      default: 10
-    }
+    qr: { type: String, default: '' },
+    mobilicon: { type: String, default: '' },
+    link: { type: String, default: '' },
+    description: { type: String, default: '' }
   },
   data() {
     return {
-      array_star: [],
-      rate: 0,
-      textValue: '',
-      show_error: false,
-      length_error: false,
-      max_length: 300,
-      btn_active: false,
-      form_show: true,
-      place_holder: '',
-      variant_placeholder: [
-        'Что разочаровало?',
-        'Какие изменения вы бы предложили?',
-        'Чем стоит дополнить?',
-        'Что показалось сложным?',
-        'Поделитесь своими эмоциями!'
-      ]
+      active: false
     };
   },
   computed: {
-    cookie_key() {
-      return `rating_${window.location.pathname}_${this.instanceId}`;
+    cookieKey() {
+      return `telegram_${this.instanceId}`;
     }
   },
   methods: {
-    changeGrade(event, index) {
-      this.rate = this.count_stars - index;
-
-      const parent = this.$refs.formRating;
-      const array_star = parent.querySelectorAll('.js--grade-item');
-      for (let i = 0; i < array_star.length - this.rate; i++) {
-        array_star[i].checked = false;
-      }
-      for (let i = 0; i < this.rate; i++) {
-        array_star[array_star.length - 1 - i].checked = true;
-      }
-
-      if (this.rate === 1) this.place_holder = this.variant_placeholder[0];
-      else if (this.rate === 2) this.place_holder = this.variant_placeholder[1];
-      else if (this.rate === 3) this.place_holder = this.variant_placeholder[2];
-      else if (this.rate === 4) this.place_holder = this.variant_placeholder[3];
-      else if (this.rate === 5) this.place_holder = this.variant_placeholder[4];
-
-      this.$refs.hiddenInput.value = this.rate;
+    hideBlock() {
+      this.setCookie(this.cookieKey, true, 1);
+      this.active = false;
     },
-
-    showError() {
-      this.show_error = true;
+    setCookie(key, value, days) {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+      document.cookie = `${key}=${value};path=/;expires=${expires.toUTCString()}`;
     },
-
-    endFocus() {
-      this.show_error = false;
-      this.length_error = false;
-    },
-
-    beginFocus() {
-      this.show_error = false;
-      this.length_error = false;
-    },
-
-    textKeyDown(event) {
-      this.show_error = false;
-      if (event.target.value.length === this.max_length) {
-        this.length_error = true;
-      }
-    },
-
-    textInput(event) {
-      if (event.target.value.trim().length > 0) {
-        this.btn_active = true;
-      } else {
-        this.btn_active = false;
-      }
-      if (event.target.value.length <= this.max_length) {
-        this.length_error = false;
-      }
-    },
-
-    localStorageLoading() {
-      let local_stage = Cookies.get(this.cookie_key);
-      if (local_stage && parseInt(local_stage) !== 0) {
-        const parent = this.$refs.formRating;
-        const array_star = parent.querySelectorAll('.js--grade-item');
-        for (let i = 0; i < parseInt(local_stage); i++) {
-          array_star[array_star.length - 1 - i].checked = true;
-        }
-        this.rate = parseInt(local_stage);
-        this.form_show = false;
-      }
-    },
-
-    localStorageClick() {
-      Cookies.set(this.cookie_key, this.rate);
-    },
-
-    submitForm(event) {
-      event.preventDefault();
-
-      if (this.rate === 0) {
-        this.show_error = true;
-        return;
-      }
-
-      this.localStorageClick();
-      this.form_show = false;
-      
-      console.log('Отправка:', {
-        rating: this.rate,
-        textValue: this.textValue
-      });
+    getCookie(key) {
+      const keyValue = document.cookie.match(`(^|;) ?${key}=([^;]*)(;|$)`);
+      return keyValue ? keyValue[2] : null;
     }
   },
   mounted() {
-    this.array_star = Array.from(
-      { length: this.count_stars },
-      (_, i) => `form-rating-input-${this.instanceId}-${i + 1}`
-    );
-
-    this.localStorageLoading();
+    if (!this.getCookie(this.cookieKey)) {
+      this.active = true;
+    }
   }
 };
 </script>
