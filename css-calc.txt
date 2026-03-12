@@ -1,3 +1,52 @@
-export { default as vueAppManager } from './vueAppManager';
-export { default as FormRatingUniversal } from './FormRatingUniversal.vue';
-export { default as TelegramBlock } from './TelegramBlock.vue';
+import { vueAppManager, FormRatingUniversal, TelegramBlock } from './vue-apps';
+
+// Регистрируем типы приложений
+vueAppManager.registerAppType('form-rating', FormRatingUniversal);
+vueAppManager.registerAppType('telegram-block', TelegramBlock);
+
+const containers = document.querySelectorAll('[data-vue-app]');
+  
+  containers.forEach((container, index) => {
+    const appType = container.dataset.vueApp;
+    const instanceId = container.dataset.instanceId || `${appType}-${index}`;
+    
+    // Собираем все data-атрибуты как пропсы
+    const props = { instanceId };
+    
+    // Копируем все data-атрибуты (кроме vue-app и instance-id)
+    Object.keys(container.dataset).forEach(key => {
+      if (key !== 'vueApp' && key !== 'instanceId') {
+        // Преобразуем kebab-case в camelCase (data-star-count → starCount)
+        const camelKey = key.replace(/-([a-z])/g, g => g[1].toUpperCase());
+        props[camelKey] = container.dataset[key];
+      }
+    });
+    
+    // Создаём уникальный ID для контейнера
+    const containerId = `vue-app-${instanceId}`;
+    container.id = containerId;
+    
+    // Создаём экземпляр
+    vueAppManager.createInstance(appType, containerId, props);
+  });
+  
+  // Показываем статистику
+  vueAppManager.info();
+
+--------------------
+
+window.vueAppManager = vueAppManager;
+
+----
+
+<div data-vue-app="form-rating"
+     data-title="Оцените эту статью"
+     data-count-stars="5">
+</div>
+
+<div data-vue-app="telegram-block"
+     data-qr="/img/qr-code-1.svg"
+     data-mobilicon="/img/mobile-1.svg"
+     data-link="https://t.me/channel1"
+     data-description="Подпишитесь на канал 1">
+</div>
