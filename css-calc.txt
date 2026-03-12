@@ -1,98 +1,199 @@
-import { createApp } from 'vue';
+<template>
+  <div class="form-rating">
+    <p class="form-rating__title">{{ title }}</p>
+    <div class="form-rating__wr-form js--form-rating-universal">
+      <form @submit.prevent="submitForm">
+        <div class="form-rating__wr-grade" ref="formRating">
+          <div
+            v-for="(starId, index) in array_star"
+            :key="starId"
+            class="form-rating__grade-item"
+            :class="{ unactive: !form_show }"
+          >
+            <input
+              type="radio"
+              class="js--grade-item"
+              :for-raiting="count_stars - index"
+              :id="starId"
+              @click="changeGrade($event, index)"
+              :disabled="!form_show"
+            >
+            <label :for="starId"></label>
+          </div>
+        </div>
+        
+        <div class="form-rating__wr-textarea" v-show="rate !== 0 && form_show">
+          <div class="form-rating__textarea" :class="{ error: show_error || length_error }">
+            <textarea
+              v-model="textValue"
+              :placeholder="place_holder"
+              @input="textInput"
+              @keydown="textKeyDown"
+              @blur="endFocus"
+              @focus="beginFocus"
+              maxlength="300"
+            ></textarea>
+            <p class="form-rating__textarea-error" v-if="show_error">Введите комментарий</p>
+            <p class="form-rating__textarea-error" v-if="length_error">Максимальное количество символов - {{ max_length }}</p>
+          </div>
+          <input type="hidden" ref="hiddenInput" name="RATING" :value="rate">
+          <button
+            type="submit"
+            class="form-rating__button"
+            :class="{ active: btn_active }"
+            :disabled="!btn_active"
+          >
+            Отправить
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
 
-class VueAppManager {
-  constructor() {
-    this.appTypes = new Map();     // Зарегистрированные типы приложений
-    this.instances = new Map();    // Созданные экземпляры
-  }
+<script>
+import Cookies from 'js-cookie';
 
-  // Регистрация нового типа приложения
-  registerAppType(type, component) {
-    this.appTypes.set(type, component);
-    console.log(`✅ Зарегистрирован тип приложения: ${type}`);
-  }
-
-  // Создание экземпляра приложения
-  createInstance(type, containerId, props = {}) {
-    const component = this.appTypes.get(type);
-    if (!component) {
-      console.error(`❌ Тип приложения "${type}" не зарегистрирован`);
-      return null;
+export default {
+  name: 'FormRatingUniversal',
+  props: {
+    instanceId: {
+      type: String,
+      required: true
+    },
+    title: {
+      type: String,
+      default: 'Была ли полезна страница?'
+    },
+    count_stars: {
+      type: Number,
+      default: 5
+    },
+    max_stars: {
+      type: Number,
+      default: 10
     }
-
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error(`❌ Контейнер #${containerId} не найден`);
-      return null;
+  },
+  data() {
+    return {
+      array_star: [],
+      rate: 0,
+      textValue: '',
+      show_error: false,
+      length_error: false,
+      max_length: 300,
+      btn_active: false,
+      form_show: true,
+      place_holder: '',
+      variant_placeholder: [
+        'Что разочаровало?',
+        'Какие изменения вы бы предложили?',
+        'Чем стоит дополнить?',
+        'Что показалось сложным?',
+        'Поделитесь своими эмоциями!'
+      ]
+    };
+  },
+  computed: {
+    cookie_key() {
+      return `rating_${window.location.pathname}_${this.instanceId}`;
     }
+  },
+  methods: {
+    changeGrade(event, index) {
+      this.rate = this.count_stars - index;
 
-    // Защита от двойной инициализации
-    if (container.__vue_app__) {
-      console.log(`⚠️ Экземпляр ${type} в #${containerId} уже существует`);
-      return container.__vue_app__;
-    }
-
-    try {
-      const app = createApp(component, props);
-      app.mount(container);
-      
-      // Сохраняем информацию об экземпляре
-      const instanceInfo = {
-        app,
-        containerId,
-        type,
-        props,
-        createdAt: new Date().toISOString()
-      };
-      
-      if (!this.instances.has(type)) {
-        this.instances.set(type, new Map());
+      const parent = this.$refs.formRating;
+      const array_star = parent.querySelectorAll('.js--grade-item');
+      for (let i = 0; i < array_star.length - this.rate; i++) {
+        array_star[i].checked = false;
       }
-      this.instances.get(type).set(containerId, instanceInfo);
+      for (let i = 0; i < this.rate; i++) {
+        array_star[array_star.length - 1 - i].checked = true;
+      }
+
+      if (this.rate === 1) this.place_holder = this.variant_placeholder[0];
+      else if (this.rate === 2) this.place_holder = this.variant_placeholder[1];
+      else if (this.rate === 3) this.place_holder = this.variant_placeholder[2];
+      else if (this.rate === 4) this.place_holder = this.variant_placeholder[3];
+      else if (this.rate === 5) this.place_holder = this.variant_placeholder[4];
+
+      this.$refs.hiddenInput.value = this.rate;
+    },
+
+    showError() {
+      this.show_error = true;
+    },
+
+    endFocus() {
+      this.show_error = false;
+      this.length_error = false;
+    },
+
+    beginFocus() {
+      this.show_error = false;
+      this.length_error = false;
+    },
+
+    textKeyDown(event) {
+      this.show_error = false;
+      if (event.target.value.length === this.max_length) {
+        this.length_error = true;
+      }
+    },
+
+    textInput(event) {
+      if (event.target.value.trim().length > 0) {
+        this.btn_active = true;
+      } else {
+        this.btn_active = false;
+      }
+      if (event.target.value.length <= this.max_length) {
+        this.length_error = false;
+      }
+    },
+
+    localStorageLoading() {
+      let local_stage = Cookies.get(this.cookie_key);
+      if (local_stage && parseInt(local_stage) !== 0) {
+        const parent = this.$refs.formRating;
+        const array_star = parent.querySelectorAll('.js--grade-item');
+        for (let i = 0; i < parseInt(local_stage); i++) {
+          array_star[array_star.length - 1 - i].checked = true;
+        }
+        this.rate = parseInt(local_stage);
+        this.form_show = false;
+      }
+    },
+
+    localStorageClick() {
+      Cookies.set(this.cookie_key, this.rate);
+    },
+
+    submitForm(event) {
+      event.preventDefault();
+
+      if (this.rate === 0) {
+        this.show_error = true;
+        return;
+      }
+
+      this.localStorageClick();
+      this.form_show = false;
       
-      console.log(`✅ Создан экземпляр ${type} в #${containerId}`);
-      return app;
-      
-    } catch (error) {
-      console.error(`❌ Ошибка создания ${type}:`, error);
-    }
-  }
-
-  // Получить все экземпляры определённого типа
-  getInstances(type) {
-    return this.instances.get(type) || new Map();
-  }
-
-  // Удалить экземпляр
-  destroyInstance(type, containerId) {
-    const instances = this.instances.get(type);
-    if (instances && instances.has(containerId)) {
-      const { app } = instances.get(containerId);
-      app.unmount();
-      instances.delete(containerId);
-      console.log(`✅ Удалён экземпляр ${type} из #${containerId}`);
-    }
-  }
-
-  // Очистить все экземпляры
-  destroyAll() {
-    this.instances.forEach((instances, type) => {
-      instances.forEach(({ app }) => app.unmount());
-    });
-    this.instances.clear();
-    console.log('✅ Все экземпляры удалены');
-  }
-
-  // Отладка: показать состояние менеджера
-  info() {
-    console.log('📊 Состояние менеджера:');
-    this.instances.forEach((instances, type) => {
-      console.log(`  ${type}: ${instances.size} экземпляров`);
-      instances.forEach((info, id) => {
-        console.log(`    - #${id} (${info.createdAt})`);
+      console.log('Отправка:', {
+        rating: this.rate,
+        textValue: this.textValue
       });
-    });
-  }
-}
+    }
+  },
+  mounted() {
+    this.array_star = Array.from(
+      { length: this.count_stars },
+      (_, i) => `form-rating-input-${this.instanceId}-${i + 1}`
+    );
 
-export default new VueAppManager();
+    this.localStorageLoading();
+  }
+};
+</script>
