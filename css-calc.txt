@@ -1,219 +1,85 @@
-<template>
-  <div class="form-rating" ref="container"></div>
-</template>
+/* eslint-disable */
+import Vue from 'vue';
 
-<script>
-import IMask from 'imask';
-import Cookies from 'js-cookie';
+export default function formRating() {
+  const formRate = document.querySelectorAll('.js--form-rating-universal');
+  for (let item = 0; item < formRate.length; item++) {
+    formRate[item].id = `js--form-rating-universal${item}`;
+    const app = new Vue({
+      el: `#js--form-rating-universal${item}`,
+      data: {
+        array_star: [], // теперь заполняется в mounted
+        rate: 0,
+        count: 0,
+        count_stars: 5
+      },
+      methods: {
+        changeGrade(el, index) {
+          const element = el.currentTarget;
+          const parent = this.$refs.formRating;
+          this.rate = this.array_star.length - index;
 
-export default {
-  name: 'FormRatingWrapper',
-  props: {
-    instanceIndex: {
-      type: Number,
-      default: 0
-    },
-    template: {
-      type: String,
-      default: ''
-    }
-  },
-  data() {
-    return {
-      variant_placeholder: [
-        'Что разочаровало?',
-        'Какие изменения вы бы предложили?',
-        'Чем стоит дополнить?',
-        'Что показалось сложным?',
-        'Поделитесь своими эмоциями!'
-      ],
-      place_holder: '',
-      array_star: [],
-      rate: 0,
-      textValue: '',
-      show_error: false,
-      length_error: false,
-      max_length: 300,
-      btn_active: false,
-      form_show: true
-    };
-  },
-  computed: {
-    cookie_key() {
-      return `was_useful_rating_${window.location.pathname}_${this.instanceIndex}`;
-    }
-  },
-  methods: {
-    initArrayStar() {
-      this.array_star = [
-        `form-rating-input-${this.instanceIndex}-1`,
-        `form-rating-input-${this.instanceIndex}-2`,
-        `form-rating-input-${this.instanceIndex}-3`,
-        `form-rating-input-${this.instanceIndex}-4`,
-        `form-rating-input-${this.instanceIndex}-5`
-      ];
-    },
+          // Действие над звёздочками оценки
+          const array_star = parent.querySelectorAll('.js--grade-item');
+          for (let i = 0; i < array_star.length - this.rate; i++) {
+            array_star[i].checked = false;
+          }
+          for (let i = 0; i < this.rate; i++) {
+            array_star[array_star.length - 1 - i].checked = true;
+          }
 
-    // ВСТАВЛЯЕМ ПОЛУЧЕННЫЙ HTML В КОМПОНЕНТ
-    insertTemplate() {
-      if (!this.template || this.template.length === 0) {
-        console.log('⚠️ template пуст или не передан');
-        return;
-      }
-      
-      // Очищаем контейнер
-      this.$refs.container.innerHTML = '';
-      
-      // Вставляем HTML-шаблон
-      this.$refs.container.innerHTML = this.template;
-      
-      console.log('✅ HTML вставлен, длина:', this.template.length);
-    },
+          this.$refs.ratingInputHidden.value = element.getAttribute('for-raiting');
 
-    changeGrade(index) {
-      this.rate = this.array_star.length - index;
-      this.place_holder = this.variant_placeholder[this.rate - 1] || '';
-    },
+          const container = element.closest('.js--form-rating-universal');
+          if (container && container.querySelector('.js--input__error_radio-group')) {
+            container.querySelector('.js--input__error_radio-group').remove();
+            container.classList.remove('input_error');
+          }
+        },
 
-    showError() {
-      this.show_error = true;
-    },
-
-    endFocus() {
-      this.show_error = false;
-      this.length_error = false;
-    },
-
-    beginFocus() {
-      this.show_error = false;
-      this.length_error = false;
-    },
-
-    textKeyDown(el) {
-      this.show_error = false;
-      const element = el.currentTarget;
-      if (element.value.length === this.max_length) {
-        this.length_error = true;
-      }
-    },
-
-    inputIMask() {
-      const textArea = this.$refs.container.querySelector('textarea');
-      if (!textArea) return false;
-      IMask(textArea, {
-        mask: /\S\s?$/
-      });
-      return true;
-    },
-
-    textInput(el) {
-      const element = el.currentTarget;
-      this.btn_active = element.value.trim().length > 0;
-      if (element.value.length <= this.max_length) {
-        this.length_error = false;
-      }
-    },
-
-    localStorageLoading() {
-      let local_stage = Cookies.get(this.cookie_key);
-      if ((local_stage !== undefined) && (parseInt(local_stage) !== 0)) {
-        this.rate = parseInt(local_stage);
-        this.form_show = false;
-      }
-    },
-
-    localStorageClick() {
-      Cookies.set(this.cookie_key, this.rate);
-    },
-
-    submitForm(el) {
-      el.preventDefault();
-      el.stopPropagation();
-      
-      const form = el.currentTarget.closest('form');
-      if (!form) return;
-      
-      let formData = new URLSearchParams(Array.from(new FormData(form))).toString();
-      
-      if (window.BX) {
-        BX.ajax({
-          url: '/local/ajax/form.result.new.php',
-          data: formData,
-          method: 'POST',
-          dataType: 'json',
-          timeout: 30,
-          async: true,
-          processData: true,
-          scriptsRunFirst: true,
-          emulateOnload: true,
-          start: true,
-          cache: false,
-          onsuccess: (result) => {
-            if (result && result.result) {
-              if (typeof window.dmpkitdl !== "undefined") {
-                window.dmpkitdl.push({event: 'evaluation-fos-send'});
-              }
-              this.localStorageClick();
-              this.form_show = false;
+        handleExternalClick() {
+          let count_check = 0;
+          const array_radio = this.$refs.formRating.querySelectorAll('.js--grade-item');
+          for (let radio of array_radio) {
+            if (radio.checked) {
+              count_check += 1;
             }
-          },
-          onfailure: console.warn
-        });
+          }
+        }
+      },
+      mounted() {
+        // Получаю значение из data-атрибута
+        const countAttr = this.$el.getAttribute('data-count-stars');
+        let count = 5; // значение по умолчанию
+
+        if (countAttr !== null && countAttr.trim() !== '') {
+          const parsed = parseInt(countAttr, 10);
+          if (!isNaN(parsed) && parsed >= 1) {
+            count = Math.min(parsed, 10); // не больше 10
+          }
+        }
+
+        this.count_stars = count;
+
+        // Генерирую array_star с учётом индекса item из внешнего цикла
+        this.array_star = Array.from({ length: count }, (_, i) =>
+          `form-rating-input-${item}-${i + 1}`
+        );
+
+        // Подключаю обработчик внешней кнопки, если она есть
+        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
+        if (externalButton) {
+          this.externalClickHandler = () => this.handleExternalClick();
+          externalButton.addEventListener('click', this.externalClickHandler);
+        }
+      },
+      beforeDestroy() {
+        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
+        if (externalButton) {
+          externalButton.removeEventListener('click', this.externalClickHandler);
+        }
       }
-    },
-
-    attachEventListeners() {
-      this.$nextTick(() => {
-        // Обработчики для звёзд
-        const gradeItems = this.$refs.container.querySelectorAll('.js--grade-item');
-        gradeItems.forEach((item, index) => {
-          item.addEventListener('click', () => this.changeGrade(index));
-        });
-
-        // Обработчики для textarea
-        const textArea = this.$refs.container.querySelector('textarea');
-        if (textArea) {
-          textArea.addEventListener('input', this.textInput.bind(this));
-          textArea.addEventListener('keydown', this.textKeyDown.bind(this));
-          textArea.addEventListener('blur', this.endFocus.bind(this));
-          textArea.addEventListener('focus', this.beginFocus.bind(this));
-        }
-
-        // Обработчик для кнопки отправки
-        const submitBtn = this.$refs.container.querySelector('.form-rating__button');
-        if (submitBtn) {
-          submitBtn.addEventListener('click', this.submitForm.bind(this));
-        }
-
-        // IMask
-        this.inputIMask();
-      });
-    }
-  },
-  mounted() {
-    this.initArrayStar();
-    this.localStorageLoading();
-    this.insertTemplate();        // Вставляем HTML
-    this.attachEventListeners();  // Навешиваем обработчики
-  },
-  beforeUnmount() {
-    const gradeItems = this.$refs.container.querySelectorAll('.js--grade-item');
-    gradeItems.forEach((item) => {
-      item.removeEventListener('click', this.changeGrade);
     });
-
-    const textArea = this.$refs.container.querySelector('textarea');
-    if (textArea) {
-      textArea.removeEventListener('input', this.textInput);
-      textArea.removeEventListener('keydown', this.textKeyDown);
-      textArea.removeEventListener('blur', this.endFocus);
-      textArea.removeEventListener('focus', this.beginFocus);
-    }
-
-    const submitBtn = this.$refs.container.querySelector('.form-rating__button');
-    if (submitBtn) {
-      submitBtn.removeEventListener('click', this.submitForm);
-    }
   }
-};
-</script>
+}
+
