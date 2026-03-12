@@ -1,270 +1,31 @@
-<div class="form-rating <?=($arParams['ADD_CLASS_TO_CONTAINER']??'')?>">
-    <p class="form-rating__title"><?= $arResult['TITLE'] ?></p>
-    <div class="form-rating__wr-form js--form-rating" v-cloak>
-        <?
-        $bIsOk = $arResult['isFormNote'] == 'Y' && $arResult["isFormErrors"] !== "Y";
-        if (false && $arResult['isFormNote'] == 'Y' && $arResult["isFormErrors"] !== "Y") { ?>
+WebSocket connection to 'ws://localhost:8081/ws' failed:
+WebSocketClient	@	WebSocketClient.js:14
+ this.client = new WebSocket(url);
 
-        <? } ?>
+console.error.apply(console, _toConsumableArray(labeledArgs()));
+[webpack-dev-server] Disconnected!
+index.js:594 [webpack-dev-server] Trying to reconnect...
 
-        <?= $arResult["FORM_HEADER"] ?>
-
-........
-
-
-
-<div class="form-rating">
-                        <p class="form-rating__title">Была ли полезна страница?</p>
-                        <div class="form-rating__wr-form js--form-rating" id="js--form-rating0" v-cloak="v-cloak">
-                            <form method="" action="">
-                                <div class="form-rating__wr-grade" ref="formRating">
-                                    <div class="form-rating__grade-item" v-for="(item,index) in array_star" :class="!form_show?'unactive':''"><input class="js--grade-item" type="radio" :for-raiting="array_star.length-index" :id="item" @click="changeGrade($event,index)" :disabled="!form_show" /><label :for="item"></label></div>
-                                </div>
-                                <div class="form-rating__wr-textarea" v-show="rate!==0&amp;&amp;form_show">
-                                    <div class="form-rating__textarea" :class="(show_error)||length_error?'error':''"><textarea :placeholder="place_holder" v-model="textValue" @blur="endFocus" @input="textInput" @keydown="textKeyDown" @focus="beginFocus" ref="textArea"></textarea>
-                                        <p class="form-rating__textarea-error" v-if="show_error">Введите комментарий</p>
-                                        <p class="form-rating__textarea-error" v-if="length_error">Максимальное количество символов - {{max_length}}</p>
-                                    </div>
-                                    <input hidden="hidden" type="text" ref="hiddenInput" />
-                                    <button class="form-rating__button" type="button" v-if="!btn_active" @click="showError">Отправить</button>
-                                    <button class="form-rating__button active" type="submit" v-if="btn_active" @click="localStorageClick">Отправить</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-
-index.js
-import formRating from './modules/form-rating';
-
-document.addEventListener('DOMContentLoaded', () => {
-formRating();
-
-const obj = [
-{
-      id: 'form-rating',
-      fn: formRating
-    },
-]
-  obj.forEach((item) => {
-    waitForVueApp(item.id, item.fn);
-  });
-function waitForVueApp(id, initFn) {
-    const el = document.getElementById(id);
-    // eslint-disable-next-line no-underscore-dangle
-    if (el && !el.__vue_initialized) {
-      initFn();
-      // eslint-disable-next-line no-underscore-dangle
-      el.__vue_initialized = true;
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      const element = document.getElementById(id);
-      // eslint-disable-next-line no-underscore-dangle
-      if (element && !element.__vue_initialized) {
-        observer.disconnect();
-        initFn();
-        // eslint-disable-next-line no-underscore-dangle
-        element.__vue_initialized = true;
-      }
-    });
-
-    observer.observe(document.body, {childList: true, subtree: true});
-  }
-
-})
-
-
-form-rating.js
-
-/* eslint-disable */
-import Vue from 'vue';
-import IMask from 'imask';
-import Cookies from 'js-cookie'
-
-export default function formRating() {
-  const formRate=document.querySelectorAll('.js--form-rating');
-  const cookie_key = `was_useful_rating_${window.location.pathname}`;
-  for(let item=0;item<formRate.length;item++){
-    formRate[item].id = `js--form-rating${item}`;
-    const app = new Vue({
-      el: `#js--form-rating${item}`,
-      data: {
-        variant_placeholder:['Что разочаровало?','Какие изменения вы бы предложили?','Чем стоит дополнить?','Что показалось сложным?','Поделитесь своими эмоциями!'],
-        place_holder:'',
-        array_star:[`form-rating-input-${item}-1`,`form-rating-input-${item}-2`,`form-rating-input-${item}-3`,`form-rating-input-${item}-4`,`form-rating-input-${item}-5`],
-        rate:0,
-        textValue:'',
-        show_error:false,
-        length_error:false,
-        max_length:300,
-        btn_active:false,
-        form_show:true
-      },
-      methods: {
-        changeGrade(el,index){
-          const element = el.currentTarget
-          const parent = this.$refs.formRating;
-          this.rate = this.array_star.length - index
-          //действие над звёздочками оценки
-          const array_star = parent.querySelectorAll('.js--grade-item')
-          for(let i=0;i<array_star.length-this.rate;i++){
-            array_star[i].checked=false
-          }
-          for(let i=0;i<this.rate;i++){
-            array_star[(array_star.length-1)-i].checked=true
-          }
-          //  формирование плэйсхолдер
-          1 === this.rate ? this.place_holder = this.variant_placeholder[0] : 2 === this.rate ? this.place_holder = this.variant_placeholder[1] : 3 === this.rate ? this.place_holder = this.variant_placeholder[2] : 4 === this.rate ? this.place_holder = this.variant_placeholder[3] : 5 === this.rate && (this.place_holder = this.variant_placeholder[4]);
-          this.$refs.hiddenInput.value= this.rate;
-        },
-        clearField(el){
-          this.textValue=''
-          this.show_error=false
-        },
-        showError(){
-          this.show_error=true
-        },
-        endFocus(){
-          this.show_error=false
-          this.length_error = false;
-        },
-        beginFocus(){
-          this.show_error=false
-          this.length_error = false;
-        },
-        textKeyDown(el){
-          this.show_error=false
-          const element = el.currentTarget
-          if(element.value.length===this.max_length){
-            this.length_error=true
-          }
-        },
-        inputIMask(){
-          const input_status = document.querySelectorAll('.js--text_area');
-          const maskOptions = {
-            // mask: /^(?=.{1,300}$)[^\s]((?!\s{2}).)*$/i,
-            mask: /\S\s?$/
-          };
-          IMask(this.$refs.textArea, maskOptions);
-
-        },
-        textInput(el) {
-          const element = el.currentTarget
-          if(element.value.trim().length>0){
-            this.btn_active=true
-          }
-          else {
-            this.btn_active=false
-          }
-          if (element.value.length<= this.max_length) {
-            this.length_error = false;
-          }
-        },
-
-        // ----------- функции куки
-        localStorageLoading() {
-          let local_stage = Cookies.get(cookie_key);
-          if ((local_stage !== undefined) && (parseInt(local_stage) !== 0)) {
-            const parent = this.$refs.formRating;
-            const array_star = parent.querySelectorAll('.js--grade-item')
-            for(let i=0;i<parseInt(local_stage);i++){
-              array_star[(array_star.length-1)-i].checked=true
-            }
-            this.form_show=false
-          }
-        },
-
-        localStorageClick(){
-          Cookies.set(cookie_key,this.rate)
-        },
-
-        submitForm(el){
-          el.preventDefault()
-          el.stopPropagation()
-          // const form = this.$refs.webform
-          const form = el.currentTarget.closest('form')
-          if (!form){
-            console.error('Форма не найдена')
-            return;
-          }
-          // console.log('submitForm',form)
-          let formData = new URLSearchParams(Array.from(new FormData(form))).toString()
-          const _success = form.querySelector('.js--webform-success')
-          BX.ajax({
-            url: '/local/ajax/form.result.new.php',
-            data: formData,
-            method: 'POST',
-            dataType: 'json',
-            timeout: 30,
-            async: true,
-            processData: true,
-            scriptsRunFirst: true,
-            emulateOnload: true,
-            start: true,
-            cache: false,
-            onsuccess: (result)=>{
-              if (!!result) {
-                if (result['debug'])
-                  console.log(result);
-                if (result['result']) {
-                  if (typeof window.dmpkitdl !== "undefined" && window.dmpkitdl !== null) {
-                    window.dmpkitdl.push({event: 'evaluation-fos-send'});
-                  }
-                  if (_success) {
-                    this.localStorageClick()
-                    this.form_show=false
-                    _success.classList.add('show');
-                    document.body.classList.add('modal-opened');
-                    document.body.classList.add('body-modal');
-                    document.body.classList.add('body-modal-modals');
-                    setTimeout(() => {
-                      _success.classList.remove('show');
-                      document.body.classList.remove('modal-opened');
-                      document.body.classList.remove('body-modal');
-                      document.body.classList.remove('body-modal-modals');
-                    }, 10000);
-                    _success.addEventListener('click', function (e) {
-                      _success.classList.remove('show');
-                      document.body.classList.remove('modal-opened');
-                      document.body.classList.remove('body-modal-modals');
-                      setTimeout(() => {
-                        document.body.classList.remove('body-modal');
-                      }, 500);
-                    })
-                  }
-                  // return;
-                } else {
-                  if (result['errors']) {
-                    console.warn(result['errors']);
-                    return;
-                  }
-                }
-              }
-            },
-            onfailure: function(error){
-              console.warn(error);
-            }
-          });
-        }
-      },
-      computed: {
-      },
-      watch: {
-      },
-      mounted() {
-        this.inputIMask()
-        this.localStorageLoading()
-
-      },
-      components: {
-
-      },
-    })
-  }
-
-}
-
-
-
+index.js:602 [webpack-dev-server] 
+Event
+isTrusted
+: 
+true
+returnValue
+: 
+true
+srcElement
+: 
+WebSocket {url: 'ws://localhost:8081/ws', readyState: 3, bufferedAmount: 0, onopen: ƒ, onerror: ƒ, …}
+target
+: 
+WebSocket {url: 'ws://localhost:8081/ws', readyState: 3, bufferedAmount: 0, onopen: ƒ, onerror: ƒ, …}
+timeStamp
+: 
+4184.699999988079
+type
+: 
+"error"
+[[Prototype]]
+: 
+Event
