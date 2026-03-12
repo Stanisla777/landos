@@ -1,85 +1,98 @@
-/* eslint-disable */
-import Vue from 'vue';
+import { createApp } from 'vue';
 
-export default function formRating() {
-  const formRate = document.querySelectorAll('.js--form-rating-universal');
-  for (let item = 0; item < formRate.length; item++) {
-    formRate[item].id = `js--form-rating-universal${item}`;
-    const app = new Vue({
-      el: `#js--form-rating-universal${item}`,
-      data: {
-        array_star: [], // теперь заполняется в mounted
-        rate: 0,
-        count: 0,
-        count_stars: 5
-      },
-      methods: {
-        changeGrade(el, index) {
-          const element = el.currentTarget;
-          const parent = this.$refs.formRating;
-          this.rate = this.array_star.length - index;
+class VueAppManager {
+  constructor() {
+    this.appTypes = new Map();     // Зарегистрированные типы приложений
+    this.instances = new Map();    // Созданные экземпляры
+  }
 
-          // Действие над звёздочками оценки
-          const array_star = parent.querySelectorAll('.js--grade-item');
-          for (let i = 0; i < array_star.length - this.rate; i++) {
-            array_star[i].checked = false;
-          }
-          for (let i = 0; i < this.rate; i++) {
-            array_star[array_star.length - 1 - i].checked = true;
-          }
+  // Регистрация нового типа приложения
+  registerAppType(type, component) {
+    this.appTypes.set(type, component);
+    console.log(`✅ Зарегистрирован тип приложения: ${type}`);
+  }
 
-          this.$refs.ratingInputHidden.value = element.getAttribute('for-raiting');
+  // Создание экземпляра приложения
+  createInstance(type, containerId, props = {}) {
+    const component = this.appTypes.get(type);
+    if (!component) {
+      console.error(`❌ Тип приложения "${type}" не зарегистрирован`);
+      return null;
+    }
 
-          const container = element.closest('.js--form-rating-universal');
-          if (container && container.querySelector('.js--input__error_radio-group')) {
-            container.querySelector('.js--input__error_radio-group').remove();
-            container.classList.remove('input_error');
-          }
-        },
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`❌ Контейнер #${containerId} не найден`);
+      return null;
+    }
 
-        handleExternalClick() {
-          let count_check = 0;
-          const array_radio = this.$refs.formRating.querySelectorAll('.js--grade-item');
-          for (let radio of array_radio) {
-            if (radio.checked) {
-              count_check += 1;
-            }
-          }
-        }
-      },
-      mounted() {
-        // Получаю значение из data-атрибута
-        const countAttr = this.$el.getAttribute('data-count-stars');
-        let count = 5; // значение по умолчанию
+    // Защита от двойной инициализации
+    if (container.__vue_app__) {
+      console.log(`⚠️ Экземпляр ${type} в #${containerId} уже существует`);
+      return container.__vue_app__;
+    }
 
-        if (countAttr !== null && countAttr.trim() !== '') {
-          const parsed = parseInt(countAttr, 10);
-          if (!isNaN(parsed) && parsed >= 1) {
-            count = Math.min(parsed, 10); // не больше 10
-          }
-        }
-
-        this.count_stars = count;
-
-        // Генерирую array_star с учётом индекса item из внешнего цикла
-        this.array_star = Array.from({ length: count }, (_, i) =>
-          `form-rating-input-${item}-${i + 1}`
-        );
-
-        // Подключаю обработчик внешней кнопки, если она есть
-        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
-        if (externalButton) {
-          this.externalClickHandler = () => this.handleExternalClick();
-          externalButton.addEventListener('click', this.externalClickHandler);
-        }
-      },
-      beforeDestroy() {
-        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
-        if (externalButton) {
-          externalButton.removeEventListener('click', this.externalClickHandler);
-        }
+    try {
+      const app = createApp(component, props);
+      app.mount(container);
+      
+      // Сохраняем информацию об экземпляре
+      const instanceInfo = {
+        app,
+        containerId,
+        type,
+        props,
+        createdAt: new Date().toISOString()
+      };
+      
+      if (!this.instances.has(type)) {
+        this.instances.set(type, new Map());
       }
+      this.instances.get(type).set(containerId, instanceInfo);
+      
+      console.log(`✅ Создан экземпляр ${type} в #${containerId}`);
+      return app;
+      
+    } catch (error) {
+      console.error(`❌ Ошибка создания ${type}:`, error);
+    }
+  }
+
+  // Получить все экземпляры определённого типа
+  getInstances(type) {
+    return this.instances.get(type) || new Map();
+  }
+
+  // Удалить экземпляр
+  destroyInstance(type, containerId) {
+    const instances = this.instances.get(type);
+    if (instances && instances.has(containerId)) {
+      const { app } = instances.get(containerId);
+      app.unmount();
+      instances.delete(containerId);
+      console.log(`✅ Удалён экземпляр ${type} из #${containerId}`);
+    }
+  }
+
+  // Очистить все экземпляры
+  destroyAll() {
+    this.instances.forEach((instances, type) => {
+      instances.forEach(({ app }) => app.unmount());
+    });
+    this.instances.clear();
+    console.log('✅ Все экземпляры удалены');
+  }
+
+  // Отладка: показать состояние менеджера
+  info() {
+    console.log('📊 Состояние менеджера:');
+    this.instances.forEach((instances, type) => {
+      console.log(`  ${type}: ${instances.size} экземпляров`);
+      instances.forEach((info, id) => {
+        console.log(`    - #${id} (${info.createdAt})`);
+      });
     });
   }
 }
 
+export default new VueAppManager();
