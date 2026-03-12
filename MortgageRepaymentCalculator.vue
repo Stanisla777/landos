@@ -1,14 +1,135 @@
+import '../scss/style.scss';
+import { createApp } from 'vue';
+import TelegramBlock from './modules/TelegramBlock.vue';
 import FormRatingWrapper from './modules/FormRatingWrapper.vue';
 
+// Хранилище инициализированных компонентов
+const initializedApps = new WeakSet();
+
+// Функция для безопасного монтирования
+function mountVueApp(component, element, props = {}, strategy = 'replace') {
+  if (element.__vue_app__ || initializedApps.has(element)) {
+    console.log('⚠️ Компонент уже инициализирован, пропускаем');
+    return;
+  }
+
+  try {
+    let app;
+    
+    if (strategy === 'wrap') {
+      // СОХРАНЯЕМ ВСЮ PHP-РАЗМЕТКУ!
+      const originalContent = element.innerHTML;
+      
+      // Очищаем контейнер
+      element.innerHTML = '';
+      
+      // Создаём обёртку для Vue
+      const wrapper = document.createElement('div');
+      wrapper.setAttribute('data-vue-wrapper', '');
+      element.appendChild(wrapper);
+      
+      // Создаём приложение, передавая оригинальный контент как слот
+      app = createApp(component, {
+        ...props,
+        vSlots: {
+          default: () => originalContent
+        }
+      });
+      
+      app.mount(wrapper);
+      
+    } else {
+      // Стандартное монтирование (для обычных компонентов)
+      app = createApp(component, props);
+      app.mount(element);
+    }
+    
+    initializedApps.add(element);
+    element.__vue_app__ = app;
+    
+    console.log('✅ Vue компонент смонтирован', element);
+    return app;
+    
+  } catch (error) {
+    console.error('❌ Ошибка монтирования:', error);
+  }
+}
+
+// Список всех Vue-компонентов для монтирования
 const vueComponents = [
   {
-    selector: '.form-rating',
-    component: FormRatingWrapper,
+    selector: 'telegram-block',
+    component: TelegramBlock,
+    mountStrategy: 'replace',  // заменяем содержимое
     getProps: (el) => ({
-      instanceId: el.id || `form-rating-${Date.now()}`
+      qr: el.getAttribute('qr') || '',
+      mobilicon: el.getAttribute('mobilicon') || '',
+      link: el.getAttribute('link') || '',
+      description: el.getAttribute('description') || ''
     })
+  },
+  {
+    selector: '.form-rating',  // Находим по классу
+    component: FormRatingWrapper,
+    mountStrategy: 'wrap',     // Оборачиваем, не заменяя
+    // Для FormRating не нужно getProps, так как мы используем слот
   }
+  // Сюда будут добавляться новые компоненты
+  // {
+  //   selector: 'other-component',
+  //   component: OtherComponent,
+  //   mountStrategy: 'replace',
+  //   getProps: (el) => ({ ... })
+  // }
 ];
+
+// Ждём загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🔍 Поиск Vue компонентов для монтирования...');
+  
+  // Монтируем все найденные компоненты
+  vueComponents.forEach(({ selector, component, getProps, mountStrategy }) => {
+    const elements = document.querySelectorAll(selector);
+    
+    if (elements.length === 0) {
+      console.log(`ℹ️ Элементы "${selector}" не найдены на странице`);
+      return;
+    }
+
+    elements.forEach((element, index) => {
+      // Создаём уникальный ID, если его нет (для replace стратегии)
+      if (mountStrategy === 'replace' && !element.id) {
+        element.id = `${selector.replace(/\W/g, '')}-${index}`;
+      }
+
+      const props = getProps ? getProps(element) : {};
+      mountVueApp(component, element, props, mountStrategy);
+    });
+  });
+});
+
+// Наблюдатель за динамически добавляемыми элементами
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      if (node.nodeType === 1) {
+        vueComponents.forEach(({ selector, component, getProps, mountStrategy }) => {
+          if (node.matches?.(selector)) {
+            console.log(`🔄 Обнаружен новый ${selector}, монтируем...`);
+            const props = getProps ? getProps(node) : {};
+            mountVueApp(component, node, props, mountStrategy);
+          }
+        });
+      }
+    });
+  });
+});
+
+// Запускаем наблюдение за изменениями в DOM
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
+});
 
 -------------------------------------
 FormRatingWrapper.vue
