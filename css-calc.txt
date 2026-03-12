@@ -1,8 +1,245 @@
-Нет не щаработало. В консоли большой warning вот часть его
-FormRatingWrapper.vue:71 [Vue warn]: Runtime compilation is not supported in this build of Vue. Configure your bundler to alias "vue" to "vue/dist/vue.esm-bundler.js". 
-  at <FormRatingWrapper instanceIndex=0 template="\n                        <p class=\"form-rating__title\">Была ли полезна страница?</p>\n                        <div class=\"form-rating__wr-form js--form-rating\" id=\"js--form-rating0\" v-cloak=\"v-cloak\">\n                            <form method=\"\" action=\"\">\n                                <div class=\"form-rating__wr-grade\" ref=\"formRating\">\n                                    <div class=\"form-rating__grade-item\" v-for=\"(item,index) in array_star\" :class=\"!form_show?'unactive':''\"><input c
+resolve: {
+  alias: {
+    // Было (без компилятора):
+    // vue$: 'vue/dist/vue.runtime.esm-bundler.js'
+    
+    // Стало (С КОМПИЛЯТОРОМ):
+    vue$: 'vue/dist/vue.esm-bundler.js'
+  },
+  extensions: ['.js', '.vue', '.json', '.pug', '.ejs']
+},
 
-и ошибка 
-Ошибка монтирования Vue компонента: TypeError: _render is not a function
-return {
-          render: (ctx) => render(ctx),
+<template>
+  <div class="form-rating" v-html="compiledTemplate"></div>
+</template>
+
+<script>
+import { compile } from 'vue';
+import IMask from 'imask';
+import Cookies from 'js-cookie';
+
+export default {
+  name: 'FormRatingWrapper',
+  props: {
+    instanceIndex: {
+      type: Number,
+      default: 0
+    },
+    template: {
+      type: String,
+      default: ''
+    }
+  },
+  data() {
+    return {
+      variant_placeholder: [
+        'Что разочаровало?',
+        'Какие изменения вы бы предложили?',
+        'Чем стоит дополнить?',
+        'Что показалось сложным?',
+        'Поделитесь своими эмоциями!'
+      ],
+      place_holder: '',
+      array_star: [],
+      rate: 0,
+      textValue: '',
+      show_error: false,
+      length_error: false,
+      max_length: 300,
+      btn_active: false,
+      form_show: true,
+      compiledTemplate: ''
+    };
+  },
+  computed: {
+    cookie_key() {
+      return `was_useful_rating_${window.location.pathname}_${this.instanceIndex}`;
+    }
+  },
+  methods: {
+    initArrayStar() {
+      this.array_star = [
+        `form-rating-input-${this.instanceIndex}-1`,
+        `form-rating-input-${this.instanceIndex}-2`,
+        `form-rating-input-${this.instanceIndex}-3`,
+        `form-rating-input-${this.instanceIndex}-4`,
+        `form-rating-input-${this.instanceIndex}-5`
+      ];
+    },
+
+    compileTemplate() {
+      if (!this.template) return;
+      
+      try {
+        // Компилируем шаблон в render-функцию
+        const render = compile(this.template, {
+          mode: 'function',
+          filename: `FormRating-${this.instanceIndex}`
+        });
+        
+        // Создаём функцию с правильным контекстом
+        const component = new Function('ctx', `
+          with(ctx) {
+            ${render}
+          }
+        `);
+        
+        // Рендерим и сохраняем результат
+        this.compiledTemplate = component(this);
+        
+      } catch (error) {
+        console.error('Ошибка компиляции шаблона:', error);
+        this.compiledTemplate = this.template;
+      }
+    },
+
+    changeGrade(index) {
+      this.rate = this.array_star.length - index;
+      this.place_holder = this.variant_placeholder[this.rate - 1] || '';
+    },
+
+    showError() {
+      this.show_error = true;
+    },
+
+    endFocus() {
+      this.show_error = false;
+      this.length_error = false;
+    },
+
+    beginFocus() {
+      this.show_error = false;
+      this.length_error = false;
+    },
+
+    textKeyDown(el) {
+      this.show_error = false;
+      const element = el.currentTarget;
+      if (element.value.length === this.max_length) {
+        this.length_error = true;
+      }
+    },
+
+    inputIMask() {
+      const textArea = this.$el.querySelector('textarea');
+      if (!textArea) return false;
+      IMask(textArea, {
+        mask: /\S\s?$/
+      });
+      return true;
+    },
+
+    textInput(el) {
+      const element = el.currentTarget;
+      this.btn_active = element.value.trim().length > 0;
+      if (element.value.length <= this.max_length) {
+        this.length_error = false;
+      }
+    },
+
+    localStorageLoading() {
+      let local_stage = Cookies.get(this.cookie_key);
+      if ((local_stage !== undefined) && (parseInt(local_stage) !== 0)) {
+        this.rate = parseInt(local_stage);
+        this.form_show = false;
+      }
+    },
+
+    localStorageClick() {
+      Cookies.set(this.cookie_key, this.rate);
+    },
+
+    submitForm(el) {
+      el.preventDefault();
+      el.stopPropagation();
+      
+      const form = el.currentTarget.closest('form');
+      if (!form) return;
+      
+      let formData = new URLSearchParams(Array.from(new FormData(form))).toString();
+      
+      if (window.BX) {
+        BX.ajax({
+          url: '/local/ajax/form.result.new.php',
+          data: formData,
+          method: 'POST',
+          dataType: 'json',
+          timeout: 30,
+          async: true,
+          processData: true,
+          scriptsRunFirst: true,
+          emulateOnload: true,
+          start: true,
+          cache: false,
+          onsuccess: (result) => {
+            if (result && result.result) {
+              if (typeof window.dmpkitdl !== "undefined") {
+                window.dmpkitdl.push({event: 'evaluation-fos-send'});
+              }
+              this.localStorageClick();
+              this.form_show = false;
+            }
+          },
+          onfailure: console.warn
+        });
+      }
+    },
+
+    attachEventListeners() {
+      // Навешиваем обработчики после рендера
+      this.$nextTick(() => {
+        // Обработчики для звёзд
+        const gradeItems = this.$el.querySelectorAll('.js--grade-item');
+        gradeItems.forEach((item, index) => {
+          item.addEventListener('click', () => this.changeGrade(index));
+        });
+
+        // Обработчики для textarea
+        const textArea = this.$el.querySelector('textarea');
+        if (textArea) {
+          textArea.addEventListener('input', this.textInput.bind(this));
+          textArea.addEventListener('keydown', this.textKeyDown.bind(this));
+          textArea.addEventListener('blur', this.endFocus.bind(this));
+          textArea.addEventListener('focus', this.beginFocus.bind(this));
+        }
+
+        // Обработчик для кнопки отправки
+        const submitBtn = this.$el.querySelector('.form-rating__button');
+        if (submitBtn) {
+          submitBtn.addEventListener('click', this.submitForm.bind(this));
+        }
+
+        // IMask
+        this.inputIMask();
+      });
+    }
+  },
+  mounted() {
+    this.initArrayStar();
+    this.localStorageLoading();
+    this.compileTemplate();
+    this.attachEventListeners();
+  },
+  beforeUnmount() {
+    // Очистка обработчиков
+    const gradeItems = this.$el.querySelectorAll('.js--grade-item');
+    gradeItems.forEach((item) => {
+      item.removeEventListener('click', this.changeGrade);
+    });
+
+    const textArea = this.$el.querySelector('textarea');
+    if (textArea) {
+      textArea.removeEventListener('input', this.textInput);
+      textArea.removeEventListener('keydown', this.textKeyDown);
+      textArea.removeEventListener('blur', this.endFocus);
+      textArea.removeEventListener('focus', this.beginFocus);
+    }
+
+    const submitBtn = this.$el.querySelector('.form-rating__button');
+    if (submitBtn) {
+      submitBtn.removeEventListener('click', this.submitForm);
+    }
+  }
+};
+</script>
+
