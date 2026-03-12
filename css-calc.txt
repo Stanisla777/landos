@@ -1,52 +1,29 @@
-import { vueAppManager, FormRatingUniversal, TelegramBlock } from './vue-apps';
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      // Проверяем, что это элемент (nodeType 1)
+      if (node.nodeType === 1) {
+        // Проверяем по всем зарегистрированным селекторам
+        vueComponents.forEach(({ selector, component, getProps }) => {
+          if (node.matches?.(selector)) {
+            console.log(`🔄 Обнаружен новый ${selector}, монтируем...`);
 
-// Регистрируем типы приложений
-vueAppManager.registerAppType('form-rating', FormRatingUniversal);
-vueAppManager.registerAppType('telegram-block', TelegramBlock);
+            // Считаем сколько уже есть таких элементов
+            const existingCount = document.querySelectorAll(selector).length;
 
-const containers = document.querySelectorAll('[data-vue-app]');
-  
-  containers.forEach((container, index) => {
-    const appType = container.dataset.vueApp;
-    const instanceId = container.dataset.instanceId || `${appType}-${index}`;
-    
-    // Собираем все data-атрибуты как пропсы
-    const props = { instanceId };
-    
-    // Копируем все data-атрибуты (кроме vue-app и instance-id)
-    Object.keys(container.dataset).forEach(key => {
-      if (key !== 'vueApp' && key !== 'instanceId') {
-        // Преобразуем kebab-case в camelCase (data-star-count → starCount)
-        const camelKey = key.replace(/-([a-z])/g, g => g[1].toUpperCase());
-        props[camelKey] = container.dataset[key];
+            // Получаем пропсы для нового экземпляра
+            const props = getProps ? getProps(node, existingCount - 1) : {};
+
+            // Монтируем приложение
+            mountVueApp(component, node, props);
+          }
+        });
       }
     });
-    
-    // Создаём уникальный ID для контейнера
-    const containerId = `vue-app-${instanceId}`;
-    container.id = containerId;
-    
-    // Создаём экземпляр
-    vueAppManager.createInstance(appType, containerId, props);
   });
-  
-  // Показываем статистику
-  vueAppManager.info();
-
---------------------
-
-window.vueAppManager = vueAppManager;
-
-----
-
-<div data-vue-app="form-rating"
-     data-title="Оцените эту статью"
-     data-count-stars="5">
-</div>
-
-<div data-vue-app="telegram-block"
-     data-qr="/img/qr-code-1.svg"
-     data-mobilicon="/img/mobile-1.svg"
-     data-link="https://t.me/channel1"
-     data-description="Подпишитесь на канал 1">
-</div>
+});
+// Запускаем наблюдение за изменениями в DOM
+observer.observe(document.body, {
+  childList: true,  // отслеживаем добавление/удаление элементов
+  subtree: true     // отслеживаем во всех потомках
+});
