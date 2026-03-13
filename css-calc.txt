@@ -1,105 +1,135 @@
-<div class="another-thing-new__foc gamedd3-final-feedback1 js--another-thing-new-foc">
-    <form class="feed_back js--universal-form">
-        <div class="form-rating__wr-form js--form-rating-universal js--validate-required js--validate-radio-group" data-count-stars="15" v-cloak="v-cloak" data-required-hint="Пожалуйста, поделитесь своими достижениями">
-            <div class="form-rating__wr-grade" ref="formRating">
-                <div class="form-rating__grade-item-universal" v-for="(item,index) in array_star"><input class="js--grade-item" type="radio" :for-raiting="array_star.length-index" :id="item" @click="changeGrade($event,index)" /><label :for="item"></label></div>
-            </div><input class="js--form-rating-hidden-input" type="hidden" ref="ratingInputHidden" />
-        </div>
-    </form>
-</div>
-<button class="btn_s black js--btn-universal-form" type="button">Отправить анкету</button>
+SimpleRatingUniversal.vue
+<template>
+  <div class="form-rating__wr-form js--form-rating-universal js--validate-required js--validate-radio-group"
+       :data-count-stars="countStars"
+       data-required-hint="Пожалуйста, поделитесь своими достижениями">
+    <div class="form-rating__wr-grade" ref="formRating">
+      <div
+        v-for="(starId, index) in arrayStar"
+        :key="starId"
+        class="form-rating__grade-item-universal"
+      >
+        <input
+          class="js--grade-item"
+          type="radio"
+          :for-raiting="arrayStar.length - index"
+          :id="starId"
+          @click="changeGrade($event, index)"
+        />
+        <label :for="starId"></label>
+      </div>
+    </div>
+    <input
+      class="js--form-rating-hidden-input"
+      type="hidden"
+      ref="ratingInputHidden"
+      :value="rate"
+    />
+  </div>
+</template>
 
-js
-import formRatingUniversal from './modules/universal-form/form-rating-universal';
-document.addEventListener('DOMContentLoaded', () => {
-formRatingUniversal();
-{
-      id: 'form-rating-universal',
-      fn: formRatingUniversal
+<script>
+export default {
+  name: 'SimpleRatingUniversal',
+  props: {
+    instanceId: {
+      type: String,
+      required: true
     },
-Само приложение:
-/* eslint-disable */
-import Vue from 'vue';
+    countStars: {
+      type: Number,
+      default: 5
+    },
+    maxStars: {
+      type: Number,
+      default: 10
+    }
+  },
+  data() {
+    return {
+      arrayStar: [],
+      rate: 0
+    };
+  },
+  methods: {
+    changeGrade(event, index) {
+      const element = event.currentTarget;
+      const parent = this.$refs.formRating;
+      this.rate = this.arrayStar.length - index;
 
-export default function formRating() {
-  const formRate = document.querySelectorAll('.js--form-rating-universal');
-  for (let item = 0; item < formRate.length; item++) {
-    formRate[item].id = `js--form-rating-universal${item}`;
-    const app = new Vue({
-      el: `#js--form-rating-universal${item}`,
-      data: {
-        array_star: [], // теперь заполняется в mounted
-        rate: 0,
-        count: 0,
-        count_stars: 5
-      },
-      methods: {
-        changeGrade(el, index) {
-          const element = el.currentTarget;
-          const parent = this.$refs.formRating;
-          this.rate = this.array_star.length - index;
-
-          // Действие над звёздочками оценки
-          const array_star = parent.querySelectorAll('.js--grade-item');
-          for (let i = 0; i < array_star.length - this.rate; i++) {
-            array_star[i].checked = false;
-          }
-          for (let i = 0; i < this.rate; i++) {
-            array_star[array_star.length - 1 - i].checked = true;
-          }
-
-          this.$refs.ratingInputHidden.value = element.getAttribute('for-raiting');
-
-          const container = element.closest('.js--form-rating-universal');
-          if (container && container.querySelector('.js--input__error_radio-group')) {
-            container.querySelector('.js--input__error_radio-group').remove();
-            container.classList.remove('input_error');
-          }
-        },
-
-        handleExternalClick() {
-          let count_check = 0;
-          const array_radio = this.$refs.formRating.querySelectorAll('.js--grade-item');
-          for (let radio of array_radio) {
-            if (radio.checked) {
-              count_check += 1;
-            }
-          }
-        }
-      },
-      mounted() {
-        // Получаю значение из data-атрибута
-        const countAttr = this.$el.getAttribute('data-count-stars');
-        let count = 5; // значение по умолчанию
-
-        if (countAttr !== null && countAttr.trim() !== '') {
-          const parsed = parseInt(countAttr, 10);
-          if (!isNaN(parsed) && parsed >= 1) {
-            count = Math.min(parsed, 10); // не больше 10
-          }
-        }
-
-        this.count_stars = count;
-
-        // Генерирую array_star с учётом индекса item из внешнего цикла
-        this.array_star = Array.from({ length: count }, (_, i) =>
-          `form-rating-input-${item}-${i + 1}`
-        );
-
-        // Подключаю обработчик внешней кнопки, если она есть
-        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
-        if (externalButton) {
-          this.externalClickHandler = () => this.handleExternalClick();
-          externalButton.addEventListener('click', this.externalClickHandler);
-        }
-      },
-      beforeDestroy() {
-        const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
-        if (externalButton) {
-          externalButton.removeEventListener('click', this.externalClickHandler);
-        }
+      const arrayStar = parent.querySelectorAll('.js--grade-item');
+      for (let i = 0; i < arrayStar.length - this.rate; i++) {
+        arrayStar[i].checked = false;
       }
-    });
-  }
-}
+      for (let i = 0; i < this.rate; i++) {
+        arrayStar[arrayStar.length - 1 - i].checked = true;
+      }
 
+      this.$refs.ratingInputHidden.value = element.getAttribute('for-raiting');
+
+      // Удаляем ошибку если была
+      const container = element.closest('.js--form-rating-universal');
+      if (container && container.querySelector('.js--input__error_radio-group')) {
+        container.querySelector('.js--input__error_radio-group').remove();
+        container.classList.remove('input_error');
+      }
+    },
+
+    handleExternalClick() {
+      const arrayRadio = this.$refs.formRating.querySelectorAll('.js--grade-item');
+      let countCheck = 0;
+      for (let radio of arrayRadio) {
+        if (radio.checked) countCheck++;
+      }
+      // Можно добавить логику проверки, если нужно
+    }
+  },
+  mounted() {
+    // Генерируем массив звёзд с учётом instanceId
+    this.arrayStar = Array.from(
+      { length: this.countStars },
+      (_, i) => `simple-rating-${this.instanceId}-${i + 1}`
+    );
+
+    // Подключаем обработчик внешней кнопки, если она есть
+    const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
+    if (externalButton) {
+      this.externalClickHandler = this.handleExternalClick.bind(this);
+      externalButton.addEventListener('click', this.externalClickHandler);
+    }
+  },
+  beforeUnmount() {
+    const externalButton = document.querySelector('.js--another-thing-new-foc .js--btn-universal-form');
+    if (externalButton) {
+      externalButton.removeEventListener('click', this.externalClickHandler);
+    }
+  }
+};
+</script>
+
+--------------------------
+В vue-apps/index.js добавляем экспорт:
+
+export { default as SimpleRatingUniversal } from './SimpleRatingUniversal.vue';
+
+-------------------------
+В главном index.js
+
+import {
+  vueAppManager,
+  FormRatingUniversal,
+  TelegramBlock,
+  SimpleRatingUniversal
+} from './vue-apps';
+
+vueAppManager.registerAppType('form-rating', FormRatingUniversal);
+vueAppManager.registerAppType('telegram-block', TelegramBlock);
+vueAppManager.registerAppType('simple-rating', SimpleRatingUniversal);  // ← новый тип
+
+----------------------
+
+<div class="another-thing-new__foc gamedd3-final-feedback1 js--another-thing-new-foc">
+  <div data-vue-app="simple-rating"
+       data-count-stars="15">
+  </div>
+</div>
