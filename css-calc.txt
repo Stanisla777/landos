@@ -1,4 +1,64 @@
-props: {
+<template>
+  <div class="form-rating">
+    <p class="form-rating__title">{{ title }}</p>
+    <div class="form-rating__wr-form js--form-rating-universal">
+      <form method="" action="">
+        <div class="form-rating__wr-grade" ref="formRating">
+          <div
+            v-for="(starId, index) in array_star"
+            :key="starId"
+            class="form-rating__grade-item"
+            :class="{ unactive: !form_show }"
+          >
+            <input
+              type="radio"
+              class="js--grade-item"
+              :for-raiting="count_stars - index"
+              :id="starId"
+              @click="changeGrade($event, index)"
+              :disabled="!form_show"
+            />
+            <label :for="starId">
+              <svg width="24" height="24" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M10.1416 2.27888C10.8196 0.573703 13.1803 0.573711 13.8583 2.27888L15.8871 7.38124C15.8912 7.39141 15.8957 7.39712 15.8984 7.39991L21.1563 7.84083C22.9969 7.99518 23.591 10.2867 22.3142 11.4307L18.3021 15.0258C18.299 15.0285 18.2921 15.0363 18.2873 15.0518C18.2825 15.0673 18.2816 15.085 18.2855 15.1023L19.5113 20.4776C19.889 22.1339 18.1199 23.7235 16.4946 22.6851L12 19.8135L7.50536 22.6851C5.88008 23.7235 4.11093 22.1339 4.48864 20.4776L5.71443 15.1023C5.71837 15.085 5.71744 15.0673 5.71262 15.0518C5.70782 15.0363 5.701 15.0285 5.6979 15.0258L1.68571 11.4307C0.408924 10.2867 1.00304 7.99518 2.8437 7.84083L8.10151 7.39991C8.10424 7.39712 8.10876 7.39141 8.1128 7.38124L10.1416 2.27888ZM12 3.01814L9.97127 8.12021C9.69314 8.81969 9.04938 9.32744 8.2769 9.39222L3.01667 9.83334C3.01349 9.83829 3.00925 9.84629 3.00564 9.85793C2.99838 9.88129 2.99917 9.90197 3.00211 9.91405C3.00338 9.91926 3.00497 9.92276 3.00658 9.92548C3.00799 9.92787 3.01151 9.93325 3.02037 9.94119L7.03255 13.5362C7.59759 14.0425 7.83037 14.819 7.66437 15.547L6.43858 20.9222C6.43428 20.9411 6.43428 20.9532 6.43474 20.9597C6.43522 20.9665 6.43652 20.9715 6.43807 20.9756C6.43983 20.9802 6.44241 20.9848 6.44553 20.9889L10.937 18.1192C11.5874 17.7037 12.4126 17.7037 13.0629 18.1192L17.5544 20.9889C17.5575 20.9848 17.5601 20.9802 17.5619 20.9756C17.5634 20.9715 17.5647 20.9665 17.5652 20.9597C17.5657 20.9532 17.5657 20.9411 17.5614 20.9222L16.3356 15.547C16.1696 14.819 16.4024 14.0425 16.9674 13.5362L20.9796 9.94119C20.9884 9.93325 20.992 9.92787 20.9934 9.92548C20.995 9.92276 20.9966 9.91926 20.9978 9.91405C21.0008 9.90197 21.0016 9.88129 20.9943 9.85793C20.9907 9.84629 20.9865 9.8383 20.9833 9.83334L15.7231 9.39222C14.9506 9.32744 14.3068 8.81969 14.0287 8.12021L12 3.01814Z" fill="#6D6D6D"></path>
+              </svg>
+              <svg width="24" height="24" viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M10.1416 2.27888C10.8196 0.573703 13.1803 0.573711 13.8583 2.27888L15.8871 7.38124C15.8912 7.39141 15.8957 7.39712 15.8984 7.39991L21.1563 7.84083C22.9969 7.99518 23.591 10.2867 22.3142 11.4307L18.3021 15.0258C18.299 15.0285 18.2921 15.0363 18.2873 15.0518C18.2825 15.0673 18.2816 15.085 18.2855 15.1023L19.5113 20.4776C19.889 22.1339 18.1199 23.7235 16.4946 22.6851L12 19.8135L7.50536 22.6851C5.88008 23.7235 4.11093 22.1339 4.48864 20.4776L5.71443 15.1023C5.71837 15.085 5.71744 15.0673 5.71262 15.0518C5.70782 15.0363 5.701 15.0285 5.6979 15.0258L1.68571 11.4307C0.408924 10.2867 1.00304 7.99518 2.8437 7.84083L8.10151 7.39991C8.10424 7.39712 8.10876 7.39141 8.1128 7.38124L10.1416 2.27888Z" fill="#F8C000"></path>
+              </svg>
+            </label>
+          </div>
+        </div>
+        
+        <div class="form-rating__wr-textarea" v-show="rate!==0&&form_show">
+          <div class="form-rating__textarea" :class="(show_error)||length_error?'error':''">
+            <textarea
+              :placeholder="place_holder"
+              v-model="textValue"
+              @blur="endFocus"
+              @input="textInput"
+              @keydown="textKeyDown"
+              @focus="beginFocus"
+              ref="textArea"
+            ></textarea>
+            <p class="form-rating__textarea-error" v-if="show_error">Введите комментарий</p>
+            <p class="form-rating__textarea-error" v-if="length_error">Максимальное количество символов - {{max_length}}</p>
+          </div>
+          <input hidden="hidden" type="text" ref="hiddenInput" />
+          <button class="form-rating__button" type="button" v-if="!btn_active" @click="showError">Отправить</button>
+          <button class="form-rating__button active" type="submit" v-if="btn_active" @click="submitForm">Отправить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script>
+import IMask from 'imask';
+import Cookies from 'js-cookie';
+
+export default {
+  name: 'FormRatingUniversal',
+  props: {
     instanceId: {
       type: String,
       required: true
@@ -15,6 +75,201 @@ props: {
       type: Number,
       default: 10
     }
+  },
+  data() {
+    return {
+      variant_placeholder: [
+        'Что разочаровало?',
+        'Какие изменения вы бы предложили?',
+        'Чем стоит дополнить?',
+        'Что показалось сложным?',
+        'Поделитесь своими эмоциями!'
+      ],
+      place_holder: '',
+      array_star: [],
+      rate: 0,
+      textValue: '',
+      show_error: false,
+      length_error: false,
+      max_length: 300,
+      btn_active: false,
+      form_show: true
+    };
+  },
+  computed: {
+    cookie_key() {
+      return `was_useful_rating_${window.location.pathname}_${this.instanceId}`;
+    }
+  },
+  methods: {
+    changeGrade(event, index) {
+      const element = event.currentTarget;
+      const parent = this.$refs.formRating;
+      this.rate = this.array_star.length - index;
+
+      const array_star = parent.querySelectorAll('.js--grade-item');
+      for (let i = 0; i < array_star.length - this.rate; i++) {
+        array_star[i].checked = false;
+      }
+      for (let i = 0; i < this.rate; i++) {
+        array_star[(array_star.length - 1) - i].checked = true;
+      }
+
+      if (this.rate === 1) this.place_holder = this.variant_placeholder[0];
+      else if (this.rate === 2) this.place_holder = this.variant_placeholder[1];
+      else if (this.rate === 3) this.place_holder = this.variant_placeholder[2];
+      else if (this.rate === 4) this.place_holder = this.variant_placeholder[3];
+      else if (this.rate === 5) this.place_holder = this.variant_placeholder[4];
+
+      this.$refs.hiddenInput.value = this.rate;
+    },
+
+    clearField() {
+      this.textValue = '';
+      this.show_error = false;
+    },
+
+    showError() {
+      this.show_error = true;
+    },
+
+    endFocus() {
+      this.show_error = false;
+      this.length_error = false;
+    },
+
+    beginFocus() {
+      this.show_error = false;
+      this.length_error = false;
+    },
+
+    textKeyDown(event) {
+      this.show_error = false;
+      const element = event.currentTarget;
+      if (element.value.length === this.max_length) {
+        this.length_error = true;
+      }
+    },
+
+    inputIMask() {
+      const textArea = this.$refs.textArea;
+      if (!textArea) return;
+      
+      const maskOptions = {
+        mask: /\S\s?$/
+      };
+      IMask(textArea, maskOptions);
+    },
+
+    textInput(event) {
+      const element = event.currentTarget;
+      if (element.value.trim().length > 0) {
+        this.btn_active = true;
+      } else {
+        this.btn_active = false;
+      }
+      if (element.value.length <= this.max_length) {
+        this.length_error = false;
+      }
+    },
+
+    localStorageLoading() {
+      let local_stage = Cookies.get(this.cookie_key);
+      if (local_stage !== undefined && parseInt(local_stage) !== 0) {
+        const parent = this.$refs.formRating;
+        const array_star = parent.querySelectorAll('.js--grade-item');
+        for (let i = 0; i < parseInt(local_stage); i++) {
+          array_star[(array_star.length - 1) - i].checked = true;
+        }
+        this.rate = parseInt(local_stage);
+        this.form_show = false;
+      }
+    },
+
+    localStorageClick() {
+      Cookies.set(this.cookie_key, this.rate);
+    },
+
+    submitForm(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const form = event.currentTarget.closest('form');
+      if (!form) {
+        console.error('Форма не найдена');
+        return;
+      }
+
+      let formData = new URLSearchParams(Array.from(new FormData(form))).toString();
+      const _success = form.querySelector('.js--webform-success');
+
+      // BX.ajax доступен глобально
+      BX.ajax({
+        url: '/local/ajax/form.result.new.php',
+        data: formData,
+        method: 'POST',
+        dataType: 'json',
+        timeout: 30,
+        async: true,
+        processData: true,
+        scriptsRunFirst: true,
+        emulateOnload: true,
+        start: true,
+        cache: false,
+        onsuccess: (result) => {
+          if (!!result) {
+            if (result['debug']) console.log(result);
+            if (result['result']) {
+              if (typeof window.dmpkitdl !== "undefined" && window.dmpkitdl !== null) {
+                window.dmpkitdl.push({event: 'evaluation-fos-send'});
+              }
+              if (_success) {
+                this.localStorageClick();
+                this.form_show = false;
+                _success.classList.add('show');
+                document.body.classList.add('modal-opened');
+                document.body.classList.add('body-modal');
+                document.body.classList.add('body-modal-modals');
+                
+                setTimeout(() => {
+                  _success.classList.remove('show');
+                  document.body.classList.remove('modal-opened');
+                  document.body.classList.remove('body-modal');
+                  document.body.classList.remove('body-modal-modals');
+                }, 10000);
+                
+                _success.addEventListener('click', function handler() {
+                  _success.classList.remove('show');
+                  document.body.classList.remove('modal-opened');
+                  document.body.classList.remove('body-modal-modals');
+                  setTimeout(() => {
+                    document.body.classList.remove('body-modal');
+                  }, 500);
+                  _success.removeEventListener('click', handler);
+                });
+              }
+            } else {
+              if (result['errors']) {
+                console.warn(result['errors']);
+                return;
+              }
+            }
+          }
+        },
+        onfailure: function(error) {
+          console.warn(error);
+        }
+      });
+    }
+  },
+  mounted() {
+    this.array_star = Array.from(
+      { length: this.count_stars },
+      (_, i) => `form-rating-input-${this.instanceId}-${i + 1}`
+    );
+
+    this.inputIMask();
+    this.localStorageLoading();
   }
-
-
+};
+</script>
