@@ -1,38 +1,3 @@
- В vue-apps/index.js добавляем экспорт:
-export { default as vueAppManager } from './vueAppManager';
-export { default as FormRatingUniversal } from './FormRatingUniversal.vue';
-export { default as TelegramBlock } from './TelegramBlock.vue';
-export { default as SimpleRatingUniversal } from './SimpleRatingUniversal.vue';
-export { default as UsefulnessSurvey } from './UsefulnessSurvey.vue';
-export { default as HousingCooperativeRequest } from './HousingCooperativeRequest.vue';  // ← новый компонент
-
-В главном index.js регистрируем новый тип:
-import {
-  vueAppManager,
-  FormRatingUniversal,
-  TelegramBlock,
-  SimpleRatingUniversal,
-  UsefulnessSurvey,
-  HousingCooperativeRequest
-} from './vue-apps';
-
-vueAppManager.registerAppType('form-rating', FormRatingUniversal);
-vueAppManager.registerAppType('telegram-block', TelegramBlock);
-vueAppManager.registerAppType('simple-rating', SimpleRatingUniversal);
-vueAppManager.registerAppType('usefulness-survey', UsefulnessSurvey);
-vueAppManager.registerAppType('housing-cooperative', HousingCooperativeRequest);  // ← новый тип
-
-Использование в HTML:
-<div class="modal" id="modal-housing-cooperative-request">
-    <div class="modal__wrapper modal-form-izhs">
-        <button class="modal__closer outside js--modal-closer"></button>
-
-        <div data-vue-app="housing-cooperative" data-instance-id="main"></div>
-    </div>
-</div>
-
--------------------------------------------
-
 <template>
   <div class="modal__wrapper modal-form-izhs" @click="closeItemList">
     <button class="modal__closer outside js--modal-closer">
@@ -379,9 +344,6 @@ vueAppManager.registerAppType('housing-cooperative', HousingCooperativeRequest);
 <script>
 import universalForm from '../universal-form/universal-form';
 import { catalogModal, modals } from '../modals';
-import mixinLiveSearch from './mixins/mixinLiveSearch';
-import mixinOpenListAndSelectItem from './mixins/mixinOpenListAndSelectItem';
-import mixinformComponent from './mixins/mixinformComponent';
 
 export default {
   name: 'HousingCooperativeRequest',
@@ -391,25 +353,26 @@ export default {
       required: true
     }
   },
-  mixins: [mixinLiveSearch, mixinOpenListAndSelectItem, mixinformComponent],
   data() {
     return {
+      // Основные состояния
       show_warn: true,
       step_1: true,
       error_step_1: true,
       error_step_2: true,
 
+      // Счётчики заполненности
       fullness_input: 0,
       fullness_input_name: 0,
       fullness_input_mail: 0,
       fullness_input_tel: 0,
       fullness_select: 0,
       fullness_input_radio: 0,
-      fullness_texarea_program: 0,
-      fullness_texarea_doc: 0,
+      fullness_radio: 0,
 
       all_checked: true,
 
+      // Данные для селектов
       cities: [
         'Курск', 'Москва', 'Воронеж', 'Питер', 'Орёл', 'Калыма', 'Пермь'
       ],
@@ -419,7 +382,117 @@ export default {
     };
   },
   methods: {
-    // Radio methods
+    // ========== LIVE SEARCH METHODS ==========
+    liveSearch(event) {
+      const input_search = event.currentTarget;
+      this.sampleliveSearch(input_search);
+    },
+
+    sampleliveSearch(input_search) {
+      const parent = input_search.closest('.js--search-container');
+      if (!parent) return;
+
+      const val = input_search.value;
+      const array_label = parent.querySelectorAll('.js--searh-item');
+
+      array_label.forEach(item => {
+        const text = item.textContent;
+        const reg = new RegExp(val, 'gi');
+
+        if (!item.classList.contains('js--select-item-checkbox')) {
+          let text_box = item.innerHTML;
+          text_box = text_box.replace(/(<span class="highlight">|<\/span>)/gim, '');
+          item.innerHTML = text_box.replace(reg, '<span class="highlight">$&</span>');
+        }
+
+        if (text.match(reg)) {
+          item.style.display = 'block';
+          item.classList.add('active');
+        } else {
+          item.style.display = 'none';
+          item.classList.remove('active');
+        }
+      });
+
+      const array_label_active = parent.querySelectorAll('.js--searh-item.active');
+      const array_error = parent.querySelectorAll('.js--search-error');
+
+      if (array_label_active.length === 0) {
+        const wrapper_list = parent.querySelector('.js--select-list');
+        if (array_error.length === 0) {
+          const element_error = document.createElement('li');
+          element_error.classList.add('select__list-item', 'js--search-error', 'error');
+          element_error.innerHTML = 'Ничего не найдено';
+          wrapper_list.append(element_error);
+        }
+      } else if (array_label_active.length !== 0 && array_error.length !== 0) {
+        parent.querySelector('.js--search-error')?.remove();
+      }
+    },
+
+    // ========== SELECT METHODS ==========
+    openList(event) {
+      const element = event.currentTarget;
+      const container = element.closest('.js--parent-filter');
+      const array__select = container?.querySelectorAll('.js--container-select.open') || [];
+
+      if (event.target.classList.contains('open') &&
+          event.target.tagName !== 'INPUT' &&
+          event.target.tagName !== 'LABEL' &&
+          event.target.tagName !== 'BUTTON') {
+        element.querySelector('.js--select-input').blur();
+        event.target.classList.remove('open');
+        event.target.setAttribute('style', 'z-index:11;');
+      } else if (!element.classList.contains('open') &&
+                 event.target.tagName !== 'LABEL' &&
+                 event.target.tagName !== 'BUTTON') {
+        // Закрываю все открытые окна
+        array__select.forEach(item => {
+          item.classList.remove('open');
+        });
+
+        element.querySelector('.js--select-input').value = '';
+        this.sampleliveSearch(element.querySelector('.js--select-input'));
+
+        setTimeout(() => {
+          element.classList.add('open');
+        }, 100);
+      }
+
+      if (element.querySelector('.js--input__error_required')) {
+        element.querySelector('.js--input__error_required').remove();
+      }
+      element.classList.remove('input_error');
+    },
+
+    selectItem(event) {
+      const element = event.currentTarget;
+      const wrapper = element.closest('.js--select-list');
+      const wrapperItem = wrapper.querySelectorAll('.js--select-item');
+
+      wrapperItem.forEach(item => item.classList.remove('active-item'));
+      element.classList.add('active-item');
+
+      let text = element.textContent.trim();
+      const value = element.dataset.value;
+      const parent = element.closest('.js--container-select');
+
+      if (parent) {
+        if (!parent.classList.contains('js--selected')) {
+          this.fullness_select += 1;
+          this.fullness_input = this.fullness_input_name + this.fullness_input_tel +
+                               this.fullness_input_mail + this.fullness_input_radio + this.fullness_select;
+        }
+
+        parent.querySelector('.js--select-input').classList.add('active');
+        parent.querySelector('.js--select-input').setAttribute('data-search', text);
+        parent.classList.add('js--selected');
+        parent.classList.remove('input_error');
+        this.sampleliveSearch(parent.querySelector('.js--select-input'));
+      }
+    },
+
+    // ========== RADIO METHODS ==========
     changeRightParticipate(event) {
       const element = event.currentTarget;
       const val_attr = element.value;
@@ -475,7 +548,7 @@ export default {
       this.error_step_2 = array.length !== this.fullness_radio;
     },
 
-    // Input validation methods
+    // ========== INPUT VALIDATION ==========
     buttonActivationName(element) {
       this.fullness_input_name = element.value.length > 0 ? 1 : 0;
       this.updateFullnessInput();
@@ -494,11 +567,10 @@ export default {
 
     updateFullnessInput() {
       this.fullness_input = this.fullness_input_name + this.fullness_input_tel +
-                           this.fullness_input_mail + this.fullness_input_radio + this.fullness_select +
-                           this.fullness_texarea_program + this.fullness_texarea_doc;
+                           this.fullness_input_mail + this.fullness_input_radio + this.fullness_select;
     },
 
-    // Navigation
+    // ========== NAVIGATION ==========
     nextSlide() {
       this.step_1 = false;
     },
@@ -507,7 +579,7 @@ export default {
       this.step_1 = true;
     },
 
-    // Form submission
+    // ========== FORM SUBMISSION ==========
     sendingRequestFirstStep(event) {
       const element = event.currentTarget;
       const parent = element.closest('.js--step-1');
@@ -569,7 +641,7 @@ export default {
       }
     },
 
-    // Callback and observers
+    // ========== CALLBACK AND OBSERVERS ==========
     callback() {
       const beesenderchat = document.querySelector('#modal-housing-cooperative-request');
       if (beesenderchat?.hasAttribute('data-formsubmit') &&
