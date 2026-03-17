@@ -1,1 +1,20 @@
-The 'await' operator can only be used in an 'async' function
+for (const appType in containersByType) {
+    const typeContainers = containersByType[appType];
+    
+    // Если это ленивый компонент и он ещё не зарегистрирован
+    if (lazyComponents[appType] && !vueAppManager.appTypes.has(appType)) {
+      console.log(`📦 Ленивая загрузка: ${appType}`);
+      try {
+        const module = await lazyComponents[appType]();
+        vueAppManager.registerAppType(appType, module.default || module);
+      } catch (error) {
+        console.error(`❌ Ошибка загрузки ${appType}:`, error);
+        continue;
+      }
+    }
+    
+    // Монтируем все контейнеры этого типа
+    typeContainers.forEach((container, idx) => {
+      createAppInstance(container, appType, idx);
+    });
+  }
