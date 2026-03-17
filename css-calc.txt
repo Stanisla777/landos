@@ -1,57 +1,65 @@
-import {
-  vueAppManager,
-  FormRatingUniversal,
-  TelegramBlock,
-  SimpleRatingUniversal,
-  UsefulnessSurvey,
-  HousingCooperativeRequest
-} from './vue-apps';
+const lazyComponents = {
+  'housing-cooperative': () => import('./vue-apps/HousingCooperativeRequest/index.vue')
+};
 
-// Регистрируем типы приложений
-vueAppManager.registerAppType('form-rating', FormRatingUniversal);
-vueAppManager.registerAppType('telegram-block', TelegramBlock);
-vueAppManager.registerAppType('simple-rating', SimpleRatingUniversal);
-vueAppManager.registerAppType('usefulness-survey', UsefulnessSurvey);
-vueAppManager.registerAppType('housing-cooperative', HousingCooperativeRequest);
-
-document.addEventListener('DOMContentLoaded', () => {
-
-const containers = document.querySelectorAll('[data-vue-app]');
-
-  containers.forEach((container, index) => {
-    const appType = container.dataset.vueApp;
-    const instanceId = container.dataset.instanceId || `${appType}-${index}`;
-
-    // Собираем все data-атрибуты как пропсы
-    const props = { instanceId };
-
-    // Копируем все data-атрибуты (кроме vue-app и instance-id)
-    Object.keys(container.dataset).forEach(key => {
-      if (key !== 'vueApp' && key !== 'instanceId') {
-        // Преобразуем kebab-case в camelCase (data-star-count → starCount)
-        const camelKey = key.replace(/-([a-z])/g, g => g[1].toUpperCase());
-        props[camelKey] = container.dataset[key];
-      }
-    });
-
-    // Создаём уникальный ID для контейнера
-    const containerId = `vue-app-${instanceId}`;
-    container.id = containerId;
-
-    // Создаём экземпляр
-    vueAppManager.createInstance(appType, containerId, props);
+// Функция для создания экземпляра приложения
+function createAppInstance(container, appType, index) {
+  const instanceId = container.dataset.instanceId || `${appType}-${index}`;
+  
+  const props = { instanceId };
+  Object.keys(container.dataset).forEach(key => {
+    if (key !== 'vueApp' && key !== 'instanceId') {
+      const camelKey = key.replace(/-([a-z])/g, g => g[1].toUpperCase());
+      props[camelKey] = container.dataset[key];
+    }
   });
 
-  // Показываем статистику
+  const containerId = `vue-app-${instanceId}`;
+  container.id = containerId;
+
+  vueAppManager.createInstance(appType, containerId, props);
+}
+
+-*-------------------------
+
+const containers = document.querySelectorAll('[data-vue-app]');
+  
+  if (containers.length === 0) {
+    console.log('ℹ️ Элементы data-vue-app не найдены');
+    return;
+  }
+
+  // Группируем контейнеры по типу
+  const containersByType = {};
+  containers.forEach(container => {
+    const appType = container.dataset.vueApp;
+    if (!containersByType[appType]) {
+      containersByType[appType] = [];
+    }
+    containersByType[appType].push(container);
+  });
+
+  // Сначала загружаем ленивые компоненты, если они есть на странице
+  for (const [appType, typeContainers] of Object.entries(containersByType)) {
+    // Если это ленивый компонент и он ещё не зарегистрирован
+    if (lazyComponents[appType] && !vueAppManager.appTypes.has(appType)) {
+      console.log(`📦 Ленивая загрузка: ${appType}`);
+      try {
+        const module = await lazyComponents[appType]();
+        vueAppManager.registerAppType(appType, module.default || module);
+      } catch (error) {
+        console.error(`❌ Ошибка загрузки ${appType}:`, error);
+        continue;
+      }
+    }
+    
+    // Монтируем все контейнеры этого типа
+    typeContainers.forEach((container, idx) => {
+      createAppInstance(container, appType, idx);
+    });
+  }
+
   vueAppManager.info();
 
-})
+--------------------------------------
 
----------------------------
-vue-apps/index.js
-export { default as vueAppManager } from './vueAppManager';
-export { default as FormRatingUniversal } from './FormRatingUniversal.vue';// приложение рэйтинг-звёздочки(в инструкциях)
-export { default as TelegramBlock } from './TelegramBlock.vue';// приложение подписаться Телега-МАКС
-export { default as SimpleRatingUniversal } from './SimpleRatingUniversal.vue';// приложение рэйтинг-звёздочки(в форме для МыСчитаем - любой выбор звёздочек)
-export { default as UsefulnessSurvey } from './UsefulnessSurvey.vue'; // приложение Да - Нет с полем ввода (в форме для МыСчитаем)
-export { default as HousingCooperativeRequest } from './HousingCooperativeRequest/index.vue';
