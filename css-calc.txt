@@ -1,42 +1,57 @@
-src/js/vue-apps/HousingCooperativeRequest/HousingCooperativeRequest.vue
+import {
+  vueAppManager,
+  FormRatingUniversal,
+  TelegramBlock,
+  SimpleRatingUniversal,
+  UsefulnessSurvey,
+  HousingCooperativeRequest
+} from './vue-apps';
 
-----------------
-src/js/vue-apps/HousingCooperativeRequest/index.vue
+// Регистрируем типы приложений
+vueAppManager.registerAppType('form-rating', FormRatingUniversal);
+vueAppManager.registerAppType('telegram-block', TelegramBlock);
+vueAppManager.registerAppType('simple-rating', SimpleRatingUniversal);
+vueAppManager.registerAppType('usefulness-survey', UsefulnessSurvey);
+vueAppManager.registerAppType('housing-cooperative', HousingCooperativeRequest);
 
-<template>
-  <Suspense>
-    <template #default>
-      <HousingCooperativeRequest v-bind="$attrs" />
-    </template>
-    <template #fallback>
-      <div class="loading-spinner">
-        Загрузка формы...
-      </div>
-    </template>
-  </Suspense>
-</template>
+document.addEventListener('DOMContentLoaded', () => {
 
-<script>
-import { defineAsyncComponent } from 'vue';
+const containers = document.querySelectorAll('[data-vue-app]');
 
-export default {
-  name: 'HousingCooperativeRequestLazy',
-  inheritAttrs: false,
-  components: {
-    HousingCooperativeRequest: defineAsyncComponent(() => 
-      import('./HousingCooperativeRequest.vue')
-    )
-  }
-};
-</script>
+  containers.forEach((container, index) => {
+    const appType = container.dataset.vueApp;
+    const instanceId = container.dataset.instanceId || `${appType}-${index}`;
 
-<style scoped>
-.loading-spinner {
-  padding: 40px;
-  text-align: center;
-  color: #666;
-}
-</style>
+    // Собираем все data-атрибуты как пропсы
+    const props = { instanceId };
 
------------------------------
+    // Копируем все data-атрибуты (кроме vue-app и instance-id)
+    Object.keys(container.dataset).forEach(key => {
+      if (key !== 'vueApp' && key !== 'instanceId') {
+        // Преобразуем kebab-case в camelCase (data-star-count → starCount)
+        const camelKey = key.replace(/-([a-z])/g, g => g[1].toUpperCase());
+        props[camelKey] = container.dataset[key];
+      }
+    });
+
+    // Создаём уникальный ID для контейнера
+    const containerId = `vue-app-${instanceId}`;
+    container.id = containerId;
+
+    // Создаём экземпляр
+    vueAppManager.createInstance(appType, containerId, props);
+  });
+
+  // Показываем статистику
+  vueAppManager.info();
+
+})
+
+---------------------------
+vue-apps/index.js
+export { default as vueAppManager } from './vueAppManager';
+export { default as FormRatingUniversal } from './FormRatingUniversal.vue';// приложение рэйтинг-звёздочки(в инструкциях)
+export { default as TelegramBlock } from './TelegramBlock.vue';// приложение подписаться Телега-МАКС
+export { default as SimpleRatingUniversal } from './SimpleRatingUniversal.vue';// приложение рэйтинг-звёздочки(в форме для МыСчитаем - любой выбор звёздочек)
+export { default as UsefulnessSurvey } from './UsefulnessSurvey.vue'; // приложение Да - Нет с полем ввода (в форме для МыСчитаем)
 export { default as HousingCooperativeRequest } from './HousingCooperativeRequest/index.vue';
