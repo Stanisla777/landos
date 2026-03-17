@@ -1,22 +1,33 @@
-Так у меня и было почти так же
-for (const [appType, typeContainers] of Object.entries(containersByType)) {
-    // Если это ленивый компонент и он ещё не зарегистрирован
-    if (lazyComponents[appType] && !vueAppManager.appTypes.has(appType)) {
-      console.log(`📦 Ленивая загрузка: ${appType}`);
-      try {
-        const module = await lazyComponents[appType]();
-        vueAppManager.registerAppType(appType, module.default || module);
-      } catch (error) {
-        console.error(`❌ Ошибка загрузки ${appType}:`, error);
-        continue;
+// MutationObserver для динамически добавляемых элементов
+const observer = new MutationObserver(async (mutations) => {
+  for (const mutation of mutations) {
+    for (const node of mutation.addedNodes) {
+      if (node.nodeType === 1 && node.matches?.('[data-vue-app]')) {
+        const appType = node.dataset.vueApp;
+        
+        // Если это ленивый компонент и он ещё не зарегистрирован
+        if (lazyComponents[appType] && !vueAppManager.appTypes.has(appType)) {
+          console.log(`📦 Динамическая ленивая загрузка: ${appType}`);
+          try {
+            const module = await lazyComponents[appType]();
+            vueAppManager.registerAppType(appType, module.default || module);
+          } catch (error) {
+            console.error(`❌ Ошибка загрузки ${appType}:`, error);
+            continue;
+          }
+        }
+
+        // Считаем сколько уже есть таких элементов для индекса
+        const existingCount = document.querySelectorAll(`[data-vue-app="${appType}"]`).length;
+        createAppInstance(node, appType, existingCount - 1);
       }
     }
-
-    // Монтируем все контейнеры этого типа
-    typeContainers.forEach((container, idx) => {
-      createAppInstance(container, appType, idx);
-    });
   }
-и была ошибка The 'await' operator can only be used in an 'async' function
+});
 
-Так что в последнем варианте вашем будет то же самое
+observer.observe(document.body, {
+  childList: true,
+  subtree: true
+});
+
+window.vueAppManager = vueAppManager;
