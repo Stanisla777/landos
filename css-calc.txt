@@ -1,16 +1,25 @@
 if (isProduction) {
-  config.mode = 'production';
-  config.devtool = false;
-  config.optimization.minimize = true;
-  
-  // 👇 КЛЮЧЕВОЕ: убираем хеши, оставляем те же имена, что и в development
-  config.output.filename = 'js/[name].bundle.js';  // Без [contenthash]
-  config.output.publicPath = '/dist/';
-  
-  // 👇 Отключаем генерацию HTML в production (если не нужна)
-  config.plugins = config.plugins.filter(plugin => 
-    !(plugin instanceof rspack.HtmlRspackPlugin)
-  );
+    config.mode = 'production';
+    config.devtool = false;
+    config.optimization.minimize = true;
 
-  // ... остальные настройки
-}
+    //  убираем хеши, оставляем те же имена, что и в development
+    config.output.filename = 'js/[name].bundle.js';  // Без [contenthash]
+    config.output.publicPath = '/dist/';
+
+    // Отключаем генерацию HTML в production (если не нужна)
+    config.plugins = config.plugins.filter(plugin =>
+      !(plugin instanceof rspack.HtmlRspackPlugin)
+    );
+
+    const definePluginIndex = config.plugins.findIndex(p => p instanceof rspack.DefinePlugin);
+    if (definePluginIndex !== -1) {
+      config.plugins[definePluginIndex] = new rspack.DefinePlugin({
+        __VUE_OPTIONS_API__: JSON.stringify(true),
+        __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
+        'process.env.NODE_ENV': JSON.stringify('production')
+      });
+    }
+
+  
