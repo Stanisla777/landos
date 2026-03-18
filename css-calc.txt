@@ -1,115 +1,15 @@
-const componentMap = {
-  'housing-cooperative': () => import('./vue-apps/HousingCooperativeRequest.vue')
-  // Добавляйте новые приложения сюда:
-  // 'another-app': () => import('./vue-apps/AnotherApp.vue')
-};
-
-// Функция для динамической загрузки компонента
-async function loadComponent(appType) {
-  const loader = componentMap[appType];
-  if (!loader) {
-    console.error(`❌ Неизвестный тип приложения: ${appType}`);
-    return null;
-  }
-  try {
-    console.log(`📦 Загрузка компонента: ${appType}`);
-    const module = await loader();
-    return module.default || module;
-  } catch (error) {
-    console.error(`❌ Ошибка загрузки ${appType}:`, error);
-    return null;
-  }
-}
-
-// Функция для создания экземпляра приложения (без изменений)
-function createAppInstance(container, appType, index) {
-  const instanceId = container.dataset.instanceId || `${appType}-${index}`;
-
-  const props = { instanceId };
-  Object.keys(container.dataset).forEach(key => {
-    if (key !== 'vueApp' && key !== 'instanceId') {
-      const camelKey = key.replace(/-([a-z])/g, g => g[1].toUpperCase());
-      props[camelKey] = container.dataset[key];
-    }
-  });
-
-  const containerId = `vue-app-${instanceId}`;
-  container.id = containerId;
-
-  vueAppManager.createInstance(appType, containerId, props);
-}
-
---------------------
-
- // ---- VUE3 - Динамическая загрузка ----
-  const containers = document.querySelectorAll('[data-vue-app]');
-
-  if (containers.length === 0) {
-    console.log('ℹ️ Элементы data-vue-app не найдены');
-    return;
-  }
-
-  // Группируем контейнеры по типу
-  const containersByType = {};
-  containers.forEach(container => {
-    const appType = container.dataset.vueApp;
-    if (!containersByType[appType]) {
-      containersByType[appType] = [];
-    }
-    containersByType[appType].push(container);
-  });
-
-  // Загружаем и монтируем
-  for (const [appType, typeContainers] of Object.entries(containersByType)) {
-    // Если компонент ещё не зарегистрирован — загружаем
-    if (!vueAppManager.appTypes.has(appType)) {
-      const component = await loadComponent(appType);
-      if (component) {
-        vueAppManager.registerAppType(appType, component);
-      } else {
-        continue; // пропускаем, если не загрузилось
-      }
-    }
-
-    // Монтируем все контейнеры этого типа
-    typeContainers.forEach((container, idx) => {
-      createAppInstance(container, appType, idx);
-    });
-  }
-
-  vueAppManager.info();
-
-------------------------------------------
-
-// ============================================
-// НАБЛЮДАТЕЛЬ ЗА ДИНАМИЧЕСКИМИ ЭЛЕМЕНТАМИ
-// ============================================
-const observer = new MutationObserver(async (mutations) => {
-  for (const mutation of mutations) {
-    for (const node of mutation.addedNodes) {
-      if (node.nodeType === 1 && node.matches?.('[data-vue-app]')) {
-        const appType = node.dataset.vueApp;
-
-        // Если компонент ещё не зарегистрирован — загружаем
-        if (!vueAppManager.appTypes.has(appType)) {
-          const component = await loadComponent(appType);
-          if (component) {
-            vueAppManager.registerAppType(appType, component);
-          } else {
-            continue;
-          }
-        }
-
-        const existingCount = document.querySelectorAll(`[data-vue-app="${appType}"]`).length;
-        createAppInstance(node, appType, existingCount - 1);
-      }
-    }
-  }
-});
-
-observer.observe(document.body, {
-  childList: true,
-  subtree: true
-});
-
-window.vueAppManager = vueAppManager;
+load_script:61 
+ GET http://localhost:63342/js/src_js_vue-apps_HousingCooperativeRequest_vue.bundle.js net::ERR_ABORTED 404 (Not Found)
+housing-cooperative-…f4o8lvvd5f63gbtsk:1 Refused to execute script from 'http://localhost:63342/js/src_js_vue-apps_HousingCooperativeRequest_vue.bundle.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.
+index.js:233 ❌ Ошибка загрузки housing-cooperative: ChunkLoadError: Loading chunk src_js_vue-apps_HousingCooperativeRequest_vue failed.
+(error: http://localhost:63342/js/src_js_vue-apps_HousingCooperativeRequest_vue.bundle.js)
+    at __webpack_require__.f.j (jsonp_chunk_loading:27:1)
+    at ensure_chunk:7:1
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (ensure_chunk:6:1)
+    at housingCooperative (index.js:216:32)
+    at index.js:230:26
+    at Generator.<anonymous> (index.js:2:1)
+    at Generator.next (index.js:2:1)
+    at asyncGeneratorStep (index.js:2:1)
+    at _next (index.js:2:1)
