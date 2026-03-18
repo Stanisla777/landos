@@ -1,38 +1,782 @@
-При сборке получил такие ошибки:
+<template>
+  <div id="app">
+    <div class="container">
+      <div class="block-container form-ocenka__block">
+        <form class="form-ocenka" id="form" @submit.prevent="handlerSendForm">
+          <div class="form-ocenka__row" ref="ocenkaRow">
+            <div
+              v-for="inp in inputs"
+              :key="inp.id"
+              class="form-ocenka__col"
+              :data-id="inp.id"
+            >
+              <p class="form-ocenka__col_label">{{ inp.label }}</p>
 
-ERROR in ./src/js/vue-apps/HousingAppraisal/HousingAppraisal.vue?vue&type=script&lang=js (./src/js/vue-apps/HousingAppraisal/HousingAppraisal.vue.js?vue&type=script&lang=js!=!./node_modules/babel-loader/lib/index.js??clonedRuleSet-2.use!./node_modules/rspack-vue-loader/dist/index.js??ruleSet[0]!./node_modules/source-map-loader/dist/cjs.js!./src/js/vue-apps/HousingAppraisal/HousingAppraisal.vue?vue&type=script&lang=js)
-  × Module Error (from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\rspack-vue-loader\dist\index.js??ruleSet[0]):
-  │ [vue/compiler-sfc] Missing semicolon. (9:7)
-  │ 
-  │ C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\src\js\vue-apps\HousingAppraisal\HousingAppraisal.vue
-  │ 258|
-  │ 259|  // Yandex maps types
-  │ 260|  declare global {
-  │    |         ^
-  │ 261|    interface Window {
-  │ 262|      ymaps: any;
-ERROR in ./src/js/vue-apps/HousingAppraisal/HousingAppraisal.vue?vue&type=script&lang=js (./src/js/vue-apps/HousingAppraisal/HousingAppraisal.vue.js?vue&type=script&lang=js!=!./node_modules/babel-loader/lib/index.js??clonedRuleSet-2.use!./node_modules/rspack-vue-loader/dist/index.js??ruleSet[0]!./node_modules/source-map-loader/dist/cjs.js!./src/js/vue-apps/HousingAppraisal/HousingAppraisal.vue?vue&type=script&lang=js)
-  × Module build failed (from ./node_modules/source-map-loader/dist/cjs.js):
-  ╰─▶   × TypeError: Cannot read properties of null (reading 'content')
-        │     at selectBlock (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\rspack-vue-loader\dist\select.js:49:66)
-        │     at Object.loader (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\rspack-vue-loader\dist\index.js:116:41)
-        │     at C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3150:29
-        │     at node:internal/util:441:7
-        │     at new Promise (<anonymous>)
-        │     at node:internal/util:427:12
-        │     at isomorphoicRun (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3653:65)
-        │     at runLoaders (C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\@rspack\core\dist\index.js:3702:145)
-      
-ERROR in ./src/js/vue-apps/HousingAppraisal/HousingAppraisal.vue?vue&type=template&id=ac53763f (./src/js/vue-apps/HousingAppraisal/HousingAppraisal.vue.js?vue&type=template&id=ac53763f!=!./node_modules/babel-loader/lib/index.js??clonedRuleSet-2.use!./node_modules/rspack-vue-loader/dist/templateLoader.js??ruleSet[1].rules[4].use[0]!./node_modules/rspack-vue-loader/dist/index.js??ruleSet[0]!./node_modules/source-map-loader/dist/cjs.js!./src/js/vue-apps/HousingAppraisal/HousingAppraisal.vue?vue&type=template&id=ac53763f)
-  × Module Error (from C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\node_modules\rspack-vue-loader\dist\templateLoader.js??ruleSet[1].rules[4].use[0]):
-  │ [vue/compiler-sfc] Missing semicolon. (9:7)
-  │ 
-  │ C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\src\js\vue-apps\HousingAppraisal\HousingAppraisal.vue
-  │ 258|
-  │ 259|  // Yandex maps types
-  │ 260|  declare global {
-  │    |         ^
-  │ 261|    interface Window {
-  │ 262|      ymaps: any;
+              <!-- Select -->
+              <div
+                v-if="inp.type === 'select'"
+                class="select"
+                :class="{ open: openSelect }"
+              >
+                <div class="select__background" @click="handlerToggleSelect(false)"></div>
+                <div class="select__choosen" @click="handlerToggleSelect(true)">
+                  {{ inp.plh }}
+                </div>
+                <input type="hidden" v-model="inp.value" />
 
-z
+                <div class="select__list-wrapper" ref="SelectList">
+                  <ul class="select__list">
+                    <li
+                      v-for="option in inp.lists"
+                      :key="option.id"
+                      class="select__list-item"
+                      :data-value="option.value"
+                      @click="setSelectItem(option.value, option.title)"
+                    >
+                      {{ option.title }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Input with address search -->
+              <label v-else class="input" :class="{ input_error: inp.isNotValid }">
+                <template v-if="inp.mark === 'adress'">
+                  <div class="select select_hidden" :class="{ open: showSearchList }">
+                    <div class="select__background" @click="handlerSelectAddress(false)"></div>
+                    <input
+                      :placeholder="inp.plh"
+                      v-model="inp.value"
+                      @keyup="dadaTa"
+                    />
+                    <div class="select__list-wrapper" ref="searchResults">
+                      <ul class="select__list">
+                        <li
+                          v-for="(item, idx) in searchList"
+                          :key="idx"
+                          class="select__list-item"
+                          :data-value="item"
+                          @click="setAddress(item)"
+                        >
+                          {{ item }}
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <span class="input__error_search" v-show="showErrorSearch">
+                    Ничего не найдено
+                  </span>
+                </template>
+
+                <!-- Input with area validation -->
+                <template v-else-if="inp.mark === 'area'">
+                  <input
+                    :placeholder="inp.plh"
+                    v-model="inp.value"
+                    :type="inp.type"
+                    inputmode="numeric"
+                    @input="firstZero"
+                  />
+                  <span class="input__error" v-show="inp.isNotValid">
+                    Заполните поле
+                  </span>
+                </template>
+
+                <!-- Simple input -->
+                <input v-else :placeholder="inp.plh" v-model="inp.value" :type="inp.type" />
+                <span class="input__error" v-show="inp.isNotValid">
+                  Заполните поле
+                </span>
+              </label>
+            </div>
+
+            <div class="form-ocenka__col">
+              <p class="form-ocenka__col_label media"></p>
+              <p class="form-ocenka__clear" @click="clearField">Очистить все</p>
+            </div>
+
+            <div class="form-ocenka__col">
+              <p class="form-ocenka__col_label media"></p>
+              <button class="btn full" @click.prevent="handlerSendForm">Оценить</button>
+            </div>
+          </div>
+          <p class="form-ocenka__error" v-if="isShowError">
+            {{ ocenkaMobiErrorText }}
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Building info -->
+    <template v-if="showBuildInfo">
+      <div class="block-container">
+        <div class="appraisal__back" @click="goBack" v-if="bulletInfraShow">
+          <div class="appraisal__back-arrow">
+            <svg width='20' height='20' viewbox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'>
+              <path fill-rule='evenodd' clip-rule='evenodd' d='M1.91058 10.5601C1.58514 10.2507 1.58514 9.74918 1.91058 9.43983L7.21388 4.39864C7.53932 4.08929 8.06696 4.08929 8.39239 4.39864C8.71783 4.70799 8.71783 5.20955 8.39239 5.5189L4.51168 9.20781H17.4998C17.9601 9.20781 18.3332 9.56247 18.3332 9.99996C18.3332 10.4374 17.9601 10.7921 17.4998 10.7921H4.51168L8.39239 14.481C8.71783 14.7904 8.71783 15.2919 8.39239 15.6013C8.06696 15.9106 7.53932 15.9106 7.21388 15.6013L1.91058 10.5601Z' fill='#252628' />
+            </svg>
+          </div>
+          <p>Назад</p>
+        </div>
+        <div class="white-back">
+          <div class="appraisal__block">
+            <AppraisalComponent
+              :tabs="tabs"
+              :activeTab="activeTab"
+              :bldPhotos="bldPhotos"
+              :flat="flat"
+              @tab-change="handlerTab"
+            />
+          </div>
+        </div>
+        <div class="bullet__infrastructure-block">
+          <h3 class="bullet__infrastructure-title">Инфраструктура для жизни</h3>
+          <div class="map-filter__wr-container">
+            <div class="map-filter__container">
+              <div class="map-filter" v-if="showFilter && showSocial">
+                <div
+                  v-for="(item, idx) in social"
+                  :key="idx"
+                  class="map-filter__item"
+                  :class="{ 'is-active': idx === idActiveFilter }"
+                  v-show="item.items.length"
+                  @click.capture="handlerFilter(idx, $event)"
+                >
+                  <p>{{ item.category }}</p>
+                  <div class="map-filter__item-icon" @click="clearFilter">
+                    <svg width='16' height='16' viewbox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'>
+                      <path fill-rule='evenodd' clip-rule='evenodd' d='M3.52876 3.5286C3.78911 3.26825 4.21122 3.26825 4.47157 3.5286L8.00016 7.05719L11.5288 3.5286C11.7891 3.26825 12.2112 3.26825 12.4716 3.5286C12.7319 3.78895 12.7319 4.21106 12.4716 4.47141L8.94297 8L12.4716 11.5286C12.7319 11.7889 12.7319 12.2111 12.4716 12.4714C12.2112 12.7318 11.7891 12.7318 11.5288 12.4714L8.00016 8.94281L4.47157 12.4714C4.21122 12.7318 3.78911 12.7318 3.52876 12.4714C3.26841 12.2111 3.26841 11.7889 3.52876 11.5286L7.05735 8L3.52876 4.47141C3.26841 4.21106 3.26841 3.78895 3.52876 3.5286Z' fill='white' />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Map -->
+    <div class="container">
+      <div class="map">
+        <div class="map__wrap" id="map" :class="{ preloader_container: showPreloader }">
+          <div class="preloader" v-show="showPreloader"></div>
+        </div>
+
+        <!-- Bullet info -->
+        <div class="bullet" v-if="bullet.showBullet">
+          <button class="bullet__close" @click.prevent="closeBullet()"></button>
+          <h3 class="bullet__title">{{ bullet.address }}</h3>
+          <div class="bullet__body">
+            <div class="bullet__info">
+              <div class="bullet__col">
+                <span class="bullet__lbl">Цена за м²</span>
+                <span class="bullet__data">{{ $options.filters.format(bullet.priceMin) }} ₽</span>
+              </div>
+              <div class="bullet__col">
+                <span class="bullet__lbl">ДИАПАЗОН ЦЕН</span>
+                <div class="bullet__row">
+                  <span class="bullet__data">{{ $options.filters.format(bullet.price_range[0]) }} -</span>
+                  <span class="bullet__data">{{ $options.filters.format(bullet.price_range[1]) }} ₽</span>
+                </div>
+              </div>
+              <div class="bullet__col">
+                <span class="bullet__lbl">Цена</span>
+                <span class="bullet__data">{{ $options.filters.format(bullet.price) }} ₽</span>
+              </div>
+
+              <div class="bullet__col bullet__col_xl" v-if="bullet.stations.length">
+                <span class="bullet__lbl" v-if="bullet.stations[0].type === 'метро'">
+                  Ближайшее {{ bullet.stations[0].type }}
+                </span>
+                <span class="bullet__lbl" v-else>
+                  Ближайший {{ bullet.stations[0].type }}
+                </span>
+                <div class="bullet__station-container">
+                  <div v-for="(item, idx) in bullet.stations" :key="idx" class="bullet__data bullet__station-wr">
+                    <div class="bullet__distance-wr">
+                      <span>{{ item.distance }}&nbsp;м</span>
+                    </div>
+                    <span class="bullet__name-station">{{ item.name }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bullet__more">
+            <p class="bullet__link-more" @click.prevent="handlerBuildInfo(true)">
+              подробнее о доме
+            </p>
+          </div>
+        </div>
+
+        <!-- Infrastructure bullet -->
+        <div class="bullet bullet_infrastructure" v-if="bulletInfraShow">
+          <button class="bullet__close" @click.prevent="handlerInfraBullet(false)"></button>
+          <div class="bullet__header" v-if="bulletInfra.photos">
+            <img :src="bulletInfra.photos[0]" :alt="bulletInfra.title" />
+          </div>
+          <div class="bullet__body">
+            <div class="bullet__info">
+              <div class="bullet__col bullet__col_alone">
+                <h3 class="bullet__title">{{ bulletInfra.title }}</h3>
+                <p class="bullet__desc">{{ bulletInfra.subtitle }}</p>
+                <p class="bullet__desc-time" v-if="bulletInfra.duration">
+                  {{ bulletInfra.duration }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="bullet__more">
+            <a class="bullet__link-more" :href="bulletInfra.link" target="_blank">
+              посмотреть на карте
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="container">
+      <div class="block-container">
+        <div class="bullet__info-block">
+          <p>
+            Информация носит справочный характер и не является публичной офертой
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from 'axios-jsonp-pro';
+import localaxios from 'axios';
+import scrollIt from './scroll-it';
+import AppraisalComponent from './AppraisalComponent.vue';
+
+export default {
+  name: 'HousingAppraisal',
+  components: {
+    AppraisalComponent
+  },
+  props: {
+    instanceId: {
+      type: String,
+      required: true
+    }
+  },
+  data() {
+    return {
+      inputs: [
+        {
+          id: 0,
+          plh: 'Введите адрес',
+          type: 'text',
+          value: '',
+          isNotValid: false,
+          validate: true,
+          mark: 'adress',
+          label: 'Адрес здания',
+        },
+        {
+          id: 1,
+          type: 'text',
+          plh: 'Введите площадь',
+          value: '',
+          isNotValid: false,
+          validate: true,
+          mark: 'area',
+          label: 'Площадь, м2',
+        },
+        {
+          id: 2,
+          plh: 'Студия',
+          value: '',
+          type: 'select',
+          lists: [
+            { id: 0, title: 'Студия', value: '1' },
+            { id: 1, title: '1 комнатная', value: '1' },
+            { id: 2, title: '2 комнатная', value: '2' },
+            { id: 3, title: '3 комнатная', value: '3' },
+            { id: 4, title: '4 комнатная', value: '4' }
+          ],
+          mark: 'type',
+          label: 'Количество комнат',
+        },
+      ],
+      openSelect: false,
+      btnSendPress: false,
+      bullet: {
+        showBullet: false,
+        address: '',
+        priceMin: 0,
+        price: 0,
+        price_range: [0, 0],
+        stations: []
+      },
+      bldPos: {},
+      bldPhotos: null,
+      flat: null,
+      showBuildInfo: false,
+      showPreloader: false,
+      showSocial: false,
+      isShowError: false,
+      ocenkaMobiErrorText: '',
+      ocenkaMobiErrorTextDefault: 'Произошла неизвестная ошибка, попробуйте изменить запрос',
+      tabs: [
+        {
+          id: 0,
+          title: 'О доме',
+          isActive: false,
+          content: [
+            { id: 0, desc: 'Кадастровый номер', data: '', link: true, linkUrl: '', additionalClass: 'appraisal__icon_download' },
+            { id: 1, desc: 'Цена', data: '', isCost: true },
+            { id: 2, desc: 'Цена за м²', data: '', isCost: true },
+            { id: 3, desc: 'Минимальная цена за м²', data: '', isCost: true },
+            { id: 4, desc: 'Год постройки', data: '' },
+            { id: 5, desc: 'Этажность дома', data: '' },
+            { id: 6, desc: 'Количество подъездов', data: '' },
+            { id: 7, desc: 'Количество лифтов', data: '' },
+            { id: 8, desc: 'Количество подземных этажей', data: '' },
+            { id: 9, desc: 'Тип здания', data: '' },
+            { id: 10, desc: 'Материалы стен', data: '' },
+            { id: 11, desc: 'Индекс износа здания', data: '', isWearIndex: true },
+            { id: 12, desc: 'Проект здания', data: '' },
+            { id: 13, desc: 'Материал перекрытий', data: '' },
+            { id: 14, desc: 'Наличие газоснабжения', data: '' },
+          ]
+        },
+        {
+          id: 1,
+          title: 'О квартире',
+          isActive: true,
+          content: [
+            { id: 0, desc: 'Идентификатор записи в&nbsp;ЕГРН', data: '' },
+            { id: 1, desc: 'Идентификатор записи в&nbsp;ГКН', data: '' },
+            { id: 2, desc: 'Кадастровый номер', data: '' },
+            { id: 3, desc: 'Кадастровая стоимость', data: '', isCost: true },
+            { id: 4, desc: 'Дата установления кадастровой стоимости', data: '', isDateCost: true },
+            { id: 5, desc: 'Площадь', data: '', isArea: true },
+            { id: 6, desc: 'Этаж', data: '' },
+            { id: 7, desc: 'Количество комнат', data: '' },
+            { id: 8, desc: 'Информация о&nbsp;зарегистрированных правах', data: '' },
+            { id: 9, desc: 'Информация об&nbsp;обременении права', data: '' },
+          ]
+        }
+      ],
+      activeTab: 0,
+      social: [],
+      idActiveFilter: 0,
+      bulletInfraShow: false,
+      bulletInfra: {
+        title: '',
+        subtitle: '',
+        duration: '',
+        link: '',
+        photos: []
+      },
+      searchList: [],
+      showSearchList: false,
+      showErrorSearch: false,
+      captcha_id: null,
+      send_argument: null,
+      timeout: null,
+      // Переменные для карт (объявляем через window)
+      map: null,
+      myCollection: null,
+      multiRoute: null
+    };
+  },
+  computed: {
+    isValid() {
+      for (let i = 0; i < this.inputs.length; i += 1) {
+        if (this.inputs[i].validate && this.inputs[i].isNotValid) {
+          return false;
+        }
+      }
+      return true;
+    },
+    showFilter() {
+      return !!this.social.length;
+    }
+  },
+  filters: {
+    format(val) {
+      const num = Number(val);
+      const sign = Math.sign(num);
+      const absNum = Math.abs(num);
+
+      if (absNum >= 1.0e9) {
+        return (sign * (absNum / 1.0e9).toFixed(3) + " блн").replace('.', ',');
+      } else if (absNum >= 1.0e6) {
+        return (sign * (absNum / 1.0e6).toFixed(3) + " млн").replace('.', ',');
+      } else if (absNum >= 1.0e3) {
+        return (sign * (absNum / 1.0e3).toFixed(1) + " тыс").replace('.', ',');
+      }
+      return String(val);
+    },
+    formatSpace(val) {
+      return String(val).replace(/(\d)(?=(\d{3})+([^\d]|$))/g, '$1 ').replace('.', ',');
+    },
+    formatDate(val) {
+      return val.split('-').reverse().join('.');
+    },
+    formatPointComma(val) {
+      return String(val).replace('.', ',');
+    }
+  },
+  watch: {
+    inputs: {
+      handler() {
+        if (this.btnSendPress) {
+          this.validateAllInputs();
+        }
+      },
+      deep: true
+    },
+    searchList(newVal) {
+      this.showSearchList = !!newVal.length;
+    }
+  },
+  methods: {
+    handlerToggleSelect(data) {
+      this.openSelect = data;
+    },
+    setSelectItem(val, title) {
+      this.inputs[2].value = val;
+      this.inputs[2].plh = title;
+      this.handlerToggleSelect(false);
+    },
+    validInput(curInp) {
+      curInp.isNotValid = curInp.value === '';
+    },
+    validateAllInputs() {
+      for (let i = 0; i < this.inputs.length; i += 1) {
+        if (this.inputs[i].validate) {
+          this.validInput(this.inputs[i]);
+        }
+      }
+    },
+    closeBullet() {
+      this.bullet.showBullet = false;
+    },
+    handlerTab(activeId) {
+      for (let i = 0; i < this.tabs.length; i += 1) {
+        this.tabs[i].isActive = false;
+      }
+      this.tabs[activeId].isActive = true;
+      this.activeTab = activeId;
+    },
+    resetData() {
+      if (this.map !== null) {
+        this.map.destroy();
+      }
+      this.bullet.showBullet = false;
+      this.bullet.address = '';
+      this.bullet.priceMin = 0;
+      this.bullet.price = 0;
+      this.bullet.stations = [];
+      this.bldPos = {};
+      this.bldPhotos = null;
+      this.handlerTab(0);
+      for (let i = 0; i < this.tabs.length; i += 1) {
+        const contentArr = this.tabs[i].content;
+        for (let j = 0; j < contentArr.length; j += 1) {
+          contentArr[j].data = '';
+          if (contentArr[j].link) {
+            contentArr[j].linkUrl = '';
+          }
+        }
+      }
+      this.social = [];
+      this.isShowError = false;
+      this.idActiveFilter = 0;
+      this.flat = null;
+      this.bulletInfra = {
+        title: '',
+        subtitle: '',
+        duration: '',
+        link: '',
+        photos: []
+      };
+      this.bulletInfraShow = false;
+      this.showSearchList = false;
+    },
+    initMap(dataPos) {
+      const pos = dataPos || [55.7558, 37.6173];
+      const zoomData = dataPos ? 16 : 12;
+      const showObj = !!dataPos;
+      const self = this;
+
+      window.ymaps.ready(function () {
+        self.map = new window.ymaps.Map('map', {
+          center: pos,
+          controls: ['smallMapDefaultSet'],
+          zoom: zoomData
+        });
+
+        if (showObj) {
+          self.map.geoObjects.add(new window.ymaps.GeoObject({
+            geometry: { type: 'Point', coordinates: pos },
+            properties: { iconContent: self.bullet.address }
+          }, {
+            preset: 'islands#blackStretchyIcon',
+            iconColor: 'green'
+          }));
+        }
+
+        self.map.container.fitToViewport();
+
+        // Map click event
+        self.map.events.add('click', function (e) {
+          const coords = e.get('coords');
+          self.map.geoObjects.removeAll();
+
+          window.ymaps.geocode(coords).then(function (res) {
+            const firstGeoObject = res.geoObjects.get(0);
+            self.map.geoObjects.add(new window.ymaps.GeoObject({
+              geometry: { type: 'Point', coordinates: coords },
+              properties: { iconContent: firstGeoObject.getAddressLine() }
+            }, {
+              preset: 'islands#blackStretchyIcon',
+              iconColor: 'green'
+            }));
+            self.inputs[0].value = firstGeoObject.getAddressLine();
+          });
+        });
+
+        // GeoObjects click event for infrastructure
+        self.map.geoObjects.events.add('click', function (e) {
+          if (self.social[self.idActiveFilter]) {
+            const objectsArr = self.social[self.idActiveFilter].items;
+            const thisPlacemark = e.get('target');
+            const ballonNumber = thisPlacemark.properties._data.balloonContentHeader || 0;
+            const bulletContent = objectsArr[ballonNumber];
+            self.bulletInfra = bulletContent;
+            self.setRoute(objectsArr[ballonNumber].pos);
+          }
+        });
+      });
+    },
+    setRoute(objectsPos) {
+      this.bulletInfraShow = false;
+      if (this.multiRoute) {
+        this.map.geoObjects.remove(this.multiRoute);
+      }
+
+      this.multiRoute = new window.ymaps.multiRouter.MultiRoute({
+        referencePoints: [
+          [this.bldPos.lat, this.bldPos.lng],
+          [objectsPos.lat, objectsPos.lng]
+        ],
+        params: {
+          routingMode: 'pedestrian',
+          reverseGeocoding: false
+        }
+      }, {
+        wayPointVisible: false,
+        routeActiveStrokeWidth: 6,
+        routeActiveStrokeStyle: 'dot',
+        routeActiveStrokeColor: '#FED141'
+      });
+
+      this.map.geoObjects.add(this.multiRoute);
+      this.bulletInfra.link = `https://yandex.ru/maps/?ll=${objectsPos.lng},${objectsPos.lat}&z=16&l=map`;
+      this.getRouteData();
+      setTimeout(this.getRouteData, 600);
+    },
+    getRouteData() {
+      const activeRoute = this.multiRoute?.getActiveRoute();
+      if (activeRoute) {
+        this.bulletInfra.duration = activeRoute.properties.get('duration').text;
+        this.bulletInfraShow = true;
+      } else {
+        setTimeout(this.getRouteData, 400);
+      }
+    },
+    setObjectToMap() {
+      this.bulletInfraShow = false;
+      if (this.myCollection) {
+        this.myCollection.removeAll();
+      }
+
+      const objectsArr = this.social[this.idActiveFilter].items;
+      this.myCollection = new window.ymaps.GeoObjectCollection();
+
+      for (let i = 0; i < objectsArr.length; i += 1) {
+        this.myCollection.add(new window.ymaps.Placemark(
+          [objectsArr[i].pos.lat, objectsArr[i].pos.lng],
+          { balloonContentHeader: i },
+          { preset: 'islands#darkBlueCircleDotIcon', openBalloonOnClick: false }
+        ));
+      }
+
+      this.setRoute(objectsArr[0].pos);
+      this.bulletInfra = objectsArr[0];
+      this.map.geoObjects.add(this.myCollection);
+    },
+    handlerFilter(id, event) {
+      const element = event.currentTarget;
+      if (!element.classList.contains('is-active')) {
+        this.idActiveFilter = id;
+        this.setObjectToMap();
+      }
+    },
+    clearFilter() {
+      this.idActiveFilter = null;
+      this.bulletInfraShow = false;
+      if (this.myCollection) {
+        this.map.geoObjects.remove(this.myCollection);
+      }
+      if (this.multiRoute) {
+        this.map.geoObjects.remove(this.multiRoute);
+      }
+    },
+    handlerInfraBullet(data) {
+      this.bulletInfraShow = data;
+    },
+    dadaTa() {
+      if (this.timeout) clearTimeout(this.timeout);
+      this.timeout = setTimeout(() => {
+        if (this.inputs[0].value.length > 2) {
+          this.isShowError = false;
+
+          const config = {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+              Accept: 'application/json',
+            }
+          };
+
+          localaxios.post('/api/local/suggestions/address/', {
+            query: this.inputs[0].value,
+            count: 8
+          }, config)
+            .then((response) => {
+              this.searchList = [];
+              if (response.data.result.suggestions) {
+                for (let i = 0; i < response.data.result.suggestions.length; i += 1) {
+                  const fullName = response.data.result.suggestions[i].value;
+                  if (fullName) {
+                    this.searchList.push(fullName);
+                    if (this.searchList.length) {
+                      this.handlerSelectAddress(true);
+                    }
+                  }
+                }
+              }
+            })
+            .then(this.searchError)
+            .catch((error) => {
+              console.log(error);
+              if (error?.request?.status === 403 || error?.request?.status === 405) {
+                this.ocenkaMobiErrorText = 'Сервер не отвечает. Попробуйте перезагрузить страницу';
+                this.showErrorSearch = false;
+                this.showError();
+              }
+            });
+        }
+      }, 500);
+    },
+    setAddress(data) {
+      this.inputs[0].value = data;
+      this.handlerSelectAddress(false);
+    },
+    handlerSelectAddress(data) {
+      this.showSearchList = data;
+    },
+    firstZero(event) {
+      const input = event.target;
+      this.inputs[1].value = input.value
+        .replace(/^0+/gi, '1')
+        .replace(',', '.')
+        .replace(/[^\d\.]/g, "")
+        .replace(/\./, "x")
+        .replace(/\./g, "")
+        .replace(/x/, ".");
+    },
+    searchError() {
+      if (this.inputs[0].value.length > 8) {
+        const results = this.$refs.searchResults?.[0]?.querySelectorAll('ul li')?.length || 0;
+        if (results === 0 && !this.isShowError) {
+          this.showErrorSearch = true;
+        } else {
+          this.showErrorSearch = false;
+        }
+      } else {
+        this.showErrorSearch = false;
+      }
+    },
+    clearField() {
+      this.inputs[0].value = '';
+      this.inputs[1].value = '';
+      if (this.$refs.SelectList && this.$refs.SelectList[0]) {
+        const firstOption = this.$refs.SelectList[0].querySelector('.select__list-item:first-child');
+        if (firstOption) firstOption.click();
+      }
+      this.bullet.showBullet = false;
+      this.bulletInfraShow = false;
+      this.showBuildInfo = false;
+      this.showSocial = false;
+      this.inputs[0].isNotValid = false;
+      this.inputs[1].isNotValid = false;
+      if (this.map) {
+        this.map.geoObjects.removeAll();
+      }
+    },
+    goBack() {
+      this.bulletInfraShow = false;
+      this.showBuildInfo = false;
+      this.bullet.showBullet = true;
+      this.showSocial = false;
+      if (this.myCollection) {
+        this.map.geoObjects.remove(this.myCollection);
+      }
+      if (this.multiRoute) {
+        this.map.geoObjects.remove(this.multiRoute);
+      }
+    },
+    showError() {
+      this.isShowError = true;
+    },
+    handlerSendForm(argument) {
+      // Здесь будет логика с капчей и API
+      this.btnSendPress = true;
+      this.validateAllInputs();
+      if (this.isValid) {
+        // API call implementation
+        console.log('Форма валидна, отправка...');
+      }
+    },
+    handlerBuildInfo(data, token) {
+      this.showBuildInfo = data;
+      this.showSocial = data;
+      if (data) {
+        this.$nextTick(() => {
+          import('swiper').then(({ Swiper, Navigation, Pagination }) => {
+            Swiper.use([Navigation, Pagination]);
+            new Swiper('#swiper-appraisal', {
+              slidesPerView: 1,
+              spaceBetween: 80,
+              loop: true,
+              observer: true,
+              observeParents: true,
+              pagination: { el: '.swiper-pagination', clickable: true },
+              navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' }
+            });
+          });
+        });
+        this.closeBullet();
+        scrollIt(document.querySelector('#form'), 400, 'linear');
+      }
+    }
+  },
+  mounted() {
+    this.$nextTick(() => {
+      setTimeout(() => this.initMap(), 1000);
+    });
+  }
+};
+</script>
