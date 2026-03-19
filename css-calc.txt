@@ -1,285 +1,330 @@
-<div class="key-indicators__container" id="key-indicators" v-cloak>
-                    <div v-show="(programs!=null && programs.length!==0)">
-                        <div class="row-col-space-between al-center">
-                            <h2 class="h2_title">Ключевые показатели по программам с господдержкой</h2>
-                        </div>
-                        <div class="round-billet" ref="KeyIndicatorsButtons">
-                            <div
-                                class="round-billet__item-type-2 js--program-item"
-                                v-for="(item,index) of programs"
-                                :key="index"
-                                :class="item.isActive?'active':''"
-                                :data-program="item.key"
-                                @click="programSelect"
-                            >
-                                {{item.name}}
-                            </div>
-                        </div>
-                        <div class="key-indicators" ref="KeyIndicatorsPanels">
-                            <div
-                                class="key-indicators__panel"
-                                v-for="(item,index) of programs"
-                                :key="index"
-                                :class="item.isActive?'active':''"
-                                :data-program="item.key"
-                            >
-                                <div class="key-indicators__wrapper">
-                                    <div class="key-indicators__list">
-                                        <div class="key-indicators__calculations">
-                                            <div class="key-indicators__list-item">
-                                                <div class="key-indicators__wr-value">
-                                                                        <span class="key-indicators__list-value"
-                                                                        >{{item.creditorCnt}}</span
-                                                                        ><span class="key-indicators__list-title"
-                                                    >{{item.creditorTitle}}</span
-                                                    >
-                                                </div>
-                                            </div>
-                                            <div class="key-indicators__list-item">
-                                                <div class="key-indicators__wr-value">
-                                                                        <span class="key-indicators__list-value"
-                                                                        >{{item.loanCnt | format}}</span
-                                                                        ><span class="key-indicators__list-title"
-                                                    >{{item.loanCntMeasure}}
-                                                                            {{item.loanCntTitle}}</span
-                                                    >
-                                                </div>
-                                            </div>
-                                            <div class="key-indicators__list-item">
-                                                <div class="key-indicators__wr-value">
-                                                                        <span class="key-indicators__list-value"
-                                                                        >{{item.loanAmt | format}}</span
-                                                                        ><span class="key-indicators__list-title"
-                                                    >{{item.loanAmtTitle}},
-                                                                            {{item.loanAmtMeasure}}&nbsp;₽</span
-                                                    >
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<template>
+  <div class="key-indicators__container" id="key-indicators" v-cloak>
+    <div v-show="programs && programs.length">
+      <div class="row-col-space-between al-center">
+        <h2 class="h2_title">Ключевые показатели по программам с господдержкой</h2>
+      </div>
+
+      <!-- Кнопки выбора программы -->
+      <div class="round-billet" ref="keyIndicatorsButtons">
+        <div
+          class="round-billet__item-type-2 js--program-item"
+          v-for="(item, index) in programs"
+          :key="index"
+          :class="{ active: item.isActive }"
+          :data-program="item.key"
+          @click="programSelect"
+        >
+          {{ item.name }}
+        </div>
+      </div>
+
+      <!-- Панели с данными -->
+      <div class="key-indicators" ref="keyIndicatorsPanels">
+        <div
+          class="key-indicators__panel"
+          v-for="(item, index) in programs"
+          :key="index"
+          :class="{ active: item.isActive }"
+          :data-program="item.key"
+        >
+          <div class="key-indicators__wrapper">
+            <div class="key-indicators__list">
+              <div class="key-indicators__calculations">
+                <div class="key-indicators__list-item">
+                  <div class="key-indicators__wr-value">
+                    <span class="key-indicators__list-value">{{ item.creditorCnt }}</span>
+                    <span class="key-indicators__list-title">{{ item.creditorTitle }}</span>
+                  </div>
                 </div>
+                <div class="key-indicators__list-item">
+                  <div class="key-indicators__wr-value">
+                    <span class="key-indicators__list-value">{{ format(item.loanCnt) }}</span>
+                    <span class="key-indicators__list-title">
+                      {{ item.loanCntMeasure }} {{ item.loanCntTitle }}
+                    </span>
+                  </div>
+                </div>
+                <div class="key-indicators__list-item">
+                  <div class="key-indicators__wr-value">
+                    <span class="key-indicators__list-value">{{ format(item.loanAmt) }}</span>
+                    <span class="key-indicators__list-title">
+                      {{ item.loanAmtTitle }}, {{ item.loanAmtMeasure }} ₽
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
-JS
-
-/* eslint-disable */
-import Vue from 'vue';
+<script>
 import axios from 'axios';
 
-export default function keyIndicatorsNewSource() {
-  const app = new Vue({
-    el: '#key-indicators',
-    data: {
-      "data": [
+export default {
+  name: 'KeyIndicators',
+  props: {
+    instanceId: {
+      type: String,
+      required: true
+    }
+  },
+  data() {
+    return {
+      // Тестовые данные (закомментированы для разработки)
+      testData: [
         {
-          "key": "total",
-          "name": "Все программы",
-          "isActive": true,
-          "color": "blue",
-          "picture": "/local/templates/main/img/key-indicators-family.png",
-          "picture_2x": "/local/templates/main/img/key-indicators-family-2x.png",
-          "picture_tablet": "/local/templates/main/img/key-indicators-family_tablet.png",
-          "picture_2x_tablet": "/local/templates/main/img/key-indicators-family-2x_tablet.png",
-          "picture_mobile": "/local/templates/main/img/key-indicators-family_mobile.png",
-          "picture_2x_mobile": "/local/templates/main/img/key-indicators-family-2x_mobile.png",
-          "linkBtn": "/gosudarstvennye-programmy/",
-          "creditorCnt": 402,
-          "loanCnt": 3.2,
-          "loanCntMeasure": "млн.",
-          "loanAmt": 9.9,
-          "loanAmtMeasure": "трлн.",
-          "creditorTitle": "кредиторов",
-          "loanCntTitle": "участников",
-          "loanAmtTitle": "сумма выданных кредитов и выплат"
+          key: "total",
+          name: "Все программы",
+          isActive: true,
+          color: "blue",
+          picture: "/local/templates/main/img/key-indicators-family.png",
+          picture_2x: "/local/templates/main/img/key-indicators-family-2x.png",
+          picture_tablet: "/local/templates/main/img/key-indicators-family_tablet.png",
+          picture_2x_tablet: "/local/templates/main/img/key-indicators-family-2x_tablet.png",
+          picture_mobile: "/local/templates/main/img/key-indicators-family_mobile.png",
+          picture_2x_mobile: "/local/templates/main/img/key-indicators-family-2x_mobile.png",
+          linkBtn: "/gosudarstvennye-programmy/",
+          creditorCnt: 402,
+          loanCnt: 3.2,
+          loanCntMeasure: "млн.",
+          loanAmt: 9.9,
+          loanAmtMeasure: "трлн.",
+          creditorTitle: "кредиторов",
+          loanCntTitle: "участников",
+          loanAmtTitle: "сумма выданных кредитов и выплат"
         },
         {
-          "key": "mgps",
-          "name": "Помощь многодетным семьям",
-          "isActive": false,
-          "color": "purple",
-          "picture": "/local/templates/main/img/key-indicators-toys.png",
-          "picture_2x": "/local/templates/main/img/key-indicators-toys-2x.png",
-          "picture_tablet": "/local/templates/main/img/key-indicators-toys_tablet.png",
-          "picture_2x_tablet": "/local/templates/main/img/key-indicators-toys-2x_tablet.png",
-          "picture_mobile": "/local/templates/main/img/key-indicators-toys_mobile.png",
-          "picture_2x_mobile": "/local/templates/main/img/key-indicators-toys-2x_mobile.png",
-          "linkBtn": "/catalog/gosudarstvennaya-programma-podderzhki-semey-s-detmi/",
-          "creditorCnt": 608,
-          "loanCnt": 697.6,
-          "loanCntMeasure": "тыс.",
-          "loanAmt": 311.1,
-          "loanAmtMeasure": "млрд.",
-          "creditorTitle": "кредиторов",
-          "loanCntTitle": "участников",
-          "loanAmtTitle": "сумма выплат"
+          key: "mgps",
+          name: "Помощь многодетным семьям",
+          isActive: false,
+          color: "purple",
+          picture: "/local/templates/main/img/key-indicators-toys.png",
+          picture_2x: "/local/templates/main/img/key-indicators-toys-2x.png",
+          picture_tablet: "/local/templates/main/img/key-indicators-toys_tablet.png",
+          picture_2x_tablet: "/local/templates/main/img/key-indicators-toys-2x_tablet.png",
+          picture_mobile: "/local/templates/main/img/key-indicators-toys_mobile.png",
+          picture_2x_mobile: "/local/templates/main/img/key-indicators-toys-2x_mobile.png",
+          linkBtn: "/catalog/gosudarstvennaya-programma-podderzhki-semey-s-detmi/",
+          creditorCnt: 608,
+          loanCnt: 697.6,
+          loanCntMeasure: "тыс.",
+          loanAmt: 311.1,
+          loanAmtMeasure: "млрд.",
+          creditorTitle: "кредиторов",
+          loanCntTitle: "участников",
+          loanAmtTitle: "сумма выплат"
         },
         {
-          "key": "psm",
-          "name": "Льготная ипотека",
-          "isActive": false,
-          "color": "orange",
-          "picture": "/local/templates/main/img/key-indicators-building.png",
-          "picture_2x": "/local/templates/main/img/key-indicators-building-2x.png",
-          "picture_tablet": "/local/templates/main/img/key-indicators-building_tablet.png",
-          "picture_2x_tablet": "/local/templates/main/img/key-indicators-building-2x_tablet.png",
-          "picture_mobile": "/local/templates/main/img/key-indicators-building_mobile.png",
-          "picture_2x_mobile": "/local/templates/main/img/key-indicators-building-2x_mobile.png",
-          "linkBtn": "/catalog/lgotnaya-ipoteka/",
-          "creditorCnt": 73,
-          "loanCnt": 1.4,
-          "loanCntMeasure": "млн.",
-          "loanAmt": 5.5,
-          "loanAmtMeasure": "трлн.",
-          "creditorTitle": "кредитора",
-          "loanCntTitle": "участников",
-          "loanAmtTitle": "сумма выданных кредитов"
+          key: "psm",
+          name: "Льготная ипотека",
+          isActive: false,
+          color: "orange",
+          picture: "/local/templates/main/img/key-indicators-building.png",
+          picture_2x: "/local/templates/main/img/key-indicators-building-2x.png",
+          picture_tablet: "/local/templates/main/img/key-indicators-building_tablet.png",
+          picture_2x_tablet: "/local/templates/main/img/key-indicators-building-2x_tablet.png",
+          picture_mobile: "/local/templates/main/img/key-indicators-building_mobile.png",
+          picture_2x_mobile: "/local/templates/main/img/key-indicators-building-2x_mobile.png",
+          linkBtn: "/catalog/lgotnaya-ipoteka/",
+          creditorCnt: 73,
+          loanCnt: 1.4,
+          loanCntMeasure: "млн.",
+          loanAmt: 5.5,
+          loanAmtMeasure: "трлн.",
+          creditorTitle: "кредитора",
+          loanCntTitle: "участников",
+          loanAmtTitle: "сумма выданных кредитов"
         },
         {
-          "key": "sip",
-          "name": "Семейная ипотека",
-          "isActive": false,
-          "color": "white",
-          "picture": "/local/templates/main/img/key-indicators-family-mortgage.png",
-          "picture_2x": "/local/templates/main/img/key-indicators-family-mortgage-2x.png",
-          "picture_tablet": "/local/templates/main/img/key-indicators-family-mortgage_tablet.png",
-          "picture_2x_tablet": "/local/templates/main/img/key-indicators-family-mortgage-2x_tablet.png",
-          "picture_mobile": "/local/templates/main/img/key-indicators-family-mortgage_mobile.png",
-          "picture_2x_mobile": "/local/templates/main/img/key-indicators-family-mortgage-2x_mobile.png",
-          "linkBtn": "/catalog/semeynaya-ipoteka-/",
-          "creditorCnt": 90,
-          "loanCnt": 956.3,
-          "loanCntMeasure": "тыс.",
-          "loanAmt": 4.2,
-          "loanAmtMeasure": "трлн.",
-          "creditorTitle": "кредиторов",
-          "loanCntTitle": "участников",
-          "loanAmtTitle": "сумма выданных кредитов"
+          key: "sip",
+          name: "Семейная ипотека",
+          isActive: false,
+          color: "white",
+          picture: "/local/templates/main/img/key-indicators-family-mortgage.png",
+          picture_2x: "/local/templates/main/img/key-indicators-family-mortgage-2x.png",
+          picture_tablet: "/local/templates/main/img/key-indicators-family-mortgage_tablet.png",
+          picture_2x_tablet: "/local/templates/main/img/key-indicators-family-mortgage-2x_tablet.png",
+          picture_mobile: "/local/templates/main/img/key-indicators-family-mortgage_mobile.png",
+          picture_2x_mobile: "/local/templates/main/img/key-indicators-family-mortgage-2x_mobile.png",
+          linkBtn: "/catalog/semeynaya-ipoteka-/",
+          creditorCnt: 90,
+          loanCnt: 956.3,
+          loanCntMeasure: "тыс.",
+          loanAmt: 4.2,
+          loanAmtMeasure: "трлн.",
+          creditorTitle: "кредиторов",
+          loanCntTitle: "участников",
+          loanAmtTitle: "сумма выданных кредитов"
         },
         {
-          "key": "dfo",
-          "name": "Дальневосточная ипотека",
-          "isActive": false,
-          "color": "blue",
-          "picture": "/local/templates/main/img/key-indicators-mountain.png",
-          "picture_2x": "/local/templates/main/img/key-indicators-mountain-2x.png",
-          "picture_tablet": "/local/templates/main/img/key-indicators-mountain_tablet.png",
-          "picture_2x_tablet": "/local/templates/main/img/key-indicators-mountain-2x_tablet.png",
-          "picture_mobile": "/local/templates/main/img/key-indicators-mountain_mobile.png",
-          "picture_2x_mobile": "/local/templates/main/img/key-indicators-mountain-2x_mobile.png",
-          "linkBtn": "/catalog/dalnevostochnaya-ipoteka/",
-          "creditorCnt": 17,
-          "loanCnt": 98.7,
-          "loanCntMeasure": "тыс.",
-          "loanAmt": 440.4,
-          "loanAmtMeasure": "млрд.",
-          "creditorTitle": "кредиторов",
-          "loanCntTitle": "участников",
-          "loanAmtTitle": "сумма выданных кредитов"
+          key: "dfo",
+          name: "Дальневосточная ипотека",
+          isActive: false,
+          color: "blue",
+          picture: "/local/templates/main/img/key-indicators-mountain.png",
+          picture_2x: "/local/templates/main/img/key-indicators-mountain-2x.png",
+          picture_tablet: "/local/templates/main/img/key-indicators-mountain_tablet.png",
+          picture_2x_tablet: "/local/templates/main/img/key-indicators-mountain-2x_tablet.png",
+          picture_mobile: "/local/templates/main/img/key-indicators-mountain_mobile.png",
+          picture_2x_mobile: "/local/templates/main/img/key-indicators-mountain-2x_mobile.png",
+          linkBtn: "/catalog/dalnevostochnaya-ipoteka/",
+          creditorCnt: 17,
+          loanCnt: 98.7,
+          loanCntMeasure: "тыс.",
+          loanAmt: 440.4,
+          loanAmtMeasure: "млрд.",
+          creditorTitle: "кредиторов",
+          loanCntTitle: "участников",
+          loanAmtTitle: "сумма выданных кредитов"
         },
         {
-          "key": "itm",
-          "name": "IT ипотека",
-          "isActive": false,
-          "color": "purple",
-          "picture": "/local/templates/main/img/key-indicators-man.png",
-          "picture_2x": "/local/templates/main/img/key-indicators-man-2x.png",
-          "picture_tablet": "/local/templates/main/img/key-indicators-man_tablet.png",
-          "picture_2x_tablet": "/local/templates/main/img/key-indicators-man-2x_tablet.png",
-          "picture_mobile": "/local/templates/main/img/key-indicators-man_mobile.png",
-          "picture_2x_mobile": "/local/templates/main/img/key-indicators-man-2x_mobile.png",
-          "linkBtn": "/catalog/lgotnaya-ipoteka-dlya-it-spetsialistov/",
-          "creditorCnt": 40,
-          "loanCnt": 53.6,
-          "loanCntMeasure": "тыс.",
-          "loanAmt": 473,
-          "loanAmtMeasure": "млрд.",
-          "creditorTitle": "кредиторов",
-          "loanCntTitle": "участников",
-          "loanAmtTitle": "сумма выданных кредитов"
+          key: "itm",
+          name: "IT ипотека",
+          isActive: false,
+          color: "purple",
+          picture: "/local/templates/main/img/key-indicators-man.png",
+          picture_2x: "/local/templates/main/img/key-indicators-man-2x.png",
+          picture_tablet: "/local/templates/main/img/key-indicators-man_tablet.png",
+          picture_2x_tablet: "/local/templates/main/img/key-indicators-man-2x_tablet.png",
+          picture_mobile: "/local/templates/main/img/key-indicators-man_mobile.png",
+          picture_2x_mobile: "/local/templates/main/img/key-indicators-man-2x_mobile.png",
+          linkBtn: "/catalog/lgotnaya-ipoteka-dlya-it-spetsialistov/",
+          creditorCnt: 40,
+          loanCnt: 53.6,
+          loanCntMeasure: "тыс.",
+          loanAmt: 473,
+          loanAmtMeasure: "млрд.",
+          creditorTitle: "кредиторов",
+          loanCntTitle: "участников",
+          loanAmtTitle: "сумма выданных кредитов"
         }
       ],
-      time: "2024-03-24 12:45:27",
+      testTime: "2024-03-24 12:45:27",
 
-      programs:null,
-      lastUpdated:null,
-
+      programs: null,
+      lastUpdated: null
+    };
+  },
+  methods: {
+    format(val) {
+      if (val === null || val === undefined) return '';
+      return String(val).replace('.', ',');
     },
-    methods: {
-      axiosGetParametr(){
-        //закоментировать
-        // this.programs=this.data
-        // this.lastUpdated=this.time
 
-        //------------------------это для боя расскоментировать при необходимости
-        const config_header = {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-            Accept: 'application/json',
+    changeDate(param) {
+      if (!param) return '';
+      let text = param.split(" ")[0];
+      return text.substr(8, 2) + "." + text.substr(5, 2) + "." + text.substr(0, 4);
+    },
+
+    programSelect(el) {
+      const element = el.currentTarget;
+      const dataProgBtn = element.getAttribute('data-program');
+
+      // Обновляем классы у кнопок
+      const buttons = this.$refs.keyIndicatorsButtons.querySelectorAll('.js--program-item');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      element.classList.add('active');
+
+      // Обновляем классы у панелей
+      const panels = this.$refs.keyIndicatorsPanels.querySelectorAll('.key-indicators__panel');
+      panels.forEach(panel => {
+        panel.classList.remove('active');
+        const dataProgPan = panel.getAttribute('data-program');
+        if (dataProgPan === dataProgBtn) {
+          panel.classList.add('active');
+        }
+      });
+
+      // Обновляем isActive в данных
+      if (this.programs) {
+        this.programs.forEach(program => {
+          program.isActive = program.key === dataProgBtn;
+        });
+      }
+    },
+
+    axiosGetParametr() {
+      // ===== ДЛЯ ТЕСТИРОВАНИЯ (закомментировать, когда нужен API) =====
+      // this.programs = this.testData;
+      // this.lastUpdated = this.testTime;
+      // return Promise.resolve();
+
+      // ===== ДЛЯ БОЯ (раскомментировать при необходимости) =====
+      const config_header = {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+          Accept: 'application/json',
+        }
+      };
+
+      return axios.get('/api/local/ki2/', config_header)
+        .then((res) => {
+          // Для тестирования (закомментировать)
+          // this.programs = res.data.data;
+          // this.lastUpdated = res.data.lastUpdated;
+
+          // Для боя (раскомментировать)
+          this.programs = res.data.result.data;
+          this.lastUpdated = res.data.result.lastUpdated;
+
+          // Убедимся, что у первого элемента isActive = true
+          if (this.programs && this.programs.length > 0) {
+            this.programs[0].isActive = true;
           }
-        }
+        })
+        .catch((error) => {
+          console.log('Ошибка загрузки данных:', error);
+          // При ошибке используем тестовые данные
+          this.programs = this.testData;
+          this.lastUpdated = this.testTime;
+        });
+    }
+  },
+  mounted() {
+    this.axiosGetParametr();
+  }
+};
+</script>
 
-        // return axios.get(`http://localhost:3000/result2`,config_header)
-        return axios.get(`/api/local/ki2/`,config_header)
-          .then((res)=>{
-            //закомментировать
-            // this.programs=res.data.data
-            // this.lastUpdated=res.data.lastUpdated
+---------------------------------------------
 
-            //раскомментировать
-            this.programs=res.data.result.data
-            this.lastUpdated=res.data.result.lastUpdated
+<template>
+  <Suspense>
+    <template #default>
+      <KeyIndicators v-bind="$attrs" />
+    </template>
+    <template #fallback>
+      <div class="loading-spinner">Загрузка ключевых показателей...</div>
+    </template>
+  </Suspense>
+</template>
 
-          }).catch((error) => {
-            console.log(error);
-          });
+<script>
+import { defineAsyncComponent } from 'vue';
 
+export default {
+  name: 'KeyIndicatorsLazy',
+  inheritAttrs: false,
+  components: {
+    KeyIndicators: defineAsyncComponent(() => 
+      import('./KeyIndicators.vue')
+    )
+  }
+};
+</script>
 
-      },
-      changeDate(param){
-        let text = param.split(" ")[0]
-        text = text.substr(8, 2)+"."+text.substr(5, 2)+"."+text.substr(0, 4)
-        return text
-      },
-      programSelect(el){
-        const element = el.currentTarget
-        const data_prog_btn = element.getAttribute('data-program')
-        const array_btn = this.$refs.KeyIndicatorsButtons.querySelectorAll('.js--program-item');
-        for(let i=0;i<array_btn.length;i++){
-          array_btn[i].classList.remove('active')
-        }
-        element.classList.add('active')
+<style scoped>
+</style>
 
-        const array_program = this.$refs.KeyIndicatorsPanels.querySelectorAll('.key-indicators__panel');
-        for(let i=0;i<array_program.length;i++){
-          array_program[i].classList.remove('active')
-          let data_prog_pan =  array_program[i].getAttribute('data-program')
-          if (data_prog_pan===data_prog_btn){
-            array_program[i].classList.add('active')
-          }
-        }
+-------------------------------------------
+В index.js
+'key-indicators': () => import('./vue-apps/KeyIndicators/index.vue')
 
-
-
-
-      },
-    },
-    filters: {
-      format: (val) => `${val}`.replace('.', ','),
-    },
-    computed: {
-
-    },
-    watch: {
-
-    },
-    mounted() {
-      this.axiosGetParametr()
-    },
-
-
-  });
-}
+<div data-vue-app="key-indicators"></div>
