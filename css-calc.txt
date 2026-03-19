@@ -1,3 +1,74 @@
-Uncaught TypeError: Cannot read properties of undefined (reading 'ready')
-    at Proxy.initMap (HousingAppraisal.vue:818:20)
-    at HousingAppraisal.vue:1058:29
+initMap(dataPos) {
+  // Проверяем, загружены ли Яндекс.Карты
+  if (typeof window.ymaps === 'undefined' || !window.ymaps.ready) {
+    console.warn('⚠️ Яндекс.Карты не загружены, карта недоступна');
+    return;
+  }
+
+  const newAdress = this.getNewAdress.bind(this);
+  let pos = dataPos;
+  let zoomData = 16;
+  let showObj = true;
+  
+  if (!pos) {
+    pos = this.centerPos;
+    zoomData = 12;
+    showObj = false;
+  }
+  
+  const newBullet = this.bullet;
+  const socialE = this.social;
+  const ActiveFilter = this.idActiveFilter;
+  const self = this;
+
+  window.ymaps.ready(function () {
+    self.map = new window.ymaps.Map('map', {
+      center: pos,
+      controls: ['smallMapDefaultSet'],
+      zoom: zoomData
+    });
+
+    if (showObj) {
+      self.map.geoObjects.add(new window.ymaps.GeoObject({
+        geometry: { type: 'Point', coordinates: pos },
+        properties: { iconContent: newBullet.address }
+      }, {
+        preset: 'islands#blackStretchyIcon',
+        iconColor: 'green'
+      }));
+    }
+
+    self.map.container.fitToViewport();
+
+    self.map.geoObjects.events.add('click', function (e) {
+      if (socialE[ActiveFilter]) {
+        const objectsArr = socialE[ActiveFilter].items;
+        const thisPlacemark = e.get('target');
+        let ballonNumber = thisPlacemark.properties._data.balloonContentHeader;
+        if (!ballonNumber) {
+          ballonNumber = 0;
+        }
+        const bulletContent = objectsArr[ballonNumber];
+        self.bulletInfra = bulletContent;
+        self.setRoute(objectsArr[ballonNumber].pos);
+      }
+    });
+
+    self.map.events.add('click', function (e) {
+      const coords = e.get('coords');
+      self.map.geoObjects.removeAll();
+
+      window.ymaps.geocode(coords).then(function (res) {
+        const firstGeoObject = res.geoObjects.get(0);
+        self.map.geoObjects.add(new window.ymaps.GeoObject({
+          geometry: { type: 'Point', coordinates: coords },
+          properties: { iconContent: firstGeoObject.getAddressLine() }
+        }, {
+          preset: 'islands#blackStretchyIcon',
+          iconColor: 'green'
+        }));
+        newAdress(firstGeoObject.getAddressLine());
+      });
+    });
+  });
+}
