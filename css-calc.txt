@@ -1,330 +1,4034 @@
-<template>
-  <div class="key-indicators__container" id="key-indicators" v-cloak>
-    <div v-show="programs && programs.length">
-      <div class="row-col-space-between al-center">
-        <h2 class="h2_title">Ключевые показатели по программам с господдержкой</h2>
-      </div>
+<div id="v-stories" v-cloak>
+  <v-stories></v-stories>
+</div>
 
-      <!-- Кнопки выбора программы -->
-      <div class="round-billet" ref="keyIndicatorsButtons">
-        <div
-          class="round-billet__item-type-2 js--program-item"
-          v-for="(item, index) in programs"
-          :key="index"
-          :class="{ active: item.isActive }"
-          :data-program="item.key"
-          @click="programSelect"
-        >
-          {{ item.name }}
-        </div>
-      </div>
+Stories.vue - главный компонент
+<template lang="pug">
+  div.slider-stories
+    template
+      slider-main-page-stories(
+        v-on:eventopenModal="openModal"
+      )
+    template
+      stories-modal(
+        v-if="massive_carousels_slider.status==true||massive_carousels_slider.status=='open'"
+        v-on:eventcloseModal="closeModal"
+      )
 
-      <!-- Панели с данными -->
-      <div class="key-indicators" ref="keyIndicatorsPanels">
-        <div
-          class="key-indicators__panel"
-          v-for="(item, index) in programs"
-          :key="index"
-          :class="{ active: item.isActive }"
-          :data-program="item.key"
-        >
-          <div class="key-indicators__wrapper">
-            <div class="key-indicators__list">
-              <div class="key-indicators__calculations">
-                <div class="key-indicators__list-item">
-                  <div class="key-indicators__wr-value">
-                    <span class="key-indicators__list-value">{{ item.creditorCnt }}</span>
-                    <span class="key-indicators__list-title">{{ item.creditorTitle }}</span>
-                  </div>
-                </div>
-                <div class="key-indicators__list-item">
-                  <div class="key-indicators__wr-value">
-                    <span class="key-indicators__list-value">{{ format(item.loanCnt) }}</span>
-                    <span class="key-indicators__list-title">
-                      {{ item.loanCntMeasure }} {{ item.loanCntTitle }}
-                    </span>
-                  </div>
-                </div>
-                <div class="key-indicators__list-item">
-                  <div class="key-indicators__wr-value">
-                    <span class="key-indicators__list-value">{{ format(item.loanAmt) }}</span>
-                    <span class="key-indicators__list-title">
-                      {{ item.loanAmtTitle }}, {{ item.loanAmtMeasure }} ₽
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 </template>
 
+SliderMainPageStories.vue
+
+<template lang="pug">
+  .stories__container-page-slider
+    div.stories__main-page-slider
+      .stories__swiper.js-stories-swiper
+        .stories__slider-item(
+          v-for="(slide,index) in massive_slider_stories" :key="index"
+          :data-id="slide.id"
+          :data-index="index"
+          :data-el-type="slide.element_type"
+          @click="openModal"
+          )
+          .stories__slider-container
+            .stories__slider-wr-img.js--slider-wr-img
+              .stories__slider-img
+                img(
+                  v-bind:src="slide.image"
+                )
+            p.stories__slider-title(
+              v-html="slide.title"
+            )
+</template>
 <script>
+import Storage from '../development-tools/state.vue';
+import eventBus from '../development-tools/eventBus.vue';
 import axios from 'axios';
+import Cookies from 'js-cookie'
+let mySwiper;
 
 export default {
-  name: 'KeyIndicators',
-  props: {
-    instanceId: {
-      type: String,
-      required: true
+  name: 'slider-main-page-stories',
+  data(){
+    return {
+
     }
   },
-  data() {
-    return {
-      // Тестовые данные (закомментированы для разработки)
-      testData: [
-        {
-          key: "total",
-          name: "Все программы",
-          isActive: true,
-          color: "blue",
-          picture: "/local/templates/main/img/key-indicators-family.png",
-          picture_2x: "/local/templates/main/img/key-indicators-family-2x.png",
-          picture_tablet: "/local/templates/main/img/key-indicators-family_tablet.png",
-          picture_2x_tablet: "/local/templates/main/img/key-indicators-family-2x_tablet.png",
-          picture_mobile: "/local/templates/main/img/key-indicators-family_mobile.png",
-          picture_2x_mobile: "/local/templates/main/img/key-indicators-family-2x_mobile.png",
-          linkBtn: "/gosudarstvennye-programmy/",
-          creditorCnt: 402,
-          loanCnt: 3.2,
-          loanCntMeasure: "млн.",
-          loanAmt: 9.9,
-          loanAmtMeasure: "трлн.",
-          creditorTitle: "кредиторов",
-          loanCntTitle: "участников",
-          loanAmtTitle: "сумма выданных кредитов и выплат"
-        },
-        {
-          key: "mgps",
-          name: "Помощь многодетным семьям",
-          isActive: false,
-          color: "purple",
-          picture: "/local/templates/main/img/key-indicators-toys.png",
-          picture_2x: "/local/templates/main/img/key-indicators-toys-2x.png",
-          picture_tablet: "/local/templates/main/img/key-indicators-toys_tablet.png",
-          picture_2x_tablet: "/local/templates/main/img/key-indicators-toys-2x_tablet.png",
-          picture_mobile: "/local/templates/main/img/key-indicators-toys_mobile.png",
-          picture_2x_mobile: "/local/templates/main/img/key-indicators-toys-2x_mobile.png",
-          linkBtn: "/catalog/gosudarstvennaya-programma-podderzhki-semey-s-detmi/",
-          creditorCnt: 608,
-          loanCnt: 697.6,
-          loanCntMeasure: "тыс.",
-          loanAmt: 311.1,
-          loanAmtMeasure: "млрд.",
-          creditorTitle: "кредиторов",
-          loanCntTitle: "участников",
-          loanAmtTitle: "сумма выплат"
-        },
-        {
-          key: "psm",
-          name: "Льготная ипотека",
-          isActive: false,
-          color: "orange",
-          picture: "/local/templates/main/img/key-indicators-building.png",
-          picture_2x: "/local/templates/main/img/key-indicators-building-2x.png",
-          picture_tablet: "/local/templates/main/img/key-indicators-building_tablet.png",
-          picture_2x_tablet: "/local/templates/main/img/key-indicators-building-2x_tablet.png",
-          picture_mobile: "/local/templates/main/img/key-indicators-building_mobile.png",
-          picture_2x_mobile: "/local/templates/main/img/key-indicators-building-2x_mobile.png",
-          linkBtn: "/catalog/lgotnaya-ipoteka/",
-          creditorCnt: 73,
-          loanCnt: 1.4,
-          loanCntMeasure: "млн.",
-          loanAmt: 5.5,
-          loanAmtMeasure: "трлн.",
-          creditorTitle: "кредитора",
-          loanCntTitle: "участников",
-          loanAmtTitle: "сумма выданных кредитов"
-        },
-        {
-          key: "sip",
-          name: "Семейная ипотека",
-          isActive: false,
-          color: "white",
-          picture: "/local/templates/main/img/key-indicators-family-mortgage.png",
-          picture_2x: "/local/templates/main/img/key-indicators-family-mortgage-2x.png",
-          picture_tablet: "/local/templates/main/img/key-indicators-family-mortgage_tablet.png",
-          picture_2x_tablet: "/local/templates/main/img/key-indicators-family-mortgage-2x_tablet.png",
-          picture_mobile: "/local/templates/main/img/key-indicators-family-mortgage_mobile.png",
-          picture_2x_mobile: "/local/templates/main/img/key-indicators-family-mortgage-2x_mobile.png",
-          linkBtn: "/catalog/semeynaya-ipoteka-/",
-          creditorCnt: 90,
-          loanCnt: 956.3,
-          loanCntMeasure: "тыс.",
-          loanAmt: 4.2,
-          loanAmtMeasure: "трлн.",
-          creditorTitle: "кредиторов",
-          loanCntTitle: "участников",
-          loanAmtTitle: "сумма выданных кредитов"
-        },
-        {
-          key: "dfo",
-          name: "Дальневосточная ипотека",
-          isActive: false,
-          color: "blue",
-          picture: "/local/templates/main/img/key-indicators-mountain.png",
-          picture_2x: "/local/templates/main/img/key-indicators-mountain-2x.png",
-          picture_tablet: "/local/templates/main/img/key-indicators-mountain_tablet.png",
-          picture_2x_tablet: "/local/templates/main/img/key-indicators-mountain-2x_tablet.png",
-          picture_mobile: "/local/templates/main/img/key-indicators-mountain_mobile.png",
-          picture_2x_mobile: "/local/templates/main/img/key-indicators-mountain-2x_mobile.png",
-          linkBtn: "/catalog/dalnevostochnaya-ipoteka/",
-          creditorCnt: 17,
-          loanCnt: 98.7,
-          loanCntMeasure: "тыс.",
-          loanAmt: 440.4,
-          loanAmtMeasure: "млрд.",
-          creditorTitle: "кредиторов",
-          loanCntTitle: "участников",
-          loanAmtTitle: "сумма выданных кредитов"
-        },
-        {
-          key: "itm",
-          name: "IT ипотека",
-          isActive: false,
-          color: "purple",
-          picture: "/local/templates/main/img/key-indicators-man.png",
-          picture_2x: "/local/templates/main/img/key-indicators-man-2x.png",
-          picture_tablet: "/local/templates/main/img/key-indicators-man_tablet.png",
-          picture_2x_tablet: "/local/templates/main/img/key-indicators-man-2x_tablet.png",
-          picture_mobile: "/local/templates/main/img/key-indicators-man_mobile.png",
-          picture_2x_mobile: "/local/templates/main/img/key-indicators-man-2x_mobile.png",
-          linkBtn: "/catalog/lgotnaya-ipoteka-dlya-it-spetsialistov/",
-          creditorCnt: 40,
-          loanCnt: 53.6,
-          loanCntMeasure: "тыс.",
-          loanAmt: 473,
-          loanAmtMeasure: "млрд.",
-          creditorTitle: "кредиторов",
-          loanCntTitle: "участников",
-          loanAmtTitle: "сумма выданных кредитов"
-        }
-      ],
-      testTime: "2024-03-24 12:45:27",
+  methods:{
 
-      programs: null,
-      lastUpdated: null
-    };
-  },
-  methods: {
-    format(val) {
-      if (val === null || val === undefined) return '';
-      return String(val).replace('.', ',');
+
+    storyCounter(param, elemType = '1'){
+      axios({
+        method:'post',
+        url:`/api/local/views/?id=${param}&element_type=${elemType}`,
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+      })
+        // Если запрос успешен
+        .then((res)=> {
+
+        })
+        // Если запрос с ошибкой
+        .catch(function (error) {
+          console.log(error);
+        });
     },
 
-    changeDate(param) {
-      if (!param) return '';
-      let text = param.split(" ")[0];
-      return text.substr(8, 2) + "." + text.substr(5, 2) + "." + text.substr(0, 4);
+
+
+ 
+    formArraySlides(){
+      const parent = document.querySelector('.js-main-page-stories-slider')
+      if(parent){
+        const array_sliders = parent.querySelectorAll('.stories__slider-item')
+      }
     },
+  //  Вызов модального окна со сторис
+    openModal(el){
+      const element = el.currentTarget
+      // const parent = element.closest('.swiper-wrapper')
+      const parent = element.closest('.js-stories-swiper')
+      // const container = element.closest('.block-stories')
+      // container.setAttribute('style','z-index:25;')
+      const data = element.getAttribute('data-id')
+      const elemType = element.getAttribute('data-el-type')
 
-    programSelect(el) {
-      const element = el.currentTarget;
-      const dataProgBtn = element.getAttribute('data-program');
+      const data_index = element.getAttribute('data-index')
+      const massive_element = parent.querySelectorAll('.stories__slider-item')
+      Storage.dispatch('arraySorting',[data,data_index])
+      this.$emit('eventopenModal')
+      this.storyCounter(data, elemType)
 
-      // Обновляем классы у кнопок
-      const buttons = this.$refs.keyIndicatorsButtons.querySelectorAll('.js--program-item');
-      buttons.forEach(btn => btn.classList.remove('active'));
-      element.classList.add('active');
+      const title = element.querySelector('.stories__slider-title').textContent
+      const id = element.getAttribute('data-id')
 
-      // Обновляем классы у панелей
-      const panels = this.$refs.keyIndicatorsPanels.querySelectorAll('.key-indicators__panel');
-      panels.forEach(panel => {
-        panel.classList.remove('active');
-        const dataProgPan = panel.getAttribute('data-program');
-        if (dataProgPan === dataProgBtn) {
-          panel.classList.add('active');
-        }
+      if (typeof ym === 'function'){
+        ym(47257560, 'reachGoal', 'main-click-stories',{Stories:{Click: { title:title,id: id}}})
+        console.log('ya - reachGoal: referal_link_copied',{Stories:{Click: { title:title,id: id}}})
+      }
+
+    },
+    viewedHistory() {
+      if(Cookies.get('array_viewed_stories')==null||Cookies.get('array_viewed_stories')==undefined){
+        let array_selected_stories = []
+        Cookies.set('array_viewed_stories', JSON.stringify(array_selected_stories));
+      }
+      const array_slider_item = document.querySelectorAll('.stories__slider-item')
+      //
+      let str_local_storage = Cookies.get('array_viewed_stories');
+      str_local_storage = JSON.parse(str_local_storage);
+      str_local_storage = str_local_storage.map(function (x) {
+        return parseInt(x, 10);
       });
 
-      // Обновляем isActive в данных
-      if (this.programs) {
-        this.programs.forEach(program => {
-          program.isActive = program.key === dataProgBtn;
+      for(let i = 0;i<array_slider_item.length;i++){
+        let data = array_slider_item[i].getAttribute('data-id')
+        data=parseInt(data)
+        if (str_local_storage.indexOf(data) != -1){
+          array_slider_item[i].classList.add('unactive')
+        }
+      }
+    }
+  },
+  mounted(){
+    // this.initSliderStoriesMainPage()
+    // Cookies.remove('array_viewed_stories') //закоментировать
+
+  },
+  updated(){
+    this.viewedHistory() //расскоментировать
+  },
+  computed:{
+    massive_slider_stories(){
+      return Storage.getters.MASSIVEMAINSLIDERSTORIES
+    },
+  },
+  created(){
+
+  },
+  watch:{
+  },
+  components:{
+
+  }
+};
+</script>
+<style scoped>
+</style>
+
+---------------------------------------------------------------------------------------------
+
+ModalWindow.vue
+<template lang="pug" >
+  div.stories__modal
+    .stories__modal-close-wr
+    .stories__modal-close
+        svg(width='18', height='18', viewbox='0 0 18 18', fill='none', xmlns='http://www.w3.org/2000/svg')
+          path(d='M1.22176 16.7782C0.831231 16.3876 0.831231 15.7545 1.22176 15.3639L15.3639 1.2218C15.7544 0.831278 16.3876 0.831278 16.7781 1.2218V1.2218C17.1686 1.61233 17.1686 2.24549 16.7781 2.63602L2.63597 16.7782C2.24545 17.1687 1.61228 17.1687 1.22176 16.7782V16.7782Z', fill='#1C1B28')
+          path(d='M16.7778 16.7785C16.3873 17.169 15.7541 17.169 15.3636 16.7785L1.22144 2.63636C0.830914 2.24583 0.830914 1.61267 1.22144 1.22214V1.22214C1.61196 0.83162 2.24513 0.83162 2.63565 1.22214L16.7778 15.3643C17.1683 15.7548 17.1683 16.388 16.7778 16.7785V16.7785Z', fill='#1C1B28')
+    .stories__modal-wrapper
+      .stories__wr-carousel
+        .carousel
+          .carousel__navigation
+            .carousel__navigation--item.carousel__navigation--next
+              svg(width='12', height='10', viewbox='0 0 12 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                path(fill-rule='evenodd', clip-rule='evenodd', d='M4.63956 0.973094C4.89991 0.712745 5.32202 0.712745 5.58237 0.973094C5.84272 1.23344 5.84272 1.65555 5.58237 1.9159L3.16489 4.33338H10.4443C10.8125 4.33338 11.111 4.63186 11.111 5.00005C11.111 5.36824 10.8125 5.66672 10.4443 5.66672H3.16488L5.58237 8.08421C5.84272 8.34455 5.84272 8.76667 5.58237 9.02701C5.32202 9.28736 4.89991 9.28736 4.63956 9.02701L1.084 5.47146C0.953827 5.34128 0.888741 5.17067 0.888741 5.00005C0.888741 4.90894 0.907018 4.8221 0.940106 4.74299C0.971109 4.6687 1.01615 4.59889 1.07522 4.5376C1.07847 4.53423 1.08175 4.53089 1.08506 4.52759L4.63956 0.973094Z', fill='#1C1B28')
+
+            .carousel__navigation--item.carousel__navigation--prev(v-show="!last_slide")
+              svg(width='12', height='10', viewbox='0 0 12 10', fill='none', xmlns='http://www.w3.org/2000/svg')
+                path(fill-rule='evenodd', clip-rule='evenodd', d='M7.3604 0.973094C7.10005 0.712745 6.67794 0.712745 6.41759 0.973094C6.15724 1.23344 6.15724 1.65555 6.41759 1.9159L8.83507 4.33338H1.55566C1.18747 4.33338 0.888992 4.63186 0.888992 5.00005C0.888992 5.36824 1.18747 5.66672 1.55566 5.66672H8.83507L6.41759 8.08421C6.15724 8.34455 6.15724 8.76667 6.41759 9.02701C6.67794 9.28736 7.10005 9.28736 7.3604 9.02701L10.916 5.47146C11.0461 5.34128 11.1112 5.17067 11.1112 5.00005C11.1112 4.90894 11.0929 4.8221 11.0598 4.74299C11.0288 4.6687 10.9838 4.59889 10.9247 4.5376C10.9215 4.53423 10.9182 4.53089 10.9149 4.52759L7.3604 0.973094Z', fill='#1C1B28')
+            .carousel__navigation--item.carousel__navigation--again(
+              v-show="last_slide"
+              @click="carouselAgain"
+              )
+              svg(width='18', height='18', viewbox='0 0 18 18', fill='none', xmlns='http://www.w3.org/2000/svg')
+                path(d='M12.3867 7.01123H15.7617V3.63623', stroke='#1C1B28', stroke-width='1.2', stroke-linecap='round', stroke-linejoin='round')
+                path(d='M4.62476 4.62478C5.19932 4.05021 5.88142 3.59445 6.63213 3.2835C7.38283 2.97254 8.18743 2.8125 8.99998 2.8125C9.81253 2.8125 10.6171 2.97254 11.3678 3.2835C12.1185 3.59445 12.8006 4.05021 13.3752 4.62478L15.7617 7.01126', stroke='#1C1B28', stroke-width='1.2', stroke-linecap='round', stroke-linejoin='round')
+                path(d='M5.61328 10.9888H2.23828V14.3638', stroke='#1C1B28', stroke-width='1.2', stroke-linecap='round', stroke-linejoin='round')
+                path(d='M13.3752 13.3753C12.8006 13.9498 12.1185 14.4056 11.3678 14.7165C10.6171 15.0275 9.81254 15.1875 8.99999 15.1875C8.18743 15.1875 7.38284 15.0275 6.63214 14.7165C5.88143 14.4056 5.19933 13.9498 4.62477 13.3753L2.23828 10.9888', stroke='#1C1B28', stroke-width='1.2', stroke-linecap='round', stroke-linejoin='round')
+
+
+          .carousel__navigation-hide
+            .carousel__navigation--next-hide(@click="carouselPrev")
+            .carousel__navigation--prev-hide(@click="carouselNext")
+          ul.carousel__list
+            li.carousel__item.js--carousel-item(
+              v-for="(slide,index) in massive_carousels_slider.massive" :key="index"
+              v-bind:data-id='slide.story_id'
+              v-bind:data-el-type='slide.element_type'
+              v-bind:data-url='slide.share_url'
+              v-bind:data-index='index'
+
+            )
+              .carousel__inner-slider-paggination
+                .carousel__inner-slider-paggination-wr(
+                  v-for="(inner_slide,index) in slide.slides" :key="index"
+                )
+                  .carousel__inner-slider-paggination-item(
+
+                    v-bind:for-id-slide="index"
+                  )
+
+              .carousel__inner-slider-container
+                .carousel__inner-slider-item-plug(
+                  @click="moveToIt"
+                )
+                .carousel__inner-slider-wr-arrow
+                  .carousel__inner-slider-arrow-left.carousel__inner-slider-arrow
+                  .carousel__inner-slider-arrow-right.carousel__inner-slider-arrow
+
+                .carousel__inner-slider-wr-arrow-hide
+                  .carousel__inner-slider-arrow-left-hide.carousel__inner-slider-arrow-hide(
+                    @click="innerSliderPrev"
+                  )
+                  .carousel__inner-slider-arrow-right-hide.carousel__inner-slider-arrow-hide(
+                    @click="innerSliderNext"
+                  )
+                .carousel__inner-slider-item(
+                  v-for="(inner_slide,index) in slide.slides" :key="index"
+                  v-bind:for-id-slide="index"
+                  v-bind:for-id-fragment="inner_slide.slide_id"
+                  v-bind:for-id-location="[inner_slide.title.vertical_align===0?'location-up':inner_slide.title.vertical_align===1?'location-down':'']"
+                  v-bind:class="[(index===0&&massive_carousels_slider.status==true) ?'active':(massive_carousels_slider.status=='open'&&inner_slide.slide_id==massive_carousels_slider.id_slide&&slide.story_id==massive_carousels_slider.id_stories)?'active':(massive_carousels_slider.status=='open'&&slide.story_id!=massive_carousels_slider.id_stories&&index==0)?'active':'unactive']"
+                  v-bind:for-viewed="[index===0 ?'viewed':'unviewed']"
+                )
+                  .carousel__inner-slider-empty-area
+                  .carousel__inner-slider-empty-area-mobile
+                  .carousel__inner-slider-main-img(
+                    v-bind:class="[inner_slide.image.type===0?'ground':inner_slide.image.type===1?'up':inner_slide.image.type===2?'down':'']"
+                    v-if="inner_slide.image.url!=null"
+                  )
+                    img(
+                      v-bind:src="inner_slide.image.url"
+                    )
+                  .carousel__inner-slider-wr-des(
+                    v-bind:for-text-layout="inner_slide.title.vertical_align===0?'up':inner_slide.title.vertical_align===1?'down':''"
+                    v-bind:class="inner_slide.text_color==='DARK'?'color-dark':inner_slide.text_color==='LIGHT'?'color-light':''"
+                  )
+                    h2.carousel__inner-slider-title(
+                      v-if="inner_slide.title.text!=null"
+                      v-bind:class="[inner_slide.title.type===0?'small':inner_slide.title.type===1?'big':'']"
+                      v-html="inner_slide.title.text"
+                    )
+                    p.carousel__inner-slider-des(
+                      v-if="inner_slide.description.text!=null"
+                      v-html="inner_slide.description.text"
+                    )
+
+                  .carousel__inner-slider-video(
+                    v-if="inner_slide.video.url!=null"
+                    v-bind:for-video="inner_slide.title.vertical_align===0?'down':inner_slide.title.vertical_align===1?'up':''"
+                  )
+                    video(loop="loop" preload="none")(
+                      v-bind:poster="inner_slide.video.preimg"
+                    )
+                      source(type="video/mp4")(
+                        v-bind:src="inner_slide.video.url"
+                      )
+                  .carousel__inner-slider-btn(
+                    v-if="inner_slide.buttons.length>0"
+                    @click="storiesBtnClick"
+                  )
+                    .carousel__inner-slider-btn-type(
+                      v-for="(btn,index) in inner_slide.buttons" :key="index"
+                    )
+                      a.js--inner-slider-link(
+                        v-if="btn.type==0"
+                        v-bind:href="btn.url"
+                      ) {{btn.text}}
+                      button(
+                        v-else-if="btn.type==1"
+                        v-bind:for-id="btn.url"
+                        @click="pollsResult"
+                      ) {{btn.text}}
+                  .carousel__share(
+                    v-bind:id="[`share-${slide.story_id}-${inner_slide.slide_id}`]"
+                    v-bind:data-url='inner_slide.share_url'
+                  )
+
+
+
+
+</template>
+<script>
+import Storage from '../development-tools/state.vue';
+import eventBus from '../development-tools/eventBus.vue';
+import axios from 'axios';
+import Cookies from 'js-cookie'
+
+export default {
+  name: 'stories-modal',
+  data(){
+    return {
+      array_inner_slider:[],
+      step:0,
+      step_time:0,
+      timer:null,
+      open_modal:false,
+
+      array_carousel_item:[],
+      modal_show:false,
+
+      last_slide:false
+    }
+  },
+  methods:{
+
+    storyCounter(param){
+
+      const parent = param.closest('.carousel')
+      const next_slide_id = parent.querySelector('.carousel__item.active').getAttribute('data-id')
+      const next_slide_type = parent.querySelector('.carousel__item.active').getAttribute('data-el-type') || '1'
+      axios({
+        method:'post',
+        url:`/api/local/views/?id=${next_slide_id}&element_type=${next_slide_type}`,
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+      })
+        // Если запрос успешен
+        .then((res)=> {
+
+        })
+        // Если запрос с ошибкой
+        .catch(function (error) {
+          console.log(error);
+        });
+    },
+    fragmentCounter(param){
+
+      const next_slide_id = param.querySelector('.carousel__inner-slider-item.active').getAttribute('for-id-fragment')
+      axios({
+        method:'post',
+        url:`/api/local/views/?id=${next_slide_id}&element_type=1`,
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+      })
+        // Если запрос успешен
+        .then((res)=> {
+
+        })
+        // Если запрос с ошибкой
+        .catch(function (error) {
+          console.log(error);
+        });
+    },
+
+
+    closeModal(){
+      this.$emit('eventcloseModal')
+    },
+    removeCursor(el){
+      const element = el.currentTarget
+
+      const parent = element.closest('.carousel__item')
+      if(parent.classList.contains('active')){
+        const parent_pug = parent.querySelector('.carousel__inner-slider-paggination')
+        const wrapper = parent.querySelector('.carousel__inner-slider-container')
+        const elem_pug = parent_pug.querySelector('.carousel__inner-slider-paggination-item.temporary-active')
+        elem_pug.classList.add('active')
+        elem_pug.classList.remove('temporary-active')
+        wrapper.querySelector('.carousel__inner-slider-arrow-right').click()
+      }
+
+    },
+    moveToIt(el){
+      const element = el.currentTarget
+      const parent = element.closest('.carousel__item')
+      const container = element.closest('.carousel')
+      let style = parent.style.transform;
+      let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+      const carousel_btn_prev = container.querySelector('.carousel__navigation--next') //стрелка в лево
+
+      const promice = new Promise((resolve,reject)=> {
+        // container.classList.add('local-storage-move')
+        // parent.classList.add('local-storage-active')
+        resolve()
+      }).then(()=>{
+        return new Promise((resolve,reject)=> {
+
+          if(transform===40){
+            document.querySelector('.carousel__navigation--prev').click()
+          }
+          if(transform===80){
+            document.querySelector('.carousel__navigation--prev').click()
+            setTimeout(()=>{
+              document.querySelector('.carousel__navigation--prev').click()
+            },500)
+          }
+          if(transform===-40){
+            document.querySelector('.carousel__navigation--next').click()
+          }
+          if(transform===-80){
+            document.querySelector('.carousel__navigation--next').click()
+            setTimeout(()=>{
+              document.querySelector('.carousel__navigation--next').click()
+            },500)
+          }
+          resolve()
+        })
+      }).then(()=>{
+        return new Promise((resolve,reject)=> {
+          setTimeout(()=>{
+            container.classList.remove('local-storage-move')
+            parent.classList.remove('local-storage-active')
+            resolve()
+          },3000)
+
+        })
+      })
+
+    },
+    carouselAgain(el){
+      const element = el.currentTarget
+      const container = element.closest('.carousel')
+      const array_carousel_item = container.querySelectorAll('.carousel__item')
+      const carousel_btn_prev = container.querySelector('.carousel__navigation--next') //стрелка в лево
+
+
+      const promice = new Promise((resolve,reject)=> {
+        container.classList.add('local-storage')
+        resolve()
+      }).then(()=>{
+        return new Promise(function (resolve,reject) {
+          for (let i = 0;i<array_carousel_item.length-1;i++){
+            setTimeout( function timer(){
+              carousel_btn_prev.click()
+            }, i*200 );
+
+          }
+          resolve()
+        })
+      })
+
+    },
+    //  Карусель построение
+    sliderCarousel(){
+      let id_stories = this.massive_carousels_slider.id_stories
+      let id_index = this.massive_carousels_slider.id_index
+
+      id_stories=parseInt(id_stories)
+      id_index=parseInt(id_index)
+      const carousel = document.querySelector('.carousel')
+      if(carousel){
+        this.array_carousel_item = carousel.querySelectorAll('.carousel__item');
+      }
+      const carouselItems = this.array_carousel_item
+      const array_carousel_item = this.array_carousel_item
+      let array_lenth = array_carousel_item.length
+      let array_i = []
+      let array_m = []
+      const btn_prev = document.querySelector('.carousel__navigation--next')
+      const btn_next = document.querySelector('.carousel__navigation--prev')
+      // btn_next.click()
+      setTimeout(()=>{
+        btn_next.click()
+        btn_prev.click()
+      },100)
+
+
+
+      for (let i = 0; i < carouselItems.length; i++) {
+        // carouselItems[i].setAttribute('style', `transform: translateX(${40 * i}%) scale(${(1 - i / 10)});z-index:${array_carousel_item.length - i}`);
+        if(parseInt(carouselItems[i].getAttribute('data-index'))<id_index){
+          array_i.push(carouselItems[i])
+        }
+        if(parseInt(carouselItems[i].getAttribute('data-index'))==id_index){
+          array_carousel_item[i].setAttribute('style', `transform: translateX(0) scale(1);z-index:${array_carousel_item.length - i}`);
+          array_carousel_item[i].classList.add('active')
+          this.timerInnerSlider(array_carousel_item[i])
+          this.paginationSlider(array_carousel_item[i],'active')
+          this.fragmentCounter(array_carousel_item[i])
+        }
+        if(parseInt(carouselItems[i].getAttribute('data-index'))>id_index){
+          array_m.push(carouselItems[i])
+        }
+      }
+
+      array_i = array_i.reverse()
+
+      if(array_i.length===0 && btn_prev){
+        btn_prev.classList.add('unactive')
+      }
+      if(array_m.length===0 && btn_prev){
+        // btn_next.classList.add('unactive')
+        this.last_slide=true
+      }
+
+      for (let t = 0; t < array_i.length; t++) {
+        array_i[t].setAttribute('style', `transform: translateX(${40 * (-(t+1))}%) scale(${(1 - (t+1) / 10)});z-index:${-t}`);
+        if (t>1){
+          array_i[t].classList.add('opacity')
+        }
+      }
+      for (let h = 0; h < array_m.length; h++) {
+        array_m[h].setAttribute('style', `transform: translateX(${40 * (h+1)}%) scale(${(1 - (h+1) / 10)});z-index:${array_m.length - h}`);
+        if (h>1){
+          array_m[h].classList.add('opacity')
+        }
+      }
+      for (let item of carouselItems){
+        let style = item.style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        if(transform<80&&transform>-80){
+          item.classList.add('shadow')
+        }
+      }
+
+    },
+
+    paginationSlider(el,class_el){
+      const active_stories = el
+      const array_slider = active_stories.querySelectorAll('.carousel__inner-slider-item')
+      const array_pagination = active_stories.querySelectorAll('.carousel__inner-slider-paggination-item')
+      let ind = 0;
+      for (let i=0; i<array_slider.length;i++){
+        if(array_slider[i].classList.contains('active')){
+          ind=i
+        }
+      }
+      for (let j=0; j<ind+1;j++){
+        if(j!=ind){
+          array_pagination[j].classList.remove('active')
+          array_pagination[j].classList.add('active-once')
+        }
+        else if(j==ind){
+          array_pagination[j].classList.add('active')
+        }
+      }
+    },
+    paginationSliderDelete(el,class_el){
+      const active_stories = el
+      const array_slider = active_stories.querySelectorAll('.carousel__inner-slider-item')
+      const array_pagination = active_stories.querySelectorAll('.carousel__inner-slider-paggination-item')
+      let ind = 0;
+      for (let i=0; i<array_slider.length;i++){
+        if(array_slider[i].classList.contains('active')){
+          ind=i
+        }
+      }
+      array_pagination[ind+1].classList.remove('active')
+      array_pagination[ind+1].classList.remove('active-once')
+
+      array_pagination[ind].classList.remove('active')
+      array_pagination[ind].classList.remove('active-once')
+      array_pagination[ind].classList.add('active')
+    },
+
+
+    paginationSliderDeleteAll(el,class_el){
+      const array_pagination = el.querySelectorAll('.carousel__inner-slider-paggination-item')
+      for (let i=0; i<array_pagination.length;i++){
+        array_pagination[i].classList.remove('active')
+        array_pagination[i].classList.remove('active-once')
+      }
+    },
+    //  Карусель перелистывание
+    carouselNext(el){
+      const element = el.currentTarget
+      const parent = element.closest('.carousel')
+      const array_carousel_item = parent.querySelectorAll('.carousel__item');
+      const array_transform_translate=[]
+      const btn_prev = document.querySelector('.carousel__navigation--next')
+      const btn_next = document.querySelector('.carousel__navigation--prev')
+
+      for (let t = 0; t < this.array_carousel_item.length; t++) {
+        let style = this.array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+      for (let i = 0; i < array_transform_translate.length; i++) {
+        let style_all = this.array_carousel_item[i].style.transform;
+        let scale = parseFloat(style_all.split(' ')[1].replace(/[^\d.\-]/g, ''));
+        this.array_carousel_item[i].classList.remove('opacity');
+        this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(0.6);z-index:1;opacity:0;`);
+        if(array_transform_translate[i]===0){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(${scale - 0.1});z-index:9;opacity:1`);
+          this.array_carousel_item[i].classList.remove('active')
+          const array_slide = this.array_carousel_item[i].querySelectorAll(('.carousel__inner-slider-item'));
+          for (let i = 0; i < array_slide.length; i++) {
+            if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+              array_slide[i].querySelector('.carousel__inner-slider-video video').pause();
+            }
+          }
+        }
+        if(array_transform_translate[i]===0){
+          this.array_carousel_item[i].classList.add('shadow')
+        }
+        if(array_transform_translate[i]===-40){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(${0.8});z-index:8;opacity:1`);
+          this.array_carousel_item[i].classList.remove('shadow')
+        }
+        if(array_transform_translate[i]===-80){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(${scale - 0.3});z-index:7;opacity:0;`);
+        }
+        if(array_transform_translate[i]===-120){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(${scale - 0.3});z-index:7;opacity:0;`);
+        }
+        if(array_transform_translate[i]===40){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(1);z-index:10;opacity:1;`);
+          this.array_carousel_item[i].classList.add('active')
+          this.array_carousel_item[i].classList.add('shadow')
+          // this.timerInnerSlider(this.array_carousel_item[i])
+          this.paginationSlider(this.array_carousel_item[i],'active')
+          const array_slide = this.array_carousel_item[i].querySelectorAll(('.carousel__inner-slider-item'));
+          for (let i = 0; i < array_slide.length; i++) {
+            if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+              array_slide[i].querySelector('.carousel__inner-slider-video video').play();
+            }
+          }
+          this.fragmentCounter(this.array_carousel_item[i])
+        }
+        if(array_transform_translate[i]===80){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(0.9);z-index:7;opacity:1;`);
+          this.array_carousel_item[i].classList.add('shadow')
+        }
+        if(array_transform_translate[i]===120){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(${0.8});z-index:6;opacity:1;`);
+          this.array_carousel_item[i].classList.remove('shadow')
+        }
+        if(array_transform_translate[array_transform_translate.length - 1]===40){
+          // btn_next.classList.add('unactive')
+          this.last_slide=true
+        }
+        if(array_transform_translate[array_transform_translate.length - 1]===0){
+          return false
+        }
+        if(array_transform_translate[0]!==-40){
+          btn_prev.classList.remove('unactive')
+        }
+
+      }
+      this.storyCounter(element)
+    },
+    carouselPrev(el){
+      const element = el.currentTarget
+      const parent = element.closest('.carousel')
+      const array_carousel_item = parent.querySelectorAll('.carousel__item');
+      const array_transform_translate=[]
+      const btn_prev = document.querySelector('.carousel__navigation--next')
+      const btn_next = document.querySelector('.carousel__navigation--prev')
+      for (let t = 0; t < this.array_carousel_item.length; t++) {
+        let style = this.array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+
+      for (let i = 0; i < array_transform_translate.length; i++) {
+        let style_all = this.array_carousel_item[i].style.transform;
+        let scale = parseFloat(style_all.split(' ')[1].replace(/[^\d.\-]/g, ''));
+        this.array_carousel_item[i].classList.remove('opacity');
+        this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.6);z-index:1;opacity:0;`);
+        if(array_transform_translate[i]===0){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.9);z-index:9;opacity:1`);
+          this.array_carousel_item[i].classList.remove('active')
+          const array_slide = this.array_carousel_item[i].querySelectorAll(('.carousel__inner-slider-item'));
+          for (let i = 0; i < array_slide.length; i++) {
+            if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+              array_slide[i].querySelector('.carousel__inner-slider-video video').pause();
+            }
+          }
+        }
+        if(array_transform_translate[i]===0){
+          this.array_carousel_item[i].classList.add('shadow')
+        }
+        if(array_transform_translate[i]===-40){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(1);z-index:10;opacity:1`);
+          this.array_carousel_item[i].classList.add('active')
+          // this.timerInnerSlider(this.array_carousel_item[i])
+          const array_slide = this.array_carousel_item[i].querySelectorAll(('.carousel__inner-slider-item'));
+          for (let i = 0; i < array_slide.length; i++) {
+            if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+              array_slide[i].querySelector('.carousel__inner-slider-video video').play();
+            }
+          }
+          this.fragmentCounter(this.array_carousel_item[i])
+          this.array_carousel_item[i].classList.add('shadow')
+          this.paginationSlider(this.array_carousel_item[i],'active')
+        }
+        if(array_transform_translate[i]===-80){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.9);z-index:9;opacity:1;`);
+          this.array_carousel_item[i].classList.add('shadow')
+
+        }
+        if(array_transform_translate[i]===-120){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.8);z-index:8;opacity:1;`);
+          this.array_carousel_item[i].classList.remove('shadow')
+        }
+        if(array_transform_translate[i]===40){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.8);z-index:8;opacity:1;`);
+          this.array_carousel_item[i].classList.remove('shadow')
+        }
+        if(array_transform_translate[i]===80){
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.7);z-index:7;opacity:0;`);
+        }
+        if(array_transform_translate[0]===-40){
+          btn_prev.classList.add('unactive')
+        }
+
+        if(array_transform_translate[array_transform_translate.length - 1]!==40){
+          this.last_slide=false
+        }
+
+      }
+      this.storyCounter(element)
+    },
+
+    innerSliderNext(el){
+      const element = el.currentTarget
+      const container = element.closest('.carousel')
+      const parent = element.closest('.carousel__inner-slider-container')
+      const array_slide = parent.querySelectorAll('.carousel__inner-slider-item')
+      const video = parent.querySelector('.carousel__inner-slider-item.active .carousel__inner-slider-video')
+      const active_slide_now = container.querySelector('.carousel__item.active')
+      const array_carousel_item = container.querySelectorAll('.carousel__item')
+      const array_transform_translate=[]
+
+      for (let t = 0; t < this.array_carousel_item.length; t++) {
+        let style = this.array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+      for (let i = 0;i<array_slide.length;i++){
+        if(array_slide[i].classList.contains('active')&& i!==array_slide.length-1 && array_slide[i+1].querySelector('.carousel__inner-slider-video')){
+          array_slide[i+1].querySelector('.carousel__inner-slider-video video').play()
+        }
+        else if(array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')){
+          video.querySelector('video').pause()
+        }
+      }
+      // if(video){
+      //   video.querySelector('video').pause()
+      // }
+      let current_step = parseInt(parent.querySelector('.carousel__inner-slider-item.active').getAttribute('for-id-slide'))
+      if(this.step===0){
+        this.step = 1
+        for(let item of array_slide){
+          const attrib = item.getAttribute('for-id-slide')
+          this.array_inner_slider.push(attrib)
+        }
+      }
+
+      if(current_step==this.array_inner_slider.length - 1&&array_transform_translate[array_transform_translate.length - 1]===0){
+        return false
+      }
+
+      if(current_step==this.array_inner_slider.length - 1){
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step}']`).classList.remove('active')
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step}']`).classList.add('unactive')
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='0']`).classList.remove('unactive')
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='0']`).classList.add('active')
+        this.paginationSliderDeleteAll(active_slide_now,'active-once')
+
+        this.array_inner_slider=[]
+        this.step=0
+        const active_slide = container.querySelector('.carousel__item.active')
+        this.paginationSlider(active_slide,'active-once')
+        this.fragmentCounter(container.querySelector('.carousel__item.active'))
+      }
+      else if(current_step!==this.array_inner_slider.length - 1&&parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step+1}']`)){
+        parent.querySelector('.carousel__inner-slider-item.active').classList.add('unactive')
+        parent.querySelector('.carousel__inner-slider-item.active').classList.remove('active')
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step+1}']`).classList.remove('unactive')
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step+1}']`).classList.add('active')
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step+1}']`).setAttribute('for-viewed','viewed')
+        this.paginationSlider(active_slide_now,'active')
+        this.fragmentCounter(container.querySelector('.carousel__item.active'))
+      }
+    },
+
+    innerSliderPrev(el){
+      const element = el.currentTarget
+      const container = element.closest('.carousel')
+      const parent = element.closest('.carousel__inner-slider-container')
+      const array_slide = parent.querySelectorAll('.carousel__inner-slider-item')
+      const active_slide_now = container.querySelector('.carousel__item.active')
+      let current_step = parseInt(parent.querySelector('.carousel__inner-slider-item.active').getAttribute('for-id-slide'))
+      const video = parent.querySelector('.carousel__inner-slider-item.active .carousel__inner-slider-video')
+      const array_carousel_item = container.querySelectorAll('.carousel__item')
+      const array_transform_translate=[]
+      for (let t = 0; t < this.array_carousel_item.length; t++) {
+        let style = this.array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+      for (let i = 0;i<array_slide.length;i++){
+        if(array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')){
+          array_slide[i].querySelector('.carousel__inner-slider-video video').pause()
+        }
+      }
+
+      if(this.step===0){
+        this.step = 1
+        for(let item of array_slide){
+          const attrib = item.getAttribute('for-id-slide')
+          this.array_inner_slider.push(attrib)
+        }
+      }
+      if(current_step==this.array_inner_slider[0]&&array_transform_translate[0]===0){
+        return false
+      }
+      if(current_step==this.array_inner_slider[0]){
+        // container.querySelector('.carousel__navigation--next').click()
+        this.array_inner_slider=[]
+        this.step=0
+        const active_slide = container.querySelector('.carousel__item.active')
+        this.paginationSliderDeleteAll(active_slide,'active-once')
+        this.paginationSlider(active_slide,'active-once')
+        this.fragmentCounter(container.querySelector('.carousel__item.active'))
+      }
+      else{
+        parent.querySelector('.carousel__inner-slider-item.active').classList.add('unactive')
+        parent.querySelector('.carousel__inner-slider-item.active').classList.remove('active')
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step-1}']`).classList.remove('unactive')
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step-1}']`).classList.add('active')
+        this.paginationSliderDelete(active_slide_now,'active-once')
+        this.fragmentCounter(container.querySelector('.carousel__item.active'))
+      }
+
+    },
+
+    //  таймер внутреннего слайдера историй
+
+    timerInnerSlider(el){
+      const active_stories = el
+      const main_container = document.querySelector('.stories__modal')
+      const container = active_stories.closest('.carousel')
+      const array_carousel_item = container.querySelectorAll('.carousel__item')
+      // const parent = active_stories.closest('.carousel')
+      const carousel_btn_next = document.querySelector('.carousel__navigation--prev') //стрелка в право
+      const carousel_btn_prev = document.querySelector('.carousel__navigation--next') //стрелка в лево
+      const inner_slider_btn_next = active_stories.querySelector('.carousel__inner-slider-arrow-right')
+      const inner_slider_btn_prev = active_stories.querySelector('.carousel__inner-slider-arrow-left')
+
+      const carousel_btn_again = document.querySelector('.carousel__navigation--again')
+
+      const array_inner_pagination = el.querySelectorAll('.carousel__inner-slider-paggination-wr')
+
+
+      let step
+      const array_slider = active_stories.querySelectorAll('.carousel__inner-slider-item')
+      for(let i=0;i<array_slider.length;i++){
+        if(array_slider[i].classList.contains('active')){
+          step=i
+        }
+      }
+
+      const array_transform_translate=[]
+      for (let t = 0; t < array_carousel_item.length; t++) {
+        let style = array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+      const timer = setInterval(()=>{
+        active_stories.querySelector('.carousel__inner-slider-arrow-right-hide').click()
+        step=step+1
+        if(step===array_slider.length){
+          this.stopTimerSlider(timer)
+        }
+        if(step===array_slider.length&&array_transform_translate[array_transform_translate.length - 1]!==0){
+          const next_slide_id = active_stories.getAttribute('data-id')
+          this.browsingHistory(next_slide_id)
+          carousel_btn_next.click()
+
+        }
+      },12000)
+      carousel_btn_prev.onclick=(el)=>{//стрелка в лево
+        const elem = el.currentTarget
+        if(array_transform_translate[0]===0){
+          return false
+        }
+
+        this.stopTimerSlider(timer)
+
+
+        elem.closest('.carousel').querySelector('.carousel__navigation--next-hide').click()
+        const parent = elem.closest('.carousel').querySelector('.carousel__item.active')
+        this.timerInnerSlider(parent)
+
+      }
+      carousel_btn_next.onclick=(el)=>{//стрелка в право
+        const elem = el.currentTarget
+
+
+        const container = elem.closest('.carousel')
+        const parent_active_slide = container.querySelector('.carousel__item.active ')
+        const array_data_viewed = parent_active_slide.querySelectorAll('.carousel__inner-slider-item[for-viewed="viewed"]')
+
+        if(array_data_viewed.length==array_slider.length){
+          const next_slide_id = active_stories.getAttribute('data-id')
+          this.browsingHistory(next_slide_id)
+        }
+
+        this.stopTimerSlider(timer)
+        elem.closest('.carousel').querySelector('.carousel__navigation--prev-hide').click()
+        const parent = elem.closest('.carousel').querySelector('.carousel__item.active')
+
+        this.timerInnerSlider(parent)
+      }
+
+
+
+
+      const length_pagination = array_inner_pagination.length
+      for(let i = 0;i<array_inner_pagination.length;i++){
+        array_inner_pagination[i].onclick=()=>{
+
+          let num_slide_active = el.querySelector('.carousel__inner-slider-paggination-item.active').getAttribute('for-id-slide')
+          num_slide_active = parseInt(num_slide_active)
+          if(i>num_slide_active){
+            const count = i - num_slide_active
+            for (let i = 0;i<count;i++){
+              inner_slider_btn_next.click()
+            }
+
+          }
+          else if(i<num_slide_active){
+            const count = num_slide_active-i
+            for (let i = 0;i<count;i++){
+              inner_slider_btn_prev.click()
+            }
+
+          }
+          else if(i===num_slide_active){
+            const promice = new Promise((resolve,reject)=> {
+              array_inner_pagination[i].querySelector('.carousel__inner-slider-paggination-item.active').classList.remove('active')
+              array_inner_pagination[i].querySelector('.carousel__inner-slider-paggination-item').classList.add('temporary-active');
+              this.stopTimerSlider(timer)
+              resolve()
+            }).then(()=>{
+              return new Promise((resolve,reject) =>{
+
+                setTimeout(()=>{
+                  array_inner_pagination[i].querySelector('.carousel__inner-slider-paggination-item').classList.remove('temporary-active');
+                  array_inner_pagination[i].querySelector('.carousel__inner-slider-paggination-item').classList.add('active')
+                  this.timerInnerSlider(active_stories)
+                  resolve()
+                },50)
+
+              })
+            })
+
+
+          }
+
+
+
+        }
+      }
+      inner_slider_btn_prev.onclick=(el)=>{
+        const elem = el.currentTarget
+        this.stopTimerSlider(timer)
+        elem.closest('.carousel__inner-slider-container').querySelector('.carousel__inner-slider-arrow-left-hide').click()
+        const parent = elem.closest('.carousel').querySelector('.carousel__item.active')
+        this.timerInnerSlider(parent)
+
+        step=step-1
+
+        if(step==-1&&array_transform_translate[0]!==0){
+          const array_data_viewed = parent.querySelectorAll('.carousel__inner-slider-item[for-viewed="viewed"]')
+          if(array_data_viewed.length==array_slider.length){
+            const next_slide_id = active_stories.getAttribute('data-id')
+            this.browsingHistory(next_slide_id)
+          }
+          carousel_btn_prev.click()
+        }
+
+      }
+      inner_slider_btn_next.onclick=(el)=>{
+        const elem = el.currentTarget
+        this.stopTimerSlider(timer)
+        elem.closest('.carousel__inner-slider-container').querySelector('.carousel__inner-slider-arrow-right-hide').click()
+        const parent = elem.closest('.carousel').querySelector('.carousel__item.active')
+        this.timerInnerSlider(parent)
+        step=step+1
+        if(step===array_slider.length){
+          this.stopTimerSlider(timer)
+        }
+        if(step===array_slider.length-1){
+          const next_slide_id = active_stories.getAttribute('data-id')
+          this.browsingHistory(next_slide_id)
+        }
+        if(step===array_slider.length&&array_transform_translate[array_transform_translate.length - 1]!==0){
+          carousel_btn_next.click()
+        }
+      }
+
+
+      const array_area = active_stories.querySelectorAll('.carousel__inner-slider-empty-area');
+      for (let item = 0; item < array_area.length; item++) {
+        array_area[item].onmouseover = (event) => {
+          const element = event.currentTarget
+          const parent = element.closest('.carousel__item')
+          const parent_pug = parent.querySelector('.carousel__inner-slider-paggination');
+          const elem_pug = parent_pug.querySelector('.carousel__inner-slider-paggination-item.active');
+          elem_pug.classList.remove('active');
+          elem_pug.classList.add('temporary-active');
+          this.stopTimerSlider(timer);
+        };
+        array_area[item].onmouseout = (event) => {
+          const element = event.currentTarget;
+          const parent = element.closest('.carousel__item');
+          const parent_pug = el.querySelector('.carousel__inner-slider-paggination');
+          const elem_pug = parent_pug.querySelector('.carousel__inner-slider-paggination-item.temporary-active');
+          elem_pug.classList.add('active');
+          elem_pug.classList.remove('temporary-active');
+
+          this.timerInnerSlider(parent);
+        };
+      }
+
+      const array_pagination_item = active_stories.querySelectorAll('.carousel__inner-slider-paggination-item');
+      
+
+      
+
+      const array_area_mob = active_stories.querySelectorAll('.carousel__inner-slider-empty-area-mobile');
+    
+      document.querySelector('.stories__modal-close').onclick=(el)=>{
+        const element = el.currentTarget
+        this.$emit('eventcloseModal')
+        Storage.dispatch('modalClose')
+        this.stopTimerSlider(timer)
+        const parent = document.querySelector('.carousel .carousel__item.active')
+        const array_data_viewed = parent.querySelectorAll('.carousel__inner-slider-item[for-viewed="viewed"]')
+        if(array_data_viewed.length==array_slider.length){
+          const next_slide_id = active_stories.getAttribute('data-id')
+          this.browsingHistory(next_slide_id)
+        }
+        const container = element.closest('.block-stories')
+        container.setAttribute('style','z-index:10;')
+      }
+    },
+    stopTimerSlider(param){
+      //
+      clearInterval(param)
+    },
+
+    pollsResult(el){
+      const element = el.currentTarget
+      const param = element.getAttribute('for-id')
+      axios({
+        method:'post',
+        url:`${param}`,
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+      })
+        // Если запрос успешен
+        .then((res)=> {
+
+        })
+        // Если запрос с ошибкой
+        .catch(function (error) {
+          console.log(error);
+        });
+    },
+
+    touchFun(){
+      var initialPoint;
+      var finalPoint;
+      const carousel = document.querySelector('.stories__modal')
+      if(carousel){
+        carousel.addEventListener('touchstart', (event)=> {
+          // event.preventDefault();
+          // event.stopPropagation();
+          initialPoint=event.changedTouches[0];
+        }, false);
+        carousel.addEventListener('touchend', (event)=> {
+          // event.preventDefault();
+          // event.stopPropagation();
+          finalPoint=event.changedTouches[0];
+          var xAbs = Math.abs(initialPoint.pageX - finalPoint.pageX);
+          var yAbs = Math.abs(initialPoint.pageY - finalPoint.pageY);
+          if (xAbs > 20 || yAbs > 20) {
+            if (xAbs > yAbs) {
+              if (finalPoint.pageX < initialPoint.pageX) {
+                /*СВАЙП ВЛЕВО*/
+                // document.querySelector('.carousel__navigation--prev').click();
+                const active_elem = document.querySelector('.carousel__item.active').nextSibling
+                const prev_elem = active_elem.querySelector('.carousel__inner-slider-item-plug')
+                // debugger
+                prev_elem.click();
+
+              } else {
+                /*СВАЙП ВПРАВО*/
+                // document.querySelector('.carousel__navigation--next').click();
+                const active_elem = document.querySelector('.carousel__item.active').previousSibling
+                const prev_elem = active_elem.querySelector('.carousel__inner-slider-item-plug')
+                // debugger
+                prev_elem.click();
+
+              }
+            } else {
+              if (finalPoint.pageY < initialPoint.pageY){
+                /*СВАЙП ВВЕРХ*/}
+              else{
+                /*СВАЙП ВНИЗ*/}
+            }
+          }
+        }, false);
+      }
+
+
+    },
+
+    touch(){
+      const array_are = document.querySelectorAll('.carousel__inner-slider-empty-area');
+      for(let i = 0;i<array_are.length;i++)
+        array_are[i].addEventListener('touchend', (event)=> {
+        const parent = array_are[i].closest('.carousel__inner-slider-container')
+          parent.querySelector('.carousel__navigation--prev').click()
+      })
+    },
+
+    viewedHistory() {
+      const array_slider_item = document.querySelectorAll('.stories__slider-item')
+      let str_local_storage = Cookies.get('array_viewed_stories');
+      str_local_storage = JSON.parse(str_local_storage);
+      str_local_storage = str_local_storage.map(function (x) {
+        return parseInt(x, 10);
+      });
+      for(let i = 0;i<array_slider_item.length;i++){
+        let data = array_slider_item[i].getAttribute('data-id')
+        data=parseInt(data)
+        if (str_local_storage.indexOf(data) != -1 && !array_slider_item[i].classList.contains('unactive')){
+          array_slider_item[i].classList.add('unactive')
+          const title = array_slider_item[i].querySelector('.stories__slider-title').textContent
+
+          if (typeof ym === 'function'){
+            ym(47257560, 'reachGoal', 'main-view-stories',{Stories:{View: { title:title,id: data}}})
+            console.log('ya - reachGoal: main-view-stories',{Stories:{View: { title:title,id: data}}})
+          }
+        }
+      }
+    },
+    storiesBtnClick(el){
+      const element = el.currentTarget
+      const link = element.querySelector('a.js--inner-slider-link')
+      if (link) {
+        const id = element.closest('.js--carousel-item').getAttribute('data-id')
+        const index = element.closest('.js--carousel-item').getAttribute('data-index')
+        const title = this.massive_slider_stories[parseInt(index)].title
+        const href_link = link.getAttribute('href')
+        if (typeof ym === 'function'){
+          ym(47257560, 'reachGoal', 'mail-click-button-stories',{Stories:{Link: {title:title, id: id, link:href_link}}})
+          console.log('ya - reachGoal: mail-click-button-stories',{Stories:{Link: {title:title, id: id, link:href_link}}})
+        }
+      }
+
+
+    },
+
+
+    browsingHistory(param){
+      let array_selected_stories = []
+      let str = Cookies.get('array_viewed_stories');
+      array_selected_stories = JSON.parse(str);
+
+      if (array_selected_stories.indexOf(param) == -1){
+        array_selected_stories.push(param)
+      }
+      Cookies.set('array_viewed_stories', JSON.stringify(array_selected_stories));
+      this.viewedHistory()
+    },
+
+    shareYa(){
+      const array_share = document.querySelectorAll('.carousel__share')
+      for(let i = 0;i<array_share.length;i++){
+        const data_url = array_share[i].getAttribute('data-url')
+        Ya.share2(array_share[i], {
+          theme: {
+            limit:0,
+            moreButtonType:'short',
+            popupDirection:'auto',
+            popupPosition:'outer',
+            size:'s',
+            shape:'round',
+            services:'vkontakte,odnoklassniki,telegram,twitter,viber,whatsapp'
+          },
+          content: {
+            url: data_url
+          }
         });
       }
     },
 
-    axiosGetParametr() {
-      // ===== ДЛЯ ТЕСТИРОВАНИЯ (закомментировать, когда нужен API) =====
-      // this.programs = this.testData;
-      // this.lastUpdated = this.testTime;
-      // return Promise.resolve();
+  },
+  mounted(){
+    this.sliderCarousel()
+    this.touchFun()
+    this.shareYa()
+    if(this.massive_carousels_slider.status=='open'){
+      const block_stories = document.querySelector('.block-stories')
+      if(block_stories){
+        block_stories.setAttribute('style','z-index:25;')
+        document.body.classList.add('body-modal')
+      }
 
-      // ===== ДЛЯ БОЯ (раскомментировать при необходимости) =====
-      const config_header = {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-          Accept: 'application/json',
-        }
-      };
-
-      return axios.get('/api/local/ki2/', config_header)
-        .then((res) => {
-          // Для тестирования (закомментировать)
-          // this.programs = res.data.data;
-          // this.lastUpdated = res.data.lastUpdated;
-
-          // Для боя (раскомментировать)
-          this.programs = res.data.result.data;
-          this.lastUpdated = res.data.result.lastUpdated;
-
-          // Убедимся, что у первого элемента isActive = true
-          if (this.programs && this.programs.length > 0) {
-            this.programs[0].isActive = true;
-          }
-        })
-        .catch((error) => {
-          console.log('Ошибка загрузки данных:', error);
-          // При ошибке используем тестовые данные
-          this.programs = this.testData;
-          this.lastUpdated = this.testTime;
-        });
     }
   },
-  mounted() {
-    this.axiosGetParametr();
+  computed:{
+    massive_carousels_slider(){
+      return Storage.getters.MASSIVECAROUSELSSLIDERCLICK
+    },
+    massive_slider_stories(){
+      return Storage.getters.MASSIVEMAINSLIDERSTORIES
+    },
+
+  },
+  created(){
+    eventBus.$on('eventInnerSlider',()=>{
+      // this.modal_show=true
+      // this.sliderCarousel()
+    })
+  },
+  watch:{
+
+  },
+  components:{
+
   }
 };
 </script>
-
----------------------------------------------
-
-<template>
-  <Suspense>
-    <template #default>
-      <KeyIndicators v-bind="$attrs" />
-    </template>
-    <template #fallback>
-      <div class="loading-spinner">Загрузка ключевых показателей...</div>
-    </template>
-  </Suspense>
-</template>
-
-<script>
-import { defineAsyncComponent } from 'vue';
-
-export default {
-  name: 'KeyIndicatorsLazy',
-  inheritAttrs: false,
-  components: {
-    KeyIndicators: defineAsyncComponent(() => 
-      import('./KeyIndicators.vue')
-    )
-  }
-};
-</script>
-
 <style scoped>
 </style>
 
--------------------------------------------
-В index.js
-'key-indicators': () => import('./vue-apps/KeyIndicators/index.vue')
+---------------------------------------------------------------------
 
-<div data-vue-app="key-indicators"></div>
+State.vue
+<script>
+import Vue from 'vue';
+import Vuex from 'vuex';
+import axios from 'axios';
+
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state:{
+    STORIES: {
+      "OPEN":{
+        "story_id": null,
+        "slide_id": null
+      },
+      "SLIDER_STORIES_MAIN_PAGE": [
+        {
+          "id": "1077",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/cc1/cd69jl27vee4lj8ln3y8z13zihxh3v6j/1-_4_.jpg",
+          "title": "IT-ипотекаР"
+        },
+        {
+          "id": "1048",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "IT-ипотека"
+        },
+        {
+          "id": "1141",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "Льготная <b>ипотека</b>"
+        },
+        {
+          "id": "1075",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "О нас"
+        },
+        {
+          "id": "1072",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "Свежее на сайте"
+        },
+        {
+          "id": "1066",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "Последние"
+        },
+        {
+          "id": "1063",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "Новости"
+        },
+        {
+          "id": "1057",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "Сервисы"
+        },
+        {
+          "id": "1054",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "Каталог жилищных программ"
+        },
+        {
+          "id": "1051",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "Ипотечные программы"
+        },
+        {
+          "id": "1088",
+          "image": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg",
+          "title": "Ипотечные программы"
+        }
+      ],
+      "DETAIL": [
+        {
+          "story_id": "1077",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1714&utm-source=story&utm-story-code=kak-snyat-obremenenie-s-kvartiry",
+          "slides": [
+            {
+              "slide_id": "23680",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1714&storySlideId=23680&utm-source=story-slide&utm-story-code=kak-snyat-obremenenie-s-kvartiry",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "Как снять обременение с квартиры?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/cc1/cd69jl27vee4lj8ln3y8z13zihxh3v6j/1-_4_.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://спроси.дом.рф/instructions/kak-snyat-obremenenie-s-kvartiri/?utm_source=site&utm_medium=stories&utm_campaign=1714_%D0%9A%D0%B0%D0%BA+%D1%81%D0%BD%D1%8F%D1%82%D1%8C+%D0%BE%D0%B1%D1%80%D0%B5%D0%BC%D0%B5%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5+%D1%81+%D0%BA%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80%D1%8B%3F&utm_content=23689&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Finstructions%2Fkak-snyat-obremenenie-s-kvartiri%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "23683",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1714&storySlideId=23683&utm-source=story-slide&utm-story-code=kak-snyat-obremenenie-s-kvartiry",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Обременение",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "После оформления ипотеки квартира переходит в собственность покупателя, но до момента полного погашения кредита она остается в залоге (или под обременением)"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/70b/134e0jxv6frpy8mew2gx6c1lzg1r44wx/2-_3_.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "23686",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1714&storySlideId=23686&utm-source=story-slide&utm-story-code=kak-snyat-obremenenie-s-kvartiry",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Снять обременение",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "можно только после выплаты ипотечного кредита (после внесения последнего платежа по ипотеке или полного досрочного погашения долга)"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/8a3/jimc347mvcrz0jw5qrx0aqwzzob0hodq/3-_5_.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "23689",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1714&storySlideId=23689&utm-source=story-slide&utm-story-code=kak-snyat-obremenenie-s-kvartiry",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как правильно",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "оформить снятие обременения? Подробнее об этом – в нашем материале"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/283/9yzjeygrh8xj2z392xxjqg5ia1i79ptm/4-_2_.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://спроси.дом.рф/instructions/kak-snyat-obremenenie-s-kvartiri/?utm_source=site&utm_medium=stories&utm_campaign=1714_%D0%9A%D0%B0%D0%BA+%D1%81%D0%BD%D1%8F%D1%82%D1%8C+%D0%BE%D0%B1%D1%80%D0%B5%D0%BC%D0%B5%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5+%D1%81+%D0%BA%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80%D1%8B%3F&utm_content=23689&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Finstructions%2Fkak-snyat-obremenenie-s-kvartiri%2F"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1048",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1684&utm-source=story&utm-story-code=kak-postroit-dom",
+          "slides": [
+            {
+              "slide_id": "19840",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1684&storySlideId=19840&utm-source=story-slide&utm-story-code=kak-postroit-dom",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как построить дом?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Мы запустили новый бесплатный обучающий курс «Как построить дом от А до Я»"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/45a/z41wpg3h5tu7mtxm5vmg1zftmwstqttw/1.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "19843",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1684&storySlideId=19843&utm-source=story-slide&utm-story-code=kak-postroit-dom",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "О чем этот курс?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Вы узнаете весь путь частного домостроения: от поиска земельного участка до строительства дома"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/896/meky5mo4gz2744sgn6l8fkz9yd4q0ubn/2.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "19846",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1684&storySlideId=19846&utm-source=story-slide&utm-story-code=kak-postroit-dom",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Для кого этот курс?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Курс предназначен для всех, кто только мечтает построить свой дом или уже находится на этом пути и хочет узнать больше о частном домостроении"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/99f/gsxv1ndj0f03xz7k3lb0pijimbbvyxm5/3.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "19849",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1684&storySlideId=19849&utm-source=story-slide&utm-story-code=kak-postroit-dom",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Благодаря курсу вы сможете:",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "— Выбрать правильный участок<br />\n— Безопасно оформить сделку<br />\n— Сэкономить благодаря господдержке<br />\n— Выбрать проект, подрядчика и построить дом<br />\n— Оформить все документы корректно и своевременно"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/c32/q96iovk7xafyanzt6wp75kp003fv9sk9/4.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "19852",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1684&storySlideId=19852&utm-source=story-slide&utm-story-code=kak-postroit-dom",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Сколько стоит курс?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Курс «Как построить дом от А до Я» каждый может пройти абсолютно бесплатно"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/c01/2vhs9xj41b83pdosw229ew2xcq44dg8k/5.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Пройти курс",
+                  "url": "https://спроси.дом.рф/education/courses/kak-postroit-dom-ot-a-do-ya/?utm_source=site&utm_medium=stories&utm_campaign=1684_%D0%9A%D0%B0%D0%BA+%D0%BF%D0%BE%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D1%8C+%D0%B4%D0%BE%D0%BC%3F&utm_content=19852&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Feducation%2Fcourses%2Fkak-postroit-dom-ot-a-do-ya%2F"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1648",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1648&utm-source=story&utm-story-code=kak-vygodno-vzyat-ipoteku",
+          "slides": [
+            {
+              "slide_id": "19174",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1648&storySlideId=19174&utm-source=story-slide&utm-story-code=kak-vygodno-vzyat-ipoteku",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как выгодно взять ипотеку?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Какие меры господдержки позволяют сэкономить до 2 млн рублей на ипотечном кредите?"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/d12/63w0dzoa5k1v3tlfbvlmxynkbxuk0da5/1.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "19177",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1648&storySlideId=19177&utm-source=story-slide&utm-story-code=kak-vygodno-vzyat-ipoteku",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "В России",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "действует целый ряд программ, позволяющих&nbsp;значительно сэкономить при покупке жилья в&nbsp;ипотеку"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/8a3/kkrmlx8zq5e7ll5v6dznmywf2o7ix9ov/2.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "19180",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1648&storySlideId=19180&utm-source=story-slide&utm-story-code=kak-vygodno-vzyat-ipoteku",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Какие программы помогут?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "— Государственная программа «Семейная ипотека»<br>\r\n — Материнский (семейный) капитал<br>\r\n — Выплата на погашение кредита для многодетных семей<br>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/ac3/j6gv4c4ak6xquckx0huxetjkjno2n0tg/3.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "19183",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1648&storySlideId=19183&utm-source=story-slide&utm-story-code=kak-vygodno-vzyat-ipoteku",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Какие программы помогут?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\t — Имущественный вычет при покупке жилья\r\n</p>\r\n<p>\r\n\t — Налоговый вычет с процентов по ипотечному кредиту\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/6f7/egdwbbdftm8s2naqrbgeha5wlfs0uq77/4.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "19186",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1648&storySlideId=19186&utm-source=story-slide&utm-story-code=kak-vygodno-vzyat-ipoteku",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Другие льготные программы",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "В&nbsp;России также действуют и&nbsp;другие программы поддержки семей, планирующих улучшить жилищные условия"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/4af/adg5vvs68hglbrpdkoe4xxc3ua5l5lp6/5.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "19189",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1648&storySlideId=19189&utm-source=story-slide&utm-story-code=kak-vygodno-vzyat-ipoteku",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Подробнее",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "о&nbsp;программах&nbsp;поддержки рассказали в нашей статье"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/a79/086ivs91g0w7w9k2cpkm8konjynelzq6/6.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Узнать",
+                  "url": "https://спроси.дом.рф/instructions/kak-sekonomit-na-ipoteke/?utm_source=site&utm_medium=stories&utm_campaign=1648_%D0%9A%D0%B0%D0%BA+%D0%B2%D1%8B%D0%B3%D0%BE%D0%B4%D0%BD%D0%BE+%D0%B2%D0%B7%D1%8F%D1%82%D1%8C+%D0%B8%D0%BF%D0%BE%D1%82%D0%B5%D0%BA%D1%83%3F&utm_content=19189&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Finstructions%2Fkak-sekonomit-na-ipoteke%2F"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1618",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1618&utm-source=story&utm-story-code=kak-sekonomit-na-kommunalke",
+          "slides": [
+            {
+              "slide_id": "18679",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1618&storySlideId=18679&utm-source=story-slide&utm-story-code=kak-sekonomit-na-kommunalke",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как сэкономить на коммунальных платежах?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "— Государственная поддержка в оплате ЖКУ;<br>\r\n — Отказ от ненужных расходов по квартплате;<br>\r\n —&nbsp;Простые правила и хитрости, которые позволяют платить за квартиру меньше.<br>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/752/cyn7t0y9l2jq1ua2ladhkr4avdj27vgk/1_5_.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "18682",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1618&storySlideId=18682&utm-source=story-slide&utm-story-code=kak-sekonomit-na-kommunalke",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Кто может получить субсидию на оплату ЖКУ:",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "— Ветераны<br>\r\n — Инвалиды и семьи с детьми-инвалидами<br>\r\n — Семьи с низкими доходами<br>\r\n — Отдельные категории, установленные регионами<br>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/013/iovbv3celwyx340vk3e9z942raxs0thm/2_3_.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "18685",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1618&storySlideId=18685&utm-source=story-slide&utm-story-code=kak-sekonomit-na-kommunalke",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "От каких коммунальных услуг можно отказаться?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "— ТВ антенна<br>\r\n — Стационарный телефон<br>\r\n — Радиоточка<br>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/e6f/gicy8o40yhappj5ptbmimwu9p5itka7q/3_2_.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "18688",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1618&storySlideId=18688&utm-source=story-slide&utm-story-code=kak-sekonomit-na-kommunalke",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как еще сэкономить на коммунальных платежах?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Читайте в нашей инструкции"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/iblock/7f0/7ex65spkbkb1mfylkfmf2voig7gztxck/4_1_.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://спроси.дом.рф/instructions/kak-sekonomit-na-kommunalnykh-platezhakh/?utm_source=site&utm_medium=stories&utm_campaign=1618_%D0%9A%D0%B0%D0%BA+%D1%81%D1%8D%D0%BA%D0%BE%D0%BD%D0%BE%D0%BC%D0%B8%D1%82%D1%8C+%D0%BD%D0%B0+%D0%BA%D0%BE%D0%BC%D0%BC%D1%83%D0%BD%D0%B0%D0%BB%D0%BA%D0%B5%3F&utm_content=18688&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Finstructions%2Fkak-sekonomit-na-kommunalnykh-platezhakh%2F"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1554",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1554&utm-source=story&utm-story-code=kak-vybrat-vklad",
+          "slides": [
+            {
+              "slide_id": "17787",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1554&storySlideId=17787&utm-source=story-slide&utm-story-code=kak-vybrat-vklad",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как выбрать вклад?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "<b> Рассказываем, от чего зависит доходность, на какие параметры стоит обратить внимание и как выбрать самый выгодный вклад"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/b6d/pj1bb6s3otacz0uq7p8prh12hah35exw/470.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17790",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1554&storySlideId=17790&utm-source=story-slide&utm-story-code=kak-vybrat-vklad",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Какие бывают вклады?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "- Срочные вклады<br>\r\n- Бессрочные вклады <br>(\"до востребования\")<br>\r\n- Накопительные счета<br>\r\n<br>\r\nПри открытии вклада учитывайте, что его доходность напрямую зависит от условий размещения"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/8d0/803gb1p2slmyk6ws2xvmj2dz0of53dfl/465.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17793",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1554&storySlideId=17793&utm-source=story-slide&utm-story-code=kak-vybrat-vklad",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как рассчитать доход <br>по вкладу?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Воспользуйтесь калькулятором и изучите, какие параметры влияют на доходность <br>\r\n <br>\r\n- Выберите валюту вклада<br>\r\n- Укажите сумму вклада и срок размещения&nbsp;<br>\r\n- Отметьте опции, которые вам нужны<br>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/d77/mb40w2h4dszdngsa7jiy3m5edps2lyqu/466.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17799",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1554&storySlideId=17799&utm-source=story-slide&utm-story-code=kak-vybrat-vklad",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Подробнее",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "о выборе подходящего<br>для вас вклада рассказали в статье"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/30a/ljbw42dl0tvzcbmr1d2nff5ktu2tt31k/467.jpg"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://domrfbank.ru/blog/kak-vybrat-vklad/?utm_source=sprosi.dom.rf&utm_medium=referral&utm_campaign=ref_602_deposit_rf_main.banner&utm_content=https://спроси.дом.рф/"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1497",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1497&utm-source=story&utm-story-code=vyplata-450-tys-cherez-gosuslugi",
+          "slides": [
+            {
+              "slide_id": "17196",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1497&storySlideId=17196&utm-source=story-slide&utm-story-code=vyplata-450-tys-cherez-gosuslugi",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Знаете ли вы?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\t<b> Что подать заявление на выплату <br> 450 тыс. рублей можно через <br> Госуслуги? <b>\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/968/fj5122fa95gkat1uxal3r1z4bmx8b0f6/29.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17199",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1497&storySlideId=17199&utm-source=story-slide&utm-story-code=vyplata-450-tys-cherez-gosuslugi",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Какие документы нужны?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\t- Паспорт<br>\r\n\t- Свидетельства о рождении детей<br>\r\n\t- Паспорта детей, которым <br> исполнилось 14 лет<br>\r\n\t- Текущий кредитный договор<br>\r\n\t- Все договоры о <br> рефинансировании (при наличии)<br>\r\n\t- Документы о приобретении <br> или строительстве недвижимости\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/b0e/2wlhtg5cxoadcckzr2871c56463ngmnm/30.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17202",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1497&storySlideId=17202&utm-source=story-slide&utm-story-code=vyplata-450-tys-cherez-gosuslugi",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Подробнее",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\t о том, как подать заявление <br> на выплату 450 тыс. рублей <br> через Госуслуги рассказали <br> в материале:\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/9d9/41c54zalc340qm2hia8r741saw6kaswh/31.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/kak-podat-zayavlenie-na-vyplatu-450-tys-rubley-cherez-gosuslugi/?utm_source=site&utm_medium=stories&utm_campaign=instruction&utm_content=28-02-23&utm_term=utm-stories-sprosi "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1485",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1485&utm-source=story&utm-story-code=paevoy-vznos",
+          "slides": [
+            {
+              "slide_id": "17133",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1485&storySlideId=17133&utm-source=story-slide&utm-story-code=paevoy-vznos",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Паевой взнос",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\t<b>  Рассказываем, как вернуть <br> паевой взнос при выходе <br> из кооператива <b> \r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/96e/idy260i1o44e8dk6j3pouq7noeb1pirn/25.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17136",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1485&storySlideId=17136&utm-source=story-slide&utm-story-code=paevoy-vznos",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как вернуть паевой <br> взнос при выходе из кооператива?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n</p>\r\n 1. Подать заявление<br>\r\n2. Дождитесь соответствующего решения<br>\r\n3. Получите средства своего пая<br>\r\n4. Верните квартиру ЖСК<br>\r\n<p>\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/64a/b9yiadvnr24fcfxols2d5f0yisd2eyp7/26.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17139",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1485&storySlideId=17139&utm-source=story-slide&utm-story-code=paevoy-vznos",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как долго ждать возврата?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\tСрок выплаты пая <br> устанавливается ЖСК, <br> но он не должен <br> превышать 2 месяцев\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/b38/41zpip4skq90jwmp9e0pjia7nq2pojgb/27.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17142",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1485&storySlideId=17142&utm-source=story-slide&utm-story-code=paevoy-vznos",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как выйти из ЖСК?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\tРассказали в статье\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/b42/y9harhnflmfs2cp3eideb8u9akydmwa0/28.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/kak-vyyti-iz-zhsk/?utm_source=site&utm_medium=stories&utm_campaign=instruction&utm_content=27-02-23&utm_term=utm-stories-sprosi"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1482",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1482&utm-source=story&utm-story-code=nedeystvitelnaya-sdelka",
+          "slides": [
+            {
+              "slide_id": "17106",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1482&storySlideId=17106&utm-source=story-slide&utm-story-code=nedeystvitelnaya-sdelka",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Недействительная сделка",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Рассказываем, почему <br> сделку могут признать <br> недействительной"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/b96/12bcdlg594nvapw3eu1a8y3kv3bldrnr/20.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17109",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1482&storySlideId=17109&utm-source=story-slide&utm-story-code=nedeystvitelnaya-sdelka",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Недействительна, если:",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "- Сделка заключена с  нарушением <br> требований  закона\r\n<br>\r\n<br>\r\n- Цель сделки заведомо <br> противоречит закон"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/5f8/av32uu1donmb970wgs547i1n53e85y55/21.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17112",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1482&storySlideId=17112&utm-source=story-slide&utm-story-code=nedeystvitelnaya-sdelka",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Недействительна, если:",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "- Стороны не  намеревались <br> создать правовые последствия <br> или заключили договор <br> для прикрытия другой сделки\r\n<br>\r\n<br>\r\n- Если сделка заключена с <br> представителем, который <br> не обладает такими <br> полномочиями"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/1c3/lyhd11l91r9xp95xti78rbj2vstw01qi/23.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17115",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1482&storySlideId=17115&utm-source=story-slide&utm-story-code=nedeystvitelnaya-sdelka",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Недействительна, если:",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "- Если лицо заключило сделку <br> под влиянием  существенного <br> заблуждения, обмана, насилия или угрозы\r\n<br>\r\n<br>\r\n- Кабальная сделка"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/851/dkpce3d0kw2wkl51upq6f2l13ahnesg8/22.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17118",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1482&storySlideId=17118&utm-source=story-slide&utm-story-code=nedeystvitelnaya-sdelka",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Подробнее",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "о том, почему сделку могут <br> признать недействительной, <br> рассказали в материале:"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/4ad/o38l7rexbcjvv5lj3z0lkpk791wpesih/24.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/priznanie-sdelki-nedeystvitelnoy/?utm_source=site&utm_medium=stories&utm_campaign=instruction&utm_content=21-02-23&utm_term=utm-stories-sprosi"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1476",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1476&utm-source=story&utm-story-code=nalog-pri-nasledovanie",
+          "slides": [
+            {
+              "slide_id": "17079",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1476&storySlideId=17079&utm-source=story-slide&utm-story-code=nalog-pri-nasledovanie",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "Налог при вступлении в наследование",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/16b/7cfselhnh0um93e53k2t5dmts3o08am9/17.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17082",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1476&storySlideId=17082&utm-source=story-slide&utm-story-code=nalog-pri-nasledovanie",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Нужно ли платить?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\t<b>Да. </b>Наследуемые денежные средства, недвижимость и другие вещи, считаются доходом. Однако наследство не облагается НДФЛ\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/0e2/udkf5fk76r4jivst5c6r2ipg6ei32g28/2.1.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17085",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1476&storySlideId=17085&utm-source=story-slide&utm-story-code=nalog-pri-nasledovanie",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Важно!",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\t Наследникам необходимо&nbsp; оплатить госпошлину:\r\n</p>\r\n<p>\r\n\t- Близкие родственники — 0,3%\r\n</p>\r\n<p>\r\n\t- Все остальные наследники — 0,6%\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/f8a/xp769q3t4xzhk15j80z3lverbd1h1ju3/19.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17088",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1476&storySlideId=17088&utm-source=story-slide&utm-story-code=nalog-pri-nasledovanie",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Подробнее",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\t о налоге на наследование рассказали в материале\r\n</p>\r\n <br>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/771/r8va7al9ngemia6y1h8zbu8peseuz36r/4.1.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/nalog-na-nasledstvo/?utm_source=site&utm_medium=stories&utm_campaign=nalogi&utm_term=utm-stories-sprosi"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1470",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1470&utm-source=story&utm-story-code=nalogovyy-vychet-v-2023",
+          "slides": [
+            {
+              "slide_id": "17064",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1470&storySlideId=17064&utm-source=story-slide&utm-story-code=nalogovyy-vychet-v-2023",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как получить налоговый вычет в 2023",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\tРассказываем, кто и как может получить выплату\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/b63/f6bd23g49gfzety9w3exprkblesstyzr/1445.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17067",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1470&storySlideId=17067&utm-source=story-slide&utm-story-code=nalogovyy-vychet-v-2023",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Кто имеет право на вычет?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\t Есть несколько обязательных требований:\r\n</p>\r\n<p>\r\n\t –&nbsp;Быть налоговым резидентом РФ\r\n</p>\r\n<p>\r\n\t –&nbsp;Платить НДФЛ&nbsp;\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/a53/51jbywb6s67c9g2k2kl9y3iqq2cpfu2h/1378.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17070",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1470&storySlideId=17070&utm-source=story-slide&utm-story-code=nalogovyy-vychet-v-2023",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Где оформить налоговый вычет?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\tЧерез Федеральную налоговую службу или через работодателя\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/1ff/lruflu94x681a4zjgc9jd19873t3xvg5/1345.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17073",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1470&storySlideId=17073&utm-source=story-slide&utm-story-code=nalogovyy-vychet-v-2023",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Подробнее о вычетах",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "<p>\r\n\tРассказали в материале\r\n</p>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/468/1tw2hat1j7pwzdhp0oylaf1zp1s8twoa/1678.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/news/kak-poluchit-nalogovyy-vychet-v-2023-godu/?utm_source=site&utm_medium=stories&utm_campaign=nalogi&utm_term=utm-stories-sprosi"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1467",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1467&utm-source=story&utm-story-code=sotsvyplaty-semyam-s-detmi-2023",
+          "slides": [
+            {
+              "slide_id": "17037",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1467&storySlideId=17037&utm-source=story-slide&utm-story-code=sotsvyplaty-semyam-s-detmi-2023",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Соцвыплаты семьям с детьми 2023",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Актуальные суммы выплат на следующей карточке"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/e3c/rr0toesy4gmlrqm6a7balh3zp5iqvzyo/st9.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17040",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1467&storySlideId=17040&utm-source=story-slide&utm-story-code=sotsvyplaty-semyam-s-detmi-2023",
+              "text_color": "DARK",
+              "title": {
+                "type": 1,
+                "text": "Соцвыплаты семьям с детьми 2023",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/b25/rwf5iewypjqa2e24ig062jwlq2tohdli/st12.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            }
+          ]
+        },
+        {
+          "story_id": "1464",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1464&utm-source=story&utm-story-code=kak-raspoznat-moshennikov-pri-arende-kvartiry",
+          "slides": [
+            {
+              "slide_id": "17010",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1464&storySlideId=17010&utm-source=story-slide&utm-story-code=kak-raspoznat-moshennikov-pri-arende-kvartiry",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как распознать мошенников при аренде квартиры?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "4 пункта, которые уберегут вас"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/a12/gvkhjdwr4gam2l2nzrfomvytppy39sjw/1.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17013",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1464&storySlideId=17013&utm-source=story-slide&utm-story-code=kak-raspoznat-moshennikov-pri-arende-kvartiry",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Слишком низкая цена",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Если цена аренды на 20% и более отличается от средней стоимости аренды без какой-либо видимой причины, стоит насторожиться: возможно, она обнаружится после сделки"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/070/rl8dj0y1mlotb1i2e3bapo813g82k5bv/2.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17016",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1464&storySlideId=17016&utm-source=story-slide&utm-story-code=kak-raspoznat-moshennikov-pri-arende-kvartiry",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Чрезмерно высокая сумма депозита​",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Он не должен превышать стоимость аренды пары месяцев. Иначе есть риск, что жильца выселят и вернут только часть залога, ссылаясь на порчу недвижимости или иные причины"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/b6d/i19972i9wq56hd49h3su3qgg7bsm3nx8/3.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17019",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1464&storySlideId=17019&utm-source=story-slide&utm-story-code=kak-raspoznat-moshennikov-pri-arende-kvartiry",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Владелец не показывает документы на квартиру",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Отказ показать документы означает, что арендодатель не может подтвердить свои права собственности и это может обернуться неожиданными проблемами в будущем. В этом случае следует поискать другую квартиру"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/5c0/2u2y18m2fjkx67nfzpn7ox198y1ff0gy/4.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17022",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1464&storySlideId=17022&utm-source=story-slide&utm-story-code=kak-raspoznat-moshennikov-pri-arende-kvartiry",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Владелец отказывается заключить договор",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Добросовестные арендодатели не станут предлагать квартиру без заключения договора, так как для собственника это гарантия своевременной и полной оплаты за сдаваемую в аренду квартиру"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/eb4/1qh74eealyuq55ouf19nw70l04prck5r/5.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "17025",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1464&storySlideId=17025&utm-source=story-slide&utm-story-code=kak-raspoznat-moshennikov-pri-arende-kvartiry",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как снять квартиру",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Читайте инструкцию, как легко и безопасно снять квартиру в нашем материале"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/9a5/3exwpsy7ypmp4rajothwnnxzovmmyr0u/6.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/kak-pravilno-snyat-kvartiru-instruktsiya/?utm_source=site&utm_medium=stories&utm_campaign=1464_%D0%9C%D0%BE%D1%88%D0%B5%D0%BD%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%BE+%D0%BF%D1%80%D0%B8+%D0%B0%D1%80%D0%B5%D0%BD%D0%B4%D0%B5+%D0%BA%D0%B2%D0%B0%D1%80%D1%82%D0%B8%D1%80%D1%8B&utm_content=17025&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Finstructions%2Fkak-pravilno-snyat-kvartiru-instruktsiya%2F"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1434",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1434&utm-source=story&utm-story-code=kak-sekonomit-na-kommunalnykh-platezhakh-5-sovetov",
+          "slides": [
+            {
+              "slide_id": "16602",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1434&storySlideId=16602&utm-source=story-slide&utm-story-code=kak-sekonomit-na-kommunalnykh-platezhakh-5-sovetov",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "Как сэкономить на коммунальных платежах: <br>4 совета",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/47e/8uqkvekcfnlhnncj4ojf9ph3gjxq2z8v/1stor.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16605",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1434&storySlideId=16605&utm-source=story-slide&utm-story-code=kak-sekonomit-na-kommunalnykh-platezhakh-5-sovetov",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Отключите все услуги, которыми вы не пользуетесь:",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "- Радиоточка<br>\r\n- Телеантенна<br>\r\n- Городской телефон<br>\r\n <br>\r\n <b>Экономия: 300 – 750 рублей в месяц</b>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/dad/6jznioh3cyylnsr2baibflgf2hw0u92i/stor2.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16608",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1434&storySlideId=16608&utm-source=story-slide&utm-story-code=kak-sekonomit-na-kommunalnykh-platezhakh-5-sovetov",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Установите многотарифный счетчик электроэнергии",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Приборы учета сами переключают дневной и ночной режимы. Ночной тариф существенно ниже дневного. <br>\r\n <br>\r\n <b>Экономия: более 200 рублей в месяц</b>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/0ba/96xjuh281wtaoz2c0mpxa403v3i5ewyg/3.11.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16611",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1434&storySlideId=16611&utm-source=story-slide&utm-story-code=kak-sekonomit-na-kommunalnykh-platezhakh-5-sovetov",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Поставьте счетчики на воду",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Без счетчиков расход воды считается по нормам, которые гораздо выше среднестатистического потребления воды. Кроме того, для таких квартир применяются повышающие коэффициенты. <br>\r\n <br>\r\n <b>Экономия: от 600 до 1000 рублей в месяц</b>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/da2/pf3ve3w093hg4ymn792odfzxg1lryrj0/stor4.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16614",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1434&storySlideId=16614&utm-source=story-slide&utm-story-code=kak-sekonomit-na-kommunalnykh-platezhakh-5-sovetov",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Расходуйте воду разумно",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "- Следите за состоянием сантехники <br />\n- Выбирайте однорычажные смесители<br />\n- По возможности используйте посудомойку <br />\n- Пользуйтесь экономичными режимами на бытовой технике<br />\n- Закрывайте кран&nbsp;&nbsp;<br />\n- Переиспользуйте воду<br />\n"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/cd5/ji44e3a7zu4nqvfzrgitm3nqhx4qzki0/stor5.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            }
+          ]
+        },
+        {
+          "story_id": "1410",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1410&utm-source=story&utm-story-code=universalnoe-posobie",
+          "slides": [
+            {
+              "slide_id": "16377",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1410&storySlideId=16377&utm-source=story-slide&utm-story-code=universalnoe-posobie",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "С 1 января 2023 года в России появится  универсальное пособие для семей с детьми",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/24c/io6do0bgw9v5ri7ib6h8e7r9vjwdvqr2/fon.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16380",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1410&storySlideId=16380&utm-source=story-slide&utm-story-code=universalnoe-posobie",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Что такое универсальное пособие?:",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Это единое пособие для семей с невысокими доходами и беременных женщин"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/71b/cvurvr6sl3yathwmyox2po32n7xpvqqe/2.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16383",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1410&storySlideId=16383&utm-source=story-slide&utm-story-code=universalnoe-posobie",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Универсальное пособие объединит:",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "- пособие беременным<br>\r\n- пособие для ухода за ребенком до 1,5 лет для неработающих родителей<br>\r\n- выплаты на первого ребенка до 3 лет<br>\r\n- выплаты на третьего ребенка <br>\r\n- пособие на детей от 3 до 7 лет включительно<br>\r\n- пособие для детей от 3 до 17 лет<br>"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/8ec/41i7fbwbypfml9risrnc510xchv7ix3z/3.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16386",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1410&storySlideId=16386&utm-source=story-slide&utm-story-code=universalnoe-posobie",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Размер пособия:",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "50, 75 или 100&#37; от регионального прожиточного минимума"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/f1d/u5nz7exwbkohp4hnuexdi522e2ovu2wb/fon_3.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16389",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1410&storySlideId=16389&utm-source=story-slide&utm-story-code=universalnoe-posobie",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Кто будет выплачивать?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Выплаты будет осуществлять Социальный фонд России, который начнет функционировать с 1 января 2023 года."
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/3f0/c7nakl6rbzuv7d8kqr3wdv1x2fb4d3za/fon_4.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://t.me/otvechaemrf/875?utm_source=site&utm_medium=stories&utm_campaign=1410_%D0%A3%D0%BD%D0%B8%D0%B2%D0%B5%D1%80%D1%81%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%B5+%D0%BF%D0%BE%D1%81%D0%BE%D0%B1%D0%B8%D0%B5&utm_content=16389&utm_term=https%3A%2F%2Ft.me%2Fotvechaemrf%2F875"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1407",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1407&utm-source=story&utm-story-code=chto-delat-esli-na-vas-oformili-kredit",
+          "slides": [
+            {
+              "slide_id": "16353",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1407&storySlideId=16353&utm-source=story-slide&utm-story-code=chto-delat-esli-na-vas-oformili-kredit",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "Что делать, если на вас оформили кредит?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/52f/67rptiqictaied082we4jdbzccrjeq4q/11.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16338",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1407&storySlideId=16338&utm-source=story-slide&utm-story-code=chto-delat-esli-na-vas-oformili-kredit",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Узнали, что мошенники оформили на вас кредит?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Сразу обратитесь с заявлением в банк или микрофинансовую организацию, где он был выдан."
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/242/puv7b5szypmz25uj72rh7pmhyhz67d84/12.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16341",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1407&storySlideId=16341&utm-source=story-slide&utm-story-code=chto-delat-esli-na-vas-oformili-kredit",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Что должно быть в обращении?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Напишите, что вы не заключали договор и не получали денег. Попросите провести внутреннее расследование и прекратить требовать долг с вас. <br />\n<br />\n "
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/c11/02sfeqaothrop875pi4xn3purxzulm21/9.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16344",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1407&storySlideId=16344&utm-source=story-slide&utm-story-code=chto-delat-esli-na-vas-oformili-kredit",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Что-то еще?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Не забудьте оставить жалобу на портале Центробанка. Подробно опишите проблему, предоставьте всю информацию и документы."
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/6a9/jiy2uift9e88120k86m723swz9rayk4l/15.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://cbr.ru/Reception/?utm_source=site&utm_medium=stories&utm_campaign=1407_%D0%A7%D1%82%D0%BE+%D0%B4%D0%B5%D0%BB%D0%B0%D1%82%D1%8C%2C+%D0%B5%D1%81%D0%BB%D0%B8+%D0%BD%D0%B0+%D0%B2%D0%B0%D1%81+%D0%BE%D1%84%D0%BE%D1%80%D0%BC%D0%B8%D0%BB%D0%B8+%D0%BA%D1%80%D0%B5%D0%B4%D0%B8%D1%82%3F&utm_content=16344&utm_term=https%3A%2F%2Fcbr.ru%2FReception%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "16347",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1407&storySlideId=16347&utm-source=story-slide&utm-story-code=chto-delat-esli-na-vas-oformili-kredit",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Нужно ли обращаться в полицию?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Обязательно подайте заявление в полицию. Оформление кредита на чужое имя - это преступление."
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/da2/wjnenk63hbi9loq9khrnsyx4cpvgg6va/5.1.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "16350",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1407&storySlideId=16350&utm-source=story-slide&utm-story-code=chto-delat-esli-na-vas-oformili-kredit",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Можно ли еще что-то сделать?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Да, например, запросить свою кредитную историю через портал Госуслуги. Это поможет убедиться, что на вас не оформили других кредитов."
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/c64/gv19yvf4rbt2rw9x1asn3jbg6816knre/16.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://www.gosuslugi.ru/help/faq/credit_bureau/100748?utm_source=site&utm_medium=stories&utm_campaign=1407_%D0%A7%D1%82%D0%BE+%D0%B4%D0%B5%D0%BB%D0%B0%D1%82%D1%8C%2C+%D0%B5%D1%81%D0%BB%D0%B8+%D0%BD%D0%B0+%D0%B2%D0%B0%D1%81+%D0%BE%D1%84%D0%BE%D1%80%D0%BC%D0%B8%D0%BB%D0%B8+%D0%BA%D1%80%D0%B5%D0%B4%D0%B8%D1%82%3F&utm_content=16350&utm_term=https%3A%2F%2Fwww.gosuslugi.ru%2Fhelp%2Ffaq%2Fcredit_bureau%2F100748"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1371",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1371&utm-source=story&utm-story-code=kak-gosudarstvo-uluchshaet-zhilishchnye-usloviya-rossiyan",
+          "slides": [
+            {
+              "slide_id": "15783",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1371&storySlideId=15783&utm-source=story-slide&utm-story-code=kak-gosudarstvo-uluchshaet-zhilishchnye-usloviya-rossiyan",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "Как государство улучшает жилищные условия россиян?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/49b/stbsy3d2twr3a4zdjw2ahz5fhp4m3o2j/7.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "15786",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1371&storySlideId=15786&utm-source=story-slide&utm-story-code=kak-gosudarstvo-uluchshaet-zhilishchnye-usloviya-rossiyan",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Национальный проект «Жилье и городская среда»",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Создает комфортные условия и обеспечивает граждан доступным жильем"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/0d3/adh8rwzc36wkcthy7ysgjw13snos7bou/2.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "15789",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1371&storySlideId=15789&utm-source=story-slide&utm-story-code=kak-gosudarstvo-uluchshaet-zhilishchnye-usloviya-rossiyan",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 0,
+                "text": "Портал строительного комплекса",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Вся информация и актуальные новости проекта на stroi.gov.ru"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/8ad/a6cwtu6rjjyjiygc2d8julj4jhkyxxxg/9.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Перейти",
+                  "url": "https://stroi.gov.ru/?utm_source=sprosi.dom.rf&utm_medium=referral&utm_campaign=ref_602_stroi.gov.ru_rf_main.banner&utm_content=https://спроси.дом.рф/"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1063",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1063&utm-source=story&utm-story-code=novosti",
+          "slides": [
+            {
+              "slide_id": "16359",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1063&storySlideId=16359&utm-source=story-slide&utm-story-code=novosti",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "Кабмин продлил Дальневосточную ипотеку до 2030 года",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/2b9/66ol96o1ds22qciqrkc3tyak300xlv5u/fon.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://спроси.дом.рф/news/pravitelstvo-prodlilo-dalnevostochnuyu-ipoteku-do-2030-goda/?utm_source=site&utm_medium=stories&utm_campaign=1063_%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8&utm_content=16359&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Fnews%2Fpravitelstvo-prodlilo-dalnevostochnuyu-ipoteku-do-2030-goda%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "16362",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1063&storySlideId=16362&utm-source=story-slide&utm-story-code=novosti",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "МРОТ в 2023 году составит<br>16 242 рубля",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/d83/xaj36pxillbij96cw9axvctfmfqjzj1h/fon_1.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://спроси.дом.рф/news/gosduma-utverdila-razmer-mrot-na-2023-god/?utm_source=site&utm_medium=stories&utm_campaign=1063_%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8&utm_content=16362&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Fnews%2Fgosduma-utverdila-razmer-mrot-na-2023-god%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "16368",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1063&storySlideId=16368&utm-source=story-slide&utm-story-code=novosti",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "Когда ждать окончания льготных ипотечных программ?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/ba1/wh9a4zu08qykbh2l1bex3kqf5ezak0t8/fon_3.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://спроси.дом.рф/news/eksperty-nazvali-sroki-deystviya-lgotnykh-ipotechnykh-programm/?utm_source=site&utm_medium=stories&utm_campaign=1063_%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8&utm_content=16368&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Fnews%2Feksperty-nazvali-sroki-deystviya-lgotnykh-ipotechnykh-programm%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "16365",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1063&storySlideId=16365&utm-source=story-slide&utm-story-code=novosti",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "Прожиточный минимум повысится до <br> 14 375 рублей",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/d7b/saz3ud3nsk6h5544gq652lum8cprth7z/fon_2.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://спроси.дом.рф/news/prozhitochnyy-minimum-povysili-do-14-375-rubley/?utm_source=site&utm_medium=stories&utm_campaign=1063_%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8&utm_content=16365&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Fnews%2Fprozhitochnyy-minimum-povysili-do-14-375-rubley%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "16371",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1063&storySlideId=16371&utm-source=story-slide&utm-story-code=novosti",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "ЦБ рекомендовал банкам не выселять должников по ипотеке",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/ead/98kpqj15eyyqebertbizncglof0zt21c/fon_4.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://спроси.дом.рф/news/bank-rossii-rekomendoval-ne-shtrafovat-i-ne-vyselyat-dolzhnikov-po-ipoteke/?utm_source=site&utm_medium=stories&utm_campaign=1063_%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8&utm_content=16371&utm_term=https%3A%2F%2F%D1%81%D0%BF%D1%80%D0%BE%D1%81%D0%B8.%D0%B4%D0%BE%D0%BC.%D1%80%D1%84%2Fnews%2Fbank-rossii-rekomendoval-ne-shtrafovat-i-ne-vyselyat-dolzhnikov-po-ipoteke%2F"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1072",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&utm-source=story&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+          "slides": [
+            {
+              "slide_id": "13393",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&storySlideId=13393&utm-source=story-slide&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Узнай о жилье больше",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Отвечаем на часто задаваемые вопросы и подробно рассказываем о жилищной сфере "
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/617/af9aj2fjjjjqbnns1f6yr29e29jgev25/Stories-1.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "13396",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&storySlideId=13396&utm-source=story-slide&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Почему отключают горячую воду?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Рассказываем о причинах и законных сроках отключения воды"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/f0d/4ewdb7sa1l62276hwaah5ps01j7epm40/With-button.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/questions/pochemu-otklyuchayut-goryachuyu-vodu/?utm_source=site&utm_medium=stories&utm_campaign=1072_%D0%A1%D0%B2%D0%B5%D0%B6%D0%B5%D0%B5+%D0%BD%D0%B0+%D1%81%D0%B0%D0%B9%D1%82%D0%B5&utm_content=13396&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fquestions%2Fpochemu-otklyuchayut-goryachuyu-vodu%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13399",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&storySlideId=13399&utm-source=story-slide&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Меры поддержки застройщиков",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Мы собрали в одном месте все меры поддержки, которые помогут застройщикам в нынешних экономических условиях"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/8b1/f0zp3fhcm8vwk594c83bylhr21ztusxd/With-button_1.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/services/mery-podderzhki-zastrojshchikov/?utm_source=site&utm_medium=stories&utm_campaign=1072_%D0%A1%D0%B2%D0%B5%D0%B6%D0%B5%D0%B5+%D0%BD%D0%B0+%D1%81%D0%B0%D0%B9%D1%82%D0%B5&utm_content=13399&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fservices%2Fmery-podderzhki-zastrojshchikov%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13402",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&storySlideId=13402&utm-source=story-slide&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "ЖСК с господдержкой",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Узнайте, как вступить или создать жилищно-строительный кооператив с господдержкой"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/277/5lls13xcgd014ldqulxo4ivto2lohq5v/With-button_3.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/zhsk-support/?utm_source=site&utm_medium=stories&utm_campaign=1072_%D0%A1%D0%B2%D0%B5%D0%B6%D0%B5%D0%B5+%D0%BD%D0%B0+%D1%81%D0%B0%D0%B9%D1%82%D0%B5&utm_content=13402&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fzhsk-support%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13405",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&storySlideId=13405&utm-source=story-slide&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Раздел имущества при разводе",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Рассказываем, какое имущество можно считать совместно нажитым и как оно делится через суд"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/da1/800hjhcgoj8d652elnmw4de2fuv70aa1/With-button_6.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/razdel-imushchestva-pri-razvode?utm_source=site&utm_medium=stories&utm_campaign=1072_%D0%A1%D0%B2%D0%B5%D0%B6%D0%B5%D0%B5+%D0%BD%D0%B0+%D1%81%D0%B0%D0%B9%D1%82%D0%B5&utm_content=13405&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Finstructions%2Frazdel-imushchestva-pri-razvode"
+                }
+              ]
+            },
+            {
+              "slide_id": "13408",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&storySlideId=13408&utm-source=story-slide&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Как индивидуальному предпринимателю получить ипотеку?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Разбираемся, почему банки не так охотно выдают ипотеку ИП и как им увеличить шансы на одобрение кредита"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/6e0/00gmzci5b8terb5s6rrrowkkymdkbyns/With-button_7.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/ipoteka-dlya-individualnykh-predprinimateley/?utm_source=site&utm_medium=stories&utm_campaign=1072_%D0%A1%D0%B2%D0%B5%D0%B6%D0%B5%D0%B5+%D0%BD%D0%B0+%D1%81%D0%B0%D0%B9%D1%82%D0%B5&utm_content=13408&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Finstructions%2Fipoteka-dlya-individualnykh-predprinimateley%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13411",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&storySlideId=13411&utm-source=story-slide&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Что такое хостел?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Перед тем как отправиться в отпуск или командировку, узнайте об особенностях разных видов гостиниц"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/131/mo25biuh19ynl19la9ys21fzka9ze5i2/With-button_8.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/questions/chto-takoe-khostel/?utm_source=site&utm_medium=stories&utm_campaign=1072_%D0%A1%D0%B2%D0%B5%D0%B6%D0%B5%D0%B5+%D0%BD%D0%B0+%D1%81%D0%B0%D0%B9%D1%82%D0%B5&utm_content=13411&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fquestions%2Fchto-takoe-khostel%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13414",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&storySlideId=13414&utm-source=story-slide&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Аренда квартиры с последующим выкупом",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Разбираем набирающую популярность альтернативу ипотеке"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/f12/55ia6vxxn5tpp0o0lo37m1ev2iqatim5/With-button_10.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/arenda-kvartiry-s-posleduyushchim-vykupom/?utm_source=site&utm_medium=stories&utm_campaign=1072_%D0%A1%D0%B2%D0%B5%D0%B6%D0%B5%D0%B5+%D0%BD%D0%B0+%D1%81%D0%B0%D0%B9%D1%82%D0%B5&utm_content=13414&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Finstructions%2Farenda-kvartiry-s-posleduyushchim-vykupom%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13417",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1072&storySlideId=13417&utm-source=story-slide&utm-story-code=svezhee-na-sayte-instruktsii-voprosy-otvety-servisy-stranits",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Где оформить Льготную ипотеку на ИЖС?",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Ознакомьтесь с перечнем банков-участников программы"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/b21/2ddg6lc1fl63x20lfytr90oyt3e0e1cw/With-button_12.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/instructions/banki-uchastniki-programmy-lgotnaya-ipoteka-po-stavke-7-na-stroitelstvo-doma-svoimi-silami/?utm_source=site&utm_medium=stories&utm_campaign=1072_%D0%A1%D0%B2%D0%B5%D0%B6%D0%B5%D0%B5+%D0%BD%D0%B0+%D1%81%D0%B0%D0%B9%D1%82%D0%B5&utm_content=13417&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Finstructions%2Fbanki-uchastniki-programmy-lgotnaya-ipoteka-po-stavke-7-na-stroitelstvo-doma-svoimi-silami%2F"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1141",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1141&utm-source=story&utm-story-code=ipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti",
+          "slides": [
+            {
+              "slide_id": "13840",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1141&storySlideId=13840&utm-source=story-slide&utm-story-code=ipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti",
+              "text_color": "DARK",
+              "title": {
+                "type": 1,
+                "text": "Белгородцы могут купить жилье с пониженной ставкой",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/9bf/o3zh0sftid754md3m5x0z7r1efy5tytb/Stories-7.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "13843",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1141&storySlideId=13843&utm-source=story-slide&utm-story-code=ipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Условия программы",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Программа позволяет оформить ипотеку по ставке на 3% ниже любой ставки банка (семейной, льготной и др.). Максимальная сумма кредита — 6 млн рублей"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/407/xpdr0yn5vcr37g88hv8pr1o638ljg0i2/Stories-6.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/catalog/ipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti/?utm_source=site&utm_medium=stories&utm_campaign=1141_%D0%9B%D1%8C%D0%B3%D0%BE%D1%82%D0%BD%D0%B0%D1%8F+%D0%B8%D0%BF%D0%BE%D1%82%D0%B5%D0%BA%D0%B0+%D0%B2+%D0%91%D0%B5%D0%BB%D0%B3%D0%BE%D1%80%D0%BE%D0%B4%D0%B5&utm_content=13843&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fcatalog%2Fipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13846",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1141&storySlideId=13846&utm-source=story-slide&utm-story-code=ipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Требования к участникам",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "Постоянное проживание на территории Белгородской области и работа в бюджетной сферы Белгородской области"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/12d/zwuh7dv9dfmm1xhi6zwoy1c1wwi5vag3/Stories-3.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "13849",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1141&storySlideId=13849&utm-source=story-slide&utm-story-code=ipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "На какое жилье выдают льготный кредит",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": "В рамках программы можно приобрести:"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/d17/k35iqy43buzloes10qdgmy38m2rdyemr/Stories-10.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "13852",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1141&storySlideId=13852&utm-source=story-slide&utm-story-code=ipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti",
+              "text_color": "LIGHT",
+              "title": {
+                "type": 1,
+                "text": "Узнайте подробнее о программе в нашем материале",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/487/rnmkwi510qn6d8y61c9742bc7ta4fvpt/Stories-5.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/catalog/ipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti/?utm_source=site&utm_medium=stories&utm_campaign=1141_%D0%9B%D1%8C%D0%B3%D0%BE%D1%82%D0%BD%D0%B0%D1%8F+%D0%B8%D0%BF%D0%BE%D1%82%D0%B5%D0%BA%D0%B0+%D0%B2+%D0%91%D0%B5%D0%BB%D0%B3%D0%BE%D1%80%D0%BE%D0%B4%D0%B5&utm_content=13852&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fcatalog%2Fipoteka-na-lgotnykh-usloviyakh-v-belgorodskoy-oblasti%2F"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "story_id": "1066",
+          "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1066&utm-source=story&utm-story-code=poslednie-izmeneniya-programm",
+          "slides": [
+            {
+              "slide_id": "13378",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1066&storySlideId=13378&utm-source=story-slide&utm-story-code=poslednie-izmeneniya-programm",
+              "text_color": "DARK",
+              "title": {
+                "type": 1,
+                "text": "Какие изменения произошли в программах господдержки?",
+                "vertical_align": 0
+              },
+              "description": {
+                "type": null,
+                "text": ""
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/607/i5sgly29ylsjh9iw3pixyueuse9e8eao/Stories-11.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": []
+            },
+            {
+              "slide_id": "13381",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1066&storySlideId=13381&utm-source=story-slide&utm-story-code=poslednie-izmeneniya-programm",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Важно!",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Семьям с детьми упростили использование маткапитала на погашение рефинансированной ипотеки"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/24d/k4mvp0h5yu0duhzpurm5oi5utfx90q3l/With-button_5.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/news/pravitelstvo-uprostilo-refinansirovanie-ipoteki-dlya-semei-s-detmi/?utm_source=site&utm_medium=stories&utm_campaign=1066_%D0%9F%D0%BE%D1%81%D0%BB%D0%B5%D0%B4%D0%BD%D0%B8%D0%B5+%D0%B8%D0%B7%D0%BC%D0%B5%D0%BD%D0%B5%D0%BD%D0%B8%D1%8F+%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC&utm_content=13381&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fnews%2Fpravitelstvo-uprostilo-refinansirovanie-ipoteki-dlya-semei-s-detmi%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13384",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1066&storySlideId=13384&utm-source=story-slide&utm-story-code=poslednie-izmeneniya-programm",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Важно!",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Правительство увеличило размер кредита по льготной ипотеке для IT-специалистов"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/9d0/22u6jmfwdmlda1hq7ys2w5241er3cvn7/With-button_8.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/news/pravitelstvo-uvelichilo-razmer-kredita-po-lgotnoy-ipoteke-dlya-itspetsialistov/?utm_source=site&utm_medium=stories&utm_campaign=1066_%D0%9F%D0%BE%D1%81%D0%BB%D0%B5%D0%B4%D0%BD%D0%B8%D0%B5+%D0%B8%D0%B7%D0%BC%D0%B5%D0%BD%D0%B5%D0%BD%D0%B8%D1%8F+%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC&utm_content=13384&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fnews%2Fpravitelstvo-uvelichilo-razmer-kredita-po-lgotnoy-ipoteke-dlya-itspetsialistov%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13387",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1066&storySlideId=13387&utm-source=story-slide&utm-story-code=poslednie-izmeneniya-programm",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Важно!",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Действие программы «Дальневосточная ипотека» распространили на врачей и учителей"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/cc7/wtz5q79tbs6w6et8nazrzwot8506oz9j/With-button.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/news/dalnevostochnuyu-ipoteku-rasprostranili-na-vrachey-i-uchiteley/?utm_source=site&utm_medium=stories&utm_campaign=1066_%D0%9F%D0%BE%D1%81%D0%BB%D0%B5%D0%B4%D0%BD%D0%B8%D0%B5+%D0%B8%D0%B7%D0%BC%D0%B5%D0%BD%D0%B5%D0%BD%D0%B8%D1%8F+%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC&utm_content=13387&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fnews%2Fdalnevostochnuyu-ipoteku-rasprostranili-na-vrachey-i-uchiteley%2F"
+                }
+              ]
+            },
+            {
+              "slide_id": "13390",
+              "share_url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/?storyId=1066&storySlideId=13390&utm-source=story-slide&utm-story-code=poslednie-izmeneniya-programm",
+              "text_color": "DARK",
+              "title": {
+                "type": 0,
+                "text": "Важно!",
+                "vertical_align": 1
+              },
+              "description": {
+                "type": null,
+                "text": "Программу выплаты 450 тыс. рублей на ипотеку для многодетных семей продлили в России"
+              },
+              "image": {
+                "type": 0,
+                "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/upload/medialibrary/af3/hwmwy232jgox7ks84tbf1bvisf9l50bc/With-button_9.png"
+              },
+              "video": {
+                "type": null,
+                "url": null,
+                "preimg": null
+              },
+              "buttons": [
+                {
+                  "type": 0,
+                  "text": "Подробнее",
+                  "url": "https://xn--h1alcedd.xn--d1aqf.xn--p1ai/news/programma-vyplaty-450-tys-rubley-na-ipoteku-dlya-mnogodetnykh-prodlena/?utm_source=site&utm_medium=stories&utm_campaign=1066_%D0%9F%D0%BE%D1%81%D0%BB%D0%B5%D0%B4%D0%BD%D0%B8%D0%B5+%D0%B8%D0%B7%D0%BC%D0%B5%D0%BD%D0%B5%D0%BD%D0%B8%D1%8F+%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC&utm_content=13390&utm_term=https%3A%2F%2Fxn--h1alcedd.xn--d1aqf.xn--p1ai%2Fnews%2Fprogramma-vyplaty-450-tys-rubley-na-ipoteku-dlya-mnogodetnykh-prodlena%2F"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+      // "OPEN":null,
+
+    },
+
+
+
+    modal_show:false,
+
+    massive_main_slider:[], //массив для слайдера историй на главной странице
+    massive_carousels_slider:null, //массив для слайдера историй в модальном окне
+    massive_carousels_slider_click: {
+      status:false,
+      massive:null,
+      id_stories:null,
+      id_slide:null,
+      id_index:null,
+    }, //массив для слайдера историй в модальном окне на основе клика по определённой истории
+  },
+  getters:{
+    //массив историй на основной странице
+    MASSIVEMAINSLIDERSTORIES(state){
+      return state.massive_main_slider
+    },
+
+  //  сформированный массив слайдов историй в модальном окне на основе клика по определённой истории
+    MASSIVECAROUSELSSLIDERCLICK(state){
+      return state.massive_carousels_slider_click
+    },
+
+  },
+  mutations:{
+    //массив для слайдера историй на главной странице
+    mutationOpen(state,received_perem){
+      // console.log(received_perem);
+      if(received_perem.OPEN!=null && received_perem.OPEN.story_id!=null && received_perem.OPEN.slide_id!=null){
+        state.massive_carousels_slider_click.massive = state.massive_carousels_slider
+        state.massive_carousels_slider_click.id_stories=received_perem.OPEN.story_id
+        state.massive_carousels_slider_click.id_slide=received_perem.OPEN.slide_id
+        state.massive_carousels_slider_click.status='open'
+
+        const id_story = received_perem.OPEN.story_id
+        const array_story = received_perem.SLIDER_STORIES_MAIN_PAGE
+        for(let i =0;i<array_story.length;i++){
+          if(array_story[i].id==id_story){
+            state.massive_carousels_slider_click.id_index=i
+          }
+        }
+      }
+    },
+    //массив для слайдера историй на главной странице
+    mutationMainSliderStories(state,received_perem){
+      for (let i = 0; i<8;i++) {
+        state.massive_main_slider.push(received_perem[i])
+      }
+      // state.massive_main_slider=received_perem
+    },
+
+
+    //массив для слайдера историй в модальном окне
+    mutationStoriesSlider(state,received_perem){
+      state.massive_carousels_slider=received_perem
+    },
+    //массив для слайдера историй в модальном окне на основе клика
+    mutationarraySorting(state,received_perem){
+      let array_slides = state.massive_carousels_slider
+      state.massive_carousels_slider_click.massive = array_slides
+      state.massive_carousels_slider_click.status=true
+      state.massive_carousels_slider_click.id_stories=received_perem[0]
+      state.massive_carousels_slider_click.id_index=received_perem[1]
+    },
+    mutationmodalClose(state){
+      state.massive_carousels_slider_click.massive = null
+      state.massive_carousels_slider_click.status=false
+      state.massive_carousels_slider_click.id_stories=null
+    },
+
+  },
+  actions:{
+    // Получаю данные для слайдера историй на главной странице
+    axiosGetParametr({commit,state}){
+      //это закомментировать
+      // commit('mutationMainSliderStories',state.STORIES.SLIDER_STORIES_MAIN_PAGE)
+      // commit('mutationStoriesSlider',state.STORIES.DETAIL)
+      // setTimeout(()=>{
+      //   commit('mutationOpen',state.STORIES)
+      // },1000)
+
+
+
+
+      //------------------------это для боя расскоментировать при необходимости
+      const config_header = {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(), //расскоментировать
+          Accept: 'application/json',
+        }
+      }
+
+      return axios.get(`/api/local/story/`,config_header) //расскоментировать
+      // return axios.get(`http://localhost:3000/result`,config_header) //убрать
+        .then((res)=>{
+
+          // для слайдера историй на основной странице это тестовая закомментировать
+          // commit('mutationMainSliderStories',res.data.STORIES.SLIDER_STORIES_MAIN_PAGE)
+          // commit('mutationStoriesSlider',res.data.STORIES.DETAIL)
+          // commit('mutationOpen',res.data.STORIES)
+
+
+          // для слайдера историй на основной странице это боевая расскоментировать
+          commit('mutationMainSliderStories',res.data.result.STORIES.SLIDER_STORIES_MAIN_PAGE)
+          commit('mutationStoriesSlider',res.data.result.STORIES.DETAIL)
+          commit('mutationOpen',res.data.result.STORIES)
+
+
+        }).catch((error) => {
+          console.log(error);
+        });
+
+
+    },
+    arraySorting({commit,state},param){
+      commit('mutationarraySorting',param)
+    },
+    modalClose({commit,state}){
+      commit('mutationmodalClose')
+    },
+
+
+
+  },
+})
+</script>
+
