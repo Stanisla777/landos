@@ -1,24 +1,153 @@
 <template>
-  <div class="stories__container-page-slider">
-    <div class="stories__main-page-slider">
-      <div class="stories__swiper js-stories-swiper">
-        <div
-          v-for="(slide, index) in massive_slider_stories"
-          :key="index"
-          class="stories__slider-item"
-          :data-id="slide.id"
-          :data-index="index"
-          :data-el-type="slide.element_type"
-          @click="openModal"
-        >
-          <div class="stories__slider-container">
-            <div class="stories__slider-wr-img js--slider-wr-img">
-              <div class="stories__slider-img">
-                <img :src="slide.image" alt="">
-              </div>
+  <div class="stories__modal">
+    <div class="stories__modal-close-wr"></div>
+    <div class="stories__modal-close">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1.22176 16.7782C0.831231 16.3876 0.831231 15.7545 1.22176 15.3639L15.3639 1.2218C15.7544 0.831278 16.3876 0.831278 16.7781 1.2218V1.2218C17.1686 1.61233 17.1686 2.24549 16.7781 2.63602L2.63597 16.7782C2.24545 17.1687 1.61228 17.1687 1.22176 16.7782V16.7782Z" fill="#1C1B28"></path>
+        <path d="M16.7778 16.7785C16.3873 17.169 15.7541 17.169 15.3636 16.7785L1.22144 2.63636C0.830914 2.24583 0.830914 1.61267 1.22144 1.22214V1.22214C1.61196 0.83162 2.24513 0.83162 2.63565 1.22214L16.7778 15.3643C17.1683 15.7548 17.1683 16.388 16.7778 16.7785V16.7785Z" fill="#1C1B28"></path>
+      </svg>
+    </div>
+    <div class="stories__modal-wrapper">
+      <div class="stories__wr-carousel">
+        <div class="carousel">
+          <div class="carousel__navigation">
+            <div class="carousel__navigation--item carousel__navigation--next">
+              <svg width="12" height="10" viewBox="0 0 12 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M4.63956 0.973094C4.89991 0.712745 5.32202 0.712745 5.58237 0.973094C5.84272 1.23344 5.84272 1.65555 5.58237 1.9159L3.16489 4.33338H10.4443C10.8125 4.33338 11.111 4.63186 11.111 5.00005C11.111 5.36824 10.8125 5.66672 10.4443 5.66672H3.16488L5.58237 8.08421C5.84272 8.34455 5.84272 8.76667 5.58237 9.02701C5.32202 9.28736 4.89991 9.28736 4.63956 9.02701L1.084 5.47146C0.953827 5.34128 0.888741 5.17067 0.888741 5.00005C0.888741 4.90894 0.907018 4.8221 0.940106 4.74299C0.971109 4.6687 1.01615 4.59889 1.07522 4.5376C1.07847 4.53423 1.08175 4.53089 1.08506 4.52759L4.63956 0.973094Z" fill="#1C1B28"></path>
+              </svg>
             </div>
-            <p class="stories__slider-title" v-html="slide.title"></p>
+            <div class="carousel__navigation--item carousel__navigation--prev" v-show="!last_slide">
+              <svg width="12" height="10" viewBox="0 0 12 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M7.3604 0.973094C7.10005 0.712745 6.67794 0.712745 6.41759 0.973094C6.15724 1.23344 6.15724 1.65555 6.41759 1.9159L8.83507 4.33338H1.55566C1.18747 4.33338 0.888992 4.63186 0.888992 5.00005C0.888992 5.36824 1.18747 5.66672 1.55566 5.66672H8.83507L6.41759 8.08421C6.15724 8.34455 6.15724 8.76667 6.41759 9.02701C6.67794 9.28736 7.10005 9.28736 7.3604 9.02701L10.916 5.47146C11.0461 5.34128 11.1112 5.17067 11.1112 5.00005C11.1112 4.90894 11.0929 4.8221 11.0598 4.74299C11.0288 4.6687 10.9838 4.59889 10.9247 4.5376C10.9215 4.53423 10.9182 4.53089 10.9149 4.52759L7.3604 0.973094Z" fill="#1C1B28"></path>
+              </svg>
+            </div>
+            <div class="carousel__navigation--item carousel__navigation--again" v-show="last_slide" @click="carouselAgain">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.3867 7.01123H15.7617V3.63623" stroke="#1C1B28" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M4.62476 4.62478C5.19932 4.05021 5.88142 3.59445 6.63213 3.2835C7.38283 2.97254 8.18743 2.8125 8.99998 2.8125C9.81253 2.8125 10.6171 2.97254 11.3678 3.2835C12.1185 3.59445 12.8006 4.05021 13.3752 4.62478L15.7617 7.01126" stroke="#1C1B28" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M5.61328 10.9888H2.23828V14.3638" stroke="#1C1B28" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M13.3752 13.3753C12.8006 13.9498 12.1185 14.4056 11.3678 14.7165C10.6171 15.0275 9.81254 15.1875 8.99999 15.1875C8.18743 15.1875 7.38284 15.0275 6.63214 14.7165C5.88143 14.4056 5.19933 13.9498 4.62477 13.3753L2.23828 10.9888" stroke="#1C1B28" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
           </div>
+          <div class="carousel__navigation-hide">
+            <div class="carousel__navigation--next-hide" @click="carouselPrev"></div>
+            <div class="carousel__navigation--prev-hide" @click="carouselNext"></div>
+          </div>
+          <ul class="carousel__list">
+            <li
+              v-for="(slide, index) in massive_carousels_slider.massive"
+              :key="index"
+              class="carousel__item js--carousel-item"
+              :data-id="slide.story_id"
+              :data-el-type="slide.element_type"
+              :data-url="slide.share_url"
+              :data-index="index"
+            >
+              <div class="carousel__inner-slider-paggination">
+                <div
+                  v-for="(inner_slide, idx) in slide.slides"
+                  :key="idx"
+                  class="carousel__inner-slider-paggination-wr"
+                >
+                  <div class="carousel__inner-slider-paggination-item" :for-id-slide="idx"></div>
+                </div>
+              </div>
+              <div class="carousel__inner-slider-container">
+                <div class="carousel__inner-slider-item-plug" @click="moveToIt"></div>
+                <div class="carousel__inner-slider-wr-arrow">
+                  <div class="carousel__inner-slider-arrow-left carousel__inner-slider-arrow"></div>
+                  <div class="carousel__inner-slider-arrow-right carousel__inner-slider-arrow"></div>
+                </div>
+                <div class="carousel__inner-slider-wr-arrow-hide">
+                  <div class="carousel__inner-slider-arrow-left-hide carousel__inner-slider-arrow-hide" @click="innerSliderPrev"></div>
+                  <div class="carousel__inner-slider-arrow-right-hide carousel__inner-slider-arrow-hide" @click="innerSliderNext"></div>
+                </div>
+                <div
+                  v-for="(inner_slide, idx) in slide.slides"
+                  :key="idx"
+                  class="carousel__inner-slider-item"
+                  :for-id-slide="idx"
+                  :for-id-fragment="inner_slide.slide_id"
+                  :for-id-location="inner_slide.title.vertical_align === 0 ? 'location-up' : inner_slide.title.vertical_align === 1 ? 'location-down' : ''"
+                  :class="[
+                    (idx === 0 && massive_carousels_slider.status === true) ? 'active' :
+                    (massive_carousels_slider.status === 'open' && inner_slide.slide_id === massive_carousels_slider.id_slide && slide.story_id === massive_carousels_slider.id_stories) ? 'active' :
+                    (massive_carousels_slider.status === 'open' && slide.story_id !== massive_carousels_slider.id_stories && idx === 0) ? 'active' : 'unactive'
+                  ]"
+                  :for-viewed="idx === 0 ? 'viewed' : 'unviewed'"
+                >
+                  <div class="carousel__inner-slider-empty-area"></div>
+                  <div class="carousel__inner-slider-empty-area-mobile"></div>
+                  <div
+                    v-if="inner_slide.image.url != null"
+                    class="carousel__inner-slider-main-img"
+                    :class="[
+                      inner_slide.image.type === 0 ? 'ground' :
+                      inner_slide.image.type === 1 ? 'up' :
+                      inner_slide.image.type === 2 ? 'down' : ''
+                    ]"
+                  >
+                    <img :src="inner_slide.image.url" alt="">
+                  </div>
+                  <div
+                    class="carousel__inner-slider-wr-des"
+                    :for-text-layout="inner_slide.title.vertical_align === 0 ? 'up' : inner_slide.title.vertical_align === 1 ? 'down' : ''"
+                    :class="inner_slide.text_color === 'DARK' ? 'color-dark' : inner_slide.text_color === 'LIGHT' ? 'color-light' : ''"
+                  >
+                    <h2
+                      v-if="inner_slide.title.text != null"
+                      class="carousel__inner-slider-title"
+                      :class="inner_slide.title.type === 0 ? 'small' : inner_slide.title.type === 1 ? 'big' : ''"
+                      v-html="inner_slide.title.text"
+                    ></h2>
+                    <p
+                      v-if="inner_slide.description.text != null"
+                      class="carousel__inner-slider-des"
+                      v-html="inner_slide.description.text"
+                    ></p>
+                  </div>
+                  <div
+                    v-if="inner_slide.video.url != null"
+                    class="carousel__inner-slider-video"
+                    :for-video="inner_slide.title.vertical_align === 0 ? 'down' : inner_slide.title.vertical_align === 1 ? 'up' : ''"
+                  >
+                    <video loop="loop" preload="none" :poster="inner_slide.video.preimg">
+                      <source :src="inner_slide.video.url" type="video/mp4">
+                    </video>
+                  </div>
+                  <div
+                    v-if="inner_slide.buttons.length > 0"
+                    class="carousel__inner-slider-btn"
+                    @click="storiesBtnClick"
+                  >
+                    <div
+                      v-for="(btn, btnIdx) in inner_slide.buttons"
+                      :key="btnIdx"
+                      class="carousel__inner-slider-btn-type"
+                    >
+                      <a
+                        v-if="btn.type === 0"
+                        class="js--inner-slider-link"
+                        :href="btn.url"
+                        target="_blank"
+                      >{{ btn.text }}</a>
+                      <button
+                        v-else-if="btn.type === 1"
+                        :for-id="btn.url"
+                        @click="pollsResult"
+                      >{{ btn.text }}</button>
+                    </div>
+                  </div>
+                  <div
+                    class="carousel__share"
+                    :id="`share-${slide.story_id}-${inner_slide.slide_id}`"
+                    :data-url="inner_slide.share_url"
+                  ></div>
+                </div>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
@@ -32,15 +161,27 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 export default {
-  name: 'slider-main-page-stories',
+  name: 'stories-modal',
   data() {
-    return {};
+    return {
+      array_inner_slider: [],
+      step: 0,
+      step_time: 0,
+      timer: null,
+      open_modal: false,
+      array_carousel_item: [],
+      modal_show: false,
+      last_slide: false,
+    };
   },
   methods: {
-    storyCounter(param, elemType = '1') {
+    storyCounter(param) {
+      const parent = param.closest('.carousel');
+      const next_slide_id = parent.querySelector('.carousel__item.active').getAttribute('data-id');
+      const next_slide_type = parent.querySelector('.carousel__item.active').getAttribute('data-el-type') || '1';
       axios({
         method: 'post',
-        url: `/api/local/views/?id=${param}&element_type=${elemType}`,
+        url: `/api/local/views/?id=${next_slide_id}&element_type=${next_slide_type}`,
         headers: {
           'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
         },
@@ -50,69 +191,732 @@ export default {
           console.log(error);
         });
     },
-
-    formArraySlides() {
-      const parent = document.querySelector('.js-main-page-stories-slider');
-      if (parent) {
-        const array_sliders = parent.querySelectorAll('.stories__slider-item');
-      }
+    fragmentCounter(param) {
+      const next_slide_id = param.querySelector('.carousel__inner-slider-item.active').getAttribute('for-id-fragment');
+      axios({
+        method: 'post',
+        url: `/api/local/views/?id=${next_slide_id}&element_type=1`,
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+      })
+        .then((res) => {})
+        .catch(function (error) {
+          console.log(error);
+        });
     },
-
-    openModal(el) {
+    closeModal() {
+      this.$emit('eventcloseModal');
+      store.dispatch('modalClose');
+    },
+    removeCursor(el) {
       const element = el.currentTarget;
-      const parent = element.closest('.js-stories-swiper');
-      const data = element.getAttribute('data-id');
-      const elemType = element.getAttribute('data-el-type');
-      const data_index = element.getAttribute('data-index');
-      const massive_element = parent.querySelectorAll('.stories__slider-item');
-
-      store.dispatch('arraySorting', [data, data_index]);
-      this.$emit('eventopenModal');
-      this.storyCounter(data, elemType);
-
-      const title = element.querySelector('.stories__slider-title').textContent;
-      const id = element.getAttribute('data-id');
-
-      if (typeof ym === 'function') {
-        ym(47257560, 'reachGoal', 'main-click-stories', { Stories: { Click: { title: title, id: id } } });
-        console.log('ya - reachGoal: referal_link_copied', { Stories: { Click: { title: title, id: id } } });
+      const parent = element.closest('.carousel__item');
+      if (parent.classList.contains('active')) {
+        const parent_pug = parent.querySelector('.carousel__inner-slider-paggination');
+        const wrapper = parent.querySelector('.carousel__inner-slider-container');
+        const elem_pug = parent_pug.querySelector('.carousel__inner-slider-paggination-item.temporary-active');
+        elem_pug.classList.add('active');
+        elem_pug.classList.remove('temporary-active');
+        wrapper.querySelector('.carousel__inner-slider-arrow-right').click();
       }
     },
-
-    viewedHistory() {
-      if (Cookies.get('array_viewed_stories') == null || Cookies.get('array_viewed_stories') == undefined) {
-        let array_selected_stories = [];
-        Cookies.set('array_viewed_stories', JSON.stringify(array_selected_stories));
+    moveToIt(el) {
+      const element = el.currentTarget;
+      const parent = element.closest('.carousel__item');
+      const container = element.closest('.carousel');
+      let style = parent.style.transform;
+      let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+      const carousel_btn_prev = container.querySelector('.carousel__navigation--next');
+      const promice = new Promise((resolve) => {
+        resolve();
+      }).then(() => {
+        return new Promise((resolve) => {
+          if (transform === 40) {
+            document.querySelector('.carousel__navigation--prev').click();
+          }
+          if (transform === 80) {
+            document.querySelector('.carousel__navigation--prev').click();
+            setTimeout(() => {
+              document.querySelector('.carousel__navigation--prev').click();
+            }, 500);
+          }
+          if (transform === -40) {
+            document.querySelector('.carousel__navigation--next').click();
+          }
+          if (transform === -80) {
+            document.querySelector('.carousel__navigation--next').click();
+            setTimeout(() => {
+              document.querySelector('.carousel__navigation--next').click();
+            }, 500);
+          }
+          resolve();
+        });
+      }).then(() => {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            container.classList.remove('local-storage-move');
+            parent.classList.remove('local-storage-active');
+            resolve();
+          }, 3000);
+        });
+      });
+    },
+    carouselAgain(el) {
+      const element = el.currentTarget;
+      const container = element.closest('.carousel');
+      const array_carousel_item = container.querySelectorAll('.carousel__item');
+      const carousel_btn_prev = container.querySelector('.carousel__navigation--next');
+      const promice = new Promise((resolve) => {
+        container.classList.add('local-storage');
+        resolve();
+      }).then(() => {
+        return new Promise(function (resolve) {
+          for (let i = 0; i < array_carousel_item.length - 1; i++) {
+            setTimeout(function timer() {
+              carousel_btn_prev.click();
+            }, i * 200);
+          }
+          resolve();
+        });
+      });
+    },
+    sliderCarousel() {
+      let id_stories = this.massive_carousels_slider.id_stories;
+      let id_index = this.massive_carousels_slider.id_index;
+      id_stories = parseInt(id_stories);
+      id_index = parseInt(id_index);
+      const carousel = document.querySelector('.carousel');
+      if (carousel) {
+        this.array_carousel_item = carousel.querySelectorAll('.carousel__item');
       }
+      const carouselItems = this.array_carousel_item;
+      const array_carousel_item = this.array_carousel_item;
+      let array_i = [];
+      let array_m = [];
+      const btn_prev = document.querySelector('.carousel__navigation--next');
+      const btn_next = document.querySelector('.carousel__navigation--prev');
+      setTimeout(() => {
+        btn_next.click();
+        btn_prev.click();
+      }, 100);
+      for (let i = 0; i < carouselItems.length; i++) {
+        if (parseInt(carouselItems[i].getAttribute('data-index')) < id_index) {
+          array_i.push(carouselItems[i]);
+        }
+        if (parseInt(carouselItems[i].getAttribute('data-index')) == id_index) {
+          array_carousel_item[i].setAttribute('style', `transform: translateX(0) scale(1);z-index:${array_carousel_item.length - i}`);
+          array_carousel_item[i].classList.add('active');
+          this.timerInnerSlider(array_carousel_item[i]);
+          this.paginationSlider(array_carousel_item[i], 'active');
+          this.fragmentCounter(array_carousel_item[i]);
+        }
+        if (parseInt(carouselItems[i].getAttribute('data-index')) > id_index) {
+          array_m.push(carouselItems[i]);
+        }
+      }
+      array_i = array_i.reverse();
+      if (array_i.length === 0 && btn_prev) {
+        btn_prev.classList.add('unactive');
+      }
+      if (array_m.length === 0 && btn_prev) {
+        this.last_slide = true;
+      }
+      for (let t = 0; t < array_i.length; t++) {
+        array_i[t].setAttribute('style', `transform: translateX(${40 * (-(t + 1))}%) scale(${(1 - (t + 1) / 10)});z-index:${-t}`);
+        if (t > 1) {
+          array_i[t].classList.add('opacity');
+        }
+      }
+      for (let h = 0; h < array_m.length; h++) {
+        array_m[h].setAttribute('style', `transform: translateX(${40 * (h + 1)}%) scale(${(1 - (h + 1) / 10)});z-index:${array_m.length - h}`);
+        if (h > 1) {
+          array_m[h].classList.add('opacity');
+        }
+      }
+      for (let item of carouselItems) {
+        let style = item.style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        if (transform < 80 && transform > -80) {
+          item.classList.add('shadow');
+        }
+      }
+    },
+    paginationSlider(el, class_el) {
+      const active_stories = el;
+      const array_slider = active_stories.querySelectorAll('.carousel__inner-slider-item');
+      const array_pagination = active_stories.querySelectorAll('.carousel__inner-slider-paggination-item');
+      let ind = 0;
+      for (let i = 0; i < array_slider.length; i++) {
+        if (array_slider[i].classList.contains('active')) {
+          ind = i;
+        }
+      }
+      for (let j = 0; j < ind + 1; j++) {
+        if (j != ind) {
+          array_pagination[j].classList.remove('active');
+          array_pagination[j].classList.add('active-once');
+        } else if (j == ind) {
+          array_pagination[j].classList.add('active');
+        }
+      }
+    },
+    paginationSliderDelete(el, class_el) {
+      const active_stories = el;
+      const array_slider = active_stories.querySelectorAll('.carousel__inner-slider-item');
+      const array_pagination = active_stories.querySelectorAll('.carousel__inner-slider-paggination-item');
+      let ind = 0;
+      for (let i = 0; i < array_slider.length; i++) {
+        if (array_slider[i].classList.contains('active')) {
+          ind = i;
+        }
+      }
+      array_pagination[ind + 1].classList.remove('active');
+      array_pagination[ind + 1].classList.remove('active-once');
+      array_pagination[ind].classList.remove('active');
+      array_pagination[ind].classList.remove('active-once');
+      array_pagination[ind].classList.add('active');
+    },
+    paginationSliderDeleteAll(el, class_el) {
+      const array_pagination = el.querySelectorAll('.carousel__inner-slider-paggination-item');
+      for (let i = 0; i < array_pagination.length; i++) {
+        array_pagination[i].classList.remove('active');
+        array_pagination[i].classList.remove('active-once');
+      }
+    },
+    carouselNext(el) {
+      const element = el.currentTarget;
+      const parent = element.closest('.carousel');
+      const array_carousel_item = parent.querySelectorAll('.carousel__item');
+      const array_transform_translate = [];
+      const btn_prev = document.querySelector('.carousel__navigation--next');
+      const btn_next = document.querySelector('.carousel__navigation--prev');
+      for (let t = 0; t < this.array_carousel_item.length; t++) {
+        let style = this.array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+      for (let i = 0; i < array_transform_translate.length; i++) {
+        let style_all = this.array_carousel_item[i].style.transform;
+        let scale = parseFloat(style_all.split(' ')[1].replace(/[^\d.\-]/g, ''));
+        this.array_carousel_item[i].classList.remove('opacity');
+        this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(0.6);z-index:1;opacity:0;`);
+        if (array_transform_translate[i] === 0) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(${scale - 0.1});z-index:9;opacity:1`);
+          this.array_carousel_item[i].classList.remove('active');
+          const array_slide = this.array_carousel_item[i].querySelectorAll('.carousel__inner-slider-item');
+          for (let i = 0; i < array_slide.length; i++) {
+            if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+              array_slide[i].querySelector('.carousel__inner-slider-video video').pause();
+            }
+          }
+        }
+        if (array_transform_translate[i] === 0) {
+          this.array_carousel_item[i].classList.add('shadow');
+        }
+        if (array_transform_translate[i] === -40) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(0.8);z-index:8;opacity:1`);
+          this.array_carousel_item[i].classList.remove('shadow');
+        }
+        if (array_transform_translate[i] === -80) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(${scale - 0.3});z-index:7;opacity:0;`);
+        }
+        if (array_transform_translate[i] === -120) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(${scale - 0.3});z-index:7;opacity:0;`);
+        }
+        if (array_transform_translate[i] === 40) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(1);z-index:10;opacity:1;`);
+          this.array_carousel_item[i].classList.add('active');
+          this.array_carousel_item[i].classList.add('shadow');
+          this.paginationSlider(this.array_carousel_item[i], 'active');
+          const array_slide = this.array_carousel_item[i].querySelectorAll('.carousel__inner-slider-item');
+          for (let i = 0; i < array_slide.length; i++) {
+            if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+              array_slide[i].querySelector('.carousel__inner-slider-video video').play();
+            }
+          }
+          this.fragmentCounter(this.array_carousel_item[i]);
+        }
+        if (array_transform_translate[i] === 80) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(0.9);z-index:7;opacity:1;`);
+          this.array_carousel_item[i].classList.add('shadow');
+        }
+        if (array_transform_translate[i] === 120) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] - 40}%) scale(0.8);z-index:6;opacity:1;`);
+          this.array_carousel_item[i].classList.remove('shadow');
+        }
+        if (array_transform_translate[array_transform_translate.length - 1] === 40) {
+          this.last_slide = true;
+        }
+        if (array_transform_translate[array_transform_translate.length - 1] === 0) {
+          return false;
+        }
+        if (array_transform_translate[0] !== -40) {
+          btn_prev.classList.remove('unactive');
+        }
+      }
+      this.storyCounter(element);
+    },
+    carouselPrev(el) {
+      const element = el.currentTarget;
+      const parent = element.closest('.carousel');
+      const array_carousel_item = parent.querySelectorAll('.carousel__item');
+      const array_transform_translate = [];
+      const btn_prev = document.querySelector('.carousel__navigation--next');
+      const btn_next = document.querySelector('.carousel__navigation--prev');
+      for (let t = 0; t < this.array_carousel_item.length; t++) {
+        let style = this.array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+      for (let i = 0; i < array_transform_translate.length; i++) {
+        let style_all = this.array_carousel_item[i].style.transform;
+        let scale = parseFloat(style_all.split(' ')[1].replace(/[^\d.\-]/g, ''));
+        this.array_carousel_item[i].classList.remove('opacity');
+        this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.6);z-index:1;opacity:0;`);
+        if (array_transform_translate[i] === 0) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.9);z-index:9;opacity:1`);
+          this.array_carousel_item[i].classList.remove('active');
+          const array_slide = this.array_carousel_item[i].querySelectorAll('.carousel__inner-slider-item');
+          for (let i = 0; i < array_slide.length; i++) {
+            if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+              array_slide[i].querySelector('.carousel__inner-slider-video video').pause();
+            }
+          }
+        }
+        if (array_transform_translate[i] === 0) {
+          this.array_carousel_item[i].classList.add('shadow');
+        }
+        if (array_transform_translate[i] === -40) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(1);z-index:10;opacity:1`);
+          this.array_carousel_item[i].classList.add('active');
+          const array_slide = this.array_carousel_item[i].querySelectorAll('.carousel__inner-slider-item');
+          for (let i = 0; i < array_slide.length; i++) {
+            if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+              array_slide[i].querySelector('.carousel__inner-slider-video video').play();
+            }
+          }
+          this.fragmentCounter(this.array_carousel_item[i]);
+          this.array_carousel_item[i].classList.add('shadow');
+          this.paginationSlider(this.array_carousel_item[i], 'active');
+        }
+        if (array_transform_translate[i] === -80) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.9);z-index:9;opacity:1;`);
+          this.array_carousel_item[i].classList.add('shadow');
+        }
+        if (array_transform_translate[i] === -120) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.8);z-index:8;opacity:1;`);
+          this.array_carousel_item[i].classList.remove('shadow');
+        }
+        if (array_transform_translate[i] === 40) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.8);z-index:8;opacity:1;`);
+          this.array_carousel_item[i].classList.remove('shadow');
+        }
+        if (array_transform_translate[i] === 80) {
+          this.array_carousel_item[i].setAttribute('style', `transform: translateX(${array_transform_translate[i] + 40}%) scale(0.7);z-index:7;opacity:0;`);
+        }
+        if (array_transform_translate[0] === -40) {
+          btn_prev.classList.add('unactive');
+        }
+        if (array_transform_translate[array_transform_translate.length - 1] !== 40) {
+          this.last_slide = false;
+        }
+      }
+      this.storyCounter(element);
+    },
+    innerSliderNext(el) {
+      const element = el.currentTarget;
+      const container = element.closest('.carousel');
+      const parent = element.closest('.carousel__inner-slider-container');
+      const array_slide = parent.querySelectorAll('.carousel__inner-slider-item');
+      const video = parent.querySelector('.carousel__inner-slider-item.active .carousel__inner-slider-video');
+      const active_slide_now = container.querySelector('.carousel__item.active');
+      const array_transform_translate = [];
+      for (let t = 0; t < this.array_carousel_item.length; t++) {
+        let style = this.array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+      for (let i = 0; i < array_slide.length; i++) {
+        if (array_slide[i].classList.contains('active') && i !== array_slide.length - 1 && array_slide[i + 1].querySelector('.carousel__inner-slider-video')) {
+          array_slide[i + 1].querySelector('.carousel__inner-slider-video video').play();
+        } else if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+          video.querySelector('video').pause();
+        }
+      }
+      let current_step = parseInt(parent.querySelector('.carousel__inner-slider-item.active').getAttribute('for-id-slide'));
+      if (this.step === 0) {
+        this.step = 1;
+        for (let item of array_slide) {
+          const attrib = item.getAttribute('for-id-slide');
+          this.array_inner_slider.push(attrib);
+        }
+      }
+      if (current_step == this.array_inner_slider.length - 1 && array_transform_translate[array_transform_translate.length - 1] === 0) {
+        return false;
+      }
+      if (current_step == this.array_inner_slider.length - 1) {
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step}']`).classList.remove('active');
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step}']`).classList.add('unactive');
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='0']`).classList.remove('unactive');
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='0']`).classList.add('active');
+        this.paginationSliderDeleteAll(active_slide_now, 'active-once');
+        this.array_inner_slider = [];
+        this.step = 0;
+        const active_slide = container.querySelector('.carousel__item.active');
+        this.paginationSlider(active_slide, 'active-once');
+        this.fragmentCounter(container.querySelector('.carousel__item.active'));
+      } else if (current_step !== this.array_inner_slider.length - 1 && parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step + 1}']`)) {
+        parent.querySelector('.carousel__inner-slider-item.active').classList.add('unactive');
+        parent.querySelector('.carousel__inner-slider-item.active').classList.remove('active');
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step + 1}']`).classList.remove('unactive');
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step + 1}']`).classList.add('active');
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step + 1}']`).setAttribute('for-viewed', 'viewed');
+        this.paginationSlider(active_slide_now, 'active');
+        this.fragmentCounter(container.querySelector('.carousel__item.active'));
+      }
+    },
+    innerSliderPrev(el) {
+      const element = el.currentTarget;
+      const container = element.closest('.carousel');
+      const parent = element.closest('.carousel__inner-slider-container');
+      const array_slide = parent.querySelectorAll('.carousel__inner-slider-item');
+      const active_slide_now = container.querySelector('.carousel__item.active');
+      let current_step = parseInt(parent.querySelector('.carousel__inner-slider-item.active').getAttribute('for-id-slide'));
+      const video = parent.querySelector('.carousel__inner-slider-item.active .carousel__inner-slider-video');
+      const array_transform_translate = [];
+      for (let t = 0; t < this.array_carousel_item.length; t++) {
+        let style = this.array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+      for (let i = 0; i < array_slide.length; i++) {
+        if (array_slide[i].classList.contains('active') && array_slide[i].querySelector('.carousel__inner-slider-video')) {
+          array_slide[i].querySelector('.carousel__inner-slider-video video').pause();
+        }
+      }
+      if (this.step === 0) {
+        this.step = 1;
+        for (let item of array_slide) {
+          const attrib = item.getAttribute('for-id-slide');
+          this.array_inner_slider.push(attrib);
+        }
+      }
+      if (current_step == this.array_inner_slider[0] && array_transform_translate[0] === 0) {
+        return false;
+      }
+      if (current_step == this.array_inner_slider[0]) {
+        this.array_inner_slider = [];
+        this.step = 0;
+        const active_slide = container.querySelector('.carousel__item.active');
+        this.paginationSliderDeleteAll(active_slide, 'active-once');
+        this.paginationSlider(active_slide, 'active-once');
+        this.fragmentCounter(container.querySelector('.carousel__item.active'));
+      } else {
+        parent.querySelector('.carousel__inner-slider-item.active').classList.add('unactive');
+        parent.querySelector('.carousel__inner-slider-item.active').classList.remove('active');
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step - 1}']`).classList.remove('unactive');
+        parent.querySelector(`.carousel__inner-slider-item[for-id-slide='${current_step - 1}']`).classList.add('active');
+        this.paginationSliderDelete(active_slide_now, 'active-once');
+        this.fragmentCounter(container.querySelector('.carousel__item.active'));
+      }
+    },
+    timerInnerSlider(el) {
+      const active_stories = el;
+      const container = active_stories.closest('.carousel');
+      const array_carousel_item = container.querySelectorAll('.carousel__item');
+      const carousel_btn_next = document.querySelector('.carousel__navigation--prev');
+      const carousel_btn_prev = document.querySelector('.carousel__navigation--next');
+      const inner_slider_btn_next = active_stories.querySelector('.carousel__inner-slider-arrow-right');
+      const inner_slider_btn_prev = active_stories.querySelector('.carousel__inner-slider-arrow-left');
+      const array_inner_pagination = el.querySelectorAll('.carousel__inner-slider-paggination-wr');
+      let step;
+      const array_slider = active_stories.querySelectorAll('.carousel__inner-slider-item');
+      for (let i = 0; i < array_slider.length; i++) {
+        if (array_slider[i].classList.contains('active')) {
+          step = i;
+        }
+      }
+      const array_transform_translate = [];
+      for (let t = 0; t < array_carousel_item.length; t++) {
+        let style = array_carousel_item[t].style.transform;
+        let transform = parseInt(style.split(' ')[0].replace(/[^\d.\-]/g, ''));
+        array_transform_translate.push(transform);
+      }
+      const timer = setInterval(() => {
+        active_stories.querySelector('.carousel__inner-slider-arrow-right-hide').click();
+        step = step + 1;
+        if (step === array_slider.length) {
+          this.stopTimerSlider(timer);
+        }
+        if (step === array_slider.length && array_transform_translate[array_transform_translate.length - 1] !== 0) {
+          const next_slide_id = active_stories.getAttribute('data-id');
+          this.browsingHistory(next_slide_id);
+          carousel_btn_next.click();
+        }
+      }, 12000);
+      carousel_btn_prev.onclick = (el) => {
+        const elem = el.currentTarget;
+        if (array_transform_translate[0] === 0) {
+          return false;
+        }
+        this.stopTimerSlider(timer);
+        elem.closest('.carousel').querySelector('.carousel__navigation--next-hide').click();
+        const parent = elem.closest('.carousel').querySelector('.carousel__item.active');
+        this.timerInnerSlider(parent);
+      };
+      carousel_btn_next.onclick = (el) => {
+        const elem = el.currentTarget;
+        const container = elem.closest('.carousel');
+        const parent_active_slide = container.querySelector('.carousel__item.active ');
+        const array_data_viewed = parent_active_slide.querySelectorAll('.carousel__inner-slider-item[for-viewed="viewed"]');
+        if (array_data_viewed.length == array_slider.length) {
+          const next_slide_id = active_stories.getAttribute('data-id');
+          this.browsingHistory(next_slide_id);
+        }
+        this.stopTimerSlider(timer);
+        elem.closest('.carousel').querySelector('.carousel__navigation--prev-hide').click();
+        const parent = elem.closest('.carousel').querySelector('.carousel__item.active');
+        this.timerInnerSlider(parent);
+      };
+      const length_pagination = array_inner_pagination.length;
+      for (let i = 0; i < array_inner_pagination.length; i++) {
+        array_inner_pagination[i].onclick = () => {
+          let num_slide_active = el.querySelector('.carousel__inner-slider-paggination-item.active').getAttribute('for-id-slide');
+          num_slide_active = parseInt(num_slide_active);
+          if (i > num_slide_active) {
+            const count = i - num_slide_active;
+            for (let i = 0; i < count; i++) {
+              inner_slider_btn_next.click();
+            }
+          } else if (i < num_slide_active) {
+            const count = num_slide_active - i;
+            for (let i = 0; i < count; i++) {
+              inner_slider_btn_prev.click();
+            }
+          } else if (i === num_slide_active) {
+            const promice = new Promise((resolve) => {
+              array_inner_pagination[i].querySelector('.carousel__inner-slider-paggination-item.active').classList.remove('active');
+              array_inner_pagination[i].querySelector('.carousel__inner-slider-paggination-item').classList.add('temporary-active');
+              this.stopTimerSlider(timer);
+              resolve();
+            }).then(() => {
+              return new Promise((resolve) => {
+                setTimeout(() => {
+                  array_inner_pagination[i].querySelector('.carousel__inner-slider-paggination-item').classList.remove('temporary-active');
+                  array_inner_pagination[i].querySelector('.carousel__inner-slider-paggination-item').classList.add('active');
+                  this.timerInnerSlider(active_stories);
+                  resolve();
+                }, 50);
+              });
+            });
+          }
+        };
+      }
+      inner_slider_btn_prev.onclick = (el) => {
+        const elem = el.currentTarget;
+        this.stopTimerSlider(timer);
+        elem.closest('.carousel__inner-slider-container').querySelector('.carousel__inner-slider-arrow-left-hide').click();
+        const parent = elem.closest('.carousel').querySelector('.carousel__item.active');
+        this.timerInnerSlider(parent);
+        step = step - 1;
+        if (step == -1 && array_transform_translate[0] !== 0) {
+          const array_data_viewed = parent.querySelectorAll('.carousel__inner-slider-item[for-viewed="viewed"]');
+          if (array_data_viewed.length == array_slider.length) {
+            const next_slide_id = active_stories.getAttribute('data-id');
+            this.browsingHistory(next_slide_id);
+          }
+          carousel_btn_prev.click();
+        }
+      };
+      inner_slider_btn_next.onclick = (el) => {
+        const elem = el.currentTarget;
+        this.stopTimerSlider(timer);
+        elem.closest('.carousel__inner-slider-container').querySelector('.carousel__inner-slider-arrow-right-hide').click();
+        const parent = elem.closest('.carousel').querySelector('.carousel__item.active');
+        this.timerInnerSlider(parent);
+        step = step + 1;
+        if (step === array_slider.length) {
+          this.stopTimerSlider(timer);
+        }
+        if (step === array_slider.length - 1) {
+          const next_slide_id = active_stories.getAttribute('data-id');
+          this.browsingHistory(next_slide_id);
+        }
+        if (step === array_slider.length && array_transform_translate[array_transform_translate.length - 1] !== 0) {
+          carousel_btn_next.click();
+        }
+      };
+      const array_area = active_stories.querySelectorAll('.carousel__inner-slider-empty-area');
+      for (let item = 0; item < array_area.length; item++) {
+        array_area[item].onmouseover = (event) => {
+          const element = event.currentTarget;
+          const parent = element.closest('.carousel__item');
+          const parent_pug = parent.querySelector('.carousel__inner-slider-paggination');
+          const elem_pug = parent_pug.querySelector('.carousel__inner-slider-paggination-item.active');
+          elem_pug.classList.remove('active');
+          elem_pug.classList.add('temporary-active');
+          this.stopTimerSlider(timer);
+        };
+        array_area[item].onmouseout = (event) => {
+          const element = event.currentTarget;
+          const parent = element.closest('.carousel__item');
+          const parent_pug = el.querySelector('.carousel__inner-slider-paggination');
+          const elem_pug = parent_pug.querySelector('.carousel__inner-slider-paggination-item.temporary-active');
+          elem_pug.classList.add('active');
+          elem_pug.classList.remove('temporary-active');
+          this.timerInnerSlider(parent);
+        };
+      }
+      document.querySelector('.stories__modal-close').onclick = (el) => {
+        const element = el.currentTarget;
+        this.$emit('eventcloseModal');
+        store.dispatch('modalClose');
+        this.stopTimerSlider(timer);
+        const parent = document.querySelector('.carousel .carousel__item.active');
+        const array_data_viewed = parent.querySelectorAll('.carousel__inner-slider-item[for-viewed="viewed"]');
+        if (array_data_viewed.length == array_slider.length) {
+          const next_slide_id = active_stories.getAttribute('data-id');
+          this.browsingHistory(next_slide_id);
+        }
+        const container = element.closest('.block-stories');
+        container.setAttribute('style', 'z-index:10;');
+      };
+    },
+    stopTimerSlider(param) {
+      clearInterval(param);
+    },
+    pollsResult(el) {
+      const element = el.currentTarget;
+      const param = element.getAttribute('for-id');
+      axios({
+        method: 'post',
+        url: `${param}`,
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+      })
+        .then((res) => {})
+        .catch(function (error) {
+          console.log(error);
+        });
+    },
+    touchFun() {
+      var initialPoint;
+      var finalPoint;
+      const carousel = document.querySelector('.stories__modal');
+      if (carousel) {
+        carousel.addEventListener('touchstart', (event) => {
+          initialPoint = event.changedTouches[0];
+        }, false);
+        carousel.addEventListener('touchend', (event) => {
+          finalPoint = event.changedTouches[0];
+          var xAbs = Math.abs(initialPoint.pageX - finalPoint.pageX);
+          var yAbs = Math.abs(initialPoint.pageY - finalPoint.pageY);
+          if (xAbs > 20 || yAbs > 20) {
+            if (xAbs > yAbs) {
+              if (finalPoint.pageX < initialPoint.pageX) {
+                const active_elem = document.querySelector('.carousel__item.active').nextSibling;
+                const prev_elem = active_elem.querySelector('.carousel__inner-slider-item-plug');
+                prev_elem.click();
+              } else {
+                const active_elem = document.querySelector('.carousel__item.active').previousSibling;
+                const prev_elem = active_elem.querySelector('.carousel__inner-slider-item-plug');
+                prev_elem.click();
+              }
+            }
+          }
+        }, false);
+      }
+    },
+    viewedHistory() {
       const array_slider_item = document.querySelectorAll('.stories__slider-item');
       let str_local_storage = Cookies.get('array_viewed_stories');
       str_local_storage = JSON.parse(str_local_storage);
       str_local_storage = str_local_storage.map(function (x) {
         return parseInt(x, 10);
       });
-
       for (let i = 0; i < array_slider_item.length; i++) {
         let data = array_slider_item[i].getAttribute('data-id');
         data = parseInt(data);
-        if (str_local_storage.indexOf(data) != -1) {
+        if (str_local_storage.indexOf(data) != -1 && !array_slider_item[i].classList.contains('unactive')) {
           array_slider_item[i].classList.add('unactive');
+          const title = array_slider_item[i].querySelector('.stories__slider-title').textContent;
+          if (typeof ym === 'function') {
+            ym(47257560, 'reachGoal', 'main-view-stories', { Stories: { View: { title: title, id: data } } });
+            console.log('ya - reachGoal: main-view-stories', { Stories: { View: { title: title, id: data } } });
+          }
         }
+      }
+    },
+    storiesBtnClick(el) {
+      const element = el.currentTarget;
+      const link = element.querySelector('a.js--inner-slider-link');
+      if (link) {
+        const id = element.closest('.js--carousel-item').getAttribute('data-id');
+        const index = element.closest('.js--carousel-item').getAttribute('data-index');
+        const title = this.massive_slider_stories[parseInt(index)].title;
+        const href_link = link.getAttribute('href');
+        if (typeof ym === 'function') {
+          ym(47257560, 'reachGoal', 'mail-click-button-stories', { Stories: { Link: { title: title, id: id, link: href_link } } });
+          console.log('ya - reachGoal: mail-click-button-stories', { Stories: { Link: { title: title, id: id, link: href_link } } });
+        }
+      }
+    },
+    browsingHistory(param) {
+      let array_selected_stories = [];
+      let str = Cookies.get('array_viewed_stories');
+      array_selected_stories = JSON.parse(str);
+      if (array_selected_stories.indexOf(param) == -1) {
+        array_selected_stories.push(param);
+      }
+      Cookies.set('array_viewed_stories', JSON.stringify(array_selected_stories));
+      this.viewedHistory();
+    },
+    shareYa() {
+      const array_share = document.querySelectorAll('.carousel__share');
+      for (let i = 0; i < array_share.length; i++) {
+        const data_url = array_share[i].getAttribute('data-url');
+        Ya.share2(array_share[i], {
+          theme: {
+            limit: 0,
+            moreButtonType: 'short',
+            popupDirection: 'auto',
+            popupPosition: 'outer',
+            size: 's',
+            shape: 'round',
+            services: 'vkontakte,odnoklassniki,telegram,twitter,viber,whatsapp',
+          },
+          content: {
+            url: data_url,
+          },
+        });
       }
     },
   },
   mounted() {
-    // this.initSliderStoriesMainPage()
-    // Cookies.remove('array_viewed_stories')
-  },
-  updated() {
-    this.viewedHistory();
+    this.sliderCarousel();
+    this.touchFun();
+    this.shareYa();
+    if (this.massive_carousels_slider.status == 'open') {
+      const block_stories = document.querySelector('.block-stories');
+      if (block_stories) {
+        block_stories.setAttribute('style', 'z-index:25;');
+        document.body.classList.add('body-modal');
+      }
+    }
   },
   computed: {
+    massive_carousels_slider() {
+      return store.getters.MASSIVECAROUSELSSLIDERCLICK;
+    },
     massive_slider_stories() {
       return store.getters.MASSIVEMAINSLIDERSTORIES;
     },
   },
-  created() {},
+  created() {
+    eventBus.$on('eventInnerSlider', () => {});
+  },
   watch: {},
   components: {},
 };
