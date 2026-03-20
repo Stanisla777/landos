@@ -1,9 +1,146 @@
 <div class="block-stories"><template><block-stories></block-stories></template></div>
-
+SliderMainPageStories.vue
+<template lang="pug">
+  .stories__container-page-slider
+    div.stories__main-page-slider
+      .stories__swiper.js-stories-swiper
+        .stories__slider-item(
+          v-for="(slide,index) in massive_slider_stories" :key="index"
+          :data-id="slide.id"
+          :data-index="index"
+          :data-el-type="slide.element_type"
+          @click="openModal"
+          )
+          .stories__slider-container
+            .stories__slider-wr-img.js--slider-wr-img
+              .stories__slider-img
+                img(
+                  v-bind:src="slide.image"
+                )
+            p.stories__slider-title(
+              v-html="slide.title"
+            )
 </template>
 <script>
-const BlockStories = () => import ("./Stories.vue");
+import Storage from '../development-tools/state.vue';
+import eventBus from '../development-tools/eventBus.vue';
+import axios from 'axios';
+import Cookies from 'js-cookie'
+let mySwiper;
 
+export default {
+  name: 'slider-main-page-stories',
+  data(){
+    return {
+
+    }
+  },
+  methods:{
+
+
+    storyCounter(param, elemType = '1'){
+      axios({
+        method:'post',
+        url:`/api/local/views/?id=${param}&element_type=${elemType}`,
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+      })
+        // Если запрос успешен
+        .then((res)=> {
+
+        })
+        // Если запрос с ошибкой
+        .catch(function (error) {
+          console.log(error);
+        });
+    },
+
+
+
+
+    formArraySlides(){
+      const parent = document.querySelector('.js-main-page-stories-slider')
+      if(parent){
+        const array_sliders = parent.querySelectorAll('.stories__slider-item')
+      }
+    },
+  //  Вызов модального окна со сторис
+    openModal(el){
+      const element = el.currentTarget
+      // const parent = element.closest('.swiper-wrapper')
+      const parent = element.closest('.js-stories-swiper')
+      // const container = element.closest('.block-stories')
+      // container.setAttribute('style','z-index:25;')
+      const data = element.getAttribute('data-id')
+      const elemType = element.getAttribute('data-el-type')
+
+      const data_index = element.getAttribute('data-index')
+      const massive_element = parent.querySelectorAll('.stories__slider-item')
+      Storage.dispatch('arraySorting',[data,data_index])
+      this.$emit('eventopenModal')
+      this.storyCounter(data, elemType)
+
+      const title = element.querySelector('.stories__slider-title').textContent
+      const id = element.getAttribute('data-id')
+
+      if (typeof ym === 'function'){
+        ym(47257560, 'reachGoal', 'main-click-stories',{Stories:{Click: { title:title,id: id}}})
+        console.log('ya - reachGoal: referal_link_copied',{Stories:{Click: { title:title,id: id}}})
+      }
+
+    },
+    viewedHistory() {
+      if(Cookies.get('array_viewed_stories')==null||Cookies.get('array_viewed_stories')==undefined){
+        let array_selected_stories = []
+        Cookies.set('array_viewed_stories', JSON.stringify(array_selected_stories));
+      }
+      const array_slider_item = document.querySelectorAll('.stories__slider-item')
+      //
+      let str_local_storage = Cookies.get('array_viewed_stories');
+      str_local_storage = JSON.parse(str_local_storage);
+      str_local_storage = str_local_storage.map(function (x) {
+        return parseInt(x, 10);
+      });
+
+      for(let i = 0;i<array_slider_item.length;i++){
+        let data = array_slider_item[i].getAttribute('data-id')
+        data=parseInt(data)
+        if (str_local_storage.indexOf(data) != -1){
+          array_slider_item[i].classList.add('unactive')
+        }
+      }
+    }
+  },
+  mounted(){
+    // this.initSliderStoriesMainPage()
+    // Cookies.remove('array_viewed_stories') //закоментировать
+
+  },
+  updated(){
+    this.viewedHistory() //расскоментировать
+  },
+  computed:{
+    massive_slider_stories(){
+      return Storage.getters.MASSIVEMAINSLIDERSTORIES
+    },
+  },
+  created(){
+
+  },
+  watch:{
+  },
+  components:{
+
+  }
+};
+</script>
+<style scoped>
+</style>
+
+
+
+StoriesModal.vue
 <template lang="pug" >
   div.stories__modal
     .stories__modal-close-wr
