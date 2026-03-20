@@ -1,30 +1,158 @@
-preloadImages({ state }) {
-    // Собираем все URL изображений из всех историй
-    const imageUrls = [];
+actions: {
+  async axiosGetParametr({ commit, state }) {
+    // ===== ДЛЯ ТЕСТИРОВАНИЯ =====
+    commit('mutationMainSliderStories', state.STORIES.SLIDER_STORIES_MAIN_PAGE);
+    commit('mutationStoriesSlider', state.STORIES.DETAIL);
+    setTimeout(() => {
+      commit('mutationOpen', state.STORIES);
+    }, 1000);
     
-    state.STORIES.DETAIL.forEach(story => {
-      story.slides.forEach(slide => {
-        if (slide.image.url) {
-          imageUrls.push(slide.image.url);
-        }
-        if (slide.video.preimg) {
-          imageUrls.push(slide.video.preimg);
-        }
+    // ===== ПРЕДЗАГРУЗКА ВСЕХ ИЗОБРАЖЕНИЙ =====
+    await this.dispatch('preloadAllImages');
+    
+    // ===== ДЛЯ БОЯ (раскомментировать при необходимости) =====
+    // try {
+    //   const response = await axios.get(`/api/local/story/`, config_header);
+    //   commit('mutationMainSliderStories', response.data.result.STORIES.SLIDER_STORIES_MAIN_PAGE);
+    //   commit('mutationStoriesSlider', response.data.result.STORIES.DETAIL);
+    //   commit('mutationOpen', response.data.result.STORIES);
+    //   await this.dispatch('preloadAllImages');
+    // } catch (error) {
+    //   console.log(error);
+    // }
+  },
+  
+  preloadAllImages({ state }) {
+    return new Promise((resolve) => {
+      const allStories = state.STORIES.DETAIL;
+      const imagesToLoad = [];
+      
+      // Собираем все URL изображений из всех историй
+      allStories.forEach(story => {
+        story.slides.forEach(slide => {
+          if (slide.image?.url) {
+            imagesToLoad.push(slide.image.url);
+          }
+          if (slide.video?.preimg) {
+            imagesToLoad.push(slide.video.preimg);
+          }
+        });
+      });
+      
+      if (imagesToLoad.length === 0) {
+        resolve();
+        return;
+      }
+      
+      let loadedCount = 0;
+      const totalImages = imagesToLoad.length;
+      
+      imagesToLoad.forEach(url => {
+        const img = new Image();
+        img.onload = () => {
+          loadedCount++;
+          if (loadedCount === totalImages) {
+            resolve();
+          }
+        };
+        img.onerror = () => {
+          loadedCount++;
+          if (loadedCount === totalImages) {
+            resolve();
+          }
+        };
+        img.src = url;
       });
     });
-    
-    // Предзагружаем изображения
-    imageUrls.forEach(url => {
-      const img = new Image();
-      img.src = url;
-    });
-    
-  
   },
+}
 
+----------------------------------
 
+<template>
+  <div class="slider-stories" v-cloak>
+    <!-- Показываем спиннер, пока данные загружаются -->
+    <div v-if="isLoading" class="stories-loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Загрузка историй...</div>
+    </div>
+    
+    <!-- Показываем контент, когда всё загружено -->
+    <template v-else>
+      <SliderMainPageStories @eventopenModal="openModal" />
+      <StoriesModal
+        v-if="massive_carousels_slider.status === true || massive_carousels_slider.status === 'open'"
+        @eventcloseModal="closeModal"
+      />
+    </template>
+  </div>
+</template>
 
- store.dispatch('axiosGetParametr').then(() => {
-      // После загрузки данных предзагружаем изображения
-      store.dispatch('preloadImages');
-    });
+<script>
+import store from './store';
+import SliderMainPageStories from './SliderMainPageStories.vue';
+import StoriesModal from './StoriesModal.vue';
+
+export default {
+  name: 'Stories',
+  components: {
+    SliderMainPageStories,
+    StoriesModal,
+  },
+  props: {
+    instanceId: {
+      type: String,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      isLoading: true,
+    };
+  },
+  computed: {
+    massive_carousels_slider() {
+      return store.getters.MASSIVECAROUSELSSLIDERCLICK;
+    },
+  },
+  methods: {
+    openModal() {},
+    closeModal() {},
+  },
+  async mounted() {
+    // Загружаем данные и предзагружаем картинки
+    await store.dispatch('axiosGetParametr');
+    this.isLoading = false;
+  },
+};
+</script>
+
+<style scoped>
+.stories-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 40px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #0066cc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+}
+</style>
