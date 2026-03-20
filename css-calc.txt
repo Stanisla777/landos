@@ -1,123 +1,35 @@
-actions: {
-  async axiosGetParametr({ commit, state }) {
-    // ===== ДЛЯ ТЕСТИРОВАНИЯ =====
-    commit('mutationMainSliderStories', state.STORIES.SLIDER_STORIES_MAIN_PAGE);
-    commit('mutationStoriesSlider', state.STORIES.DETAIL);
-    setTimeout(() => {
-      commit('mutationOpen', state.STORIES);
-    }, 1000);
-    
-    // ===== ПРЕДЗАГРУЗКА ВСЕХ ИЗОБРАЖЕНИЙ =====
-    await this.dispatch('preloadAllImages');
-    
-    // ===== ДЛЯ БОЯ (раскомментировать при необходимости) =====
-    // try {
-    //   const response = await axios.get(`/api/local/story/`, config_header);
-    //   commit('mutationMainSliderStories', response.data.result.STORIES.SLIDER_STORIES_MAIN_PAGE);
-    //   commit('mutationStoriesSlider', response.data.result.STORIES.DETAIL);
-    //   commit('mutationOpen', response.data.result.STORIES);
-    //   await this.dispatch('preloadAllImages');
-    // } catch (error) {
-    //   console.log(error);
-    // }
-  },
-  
-  preloadAllImages({ state }) {
-    return new Promise((resolve) => {
-      const allStories = state.STORIES.DETAIL;
-      const imagesToLoad = [];
-      
-      // Собираем все URL изображений из всех историй
-      allStories.forEach(story => {
-        story.slides.forEach(slide => {
-          if (slide.image?.url) {
-            imagesToLoad.push(slide.image.url);
-          }
-          if (slide.video?.preimg) {
-            imagesToLoad.push(slide.video.preimg);
-          }
-        });
-      });
-      
-      if (imagesToLoad.length === 0) {
-        resolve();
-        return;
-      }
-      
-      let loadedCount = 0;
-      const totalImages = imagesToLoad.length;
-      
-      imagesToLoad.forEach(url => {
-        const img = new Image();
-        img.onload = () => {
-          loadedCount++;
-          if (loadedCount === totalImages) {
-            resolve();
-          }
-        };
-        img.onerror = () => {
-          loadedCount++;
-          if (loadedCount === totalImages) {
-            resolve();
-          }
-        };
-        img.src = url;
-      });
-    });
-  },
-}
-
-----------------------------------
-
 <template>
-  <div class="slider-stories" v-cloak>
-    <!-- Показываем спиннер, пока данные загружаются -->
-    <div v-if="isLoading" class="stories-loading">
-      <div class="spinner"></div>
-      <div class="loading-text">Загрузка историй...</div>
-    </div>
-    
-    <!-- Показываем контент, когда всё загружено -->
-    <template v-else>
-      <SliderMainPageStories @eventopenModal="openModal" />
-      <StoriesModal
-        v-if="massive_carousels_slider.status === true || massive_carousels_slider.status === 'open'"
-        @eventcloseModal="closeModal"
-      />
+  <Suspense>
+    <template #default>
+      <div v-if="isLoading" class="stories-loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Загрузка историй...</div>
+      </div>
+      <Stories v-else v-bind="$attrs" />
     </template>
-  </div>
+    <template #fallback>
+      <div class="stories-loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Загрузка историй...</div>
+      </div>
+    </template>
+  </Suspense>
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 import store from './store';
-import SliderMainPageStories from './SliderMainPageStories.vue';
-import StoriesModal from './StoriesModal.vue';
 
 export default {
-  name: 'Stories',
+  name: 'StoriesLazy',
+  inheritAttrs: false,
   components: {
-    SliderMainPageStories,
-    StoriesModal,
-  },
-  props: {
-    instanceId: {
-      type: String,
-      required: true,
-    },
+    Stories: defineAsyncComponent(() => import('./Stories.vue')),
   },
   data() {
     return {
       isLoading: true,
     };
-  },
-  computed: {
-    massive_carousels_slider() {
-      return store.getters.MASSIVECAROUSELSSLIDERCLICK;
-    },
-  },
-  methods: {
-    openModal() {},
-    closeModal() {},
   },
   async mounted() {
     // Загружаем данные и предзагружаем картинки
