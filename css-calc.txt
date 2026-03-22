@@ -1,421 +1,75 @@
-MinSport.vue
-<template>
-    <div>
-        <h2 class="mortgage-surveys__step-title">Проверьте спортивную организацию перед подачей заявления на налоговый вычет</h2><template><v-component-it-company></v-component-it-company></template>
-    </div>
-</template>
-<script>
-import Vue from 'vue';
-import Storage from './development-tools/state.vue';
-import vComponentItCompany from './components/v-component-it-company.vue';
-import vComponentCheckYourself from './components/v-component-check-yourself.vue';
-
-export default {
-  name: 'MinSport',
-  components:{
-    vComponentItCompany,
-    vComponentCheckYourself
-  },
-};
-</script>
-<style scoped>
-</style>
-
-v-component-it-company.vue
-<template lang="pug">
-  div
-    .minsport__container-technical
-      .minsport__block
-        p.minsport__block-title Укажите год, в котором оплачивали спортивные услугии
-        .minsport__year(ref="listYear")
-          .minsport__year-item.js--year-item(
-            v-for="(index,ind) in year"
-            @click="yearSelectionDesctop"
-            :class="ind===year.length-1?'active':''"
-          )
-            p {{index}}
-        .minsport__year-mobile.js-accordion-parent
-          .minsport__year-mobile-chosen(
-            @click="openList"
-          )
-            p(
-              ref="selectedYear"
-            ) {{selected_year}}
-            .minsport__list-arrow
-              svg(width='12', height='7', viewbox='0 0 12 7', fill='none', xmlns='http://www.w3.org/2000/svg')
-                path(d='M6.46824 6.80994L11.8083 1.50758C11.9319 1.38495 12 1.22124 12 1.04668C12 0.872118 11.9319 0.708409 11.8083 0.585772L11.4151 0.19529C11.1589 -0.0587994 10.7425 -0.0587994 10.4867 0.19529L6.00249 4.64781L1.51326 0.190349C1.38965 0.0677119 1.22487 7.57148e-09 1.04916 0C0.87326 -7.57991e-09 0.708481 0.0677119 0.584775 0.190349L0.191706 0.580831C0.0680971 0.703565 7.63028e-09 0.867178 0 1.04174C-7.63017e-09 1.2163 0.0680971 1.38001 0.191706 1.50264L5.53664 6.80994C5.66064 6.93287 5.8262 7.00039 6.00219 7C6.17888 7.00039 6.34434 6.93287 6.46824 6.80994Z', fill='#252628')
-          .minsport__year-mobile-list.js-accordion-body
-            .minsport__year-mobile-list-item.js--year-mobile-list-item(
-              v-for="(index,ind) in year"
-              @click="yearSelectionMobile"
-              :class="ind===year.length-1?'active':''"
-            )
-              p {{index}}
-
-      .minsport__block
-        p.minsport__block-title Введите наименование или ИНН организации или ФИО или ИНН индивидуального предпринимателя
-        .minsport__wr-search-field
-          .calculator_s__calculator-input.mortgage-surveys__input.js--minsport_mask(
-            ref="inputSearch"
-            @focusin="focusIn"
-            @focusout="focusOut"
-          )
-            input(type="text" placeholder="Введите данные")(
-              @input="liveSearch"
-              @keyup="keyEnter"
-              v-model="inpValue"
-            )
-
-          .btn_s.black.disabled(
-            v-if="!btn_active"
-          ) Проверить
-          .btn_s.black(
-            v-if="btn_active"
-            @click="sendingData"
-            ref="btnSend"
-          ) Проверить
-    .minsport__container-result
-      template
-        v-component-success(
-          v-if="query_result&&query_result!=null&&query_result!='error'"
-        )
-      template
-        v-component-failure-not-found(
-          v-if="!query_result&&query_result!=null&&query_result!='error'"
-        )
-      template
-        v-component-failure-other-error(
-          v-if="query_result=='error'&&query_result!=null"
-          :phone ="phone"
-          :phone_formatted ="phone_formatted"
-        )
-
-
-</template>
-<script>
-import Storage from '../development-tools/state.vue';
-import dropDown from '../../dropDown'
-import vComponentSuccess from './v-component-success.vue';
-import vComponentFailureNotFound from './v-component-failure-not-found.vue';
-import vComponentFailureOtherError from './v-component-failure-other-error.vue';
-import IMask from 'imask'
-
-export default {
-  name: 'v-component-it-company',
-  data(){
-    return {
-      output:[],
-      year_list:[2020,2021,2022,2023],
-      selected_year:null,
-      btn_active:false,
-      inpValue:'',
-      phone:'',
-      phone_formatted:''
-    }
-  },
-  methods:{
-    callingCallToAPI(){
-      Storage.dispatch('ActionGetYear')
-    },
-    openList(el){
-      const element = el.currentTarget
-      dropDown(element,0)
-    },
-    yearSelectionMobile(el){
-      const element = el.currentTarget
-      const parent = element.closest('.js-accordion-body')
-      const array_parent = parent.querySelectorAll('.js--year-mobile-list-item')
-      let year = element.querySelector('p').textContent
-      year = parseInt(year)
-      this.$refs.selectedYear.textContent=year
-      for(let item of array_parent){
-        item.classList.remove('active')
-      }
-      element.classList.add('active')
-      element.closest('.js-accordion-parent').classList.remove('active')
-      parent.style.maxHeight=0
-      this.selected_year =year
-    },
-    yearSelectionDesctop(el){
-      const element = el.currentTarget
-      const parent = this.$refs.listYear
-      const array_parent = parent.querySelectorAll('.js--year-item')
-      for(let item of array_parent){
-        item.classList.remove('active')
-      }
-      element.classList.add('active')
-      let year = element.querySelector('p').textContent
-      year = parseInt(year)
-      this.selected_year =year
-    },
-    sendingData(el){
-      const element = el.currentTarget
-      let san = this.inpValue
-      this.inpValue = this.inpValue.replace(/[^а-яёa-z0-9_\-"'.№«» ]/i, "")
-      this.$refs.inputSearch.classList.remove('error')
-      Storage.dispatch('ActionSendingData',[this.selected_year,this.inpValue])
-    },
-    //нажатие интер
-    keyEnter(el){
-      const element = el.currentTarget
-      let element_val = element.value;
-      if(el.code =='Enter'){
-        if(this.$refs.btnSend){
-          this.$refs.btnSend.click()
-        }
-      }
-    },
-    liveSearch(el){
-
-      const element = el.currentTarget
-      let element_val = element.value;
-      element_val=element_val.trim()
-
-      if(this.inpValue.match(/^[а-яёa-z0-9_\-"'.№«» ]+$/i)){
-        element.closest('.js--minsport_mask').classList.remove('error')
-      }
-      else if(!this.inpValue.match(/^[а-яёa-z0-9_\-"'.№«» ]+$/i)&&this.inpValue.length!==0){
-        element.closest('.js--minsport_mask').classList.add('error')
-      }
-      if(this.inpValue.length>0){
-        this.$refs.inputSearch.classList.add('active-input')
-      }
-      else {
-        this.$refs.inputSearch.classList.remove('active-input')
-        Storage.dispatch('ActionNullQueryResult')
-      }
-      if (this.inpValue.length >=10&&this.inpValue.length<=12&&!isNaN(this.inpValue)&&this.inpValue.match(/^[а-яёa-z0-9_\-"'.№«» ]+$/i)){
-        this.btn_active=true
-      }
-      else if (this.inpValue.length <10||this.inpValue.length>12&&!isNaN(this.inpValue)){
-        this.btn_active=false
-      }
-      if (this.inpValue.length >=4&&isNaN(this.inpValue)&&this.inpValue.match(/^[а-яёa-z0-9_\-"'.№«» ]+$/i)){
-        this.btn_active=true
-      }
-      else if(this.inpValue.length <4&&isNaN(this.inpValue)){
-        this.btn_active=false
-      }
-    },
-    focusIn(el){
-      const element = el.currentTarget
-      element.classList.add('active')
-    },
-    focusOut(el){
-      const element = el.currentTarget
-      element.classList.remove('active')
-    },
-    inputValidation(){
-      const input_status = document.querySelectorAll('.js--minsport_mask input');
-      const maskOptions = {
-        mask: /^[а-яёa-z0-9_\-"'.№«» ]+$/i,
-      };
-      for (const item of input_status) {
-        new IMask(item, maskOptions);
-      }
-    },
-  },
-  mounted(){
-    this.callingCallToAPI()
-    this.inputValidation()
-    if (typeof conf !== 'undefined' && conf !== null && conf.hasOwnProperty('UF_PHONE')) {
-      this.phone = conf.UF_PHONE
-    }
-    if (typeof conf !== 'undefined' && conf !== null && conf.hasOwnProperty('UF_PHONE_formatted')) {
-      this.phone_formatted = conf.UF_PHONE_formatted
-    }
-
-  },
-  computed:{
-    year(){
-      return Storage.getters.YEAR
-    },
-    query_result(){
-      return Storage.getters.QUERYRESULT
-    },
-
-  },
-  watch:{
-    year(){
-      this.selected_year = this.year[this.year.length-1]
-    }
-  },
-  components:{
-    vComponentSuccess,
-    vComponentFailureNotFound,
-    vComponentFailureOtherError
-  },
-  created() {
-
-  }
-};
-</script>
-<style scoped>
-</style>
-
-v-component-check-yourself.vue
-<template lang="pug">
-  .minsport__area-application.minsport__area-check-yourself
-    p.minsport__block-title Проверьте список спортивных организаций самостоятельно
-    .minsport__wr-check-yourself
-      p.minsport__plain-text Получить перечень организаций для налогового вычета
-      .minsport__wr-icon-check-yourself
-        svg(width='18', height='16', viewbox='0 0 18 16', fill='none', xmlns='http://www.w3.org/2000/svg')
-          path(d='M8 0L14 7H0V9H14L8 16H11L17.8531 8L11 0H8Z', fill='black')
-    a.minsport__area-check-yourself-link(href="/upload/minsport.zip" download)
-</template>
-<script>
-
-export default {
-  name: 'v-component-check-yourself',
-};
-</script>
-<style scoped>
-</style>
-----------------------------------------------
-v-component-failure-not-found.vue
-<template lang="pug">
-  .mortgage-surveys__final-block-refusal
-    p.mortgage-surveys__final-attention.error Упс, такой компании нет!
-    .mortgage-surveys__finale-explanation
-      p.
-        Мы не нашли такой организации или ИП в перечне Минспорта России
-      p.
-        Подробности вы можете уточнить на <a target="_blank" href="http://minsport.gov.ru/activities/o-nalogovom-vychete-za-zanyatiya-sportom/">странице Минспорта России о налоговом вычете за спорт</a>
-</template>
-<script>
-
-export default {
-  name: 'v-component-failure-not-found',
-};
-</script>
-<style scoped>
-</style>
---------------------------------------------------------
-v-component-failure-other-error.vue
-<template lang="pug">
-  .mortgage-surveys__final-block-refusal
-    p.mortgage-surveys__final-attention.error По техническим причинам сервис временно недоступен.
-    .mortgage-surveys__finale-explanation
-      p Приносим извинения за неудобства.
-      p В случае возникновения вопросов вы можете проконсультироваться по телефону горячей линии Консультационного Центра
-        | !{' '}
-        a.mortgage-surveys__tele(:href="`tel:${phone}`") {{phone_formatted}}
-        | .
-
-</template>
-<script>
-
-export default {
-  name: 'v-component-failure-not-found',
-  props:['phone','phone_formatted'],
-
-};
-</script>
-<style scoped>
-</style>
--------------------------------------
-v-component-success.vue
-<template lang="pug">
-  .mortgage-surveys__final-block-refusal
-    p.mortgage-surveys__final-attention.success.
-      Спортивная организация или ИП есть в перечне Минспорта России
-    .mortgage-surveys__finale-explanation
-      p.
-        Если вы оплачивали услугу в этом году, то налоговый вычет можно получить через работодателя. О порядке читайте ниже.
-      p.
-        Если вы оплачивали услугу в 2022 году, можете получить вычет через ФНС России: онлайн - <a target="_blank" href="https://lkfl2.nalog.ru/lkfl/">через личный кабинет
-        налогоплательщика</a>, лично через МФЦ или в территориальном отделении ФНС России
-</template>
-<script>
-import dropDown from '../../dropDown';
-import Storage from '../development-tools/state.vue';
-
-export default {
-  name: 'v-component-success',
-};
-</script>
-<style scoped>
-</style>
---------------------------------------------------
-state.vue
-
-<script>
-import Vue from 'vue';
-import Vuex from 'vuex';
+import { createStore } from 'vuex';
 import axios from 'axios';
-import VueAxios from 'vue-axios';
-Vue.use(VueAxios, axios);
-Vue.use(Vuex);
 
-export default new Vuex.Store({
-  state:{
-    year:null,
-    query_result:null
+export default createStore({
+  state: {
+    year: null,
+    query_result: null,
   },
-  getters:{
-    YEAR(state){
-      return state.year
+  getters: {
+    YEAR(state) {
+      return state.year;
     },
-    QUERYRESULT(state){
-      return state.query_result
-    },
-
-  },
-  mutations:{
-    mutationGetYear(state,received_perem){
-      state.year=received_perem
-    },
-    mutationQueryResult(state,received_perem){
-      state.query_result=received_perem
-    },
-    mutationNullQueryResult(state,received_perem){
-      state.query_result=null
+    QUERYRESULT(state) {
+      return state.query_result;
     },
   },
-  actions:{
-    ActionGetYear({commit,state},param){
+  mutations: {
+    mutationGetYear(state, received_perem) {
+      state.year = received_perem;
+    },
+    mutationQueryResult(state, received_perem) {
+      state.query_result = received_perem;
+    },
+    mutationNullQueryResult(state) {
+      state.query_result = null;
+    },
+  },
+  actions: {
+    ActionGetYear({ commit }) {
       const config_header = {
         headers: {
           'Content-Type': 'application/json',
-          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
           Accept: 'application/json',
-        }
-      }
+        },
+      };
 
-      return axios.get(`/api/local/minsport/years/`,config_header)
-        .then((res)=>{
-          commit('mutationGetYear',res.data.result) //для боя
-        }).catch((error) => {
+      return axios.get(`/api/local/minsport/years/`, config_header)
+        .then((res) => {
+          commit('mutationGetYear', res.data.result);
+        })
+        .catch((error) => {
           if (error) {
-            commit('mutationGetYear',[2022,2023])
+            commit('mutationGetYear', [2022, 2023]);
           }
         });
     },
 
-    ActionSendingData({commit,state},param){
-      const uri = `/api/local/minsport/?year=${param[0]}&search=${param[1]}`
+    ActionSendingData({ commit }, param) {
+      const uri = `/api/local/minsport/?year=${param[0]}&search=${param[1]}`;
       const encoded = encodeURI(uri);
       const config_header = {
         headers: {
           'Content-Type': 'application/json',
-          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
           Accept: 'application/json',
-        }
-      }
-      return axios.get(encoded,config_header) //нужно
-        .then((res)=>{
-          commit('mutationQueryResult',res.data.result)
-        }).catch((error) => {
+        },
+      };
+
+      return axios.get(encoded, config_header)
+        .then((res) => {
+          commit('mutationQueryResult', res.data.result);
+        })
+        .catch((error) => {
           if (error) {
-            commit('mutationQueryResult','error')
+            commit('mutationQueryResult', 'error');
           }
         });
     },
-    ActionNullQueryResult({commit,state}){
-      commit('mutationNullQueryResult')
-    }
-  },
-})
-</script>
 
+    ActionNullQueryResult({ commit }) {
+      commit('mutationNullQueryResult');
+    },
+  },
+});
