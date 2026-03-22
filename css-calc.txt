@@ -1,75 +1,21 @@
-import { createStore } from 'vuex';
-import axios from 'axios';
+<template>
+  <div>
+    <h2 class="mortgage-surveys__step-title">
+      Проверьте спортивную организацию перед подачей заявления на налоговый вычет
+    </h2>
+    <v-component-it-company />
+  </div>
+</template>
 
-export default createStore({
-  state: {
-    year: null,
-    query_result: null,
+<script>
+import vComponentItCompany from './components/v-component-it-company.vue';
+
+export default {
+  name: 'MinSport',
+  components: {
+    vComponentItCompany,
   },
-  getters: {
-    YEAR(state) {
-      return state.year;
-    },
-    QUERYRESULT(state) {
-      return state.query_result;
-    },
-  },
-  mutations: {
-    mutationGetYear(state, received_perem) {
-      state.year = received_perem;
-    },
-    mutationQueryResult(state, received_perem) {
-      state.query_result = received_perem;
-    },
-    mutationNullQueryResult(state) {
-      state.query_result = null;
-    },
-  },
-  actions: {
-    ActionGetYear({ commit }) {
-      const config_header = {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-          Accept: 'application/json',
-        },
-      };
+};
+</script>
 
-      return axios.get(`/api/local/minsport/years/`, config_header)
-        .then((res) => {
-          commit('mutationGetYear', res.data.result);
-        })
-        .catch((error) => {
-          if (error) {
-            commit('mutationGetYear', [2022, 2023]);
-          }
-        });
-    },
-
-    ActionSendingData({ commit }, param) {
-      const uri = `/api/local/minsport/?year=${param[0]}&search=${param[1]}`;
-      const encoded = encodeURI(uri);
-      const config_header = {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-          Accept: 'application/json',
-        },
-      };
-
-      return axios.get(encoded, config_header)
-        .then((res) => {
-          commit('mutationQueryResult', res.data.result);
-        })
-        .catch((error) => {
-          if (error) {
-            commit('mutationQueryResult', 'error');
-          }
-        });
-    },
-
-    ActionNullQueryResult({ commit }) {
-      commit('mutationNullQueryResult');
-    },
-  },
-});
+<style scoped></style>
