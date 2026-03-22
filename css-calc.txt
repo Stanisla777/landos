@@ -1,21 +1,70 @@
 <template>
-  <div class="mortgage-surveys__final-block-refusal">
-    <p class="mortgage-surveys__final-attention error">По техническим причинам сервис временно недоступен.</p>
-    <div class="mortgage-surveys__finale-explanation">
-      <p>Приносим извинения за неудобства.</p>
-      <p>
-        В случае возникновения вопросов вы можете проконсультироваться по телефону горячей линии Консультационного Центра
-        <a class="mortgage-surveys__tele" :href="`tel:${phone}`">{{ phone_formatted }}</a>.
-      </p>
-    </div>
+  <div v-if="isLoading" class="minsport-loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Загрузка...</div>
   </div>
+  <MinSport v-else v-bind="$attrs" />
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
+import store from './store';
+
 export default {
-  name: 'v-component-failure-other-error',
-  props: ['phone', 'phone_formatted'],
+  name: 'MinSportLazy',
+  inheritAttrs: false,
+  components: {
+    MinSport: defineAsyncComponent(() => import('./MinSport.vue')),
+  },
+  data() {
+    return {
+      isLoading: true,
+    };
+  },
+  async mounted() {
+    await store.dispatch('ActionGetYear');
+    this.isLoading = false;
+  },
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.minsport-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 40px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #0066cc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+}
+</style>
+
+
+-------------------------------
+
+export { default as MinSport } from './MinSport/index.vue'; 
+----------------------
+'min-sport': () => import('./vue-apps/MinSport/index.vue')
+------------------------------------
+<div data-vue-app="min-sport"></div>
