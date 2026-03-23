@@ -1,157 +1,30 @@
-import { createStore } from 'vuex';
-import axios from 'axios';
+<template>
+  <div>
+    <v-component-search-eastern-arctic-mortgage />
+  </div>
+</template>
 
-export default createStore({
-  state: {
-    btn_active: false,
-    resultDaData: [],
-    resultDaDataCode: null,
-    request_result: null,
-    error_not_found_town: false,
-    timeout: null,
-    preload_btn: false,
-    title: null,
-    code: 200,
-    description: '',
+<script>
+import vComponentSearchEasternArcticMortgage from './components/v-component-search-eastern-arctic-mortgage.vue';
+import store from './store';
+
+export default {
+  name: 'SearchEasternArcticMortgage',
+  components: {
+    vComponentSearchEasternArcticMortgage,
   },
-  getters: {
-    RESULTDADATA(state) {
-      return state.resultDaData;
-    },
-    RESULTDADATACODE(state) {
-      return state.resultDaDataCode;
-    },
-    EERORNOTFOUNDTOWN(state) {
-      return state.error_not_found_town;
-    },
-    REQUESTRESULT(state) {
-      return state.request_result;
-    },
-    PRELOADBTN(state) {
-      return state.preload_btn;
-    },
-    BTNACTIVE(state) {
-      return state.btn_active;
-    },
-    TITLE(state) {
-      return state.title;
+  props: {
+    titleHint: {
+      type: String,
+      default: '',
     },
   },
-  mutations: {
-    mutationGetDaData(state, received_perem) {
-      if (!received_perem) return;
-      const daData = { query: received_perem };
-
-      // ===== ДЛЯ ТЕСТИРОВАНИЯ (закомментировать) =====
-      // state.resultDaData = [
-      //   { name: "300000, Тульская обл, г Тула", oktmo: "70701000001" },
-      //   { name: "665245, Иркутская обл, г Тулун", oktmo: "25732000001" }
-      // ];
-
-      axios({
-        method: 'post',
-        url: '/api/local/check-city-for-dva-mortgage/suggestions/',
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-        },
-        data: daData,
-      })
-        .then((res) => {
-          if (res.data.result) {
-            state.resultDaData = res.data.result;
-          }
-          if (res.data.code) {
-            state.resultDaDataCode = res.data.code;
-            if (res.data.code === 200) {
-              state.request_result = null;
-            }
-          }
-        })
-        .catch((error) => {
-          if (error.response) {
-            if (error.response.data !== undefined) {
-              console.log(error.response);
-              state.request_result = error.response.data;
-            }
-          }
-          console.log(error);
-        });
-    },
-
-    mutationGetResult(state, received_perem) {
-      // ===== ДЛЯ ТЕСТИРОВАНИЯ (закомментировать) =====
-      // state.request_result = { code: 200, description: "Всё хорошо" };
-
-      axios({
-        method: 'post',
-        url: '/api/local/check-city-for-dva-mortgage/check/',
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-        },
-        data: {
-          oktmo: received_perem[0],
-          'smart-token': received_perem[1],
-        },
-      })
-        .then((res) => {
-          if (res.data.description) {
-            state.request_result = res.data;
-          }
-          state.preload_btn = false;
-        })
-        .catch((error) => {
-          if (error.response) {
-            if (error.response.data !== undefined) {
-              console.log(error.response);
-              state.request_result = error.response.data;
-            }
-          }
-          state.preload_btn = false;
-          console.log(error);
-        });
-    },
-
-    mutationRemoveError(state) {
-      if (state.request_result !== null && state.request_result.code !== undefined) {
-        if (state.request_result.code <= 400) {
-          state.request_result = null;
-        }
-      }
-      state.resultDaData = [];
-    },
-
-    mutationStandingButton(state) {
-      state.preload_btn = true;
-    },
-
-    mutationButtonActive(state, received_perem) {
-      state.btn_active = received_perem;
-    },
-
-    mutationTitle(state, received_perem) {
-      state.title = received_perem;
-    },
+  mounted() {
+    if (this.titleHint) {
+      store.dispatch('ActionTitle', this.titleHint);
+    }
   },
-  actions: {
-    ActionGetDaData({ commit }, param) {
-      commit('mutationGetDaData', param);
-    },
-    ActionGetResult({ commit }, param) {
-      commit('mutationGetResult', param);
-    },
-    ActionRemoveError({ commit }) {
-      commit('mutationRemoveError');
-    },
-    ActionStandingButton({ commit }) {
-      commit('mutationStandingButton');
-    },
-    ActionButtonActive({ commit }, param) {
-      commit('mutationButtonActive', param);
-    },
-    ActionTitle({ commit }, param) {
-      commit('mutationTitle', param);
-    },
-  },
-});
+};
+</script>
+
+<style scoped></style>
