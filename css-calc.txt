@@ -1,21 +1,27 @@
 <template>
-  <div class="mortgage-surveys__final-block-refusal">
-    <p class="mortgage-surveys__final-attention error">По техническим причинам сервис временно недоступен.</p>
-    <div class="mortgage-surveys__finale-explanation">
-      <p>Приносим извинения за неудобства.</p>
-      <p>
-        В случае возникновения вопросов вы можете проконсультироваться по телефону горячей линии Консультационного Центра
-        <a class="mortgage-surveys__tele" :href="`tel:${phone}`">{{ phone_formatted }}</a>.
-      </p>
-    </div>
-  </div>
+  <Suspense>
+    <template #default>
+      <KeyIndicators v-bind="$attrs" />
+    </template>
+    <template #fallback>
+      <div class="loading-spinner">Загрузка ключевых показателей...</div>
+    </template>
+  </Suspense>
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
+
 export default {
-  name: 'v-component-failure-other-error',
-  props: ['phone', 'phone_formatted'],
+  name: 'KeyIndicatorsLazy',
+  inheritAttrs: false,
+  components: {
+    KeyIndicators: defineAsyncComponent(() =>
+      import('./KeyIndicators.vue')
+    )
+  }
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+</style>
