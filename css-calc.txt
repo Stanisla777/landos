@@ -1,73 +1,135 @@
 <template>
-  <div v-cloak>
-    <v-component-it-company />
-    <v-component-success v-if="status_success" />
-    <v-component-failure-not-found
-      v-if="status_failure"
-      :phone="phone"
-      :phone_formatted="phone_formatted"
-    />
-    <v-component-failure-other-error
-      v-if="status_failure_other_error"
-      :phone="phone"
-      :phone_formatted="phone_formatted"
-    />
+  <div>
+    <p class="mortgage-surveys__step-title">Перечень аккредитованных IT-компаний</p>
+    <div class="mortgage-surveys__wr-select">
+      <div
+        class="calculator_s__calculator-input mortgage-surveys__input js--inn-mask"
+        @focusin="focusIn"
+        @focusout="focusOut"
+      >
+        <input
+          type="text"
+          inputmode="numeric"
+          placeholder="Введите ИНН организации"
+          @input="liveSearch"
+          @paste="liveSearchPaste"
+          @keyup="onlyNumber"
+        />
+      </div>
+      <div class="mortgage-surveys__wr-list" :class="status_list === true ? 'active' : ''">
+        <ul class="mortgage-surveys__list">
+          <li
+            v-for="item in massive_company"
+            :key="item"
+            @click="commonClickSelect"
+          >
+            {{ item }}
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import vComponentItCompany from './components/v-component-it-company.vue';
-import vComponentSuccess from './components/v-component-success.vue';
-import vComponentFailureNotFound from './components/v-component-failure-not-found.vue';
-import vComponentFailureOtherError from './components/v-component-failure-other-error.vue';
-import store from './store';
+import store from '../store';
+import IMask from 'imask';
 
 export default {
-  name: 'ITMortgageSurveys',
-  components: {
-    vComponentItCompany,
-    vComponentSuccess,
-    vComponentFailureNotFound,
-    vComponentFailureOtherError,
-  },
-  props: {
-    titleHint: {
-      type: String,
-      default: '',
-    },
-  },
+  name: 'v-component-it-company',
   data() {
     return {
-      phone: '',
-      phone_formatted: '',
+      output: [],
     };
   },
   computed: {
-    status_failure() {
-      return store.getters.STATUS_FAILURE;
+    massive_company() {
+      return store.getters.MASSIVE_COMPANY;
     },
-    status_success() {
-      return store.getters.STATUS_SUCCESS;
+    status_list() {
+      return store.getters.STATUS_LIST;
     },
-    status_failure_other_error() {
-      return store.getters.STATUS_FAILURE_OTHER_ERROR;
+  },
+  methods: {
+    onlyNumber(el) {
+      const element = el.currentTarget;
+      let element_val = element.value;
+      if (el.keyCode === 13 && element.value.length === 10) {
+        store.dispatch('ActionFilledParameters', element_val);
+      } else if (el.keyCode === 13 && element_val.length < 10) {
+        store.dispatch('ActionListFalse');
+      }
+    },
+
+    inputCost() {
+      const input_status = document.querySelectorAll('.js--inn-mask input');
+      const maskOptions = {
+        mask: /^\d+$/,
+      };
+      for (const item of input_status) {
+        new IMask(item, maskOptions);
+      }
+    },
+
+    liveSearchPaste(el) {
+      const element = el.currentTarget;
+      let element_val = (el.clipboardData || window.clipboardData).getData('text');
+      if (element_val.search(/[^0-9]/g) !== -1) {
+        el.preventDefault();
+      }
+    },
+
+    liveSearch(el) {
+      const element = el.currentTarget;
+      let element_val = element.value;
+      element_val = element_val.trim();
+
+      if (element.value.match(/^\d+$/)) {
+        element.closest('.js--inn-mask').classList.remove('error');
+      } else if (!element.value.match(/^\d+$/) && element.value.length !== 0) {
+        element.closest('.js--inn-mask').classList.add('error');
+      }
+
+      element.value = element.value.substring(0, 10);
+      if (element_val.length === 10 && !isNaN(element_val)) {
+        store.dispatch('ActionFilledParameters', element_val);
+      } else if (element_val.length < 10) {
+        store.dispatch('ActionListFalse');
+      } else if (element_val.length > 15) {
+        element.value = '';
+        store.dispatch('ActionListFalse');
+      }
+    },
+
+    focusIn(el) {
+      const element = el.currentTarget;
+      element.classList.add('active');
+    },
+
+    focusOut(el) {
+      const element = el.currentTarget;
+      element.classList.remove('active');
+    },
+
+    commonClickSelect(el) {
+      this.elementSelect(el);
+      this.showFinalBlock(el);
+    },
+
+    elementSelect(el) {
+      const element = el.currentTarget;
+      element.closest('.mortgage-surveys__wr-select').querySelector('input').value = element.textContent;
+      element.closest('.mortgage-surveys__wr-list').classList.remove('active');
+    },
+
+    showFinalBlock(el) {
+      store.dispatch('ActionStatusSuccess');
     },
   },
   mounted() {
-    if (typeof window.conf !== 'undefined' && window.conf !== null) {
-      if (window.conf.hasOwnProperty('UF_PHONE')) {
-        this.phone = window.conf.UF_PHONE;
-      }
-      if (window.conf.hasOwnProperty('UF_PHONE_formatted')) {
-        this.phone_formatted = window.conf.UF_PHONE_formatted;
-      }
-    }
+    this.inputCost();
   },
 };
 </script>
 
-<style scoped>
-[v-cloak] {
-  display: none !important;
-}
-</style>
+<style scoped></style>
