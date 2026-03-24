@@ -1,133 +1,75 @@
 <template>
-  <div>
-    <p class="mortgage-surveys__step-title">Перечень аккредитованных IT-компаний</p>
-    <div class="mortgage-surveys__wr-select">
-      <div
-        class="calculator_s__calculator-input mortgage-surveys__input js--inn-mask"
-        @focusin="focusIn"
-        @focusout="focusOut"
-      >
-        <input
-          type="text"
-          inputmode="numeric"
-          placeholder="Введите ИНН организации"
-          @input="liveSearch"
-          @paste="liveSearchPaste"
-          @keyup="onlyNumber"
-        />
-      </div>
-      <div class="mortgage-surveys__wr-list" :class="status_list === true ? 'active' : ''">
-        <ul class="mortgage-surveys__list">
-          <li
-            v-for="item in massive_company"
-            :key="item"
-            @click="commonClickSelect"
-          >
-            {{ item }}
+  <div class="mortgage-surveys__final-block">
+    <p class="mortgage-surveys__sucsess-final">
+      <span>Поздравляем!</span> Компания включена в реестр аккредитованных. Теперь необходимо проверить, пользуется ли она налоговыми льготами. Эту информацию можно получить у вашего работодателя или обратившись в один из банков-участников.
+    </p>
+    <div class="mortgage-surveys__final-block-wrp">
+      <div class="mortgage-surveys__wr-banks js-accordion-parent">
+        <p class="mortgage-surveys__title-banks">
+          Перечень
+          <a href="/instructions/spisok-bankov-uchastnikov-programmy-lgotnaya-ipoteka-dlya-it-spetsialistov/">
+            банков-участников
+          </a>
+        </p>
+        <ul class="mortgage-surveys__list-banks calculator_s__stylized-list js-accordion-body">
+          <li v-for="item in massive_bank" :key="item.name">
+            <a :href="item.link" target="_blank">{{ item.name }}</a>
           </li>
         </ul>
+        <div class="mortgage-surveys__banks-list-btn" @click="banksList">
+          <p></p>
+          <div class="mortgage-surveys__banks-list-icon">
+            <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L6.29289 6.29289C6.68342 6.68342 7.31658 6.68342 7.70711 6.29289L13 1" stroke="#1C1B28" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="mortgage-surveys__wr-documents">
+        <div class="mortgage-surveys__documents">
+          <p class="mortgage-surveys__documents-title">Чем регулируется программа</p>
+          <ul class="mortgage-surveys__documents-list">
+            <li v-for="item in massive_documents" :key="item.name" class="mortgage-surveys__documents-list-item">
+              <a :href="item.link" target="_blank">{{ item.name }}</a>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import dropDown from '../../dropDown';
 import store from '../store';
-import IMask from 'imask';
 
 export default {
-  name: 'v-component-it-company',
-  data() {
-    return {
-      output: [],
-    };
-  },
+  name: 'v-component-success',
   computed: {
-    massive_company() {
-      return store.getters.MASSIVE_COMPANY;
+    massive_bank() {
+      return store.getters.MASSIVE_BANK;
     },
-    status_list() {
-      return store.getters.STATUS_LIST;
+    massive_documents() {
+      return store.getters.MASSIVE_DOCUMENTS;
     },
   },
   methods: {
-    onlyNumber(el) {
+    banksList(el) {
       const element = el.currentTarget;
-      let element_val = element.value;
-      if (el.keyCode === 13 && element.value.length === 10) {
-        store.dispatch('ActionFilledParameters', element_val);
-      } else if (el.keyCode === 13 && element_val.length < 10) {
-        store.dispatch('ActionListFalse');
+      if (element.classList.contains('active')) {
+        element.classList.remove('active');
+        const scrollTarget = element.closest('#v-mortgage-surveys-one-request');
+        const elementPosition = scrollTarget.getBoundingClientRect().top;
+        window.scrollBy({
+          top: elementPosition - 20,
+          behavior: 'smooth',
+        });
+      } else {
+        element.classList.add('active');
       }
+      dropDown(element, 88);
     },
-
-    inputCost() {
-      const input_status = document.querySelectorAll('.js--inn-mask input');
-      const maskOptions = {
-        mask: /^\d+$/,
-      };
-      for (const item of input_status) {
-        new IMask(item, maskOptions);
-      }
-    },
-
-    liveSearchPaste(el) {
-      const element = el.currentTarget;
-      let element_val = (el.clipboardData || window.clipboardData).getData('text');
-      if (element_val.search(/[^0-9]/g) !== -1) {
-        el.preventDefault();
-      }
-    },
-
-    liveSearch(el) {
-      const element = el.currentTarget;
-      let element_val = element.value;
-      element_val = element_val.trim();
-
-      if (element.value.match(/^\d+$/)) {
-        element.closest('.js--inn-mask').classList.remove('error');
-      } else if (!element.value.match(/^\d+$/) && element.value.length !== 0) {
-        element.closest('.js--inn-mask').classList.add('error');
-      }
-
-      element.value = element.value.substring(0, 10);
-      if (element_val.length === 10 && !isNaN(element_val)) {
-        store.dispatch('ActionFilledParameters', element_val);
-      } else if (element_val.length < 10) {
-        store.dispatch('ActionListFalse');
-      } else if (element_val.length > 15) {
-        element.value = '';
-        store.dispatch('ActionListFalse');
-      }
-    },
-
-    focusIn(el) {
-      const element = el.currentTarget;
-      element.classList.add('active');
-    },
-
-    focusOut(el) {
-      const element = el.currentTarget;
-      element.classList.remove('active');
-    },
-
-    commonClickSelect(el) {
-      this.elementSelect(el);
-      this.showFinalBlock(el);
-    },
-
-    elementSelect(el) {
-      const element = el.currentTarget;
-      element.closest('.mortgage-surveys__wr-select').querySelector('input').value = element.textContent;
-      element.closest('.mortgage-surveys__wr-list').classList.remove('active');
-    },
-
-    showFinalBlock(el) {
-      store.dispatch('ActionStatusSuccess');
-    },
-  },
-  mounted() {
-    this.inputCost();
   },
 };
 </script>
