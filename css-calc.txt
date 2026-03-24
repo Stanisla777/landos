@@ -1,26 +1,146 @@
-А что за ошибки я получаю при установке?
-C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf>npm install apexcharts vue3-apexcharts
-\(node:101128) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
-(Use `node --trace-warnings ...` to show where the warning was created)
-npm error code ERESOLVE
-npm error ERESOLVE unable to resolve dependency tree
-npm error
-npm error While resolving: start-webapck-template@2.0.0
-npm error Found: apexcharts@3.54.1
-npm error node_modules/apexcharts
-npm error   apexcharts@"3.54.1" from the root project
-npm error
-npm error Could not resolve dependency:
-npm error peer apexcharts@">=5.10.0" from vue3-apexcharts@1.11.1
-npm error node_modules/vue3-apexcharts
-npm error   vue3-apexcharts@"*" from the root project
-npm error
-npm error Fix the upstream dependency conflict, or retry
-npm error this command with --force or --legacy-peer-deps
-npm error to accept an incorrect (and potentially broken) dependency resolution.
-npm error
-npm error
-npm error For a full report see:
-npm error C:\Users\sshchegolev\AppData\Local\npm-cache\_logs\2026-03-24T18_45_36_620Z-eresolve-report.txt
+<template>
+  <div class="progress__directions-schedule-circle js--schedule-circle" :data-circle-chart="chartDataString">
+    <h3 class="progress__size-font-bold">Типы устройств</h3>
+    <div class="progress__schedule-circle-wr">
+      <div class="progress__schedule-circle-legend js--schedule-circle-legend">
+        <div class="progress__schedule-circle-legend-item">
+          <p class="progress__schedule-circle-legend-val js--legend-val">{{ mobilePercent }}%</p>
+          <p class="progress__schedule-circle-legend-key">Смартфоны</p>
+        </div>
+        <div class="progress__schedule-circle-legend-item">
+          <p class="progress__schedule-circle-legend-val js--legend-val">{{ pcPercent }}%</p>
+          <p class="progress__schedule-circle-legend-key">Компьютеры</p>
+        </div>
+      </div>
+      <div id="schedule-circle" ref="apexChart">
+        <apexchart
+          width="75%"
+          :options="chartOptions"
+          :series="chartSeries"
+          type="pie"
+        />
+      </div>
+    </div>
+  </div>
+</template>
 
-npm error A complete log of this run can be found in: C:\Users\sshchegolev\AppData\Local\npm-cache\_logs\2026-03-24T18_45_36_620Z-debug-0.log
+<script>
+import VueApexCharts from 'vue3-apexcharts';
+
+export default {
+  name: 'ApexChartProgressCompany',
+  components: {
+    apexchart: VueApexCharts,
+  },
+  props: {
+    instanceId: {
+      type: String,
+      default: '',
+    },
+    circleChart: {
+      type: [Array, String],
+      default: () => [79, 21],
+      validator: (value) => {
+        if (Array.isArray(value)) return true;
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed);
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      },
+    },
+  },
+  data() {
+    return {
+      chartSeries: null,
+      mobilePercent: 79,
+      pcPercent: 21,
+      chartOptions: {
+        chart: {
+          type: 'pie',
+          animations: {
+            enabled: false,
+          },
+        },
+        states: {
+          normal: { filter: { type: 'none', value: 0 } },
+          click: { filter: { type: 'none', value: 0 } },
+          hover: { filter: { type: 'none', value: 0 } },
+          active: {
+            allowMultipleDataPointsSelection: false,
+            filter: { type: 'none', value: 0 },
+          },
+        },
+        dataLabels: { enabled: false },
+        labels: ['Мобильные', 'ПК'],
+        fill: { colors: ['#A3D562', '#FFC9B5'] },
+        legend: {
+          show: false,
+          position: 'right',
+          horizontalAlign: 'right',
+          fontSize: '14px',
+          fontFamily: 'Gilroy-Medium,sans-serif',
+          offsetX: 5,
+          offsetY: -18,
+          markers: { width: 0, height: 0 },
+          onItemClick: { toggleDataSeries: false },
+          onItemHover: { highlightDataSeries: false },
+          height: 90,
+        },
+        tooltip: { enabled: false },
+        stroke: { show: false },
+        responsive: [{ breakpoint: 640, options: { chart: {}, legend: {} } }],
+      },
+    };
+  },
+  computed: {
+    chartDataString() {
+      return JSON.stringify([this.mobilePercent, this.pcPercent]);
+    },
+  },
+  watch: {
+    circleChart: {
+      handler(newVal) {
+        this.parseChartData(newVal);
+      },
+      immediate: true,
+      deep: true,
+    },
+  },
+  methods: {
+    parseChartData(data) {
+      if (!data) return;
+
+      let parsedData;
+      if (typeof data === 'string') {
+        try {
+          parsedData = JSON.parse(data);
+        } catch (e) {
+          console.warn('Ошибка парсинга circleChart:', e);
+          return;
+        }
+      } else if (Array.isArray(data)) {
+        parsedData = data;
+      } else {
+        return;
+      }
+
+      if (parsedData && parsedData.length >= 2) {
+        this.mobilePercent = parsedData[0];
+        this.pcPercent = parsedData[1];
+        this.chartSeries = parsedData;
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+.progress__directions-schedule-circle {
+  /* ваши стили */
+}
+</style>
