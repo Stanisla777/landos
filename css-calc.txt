@@ -1,22 +1,32 @@
 <template>
-  <div class="mortgage-surveys__final-block-refusal">
-    <p>По техническим причинам сервис временно недоступен.</p>
-    <p>Приносим извинения за неудобства.</p>
-    <p>
-      По вопросам участия в программе вы можете проконсультироваться по телефону горячей линии Консультационного Центра
-      <a class="mortgage-surveys__tele" :href="`tel:${phone}`">{{ phone_formatted }}</a>.
-    </p>
-    <p>
-      Вы можете ознакомиться с другими <a href="/tag/mortgage_support/">мерами поддержки</a>.
-    </p>
-  </div>
+  <Suspense>
+    <template #default>
+      <ITMortgageSurveys v-bind="$attrs" />
+    </template>
+    <template #fallback>
+      <div class="loading-spinner">Загрузка...</div>
+    </template>
+  </Suspense>
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
+
 export default {
-  name: 'v-component-failure-other-error',
-  props: ['phone', 'phone_formatted'],
+  name: 'ITMortgageSurveysLazy',
+  inheritAttrs: true,
+  components: {
+    ITMortgageSurveys: defineAsyncComponent(() => 
+      import('./ITMortgageSurveys.vue')
+    ),
+  },
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.loading-spinner {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+</style>
