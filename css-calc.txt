@@ -1,142 +1,38 @@
 <template>
-  <div class="progress__directions-schedule-circle js--schedule-circle" :data-circle-chart="chartDataString">
-    <h3 class="progress__size-font-bold">Типы устройств</h3>
-    <div class="progress__schedule-circle-wr">
-      <div class="progress__schedule-circle-legend js--schedule-circle-legend">
-        <div class="progress__schedule-circle-legend-item">
-          <p class="progress__schedule-circle-legend-val js--legend-val">{{ mobilePercent }}%</p>
-          <p class="progress__schedule-circle-legend-key">Смартфоны</p>
-        </div>
-        <div class="progress__schedule-circle-legend-item">
-          <p class="progress__schedule-circle-legend-val js--legend-val">{{ pcPercent }}%</p>
-          <p class="progress__schedule-circle-legend-key">Компьютеры</p>
-        </div>
-      </div>
-      <div id="schedule-circle" ref="apexChart">
-        <apexcharts
-          width="75%"
-          :options="chartOptions"
-          :series="chartSeries"
-        />
-      </div>
-    </div>
-  </div>
+  <Suspense>
+    <template #default>
+      <ApexChartProgressCompany v-bind="$attrs" />
+    </template>
+    <template #fallback>
+      <div class="loading-spinner">Загрузка диаграммы...</div>
+    </template>
+  </Suspense>
 </template>
 
 <script>
 import { defineAsyncComponent } from 'vue';
 
 export default {
-  name: 'ApexChartProgressCompany',
-  props: {
-    instanceId: {
-      type: String,
-      default: '',
-    },
-    // 👇 ПРОПС ДЛЯ ПОЛУЧЕНИЯ ДАННЫХ
-    circleChart: {
-      type: Array,
-      default: () => [79, 21],
-      // Кастомный парсер для строки JSON
-      validator: (value) => {
-        if (Array.isArray(value)) return true;
-        if (typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value);
-            return Array.isArray(parsed);
-          } catch (e) {
-            return false;
-          }
-        }
-        return false;
-      },
-    },
-  },
-  data() {
-    return {
-      chartSeries: null,
-      mobilePercent: 79,
-      pcPercent: 21,
-      chartOptions: {
-        chart: {
-          type: 'pie',
-          animations: {
-            enabled: false,
-          },
-        },
-        states: {
-          normal: { filter: { type: 'none', value: 0 } },
-          click: { filter: { type: 'none', value: 0 } },
-          hover: { filter: { type: 'none', value: 0 } },
-          active: {
-            allowMultipleDataPointsSelection: false,
-            filter: { type: 'none', value: 0 },
-          },
-        },
-        dataLabels: { enabled: false },
-        labels: ['Мобильные', 'ПК'],
-        fill: { colors: ['#A3D562', '#FFC9B5'] },
-        legend: {
-          show: false,
-          position: 'right',
-          horizontalAlign: 'right',
-          fontSize: '14px',
-          fontFamily: 'Gilroy-Medium,sans-serif',
-          offsetX: 5,
-          offsetY: -18,
-          markers: { width: 0, height: 0 },
-          onItemClick: { toggleDataSeries: false },
-          onItemHover: { highlightDataSeries: false },
-          height: 90,
-        },
-        tooltip: { enabled: false },
-        stroke: { show: false },
-        responsive: [{ breakpoint: 640, options: { chart: {}, legend: {} } }],
-      },
-    };
-  },
-  computed: {
-    chartDataString() {
-      return JSON.stringify([this.mobilePercent, this.pcPercent]);
-    },
-  },
-  watch: {
-    // 👇 СЛЕДИМ ЗА ИЗМЕНЕНИЕМ ПРОПСА
-    circleChart: {
-      handler(newVal) {
-        this.parseChartData(newVal);
-      },
-      immediate: true, // срабатывает сразу при монтировании
-      deep: true,
-    },
-  },
-  methods: {
-    parseChartData(data) {
-      if (!data) return;
-
-      let parsedData;
-      if (typeof data === 'string') {
-        try {
-          parsedData = JSON.parse(data);
-        } catch (e) {
-          console.warn('Ошибка парсинга circleChart:', e);
-          return;
-        }
-      } else if (Array.isArray(data)) {
-        parsedData = data;
-      } else {
-        return;
-      }
-
-      if (parsedData && parsedData.length >= 2) {
-        this.mobilePercent = parsedData[0];
-        this.pcPercent = parsedData[1];
-        this.chartSeries = parsedData;
-      }
-    },
-  },
+  name: 'ApexChartProgressCompanyLazy',
+  inheritAttrs: true,
   components: {
-    apexcharts: defineAsyncComponent(() => import('vue-apexcharts')),
+    ApexChartProgressCompany: defineAsyncComponent(() => 
+      import('./ApexChartProgressCompany.vue')
+    ),
   },
 };
 </script>
+
+<style scoped>
+.loading-spinner {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+</style>
+
+--------------------------------------------
+
+'apex-chart-progress-company': () => import('./vue-apps/ApexChartProgressCompany/index.vue')
+
+<div data-vue-app="apex-chart-progress-company" data-circle-chart="[79, 21]"></div>
