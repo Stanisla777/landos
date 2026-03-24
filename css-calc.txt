@@ -1,36 +1,606 @@
-<template>
-  <Suspense>
-    <template #default>
-      <SearchEasternArcticMortgage v-bind="$attrs" />
-    </template>
-    <template #fallback>
-      <div class="loading-spinner">Загрузка...</div>
-    </template>
-  </Suspense>
-</template>
+Проверка аккредитации IT-компаний
+ITMortgageSurveys.vue
+<template lang="pug">
+  div
+    template
+      v-component-it-company
+    template
+      v-component-it-success(
+        v-if="status_success"
+      )
+    template
+      v-component-it-failure-not-found(
+        v-if="status_failure"
+        :phone ="phone"
+        :phone_formatted ="phone_formatted"
+      )
+    template
+    v-component-it-failure-other-error(
+      v-if="status_failure_other_error"
+      :phone ="phone"
+      :phone_formatted ="phone_formatted"
+    )
 
+
+</template>
 <script>
-import { defineAsyncComponent } from 'vue';
+import Vue from 'vue';
+import Storage from './development-tools/state.vue';
+import vComponentItCompany from './components/v-component-it-company.vue';
+import vComponentItSuccess from './components/v-component-success.vue';
+import vComponentItFailureNotFound from './components/v-component-failure-not-found.vue';
+import vComponentItFailureOtherError from './components/v-component-failure-other-error.vue';
+
 
 export default {
-  name: 'SearchEasternArcticMortgageLazy',
-  inheritAttrs: true,
-  components: {
-    SearchEasternArcticMortgage: defineAsyncComponent(() => 
-      import('./SearchEasternArcticMortgage.vue')
-    ),
+  name: 'ItMortgageSurveysOneRequest',
+  data(){
+    return {
+      final_result:true,
+      phone:'',
+      phone_formatted:''
+    }
   },
+  methods:{
+    callingCallToAPI(){
+      // Storage.dispatch('axiosGetObjectBanks_Company')
+    },
+
+
+  },
+  mounted(){
+    this.callingCallToAPI()
+    if (typeof conf !== 'undefined' && conf !== null && conf.hasOwnProperty('UF_PHONE')) {
+      this.phone = conf.UF_PHONE
+    }
+    if (typeof conf !== 'undefined' && conf !== null && conf.hasOwnProperty('UF_PHONE_formatted')) {
+      this.phone_formatted = conf.UF_PHONE_formatted
+    }
+  },
+  computed:{
+    status_failure(){
+      return Storage.getters.STATUS_FAILURE
+    },
+    status_success(){
+      return Storage.getters.STATUS_SUCCESS
+    },
+    status_failure_other_error(){
+      return Storage.getters.STATUS_FAILURE_OTHER_ERROR
+    },
+
+  },
+  watch:{
+  },
+  components:{
+    vComponentItCompany,
+    vComponentItSuccess,
+    vComponentItFailureNotFound,
+    vComponentItFailureOtherError
+  },
+
+
+  created() {
+
+  }
 };
 </script>
-
 <style scoped>
-.loading-spinner {
-  padding: 40px;
-  text-align: center;
-  color: #666;
-}
 </style>
--------------------
-'search-eastern-arctic-mortgage': () => import('./vue-apps/SearchEasternArcticMortgage/index.vue')
+----------
+v-component-it-company.vue
+<template lang="pug">
+  div
+    p.mortgage-surveys__step-title Перечень аккредитованных IT-компаний
+    .mortgage-surveys__wr-select
+      .calculator_s__calculator-input.mortgage-surveys__input.js--inn-mask(
+        @focusin="focusIn"
+        @focusout="focusOut"
+      )
+        input(type="text" inputmode="numeric" placeholder="Введите  ИНН организации")(
+          @input="liveSearch"
+          @paste="liveSearchPaste"
+          @keyup="onlyNumber"
+        )
+      .mortgage-surveys__wr-list(
+        v-bind:class="status_list===true ? 'active' : ''"
+      )
+        ul.mortgage-surveys__list
+          li(
+            v-for="item in massive_company"
+            @click="commonClickSelect"
+          ) {{item}}
 
-<div data-vue-app="search-eastern-arctic-mortgage" data-title-hint="Текст подсказки"></div>
+
+</template>
+<script>
+import Storage from '../development-tools/state.vue';
+import IMask from 'imask';
+
+export default {
+  name: 'v-component-it-company',
+  data(){
+    return {
+      output:[]
+
+    }
+  },
+  methods:{
+    onlyNumber(el){
+      const element = el.currentTarget
+      let element_val = element.value;
+      if(el.keyCode===13&&element.value.length===10){
+        Storage.dispatch('ActionFilledParameters',element_val)
+      }
+      else if (el.keyCode===13&&element_val.length <10){
+        Storage.dispatch('ActionListFalse')
+      }
+    },
+    inputCost(){
+      const input_status = document.querySelectorAll('.js--inn-mask input');
+      const maskOptions = {
+        mask: /^\d+$/,
+      };
+      for (const item of input_status) {
+        new IMask(item, maskOptions);
+      }
+    },
+    liveSearchPaste(el){
+      const element = el.currentTarget
+      let element_val = (el.clipboardData || window.clipboardData).getData('text');
+      if ( element_val.search(/[^0-9]/g) != -1 ) {
+        el.preventDefault();
+      }
+    },
+
+    liveSearch(el){
+
+      const element = el.currentTarget
+      let element_val = element.value;
+      element_val=element_val.trim()
+
+      if(element.value.match(/^\d+$/)){
+        element.closest('.js--inn-mask').classList.remove('error')
+      }
+      else if(!element.value.match(/^\d+$/)&&element.value.length!==0){
+        element.closest('.js--inn-mask').classList.add('error')
+      }
+
+
+      element.value = element.value.substring(0, 10)
+      if (element_val.length ===10&&!isNaN(element_val)){
+        Storage.dispatch('ActionFilledParameters',element_val)
+      }
+        // if (element_val.length >9&&element_val.length<13){
+        //   // alert()
+        //   Storage.dispatch('ActionFilledParameters',element_val)
+      // }
+      else if (element_val.length <10){
+        Storage.dispatch('ActionListFalse')
+      }
+      else if (element_val.length >15){
+        element.value=''
+        Storage.dispatch('ActionListFalse')
+      }
+
+    },
+
+    focusIn(el){
+      const element = el.currentTarget
+      element.classList.add('active')
+    },
+    focusOut(el){
+      const element = el.currentTarget
+      element.classList.remove('active')
+    },
+    commonClickSelect(el){
+      this.elementSelect(el)
+      this.showFinalBlock(el)
+    },
+    elementSelect(el){
+      const element = el.currentTarget
+      element.closest('.mortgage-surveys__wr-select').querySelector('input').value = element.textContent
+      element.closest('.mortgage-surveys__wr-list').classList.remove('active')
+    },
+    showFinalBlock(el){
+      Storage.dispatch('ActionStatusSuccess')
+    }
+  },
+  mounted(){
+    this.inputCost();
+  },
+  computed:{
+    massive_company(){
+      return Storage.getters.MASSIVE_COMPANY
+    },
+    status_list(){
+      return Storage.getters.STATUS_LIST
+    },
+
+  },
+  watch:{
+  },
+  components:{
+
+  },
+  created() {
+
+  }
+};
+</script>
+<style scoped>
+</style>
+-------------------------------------------------
+v-component-failure-not-found.vue
+<template lang="pug">
+  .mortgage-surveys__final-block-refusal
+    p Упс, такой компании нет!
+    p Убедитесь, что ИНН указан верно.
+    p По вопросам участия в программе вы можете проконсультироваться по телефону горячей линии Консультационного Центра
+      | !{' '}
+      a.mortgage-surveys__tele(:href="`tel:${phone}`") {{phone_formatted}}
+      | .
+    p.
+      Вы можете ознакомиться с другими <a href="/tag/mortgage_support/">мерами поддержки</a>.
+
+</template>
+<script>
+
+import Storage from '../development-tools/state.vue';
+
+export default {
+  name: 'v-component-it-failure-not-found',
+  props:['phone','phone_formatted'],
+  data(){
+    return {
+      output:[],
+    }
+  },
+  methods:{
+
+
+  },
+  mounted(){
+
+  },
+  computed:{
+
+
+
+
+  },
+  watch:{
+  },
+  components:{
+
+  },
+
+
+  created() {
+
+  }
+};
+</script>
+<style scoped>
+</style>
+----------------------------------------
+v-component-failure-other-error.vue
+<template lang="pug">
+  .mortgage-surveys__final-block-refusal
+    p По техническим причинам сервис временно недоступен.
+    p Приносим извинения за неудобства.
+    p По вопросам участия в программе вы можете проконсультироваться по телефону горячей линии Консультационного Центра
+      | !{' '}
+      a.mortgage-surveys__tele(:href="`tel:${phone}`") {{phone_formatted}}
+      | .
+    p.
+      Вы можете ознакомиться с другими <a href="/tag/mortgage_support/">мерами поддержки</a>.
+
+</template>
+<script>
+
+import Storage from '../development-tools/state.vue';
+
+export default {
+  name: 'v-component-it-failure-not-found',
+  props:['phone','phone_formatted'],
+  data(){
+    return {
+      output:[]
+
+    }
+  },
+  methods:{
+
+
+  },
+  mounted(){
+
+  },
+  computed:{
+
+
+
+
+  },
+  watch:{
+  },
+  components:{
+
+  },
+
+
+  created() {
+
+  }
+};
+</script>
+<style scoped>
+</style>
+------------------------------------------
+v-component-success.vue
+<template lang="pug">
+  .mortgage-surveys__final-block
+    p.mortgage-surveys__sucsess-final.
+      <span>Поздравляем!</span> Компания включена в реестр аккредитованных. Теперь необходимо проверить, пользуется ли она налоговыми льготами. Эту информацию можно получить у вашего работодателя или обратившись в один из банков-участников.
+    .mortgage-surveys__final-block-wrp
+      .mortgage-surveys__wr-banks.js-accordion-parent
+        p.mortgage-surveys__title-banks Перечень <a href="/instructions/spisok-bankov-uchastnikov-programmy-lgotnaya-ipoteka-dlya-it-spetsialistov/" > банков-участников</a>
+        ul.mortgage-surveys__list-banks.calculator_s__stylized-list.js-accordion-body
+          li(v-for="item in massive_bank")
+            a(
+              v-bind:href="item.link"
+              target="_blank"
+            ) {{item.name}}
+
+        .mortgage-surveys__banks-list-btn(@click="banksList")
+          p
+          .mortgage-surveys__banks-list-icon
+            svg(width='14', height='8', viewbox='0 0 14 8', fill='none', xmlns='http://www.w3.org/2000/svg')
+              path(d='M1 1L6.29289 6.29289C6.68342 6.68342 7.31658 6.68342 7.70711 6.29289L13 1', stroke='#1C1B28', stroke-width='2', stroke-linecap='round')
+
+      .mortgage-surveys__wr-documents
+        .mortgage-surveys__documents
+          p.mortgage-surveys__documents-title Чем регулируется программа
+          ul.mortgage-surveys__documents-list
+            li.mortgage-surveys__documents-list-item(v-for="item in massive_documents")
+              a(
+                v-bind:href="item.link"
+                target="_blank"
+              ) {{item.name}}
+
+</template>
+<script>
+import dropDown from '../../dropDown';
+import Storage from '../development-tools/state.vue';
+
+export default {
+  name: 'v-component-it-success',
+  data(){
+    return {
+      output:[]
+
+    }
+  },
+  methods:{
+    banksList(el) {
+      const element = el.currentTarget
+      if(element.classList.contains('active')){
+        element.classList.remove('active')
+        const scrollTarget = element.closest('#v-mortgage-surveys-one-request');
+        const elementPosition = scrollTarget.getBoundingClientRect().top;
+        console.log(elementPosition);
+        window.scrollBy({
+          top: elementPosition - 20,
+          behavior: 'smooth'
+        });
+      }
+      else{
+        element.classList.add('active')
+      }
+
+      dropDown(element, 88);
+    }
+  },
+  mounted(){
+
+  },
+  computed:{
+    massive_bank(){
+      return Storage.getters.MASSIVE_BANK
+    },
+    massive_documents(){
+      return Storage.getters.MASSIVE_DOCUMENTS
+    },
+
+  },
+  watch:{
+  },
+  components:{
+
+  },
+
+
+  created() {
+
+  }
+};
+</script>
+<style scoped>
+</style>
+-----------------------------
+state.vue
+<script>
+import Vue from 'vue';
+import Vuex from 'vuex';
+import axios from 'axios';
+import VueAxios from 'vue-axios';
+Vue.use(VueAxios, axios);
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state:{
+    banks:[],
+    company:[],
+    documents:[],
+    status_list:false,
+    status_failure:false,
+    status_success:false,
+    status_failure_other_error:false,
+
+    it_module:{
+      it_companies:[
+        {
+          name: "АО РНИЦ ГОРОДА СЕВАСТОПОЛЯ ИНН 9201510872"
+        }
+      ],
+      banks:[
+        {name: "ПАО СБЕРБАНК", link: "https://www.sberbank.ru/ru/about/today", rate: "0"}
+      ],
+      documents:[
+        {
+          link: "https://docs.cntd.ru/document/350305162",
+          name: "Постановление Правительства N 805 от 30.04.2022"
+        }
+      ]
+    }
+
+
+
+  },
+  getters:{
+    MASSIVE_COMPANY(state){
+      return state.company
+    },
+    MASSIVE_BANK(state){
+      return state.banks
+    },
+    MASSIVE_DOCUMENTS(state){
+      return state.documents
+    },
+    STATUS_LIST(state){
+      return state.status_list
+    },
+    STATUS_FAILURE(state){
+      return state.status_failure
+    },
+    STATUS_SUCCESS(state){
+      return state.status_success
+    },
+    STATUS_FAILURE_OTHER_ERROR(state){
+      return state.status_failure_other_error
+    },
+
+
+
+
+
+
+
+  },
+  mutations:{
+
+
+
+
+    mutationObjCompany(state,received_perem){
+      // console.log(received_perem.it_companies);
+      state.company=[]
+      // if(state.company.length===0){
+        for( let item of received_perem.it_companies){
+          state.company.push(item.name);
+        }
+      // }
+
+      if (state.company.length > 0) {
+        state.status_list = true;
+        state.status_failure = false
+      }
+
+      // console.log(state);
+    },
+    mutationObjBank(state,received_perem){
+      state.banks=[]
+      for (let item of received_perem.banks){
+        state.banks.push(item)
+      }
+    },
+    mutationObjDocument(state,received_perem){
+      state.documents=[]
+      for (let item of received_perem.documents){
+        state.documents.push(item)
+      }
+      // console.log(state);
+    },
+    mutationStatusSuccess(state){
+      state.status_success=true
+    },
+    mutationStatusFailureNotFound(state){
+      state.status_failure = true;
+    },
+    mutationStatusFailureOtherError(state){
+      state.status_failure_other_error = true;
+    },
+
+    mutationListFalse(state){
+      state.status_list=false
+      state.status_success=false
+      state.status_failure=false
+      state.status_failure_other_error=false
+      state.company =[]
+      state.banks=[]
+      state.documents=[]
+    }
+
+
+
+  },
+  actions:{
+
+    ActionFilledParameters({commit,state},parametr){
+
+
+      // это для тестов заархивировать
+      // commit('mutationObjCompany',state.it_module)
+      // commit('mutationObjBank',state.it_module)
+      // commit('mutationObjDocument',state.it_module)
+
+
+      //------------------------это для боя разархивировать
+
+      const config_header = {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          Accept: 'application/json',
+        }
+      }
+
+      return axios.get(`/api/local/it-mortgage/?search=${parametr}`,config_header)
+        .then((res)=>{
+          commit('mutationObjCompany',res.data.result)
+          commit('mutationObjBank',res.data.result)
+          commit('mutationObjDocument',res.data.result)
+
+        }).catch((error) => {
+          if (error.response) {
+            if(error.response.status==404){
+              commit('mutationStatusFailureNotFound')
+            }
+            else{
+              commit('mutationStatusFailureOtherError')
+            }
+          }
+        });
+    },
+    ActionListFalse({commit,state}){
+      commit('mutationListFalse')
+    },
+    ActionStatusSuccess({commit}){
+      commit('mutationStatusSuccess')
+    },
+
+
+  },
+})
+</script>
+
