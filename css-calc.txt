@@ -1,141 +1,142 @@
-<div class="progress__directions-schedule-circle js--schedule-circle" data-circle-chart="[79, 21]">
+<template>
+  <div class="progress__directions-schedule-circle js--schedule-circle" :data-circle-chart="chartDataString">
     <h3 class="progress__size-font-bold">Типы устройств</h3>
     <div class="progress__schedule-circle-wr">
-        <div class="progress__schedule-circle-legend js--schedule-circle-legend"><!-- Цифры 79 и 21 подставляются скриптом-->
-            <div class="progress__schedule-circle-legend-item">
-                <p class="progress__schedule-circle-legend-val js--legend-val">79%</p>
-                <p class="progress__schedule-circle-legend-key">Смартфоны</p>
-            </div>
-            <div class="progress__schedule-circle-legend-item">
-                <p class="progress__schedule-circle-legend-val js--legend-val">21%</p>
-                <p class="progress__schedule-circle-legend-key">Компьютеры</p>
-            </div>
+      <div class="progress__schedule-circle-legend js--schedule-circle-legend">
+        <div class="progress__schedule-circle-legend-item">
+          <p class="progress__schedule-circle-legend-val js--legend-val">{{ mobilePercent }}%</p>
+          <p class="progress__schedule-circle-legend-key">Смартфоны</p>
         </div>
-        <div id="schedule-circle"><apex-chart-progress-company></apex-chart-progress-company></div>
+        <div class="progress__schedule-circle-legend-item">
+          <p class="progress__schedule-circle-legend-val js--legend-val">{{ pcPercent }}%</p>
+          <p class="progress__schedule-circle-legend-key">Компьютеры</p>
+        </div>
+      </div>
+      <div id="schedule-circle" ref="apexChart">
+        <apexcharts
+          width="75%"
+          :options="chartOptions"
+          :series="chartSeries"
+        />
+      </div>
     </div>
-</div>
-
-
-ApexChartProgressCompany.vue
-<template lang="pug">
-  div(
-    ref="apexChart"
-  )
-    apexcharts(width='75%' :options='chartOptions' :series='chartSeries')
+  </div>
 </template>
 
 <script>
-const VueApexCharts = () => import ("vue-apexcharts");
+import { defineAsyncComponent } from 'vue';
 
 export default {
   name: 'ApexChartProgressCompany',
+  props: {
+    instanceId: {
+      type: String,
+      default: '',
+    },
+    // 👇 ПРОПС ДЛЯ ПОЛУЧЕНИЯ ДАННЫХ
+    circleChart: {
+      type: Array,
+      default: () => [79, 21],
+      // Кастомный парсер для строки JSON
+      validator: (value) => {
+        if (Array.isArray(value)) return true;
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed);
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      },
+    },
+  },
   data() {
     return {
-      chartSeries:null,
+      chartSeries: null,
+      mobilePercent: 79,
+      pcPercent: 21,
       chartOptions: {
         chart: {
-          // width: '75%',
           type: 'pie',
-          animations:{
+          animations: {
             enabled: false,
           },
-          // offsetX: -26
         },
         states: {
-          normal: {
-            filter: {
-              type: 'none',
-              value: 0,
-            }
-          },
-          click:{
-            filter: {
-              type: 'none',
-              value: 0,
-            }
-          },
-          hover: {
-            filter: {
-              type: 'none',
-              value: 0,
-            }
-          },
+          normal: { filter: { type: 'none', value: 0 } },
+          click: { filter: { type: 'none', value: 0 } },
+          hover: { filter: { type: 'none', value: 0 } },
           active: {
             allowMultipleDataPointsSelection: false,
-            filter: {
-              type: 'none',
-              value: 0,
-            }
+            filter: { type: 'none', value: 0 },
           },
         },
-        dataLabels:{
-          enabled: false,
-        },
+        dataLabels: { enabled: false },
         labels: ['Мобильные', 'ПК'],
-        fill: {
-          colors: ['#A3D562', '#FFC9B5']
-        },
-        legend:{
+        fill: { colors: ['#A3D562', '#FFC9B5'] },
+        legend: {
           show: false,
           position: 'right',
-          horizontalAlign:'right',
+          horizontalAlign: 'right',
           fontSize: '14px',
           fontFamily: 'Gilroy-Medium,sans-serif',
-          formatter: function(seriesName, opts) {
-            // return [opts.w.globals.series[opts.seriesIndex],'%','<br>','<i>',seriesName,'</i>']
-            // const legend = document.querySelector('.schedule-circle-legend')
-            // console.log(legend);
-          },
-          offsetX:5,
-          offsetY:-18,
-          labels: {
-            // colors: ['#A3D562', '#FFC9B5'],
-            // useSeriesColors: true
-          },
-          markers:{
-            width: 0,
-            height: 0,
-          },
-          onItemClick: {
-            toggleDataSeries: false
-          },
-          onItemHover: {
-            highlightDataSeries: false
-          },
-          height: 90
+          offsetX: 5,
+          offsetY: -18,
+          markers: { width: 0, height: 0 },
+          onItemClick: { toggleDataSeries: false },
+          onItemHover: { highlightDataSeries: false },
+          height: 90,
         },
-        tooltip:{
-          enabled: false
-        },
-        stroke:{
-          show: false
-        },
-        responsive: [{
-          breakpoint: 640,
-          options: {
-            chart: {
-              // width: '75%',
-              // offsetX: -35
-              // height:260
-            },
-            legend: {
-              // position: 'bottom'
-            }
-          }
-        }]
+        tooltip: { enabled: false },
+        stroke: { show: false },
+        responsive: [{ breakpoint: 640, options: { chart: {}, legend: {} } }],
+      },
+    };
+  },
+  computed: {
+    chartDataString() {
+      return JSON.stringify([this.mobilePercent, this.pcPercent]);
+    },
+  },
+  watch: {
+    // 👇 СЛЕДИМ ЗА ИЗМЕНЕНИЕМ ПРОПСА
+    circleChart: {
+      handler(newVal) {
+        this.parseChartData(newVal);
+      },
+      immediate: true, // срабатывает сразу при монтировании
+      deep: true,
+    },
+  },
+  methods: {
+    parseChartData(data) {
+      if (!data) return;
+
+      let parsedData;
+      if (typeof data === 'string') {
+        try {
+          parsedData = JSON.parse(data);
+        } catch (e) {
+          console.warn('Ошибка парсинга circleChart:', e);
+          return;
+        }
+      } else if (Array.isArray(data)) {
+        parsedData = data;
+      } else {
+        return;
       }
 
-    }
-  },
-  mounted() {
-    const element_chart = this.$refs.apexChart.closest('.js--schedule-circle')
-    if(element_chart) {
-      let data = element_chart.getAttribute('data-circle-chart')
-      this.chartSeries = JSON.parse(data);
-    }
+      if (parsedData && parsedData.length >= 2) {
+        this.mobilePercent = parsedData[0];
+        this.pcPercent = parsedData[1];
+        this.chartSeries = parsedData;
+      }
+    },
   },
   components: {
-    apexcharts: VueApexCharts
-  }
-}
+    apexcharts: defineAsyncComponent(() => import('vue-apexcharts')),
+  },
+};
 </script>
