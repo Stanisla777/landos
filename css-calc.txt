@@ -1,12 +1,150 @@
-createElement is not a function
-TypeError: createElement is not a function
-    at Proxy.render (http://localhost:8081/js/node_modules_vue-apexcharts_dist_vue-apexcharts_js.bundle.js:122:14)
-    at renderComponentRoot (http://localhost:8081/js/bundle.js:30710:16)
-    at ReactiveEffect.componentUpdateFn [as fn] (http://localhost:8081/js/bundle.js:35761:46)
-    at ReactiveEffect.run (http://localhost:8081/js/bundle.js:28642:19)
-    at instance.update (http://localhost:8081/js/bundle.js:35892:16)
-    at setupRenderEffect (http://localhost:8081/js/bundle.js:35902:5)
-    at mountComponent (http://localhost:8081/js/bundle.js:35670:7)
-    at processComponent (http://localhost:8081/js/bundle.js:35624:9)
-    at patch (http://localhost:8081/js/bundle.js:35109:11)
-    at ReactiveEffect.componentUpdateFn [as fn] (http://localhost:8081/js/bundle.js:35768:11)
+npm install apexcharts vue3-apexcharts
+
+<template>
+  <div class="progress__directions-schedule-circle js--schedule-circle" :data-circle-chart="chartDataString">
+    <h3 class="progress__size-font-bold">Типы устройств</h3>
+    <div class="progress__schedule-circle-wr">
+      <div class="progress__schedule-circle-legend js--schedule-circle-legend">
+        <div class="progress__schedule-circle-legend-item">
+          <p class="progress__schedule-circle-legend-val js--legend-val">{{ mobilePercent }}%</p>
+          <p class="progress__schedule-circle-legend-key">Смартфоны</p>
+        </div>
+        <div class="progress__schedule-circle-legend-item">
+          <p class="progress__schedule-circle-legend-val js--legend-val">{{ pcPercent }}%</p>
+          <p class="progress__schedule-circle-legend-key">Компьютеры</p>
+        </div>
+      </div>
+      <div id="schedule-circle" ref="apexChart">
+        <apexchart
+          width="75%"
+          :options="chartOptions"
+          :series="chartSeries"
+          type="pie"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import VueApexCharts from 'vue3-apexcharts';
+
+export default {
+  name: 'ApexChartProgressCompany',
+  components: {
+    apexchart: VueApexCharts,
+  },
+  props: {
+    instanceId: {
+      type: String,
+      default: '',
+    },
+    circleChart: {
+      type: [Array, String],
+      default: () => [79, 21],
+      validator: (value) => {
+        if (Array.isArray(value)) return true;
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed);
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      },
+    },
+  },
+  data() {
+    return {
+      chartSeries: null,
+      mobilePercent: 79,
+      pcPercent: 21,
+      chartOptions: {
+        chart: {
+          type: 'pie',
+          animations: {
+            enabled: false,
+          },
+        },
+        states: {
+          normal: { filter: { type: 'none', value: 0 } },
+          click: { filter: { type: 'none', value: 0 } },
+          hover: { filter: { type: 'none', value: 0 } },
+          active: {
+            allowMultipleDataPointsSelection: false,
+            filter: { type: 'none', value: 0 },
+          },
+        },
+        dataLabels: { enabled: false },
+        labels: ['Мобильные', 'ПК'],
+        fill: { colors: ['#A3D562', '#FFC9B5'] },
+        legend: {
+          show: false,
+          position: 'right',
+          horizontalAlign: 'right',
+          fontSize: '14px',
+          fontFamily: 'Gilroy-Medium,sans-serif',
+          offsetX: 5,
+          offsetY: -18,
+          markers: { width: 0, height: 0 },
+          onItemClick: { toggleDataSeries: false },
+          onItemHover: { highlightDataSeries: false },
+          height: 90,
+        },
+        tooltip: { enabled: false },
+        stroke: { show: false },
+        responsive: [{ breakpoint: 640, options: { chart: {}, legend: {} } }],
+      },
+    };
+  },
+  computed: {
+    chartDataString() {
+      return JSON.stringify([this.mobilePercent, this.pcPercent]);
+    },
+  },
+  watch: {
+    circleChart: {
+      handler(newVal) {
+        this.parseChartData(newVal);
+      },
+      immediate: true,
+      deep: true,
+    },
+  },
+  methods: {
+    parseChartData(data) {
+      if (!data) return;
+
+      let parsedData;
+      if (typeof data === 'string') {
+        try {
+          parsedData = JSON.parse(data);
+        } catch (e) {
+          console.warn('Ошибка парсинга circleChart:', e);
+          return;
+        }
+      } else if (Array.isArray(data)) {
+        parsedData = data;
+      } else {
+        return;
+      }
+
+      if (parsedData && parsedData.length >= 2) {
+        this.mobilePercent = parsedData[0];
+        this.pcPercent = parsedData[1];
+        this.chartSeries = parsedData;
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+.progress__directions-schedule-circle {
+  /* ваши стили */
+}
+</style>
+
+
