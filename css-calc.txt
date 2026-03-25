@@ -5,23 +5,16 @@
     </div>
     <p class="test-window__question" v-html="question"></p>
     <div class="test-item">
-      <div class="test-window__col-variant test-window__height-limitation">
-        <div
+      <div class="test-window__item test-window__textarea">
+        <textarea
           v-for="(answer, key) in variants"
           :key="key"
-          class="test-window__item test-window__radio-item test-window__col-variant-item"
-        >
-          <div v-for="subAnswer in answer.DROPDOWN" :key="subAnswer.MESSAGE">
-            <div
-              class="test-window__item test-window__radio-item test-window__col-variant-item"
-              @click="pass_clickVariant($event, subAnswer.FIELD_WIDTH, (subAnswer['~FIELD_PARAM'] || subAnswer.FIELD_PARAM), subAnswer.COLOR, subAnswer.NAME_INPUT, subAnswer.VALUE_INPUT)"
-              :class="[subAnswer.FIELD_WIDTH == 1 ? 'test-wintdow__item' : 'test-winfdow__item']"
-            >
-              <input type="radio" :name="`radio-${item_key}`" value="">
-              <p class="fs-1rem test-window__possible-answer" v-html="subAnswer.MESSAGE"></p>
-            </div>
-          </div>
-        </div>
+          v-model="input"
+          @change="pass_inputAnswer($event, answer.NAME_INPUT, answer.VALUE_INPUT)"
+          @input="limitInput"
+          maxlength="1001"
+        ></textarea>
+        <p class="test-window__textarea-error">Превышено допустимое количество в 1000 символов</p>
       </div>
     </div>
     <button
@@ -30,27 +23,28 @@
       :class="{ unact: req }"
       @click="pass_clickButtonAnswer"
     >
-      Ответить
+      Отправить
     </button>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'QuestionWindowBlock',
+  name: 'QuestionTextField',
   props: [
     'question', 'variants', 'item_key', 'btn_answer', 'circle_number',
     'count_answers', 'required', 'current_answer'
   ],
   data() {
     return {
+      input: "",
       req: null,
     };
   },
   methods: {
-    pass_clickVariant(elem, param_1, param_2, param_3, param_4, param_5) {
+    pass_inputAnswer(elem, param_1, param_2) {
       const element = elem.currentTarget;
-      this.$emit('event_clickVariant', [element, elem, param_1, param_2, param_3, param_4, param_5]);
+      this.$emit('event_inputAnswer', [element, elem, param_1, param_2, this.input]);
     },
     pass_clickButtonAnswer(elem) {
       const element = elem.currentTarget;
@@ -58,6 +52,29 @@ export default {
     },
     requiredButton() {
       this.req = this.required === "Y";
+    },
+    requiredButton_2() {
+      if (this.input.length !== 0) {
+        this.req = false;
+      } else if (this.input.length === 0 || this.required === "Y") {
+        this.req = true;
+      }
+    },
+    limitInput(el) {
+      const max = 1001;
+      const field = el.currentTarget;
+      const parent = field.closest('.test-window__item');
+      const item = parent.querySelectorAll('.test-window__textarea-error');
+      if (field.value.length === max) {
+        item.forEach((i) => i.setAttribute('style', 'display:block'));
+      } else {
+        item.forEach((i) => i.setAttribute('style', 'display:none'));
+      }
+    },
+  },
+  watch: {
+    input() {
+      this.requiredButton_2();
     },
   },
   mounted() {
