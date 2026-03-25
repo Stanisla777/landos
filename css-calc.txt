@@ -1,142 +1,189 @@
-clickResulted(el) {
-      this.answers_all_questions = this.answers_all_questions.concat(this.object_questions);
-      this.massive_checkbox = this.massive_checkbox.concat(this.object_checkbox);
-      this.removeEmpty(this.answers_all_questions);
-      this.appearancEmptyWindow();
+async clickResulted(el) {
+  this.answers_all_questions = this.answers_all_questions.concat(this.object_questions);
+  this.massive_checkbox = this.massive_checkbox.concat(this.object_checkbox);
+  this.removeEmpty(this.answers_all_questions);
+  this.appearancEmptyWindow();
 
-      const sessid = this.SESSID;
-      let res = sessid.split('=').pop();
-      res = res.replace(/[^a-zа-яё0-9\s]/gi, ' ');
-      const required_data = [
-        { vote: "Y" },
-        { PUBLIC_VOTE_ID: this.idTest },
-        { VOTE_ID: this.idTest },
-        { sessid: `${res}` },
-        { sum_vote: this.sum_of_points }
-      ];
+  const sessid = this.SESSID;
+  let res = sessid.split('=').pop();
+  res = res.replace(/[^a-zа-яё0-9\s]/gi, ' ');
+  const required_data = [
+    { vote: "Y" },
+    { PUBLIC_VOTE_ID: this.idTest },
+    { VOTE_ID: this.idTest },
+    { sessid: `${res}` },
+    { sum_vote: this.sum_of_points }
+  ];
 
-      const array_to_send = {};
-      this.answers_all_questions = this.answers_all_questions.concat(required_data);
-      const an_all_que = this.answers_all_questions;
-      const keys_2 = Object.keys(this.answers_all_questions);
-      keys_2.forEach((item, ind) => {
-        const keys = Object.keys(an_all_que[ind]);
-        Object.assign(array_to_send, an_all_que[ind]);
+  const array_to_send = {};
+  this.answers_all_questions = this.answers_all_questions.concat(required_data);
+  const an_all_que = this.answers_all_questions;
+  const keys_2 = Object.keys(this.answers_all_questions);
+  keys_2.forEach((item, ind) => {
+    const keys = Object.keys(an_all_que[ind]);
+    Object.assign(array_to_send, an_all_que[ind]);
+  });
+
+  const sending_data_server = {};
+  sending_data_server.stats = array_to_send;
+  sending_data_server.checBox = this.massive_checkbox;
+  let final_text = this.final_text;
+
+  // Показываем финальное окно
+  this.finalResult = true;
+  this.intermediate_window = false;
+  
+  // Скрываем контейнер с ответами
+  const containerAnswers = document.querySelectorAll('.test-cotainer-result-answers');
+  containerAnswers.forEach((item) => {
+    item.setAttribute('style', 'display:none');
+  });
+  
+  this.current_answer = false;
+  this.btn_slider = false;
+  this.btn_verify = false;
+  this.interim_des = [];
+
+  // Устанавливаем смайлы в зависимости от процента ответов
+  const percentage_responses = (parseInt(this.sum_of_points) * 100) / this.count_answers;
+  if (percentage_responses <= 20) {
+    this.smile_1 = true;
+  } else if (percentage_responses > 20 && percentage_responses <= 40) {
+    this.smile_2 = true;
+  } else if (percentage_responses > 40 && percentage_responses <= 60) {
+    this.smile_3 = true;
+  } else if (percentage_responses > 60 && percentage_responses <= 80) {
+    this.smile_4 = true;
+  } else if (percentage_responses > 80 && percentage_responses < 100) {
+    this.smile_5 = true;
+  } else if (percentage_responses === 100) {
+    this.smile = true;
+  }
+
+  // Ждём рендеринга финального окна
+  await this.$nextTick();
+
+  try {
+    const res = await axios({
+      method: 'post',
+      url: '/local/api/tests/',
+      headers: {
+        "Content-type": "text/html; charset=UTF-8"
+      },
+      data: sending_data_server,
+    });
+    
+    final_text = res.data.UF_TEXT;
+    const container = document.querySelectorAll('.test-cotainer-final-result');
+    
+    // Вставляем текст в каждый контейнер
+    container.forEach((item) => {
+      const descElement = item.querySelector('.final-result__des');
+      if (descElement) {
+        descElement.innerHTML = final_text;
+      }
+    });
+    
+    // Ждём обновления DOM после вставки контента
+    await this.$nextTick();
+    
+    // Вычисляем и устанавливаем высоту
+    container.forEach((item) => {
+      const height_el = item.offsetHeight;
+      const testWindow = item.closest('.test-window');
+      if (testWindow) {
+        testWindow.setAttribute('style', `height:${height_el + 147}px`);
+      }
+    });
+    
+  } catch (error) {
+    console.log(error);
+    
+    // Ждём рендеринга даже в случае ошибки
+    await this.$nextTick();
+    
+    const container = document.querySelectorAll('.test-cotainer-final-result');
+    container.forEach((item) => {
+      const height_el = item.offsetHeight;
+      const testWindow = item.closest('.test-window');
+      if (testWindow) {
+        testWindow.setAttribute('style', `height:${height_el + 147}px`);
+      }
+    });
+  }
+
+  // Скроллим, если высота окна больше 655px
+  const parent = document.querySelector('.test-window');
+  if (parent && parent.clientHeight > 655) {
+    this.scrollBeginningTest();
+  }
+
+  // Обработка pop-up, если тест был открыт в модальном окне
+  if (el && el.closest('.common-test-pop-up')) {
+    const pop_up = document.querySelector('.offer-test-pop-up-js');
+    const common_pop_up = document.querySelector('.common-test-pop-up');
+    const btn = pop_up?.querySelector('.offer-test-pop-up__btn');
+    
+    if (common_pop_up) {
+      const closer = common_pop_up.querySelector('.modal__closer');
+      const wrapper = common_pop_up.querySelector('.common-test-pop-up__wrapper');
+      
+      if (closer) {
+        closer.setAttribute('style', 'display:none');
+      }
+      
+      if (wrapper) {
+        wrapper.setAttribute('style', 'padding-top: 1rem;padding-bottom: 1rem;transition-duration: .6s;');
+      }
+
+      // Анимация закрытия pop-up
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          if (wrapper) {
+            wrapper.classList.remove('zoomIn');
+            wrapper.classList.add('zoomOut');
+          }
+          resolve();
+        }, 4000);
       });
-
-      const sending_data_server = {};
-      sending_data_server.stats = array_to_send;
-      sending_data_server.checBox = this.massive_checkbox;
-      let final_text = this.final_text;
-
-      axios({
-        method: 'post',
-        url: '/local/api/tests/',
-        headers: {
-          "Content-type": "text/html; charset=UTF-8"
-        },
-        data: sending_data_server,
-      })
-        .then((res) => {
-          final_text = res.data.UF_TEXT;
-          const container = document.querySelectorAll('.test-cotainer-final-result');
-          container.forEach((item) => {
-            const promise = new Promise((resolve) => {
-              item.querySelector('.final-result__des').innerHTML = final_text;
-              resolve();
-            }).then(() => {
-              return new Promise((resolve) => {
-                const height_el = item.offsetHeight;
-                item.closest('.test-window').setAttribute('style', `height:${height_el + 147}px`);
-                resolve();
-              });
-            });
-          });
-        })
-        .catch((error) => {
-          console.log(error);
-          const container = document.querySelectorAll('.test-cotainer-final-result');
-          container.forEach((item) => {
-            const height_el = item.offsetHeight;
-            item.closest('.test-window').setAttribute('style', `height:${height_el + 147}px`);
-          });
-        });
-
-      this.finalResult = true;
-      this.intermediate_window = false;
-      const container = document.querySelectorAll('.test-cotainer-result-answers');
-      container.forEach((item) => {
-        item.setAttribute('style', 'display:none');
+      
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          if (common_pop_up) {
+            common_pop_up.classList.remove('open');
+          }
+          if (pop_up) {
+            pop_up.setAttribute('style', 'display:none');
+          }
+          resolve();
+        }, 500);
       });
-
-      const parent = document.querySelector('.test-window');
-      if (parent && parent.clientHeight > 655) {
-        this.scrollBeginningTest();
-      }
-      this.current_answer = false;
-      this.btn_slider = false;
-      this.btn_verify = false;
-      this.interim_des = [];
-
-      const percentage_responses = (parseInt(this.sum_of_points) * 100) / this.count_answers;
-      if (percentage_responses <= 20) {
-        this.smile_1 = true;
-      } else if (percentage_responses > 20 && percentage_responses <= 40) {
-        this.smile_2 = true;
-      } else if (percentage_responses > 40 && percentage_responses <= 60) {
-        this.smile_3 = true;
-      } else if (percentage_responses > 60 && percentage_responses <= 80) {
-        this.smile_4 = true;
-      } else if (percentage_responses > 80 && percentage_responses < 100) {
-        this.smile_5 = true;
-      } else if (percentage_responses === 100) {
-        this.smile = true;
-      }
-
-      if (el && el.closest('.common-test-pop-up')) {
-        const pop_up = document.querySelector('.offer-test-pop-up-js');
-        const common_pop_up = document.querySelector('.common-test-pop-up');
-        const btn = pop_up?.querySelector('.offer-test-pop-up__btn');
-        if (common_pop_up) {
-          common_pop_up.querySelector('.modal__closer').setAttribute('style', 'display:none');
-          common_pop_up.querySelector('.common-test-pop-up__wrapper').setAttribute('style', 'padding-top: 1rem;padding-bottom: 1rem;transition-duration: .6s;');
-
-          const promise = new Promise((resolve) => {
-            setTimeout(() => {
-              common_pop_up.querySelector('.common-test-pop-up__wrapper').classList.remove('zoomIn');
-              common_pop_up.querySelector('.common-test-pop-up__wrapper').classList.add('zoomOut');
-              resolve();
-            }, 4000);
-          }).then(() => new Promise((resolve) => {
-            setTimeout(() => {
-              common_pop_up.classList.remove('open');
-              if (pop_up) pop_up.setAttribute('style', 'display:none');
-              resolve();
-            }, 500);
-          })).then(() => new Promise((resolve) => {
-            setTimeout(() => {
-              this.sum_of_points = 0;
-              this.result = 0;
-              this.btn_result = false;
-              this.btn_slider = false;
-              this.btn_answer = true;
-              this.smile = null;
-              this.smile_1 = null;
-              this.smile_2 = null;
-              this.smile_3 = null;
-              this.smile_4 = null;
-              this.smile_5 = null;
-              this.final_text = "";
-              this.interim_des = [];
-              this.answers_all_questions = [];
-              this.response_object = {};
-              this.object_questions = [];
-              this.object_checkbox = [];
-              this.massive_checkbox = [];
-              this.correct = null;
-              resolve();
-            }, 3000);
-          }));
-        }
-      }
-    },
+      
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          // Сбрасываем все данные теста
+          this.sum_of_points = 0;
+          this.result = 0;
+          this.btn_result = false;
+          this.btn_slider = false;
+          this.btn_answer = true;
+          this.smile = null;
+          this.smile_1 = null;
+          this.smile_2 = null;
+          this.smile_3 = null;
+          this.smile_4 = null;
+          this.smile_5 = null;
+          this.final_text = "";
+          this.interim_des = [];
+          this.answers_all_questions = [];
+          this.response_object = {};
+          this.object_questions = [];
+          this.object_checkbox = [];
+          this.massive_checkbox = [];
+          this.correct = null;
+          resolve();
+        }, 3000);
+      });
+    }
+  }
+}
