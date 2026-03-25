@@ -1,17 +1,37 @@
 <template>
-  <button class="test-window__btn btn btn-slide-sub" type="button" @click="pass_clickButtonAnswer">
-    Ответить
-  </button>
+  <div class="test-window__slider-btn" :class="!btn_prev ? 'justify-content-center' : ''">
+    <div v-if="btn_prev" class="btn btn_gray-bor-black test-button-prev" @click="pass_clickBtnPrev">
+      Назад
+    </div>
+    <div v-show="!btn_result" class="btn test-button-next" @click="pass_clickBtnNext">
+      Дальше
+    </div>
+    <div v-show="btn_result" class="button btn btn_green-n-white test-button-resultt" @click="pass_clickResulted">
+      Результаты
+    </div>
+  </div>
 </template>
 
 <script>
 export default {
-  name: 'AnswerButton',
+  name: 'SliderButton',
+  data() {
+    return {
+      btn_prev: false,
+    };
+  },
   props: ['btn_result'],
   methods: {
-    pass_clickButtonAnswer(elem) {
-      const element = elem.currentTarget;
-      this.$emit('event_clickButtonAnswer', [element]);
+    pass_clickBtnPrev(el) {
+      const element = el.currentTarget;
+      this.$emit('event_clickBtnPrev', element);
+    },
+    pass_clickBtnNext() {
+      this.$emit('event_clickBtnNext');
+    },
+    pass_clickResulted(el) {
+      const element = el.currentTarget;
+      this.$emit('event_clickResulted', element);
     },
   },
 };
