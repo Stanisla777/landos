@@ -5,37 +5,20 @@
     </div>
     <p class="test-window__question" v-html="question"></p>
     <div class="test-item">
-      <div class="test-window__wrap-chec">
-        <div class="test-window__checkbox test-window__height-limitation">
-          <div
-            v-for="(answer, key) in variants"
-            :key="key"
-            class="test-window__item test-window__checkbox-item choose"
-            :class="[
-              answer.FIELD_WIDTH == 1 ? 'test-wintdow__item' :
-              answer.FIELD_WIDTH == 2 ? 'test-winadow__item' : 'test-winfdow__item'
-            ]"
-            @click="pass_clickVariant($event, answer.FIELD_WIDTH, (answer['~FIELD_PARAM'] || answer.FIELD_PARAM), answer.COLOR, answer.NAME_INPUT, answer.VALUE_INPUT)"
-          >
-            <div class="test-window__item-container-answer">
-              <input :id="`check-${item_key}-${key}`" type="checkbox" @click.stop>
-              <label
-                class="fs-1rem test-window__possible-answer"
-                :for="`check-${item_key}-${key}`"
-                v-html="answer.MESSAGE"
-              ></label>
-              <div v-if="answer.FIELD_WIDTH == 2" class="test-window__field-for-variant">
-                <div class="test-window__item test-window__textarea">
-                  <textarea
-                    class="check-for-variant"
-                    :placeholder="answer.PLACEHOLDER"
-                    @change="passInputCheckAnother($event)"
-                    @input="limitInput"
-                    maxlength="1001"
-                  ></textarea>
-                  <p class="test-window__textarea-error">Превышено допустимое количество в 1000 символов</p>
-                </div>
-              </div>
+      <div class="test-window__col-variant test-window__height-limitation">
+        <div
+          v-for="(answer, key) in variants"
+          :key="key"
+          class="test-window__item test-window__radio-item test-window__col-variant-item"
+        >
+          <div v-for="subAnswer in answer.DROPDOWN" :key="subAnswer.MESSAGE">
+            <div
+              class="test-window__item test-window__radio-item test-window__col-variant-item"
+              @click="pass_clickVariant($event, subAnswer.FIELD_WIDTH, (subAnswer['~FIELD_PARAM'] || subAnswer.FIELD_PARAM), subAnswer.COLOR, subAnswer.NAME_INPUT, subAnswer.VALUE_INPUT)"
+              :class="[subAnswer.FIELD_WIDTH == 1 ? 'test-wintdow__item' : 'test-winfdow__item']"
+            >
+              <input type="radio" :name="`radio-${item_key}`" value="">
+              <p class="fs-1rem test-window__possible-answer" v-html="subAnswer.MESSAGE"></p>
             </div>
           </div>
         </div>
@@ -43,7 +26,7 @@
     </div>
     <button
       v-if="btn_answer"
-      class="test-window__btn test-window__btn-old-test btn btn-slide-sub"
+      class="test-window__btn btn btn-slide-sub"
       :class="{ unact: req }"
       @click="pass_clickButtonAnswer"
     >
@@ -54,61 +37,31 @@
 
 <script>
 export default {
-  name: 'QuestionWindowCheckbox',
+  name: 'QuestionWindowBlock',
   props: [
     'question', 'variants', 'item_key', 'btn_answer', 'circle_number',
-    'count_answers', 'required', 'field_clearing'
+    'count_answers', 'required', 'current_answer'
   ],
   data() {
     return {
       req: null,
-      cor_answer: null,
-      name_radio: null,
     };
   },
   methods: {
     pass_clickVariant(elem, param_1, param_2, param_3, param_4, param_5) {
       const element = elem.currentTarget;
-      this.name_radio = param_4;
       this.$emit('event_clickVariant', [element, elem, param_1, param_2, param_3, param_4, param_5]);
     },
     pass_clickButtonAnswer(elem) {
       const element = elem.currentTarget;
-      this.$emit('event_clickButtonAnswer', [element, this.cor_answer]);
+      this.$emit('event_clickButtonAnswer', [element]);
     },
     requiredButton() {
       this.req = this.required === "Y";
     },
-    correctCheck() {
-      const massive = [];
-      const cor = this.variants;
-      const wit = Object.keys(cor);
-      for (let i = 0; i < wit.length; i++) {
-        if (cor[wit[i]].FIELD_WIDTH == "1") {
-          massive.push(cor[wit[i]].FIELD_WIDTH == "1");
-        }
-      }
-      this.cor_answer = massive.length;
-    },
-    passInputCheckAnother(elem) {
-      const element = elem.currentTarget;
-      this.$emit('eventInputCheckAnother', [element, element.value, this.name_radio]);
-    },
-    limitInput(el) {
-      const max = 1001;
-      const field = el.currentTarget;
-      const parent = field.closest('.test-window__item');
-      const item = parent.querySelectorAll('.test-window__textarea-error');
-      if (field.value.length === max) {
-        item.forEach((i) => i.setAttribute('style', 'display:block'));
-      } else {
-        item.forEach((i) => i.setAttribute('style', 'display:none'));
-      }
-    },
   },
   mounted() {
     this.requiredButton();
-    this.correctCheck();
   },
 };
 </script>
