@@ -1,189 +1,250 @@
-async clickResulted(el) {
-  this.answers_all_questions = this.answers_all_questions.concat(this.object_questions);
-  this.massive_checkbox = this.massive_checkbox.concat(this.object_checkbox);
-  this.removeEmpty(this.answers_all_questions);
-  this.appearancEmptyWindow();
+В папке vue-apps лежат папки с приложениями на vue, например ITMortgageSurveys
+В ней главный компонент vue, например такой ITMortgageSurveys.vue
+<template>
+  <div class="vue-it-company" v-cloak>
+    <v-component-it-company />
+    <v-component-success v-if="status_success" />
+    <v-component-failure-not-found
+      v-if="status_failure"
+      :phone="phone"
+      :phone_formatted="phone_formatted"
+    />
+    <v-component-failure-other-error
+      v-if="status_failure_other_error"
+      :phone="phone"
+      :phone_formatted="phone_formatted"
+    />
+  </div>
+</template>
 
-  const sessid = this.SESSID;
-  let res = sessid.split('=').pop();
-  res = res.replace(/[^a-zа-яё0-9\s]/gi, ' ');
-  const required_data = [
-    { vote: "Y" },
-    { PUBLIC_VOTE_ID: this.idTest },
-    { VOTE_ID: this.idTest },
-    { sessid: `${res}` },
-    { sum_vote: this.sum_of_points }
-  ];
+<script>
+import vComponentItCompany from './components/v-component-it-company.vue';
+import vComponentSuccess from './components/v-component-success.vue';
+import vComponentFailureNotFound from './components/v-component-failure-not-found.vue';
+import vComponentFailureOtherError from './components/v-component-failure-other-error.vue';
+import store from './store';
 
-  const array_to_send = {};
-  this.answers_all_questions = this.answers_all_questions.concat(required_data);
-  const an_all_que = this.answers_all_questions;
-  const keys_2 = Object.keys(this.answers_all_questions);
-  keys_2.forEach((item, ind) => {
-    const keys = Object.keys(an_all_que[ind]);
-    Object.assign(array_to_send, an_all_que[ind]);
-  });
+папка components с компонентами
+store.js если в приложении используется vuex, например такой
+import { createStore } from 'vuex';
+import axios from 'axios';
 
-  const sending_data_server = {};
-  sending_data_server.stats = array_to_send;
-  sending_data_server.checBox = this.massive_checkbox;
-  let final_text = this.final_text;
+export default createStore({
+  state: {
+    banks: [],
+    company: [],
+    documents: [],
+    status_list: false,
+    status_failure: false,
+    status_success: false,
+    status_failure_other_error: false,
+   
+  },
+getters: {},
+mutations: {},
+actions: {}
+так как приложение должно подключаться только на той странице, где используется файл index.vue, например такой
+<template>
+  <Suspense>
+    <template #default>
+      <ITMortgageSurveys v-bind="$attrs" />
+    </template>
+    <template #fallback>
+      <div class="loading-spinner">Загрузка...</div>
+    </template>
+  </Suspense>
+</template>
 
-  // Показываем финальное окно
-  this.finalResult = true;
-  this.intermediate_window = false;
-  
-  // Скрываем контейнер с ответами
-  const containerAnswers = document.querySelectorAll('.test-cotainer-result-answers');
-  containerAnswers.forEach((item) => {
-    item.setAttribute('style', 'display:none');
-  });
-  
-  this.current_answer = false;
-  this.btn_slider = false;
-  this.btn_verify = false;
-  this.interim_des = [];
+<script>
+import { defineAsyncComponent } from 'vue';
 
-  // Устанавливаем смайлы в зависимости от процента ответов
-  const percentage_responses = (parseInt(this.sum_of_points) * 100) / this.count_answers;
-  if (percentage_responses <= 20) {
-    this.smile_1 = true;
-  } else if (percentage_responses > 20 && percentage_responses <= 40) {
-    this.smile_2 = true;
-  } else if (percentage_responses > 40 && percentage_responses <= 60) {
-    this.smile_3 = true;
-  } else if (percentage_responses > 60 && percentage_responses <= 80) {
-    this.smile_4 = true;
-  } else if (percentage_responses > 80 && percentage_responses < 100) {
-    this.smile_5 = true;
-  } else if (percentage_responses === 100) {
-    this.smile = true;
+export default {
+  name: 'ITMortgageSurveysLazy',
+  inheritAttrs: true,
+  components: {
+    ITMortgageSurveys: defineAsyncComponent(() =>
+      import('./ITMortgageSurveys.vue')
+    ),
+  },
+};
+</script>
+
+<style scoped>
+</style>
+в корне папки vue-apps лежит файл vueAppManager.js с таким содержанием:
+import { createApp } from 'vue';
+
+class VueAppManager {
+  constructor() {
+    this.appTypes = new Map();     // Зарегистрированные типы приложений
+    this.instances = new Map();    // Созданные экземпляры
   }
 
-  // Ждём рендеринга финального окна
-  await this.$nextTick();
-
-  try {
-    const res = await axios({
-      method: 'post',
-      url: '/local/api/tests/',
-      headers: {
-        "Content-type": "text/html; charset=UTF-8"
-      },
-      data: sending_data_server,
-    });
-    
-    final_text = res.data.UF_TEXT;
-    const container = document.querySelectorAll('.test-cotainer-final-result');
-    
-    // Вставляем текст в каждый контейнер
-    container.forEach((item) => {
-      const descElement = item.querySelector('.final-result__des');
-      if (descElement) {
-        descElement.innerHTML = final_text;
-      }
-    });
-    
-    // Ждём обновления DOM после вставки контента
-    await this.$nextTick();
-    
-    // Вычисляем и устанавливаем высоту
-    container.forEach((item) => {
-      const height_el = item.offsetHeight;
-      const testWindow = item.closest('.test-window');
-      if (testWindow) {
-        testWindow.setAttribute('style', `height:${height_el + 147}px`);
-      }
-    });
-    
-  } catch (error) {
-    console.log(error);
-    
-    // Ждём рендеринга даже в случае ошибки
-    await this.$nextTick();
-    
-    const container = document.querySelectorAll('.test-cotainer-final-result');
-    container.forEach((item) => {
-      const height_el = item.offsetHeight;
-      const testWindow = item.closest('.test-window');
-      if (testWindow) {
-        testWindow.setAttribute('style', `height:${height_el + 147}px`);
-      }
-    });
+  // Регистрация нового типа приложения
+  registerAppType(type, component) {
+    this.appTypes.set(type, component);
+    console.log(`✅ Зарегистрирован тип приложения: ${type}`);
   }
 
-  // Скроллим, если высота окна больше 655px
-  const parent = document.querySelector('.test-window');
-  if (parent && parent.clientHeight > 655) {
-    this.scrollBeginningTest();
-  }
+  // Создание экземпляра приложения
+  createInstance(type, containerId, props = {}) {
+    const component = this.appTypes.get(type);
+    if (!component) {
+      console.error(`❌ Тип приложения "${type}" не зарегистрирован`);
+      return null;
+    }
 
-  // Обработка pop-up, если тест был открыт в модальном окне
-  if (el && el.closest('.common-test-pop-up')) {
-    const pop_up = document.querySelector('.offer-test-pop-up-js');
-    const common_pop_up = document.querySelector('.common-test-pop-up');
-    const btn = pop_up?.querySelector('.offer-test-pop-up__btn');
-    
-    if (common_pop_up) {
-      const closer = common_pop_up.querySelector('.modal__closer');
-      const wrapper = common_pop_up.querySelector('.common-test-pop-up__wrapper');
-      
-      if (closer) {
-        closer.setAttribute('style', 'display:none');
-      }
-      
-      if (wrapper) {
-        wrapper.setAttribute('style', 'padding-top: 1rem;padding-bottom: 1rem;transition-duration: .6s;');
-      }
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`❌ Контейнер #${containerId} не найден`);
+      return null;
+    }
 
-      // Анимация закрытия pop-up
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          if (wrapper) {
-            wrapper.classList.remove('zoomIn');
-            wrapper.classList.add('zoomOut');
-          }
-          resolve();
-        }, 4000);
-      });
-      
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          if (common_pop_up) {
-            common_pop_up.classList.remove('open');
-          }
-          if (pop_up) {
-            pop_up.setAttribute('style', 'display:none');
-          }
-          resolve();
-        }, 500);
-      });
-      
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          // Сбрасываем все данные теста
-          this.sum_of_points = 0;
-          this.result = 0;
-          this.btn_result = false;
-          this.btn_slider = false;
-          this.btn_answer = true;
-          this.smile = null;
-          this.smile_1 = null;
-          this.smile_2 = null;
-          this.smile_3 = null;
-          this.smile_4 = null;
-          this.smile_5 = null;
-          this.final_text = "";
-          this.interim_des = [];
-          this.answers_all_questions = [];
-          this.response_object = {};
-          this.object_questions = [];
-          this.object_checkbox = [];
-          this.massive_checkbox = [];
-          this.correct = null;
-          resolve();
-        }, 3000);
-      });
+    // Защита от двойной инициализации
+    if (container.__vue_app__) {
+      console.log(`⚠️ Экземпляр ${type} в #${containerId} уже существует`);
+      return container.__vue_app__;
+    }
+
+    try {
+      const app = createApp(component, props);
+      app.mount(container);
+
+      // Сохраняем информацию об экземпляре
+      const instanceInfo = {
+        app,
+        containerId,
+        type,
+        props,
+        createdAt: new Date().toISOString()
+      };
+
+      if (!this.instances.has(type)) {
+        this.instances.set(type, new Map());
+      }
+      this.instances.get(type).set(containerId, instanceInfo);
+
+      console.log(`✅ Создан экземпляр ${type} в #${containerId}`);
+      return app;
+
+    } catch (error) {
+      console.error(`❌ Ошибка создания ${type}:`, error);
     }
   }
+
+  // Получить все экземпляры определённого типа
+  getInstances(type) {
+    return this.instances.get(type) || new Map();
+  }
+
+  // Удалить экземпляр
+  destroyInstance(type, containerId) {
+    const instances = this.instances.get(type);
+    if (instances && instances.has(containerId)) {
+      const { app } = instances.get(containerId);
+      app.unmount();
+      instances.delete(containerId);
+      console.log(`✅ Удалён экземпляр ${type} из #${containerId}`);
+    }
+  }
+
+  // Очистить все экземпляры
+  destroyAll() {
+    this.instances.forEach((instances, type) => {
+      instances.forEach(({ app }) => app.unmount());
+    });
+    this.instances.clear();
+    console.log('✅ Все экземпляры удалены');
+  }
+
+  // Отладка: показать состояние менеджера
+  info() {
+    console.log('📊 Состояние менеджера:');
+    this.instances.forEach((instances, type) => {
+      console.log(`  ${type}: ${instances.size} экземпляров`);
+      instances.forEach((info, id) => {
+        console.log(`    - #${id} (${info.createdAt})`);
+      });
+    });
+  }
 }
+
+export default new VueAppManager();
+
+
+
+
+Для проостых приложений, которые подключаются на всех страницах в корне папки vue-apps лежит файл index.js например с таким содержанием:
+export { default as vueAppManager } from './vueAppManager';
+export { default as FormRatingUniversal } from './FormRatingUniversal.vue';// приложение рэйтинг-звёздочки(в инструкциях)
+export { default as TelegramBlock } from './TelegramBlock.vue';// приложение подписаться Телега-МАКС
+export { default as SimpleRatingUniversal } from './SimpleRatingUniversal.vue';// приложение рэйтинг-звёздочки(в форме для МыСчитаем - любой выбор звёздочек)
+export { default as UsefulnessSurvey } from './UsefulnessSurvey.vue'; // приложение Да - Нет с полем ввода (в форме для МыСчитаем)
+
+
+ну и подключение в главном index.js
+Если приложение простое и подключается на все страницы, то например так:
+import {
+  vueAppManager,
+  FormRatingUniversal,
+  TelegramBlock,
+  SimpleRatingUniversal,
+  UsefulnessSurvey,
+} from './vue-apps';
+
+// Регистрируем типы приложений
+vueAppManager.registerAppType('form-rating', FormRatingUniversal);
+vueAppManager.registerAppType('telegram-block', TelegramBlock);
+vueAppManager.registerAppType('simple-rating', SimpleRatingUniversal);
+vueAppManager.registerAppType('usefulness-survey', UsefulnessSurvey);
+
+Для приложений сложных и главное которые подключаются только на той странице где используются, так:
+const componentMap = {
+  'housing-cooperative': () => import('./vue-apps/HousingCooperativeRequest.vue'),
+  'housing-appraisal': () => import('./vue-apps/HousingAppraisal/index.vue'),
+  'key-indicators': () => import('./vue-apps/KeyIndicators/index.vue'),
+  'stories': () => import('./vue-apps/Stories/index.vue'),
+  'min-sport': () => import('./vue-apps/MinSport/index.vue'),
+  'search-family-mortgage': () => import('./vue-apps/SearchFamilyMortgage/index.vue'),
+  'search-eastern-arctic-mortgage': () => import('./vue-apps/SearchEasternArcticMortgage/index.vue'),
+  'it-mortgage-surveys': () => import('./vue-apps/ITMortgageSurveys/index.vue'),
+  'apex-chart-progress-company': () => import('./vue-apps/ApexChartProgressCompany/index.vue'),
+  'tests-build': () => import('./vue-apps/TestsInEducation/index.vue')
+  // Добавляйте новые приложения сюда:
+  // 'another-app': () => import('./vue-apps/AnotherApp.vue')
+};
+
+Во многих приложениях бэкразработчик передаёт в атрибутах данные, например так, заодно увидите как у меня в html подключается приложение:
+
+<div data-vue-app="form-rating"
+                                     data-count-stars="5"
+                                     data-name-textarea="form_textarea_12"
+                                     data-name-hidden-input="form_hidden_276">
+                                </div>
+
+получаю данные в props
+props: {
+    instanceId: {
+      type: String,
+      required: true
+    },
+    count_stars: {
+      type: Number,
+      default: 5
+    },
+    max_stars: {
+      type: Number,
+      default: 10
+    },
+    nameTextarea: {
+      type: String,
+      default: ''
+    },
+    nameHiddenInput: {
+      type:String,
+      default: ''
+    },
+
+  }
+
+
