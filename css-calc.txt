@@ -1,84 +1,37 @@
 <template>
-  <div class="test-cotainer-answer" :class="{ mandatory: req }">
-    <div v-if="circle_number" class="test-window__number" :data-color="[`${item_key}`]">
-      <p><span>{{ item_key }}</span>/<span>{{ count_answers }}</span></p>
-    </div>
-    <p class="test-window__question" v-html="question"></p>
-    <div class="test-item">
-      <div class="test-window__item test-window__textarea">
-        <textarea
-          v-for="(answer, key) in variants"
-          :key="key"
-          v-model="input"
-          @change="pass_inputAnswer($event, answer.NAME_INPUT, answer.VALUE_INPUT)"
-          @input="limitInput"
-          maxlength="1001"
-        ></textarea>
-        <p class="test-window__textarea-error">Превышено допустимое количество в 1000 символов</p>
-      </div>
-    </div>
-    <button
-      v-if="btn_answer"
-      class="test-window__btn btn btn-slide-sub"
-      :class="{ unact: req }"
-      @click="pass_clickButtonAnswer"
-    >
-      Отправить
-    </button>
-  </div>
+  <Suspense>
+    <template #default>
+      <TestsInEducation v-bind="$attrs" />
+    </template>
+    <template #fallback>
+      <div class="loading-spinner">Загрузка теста...</div>
+    </template>
+  </Suspense>
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
+
 export default {
-  name: 'QuestionTextField',
-  props: [
-    'question', 'variants', 'item_key', 'btn_answer', 'circle_number',
-    'count_answers', 'required', 'current_answer'
-  ],
-  data() {
-    return {
-      input: "",
-      req: null,
-    };
-  },
-  methods: {
-    pass_inputAnswer(elem, param_1, param_2) {
-      const element = elem.currentTarget;
-      this.$emit('event_inputAnswer', [element, elem, param_1, param_2, this.input]);
-    },
-    pass_clickButtonAnswer(elem) {
-      const element = elem.currentTarget;
-      this.$emit('event_clickButtonAnswer', [element]);
-    },
-    requiredButton() {
-      this.req = this.required === "Y";
-    },
-    requiredButton_2() {
-      if (this.input.length !== 0) {
-        this.req = false;
-      } else if (this.input.length === 0 || this.required === "Y") {
-        this.req = true;
-      }
-    },
-    limitInput(el) {
-      const max = 1001;
-      const field = el.currentTarget;
-      const parent = field.closest('.test-window__item');
-      const item = parent.querySelectorAll('.test-window__textarea-error');
-      if (field.value.length === max) {
-        item.forEach((i) => i.setAttribute('style', 'display:block'));
-      } else {
-        item.forEach((i) => i.setAttribute('style', 'display:none'));
-      }
-    },
-  },
-  watch: {
-    input() {
-      this.requiredButton_2();
-    },
-  },
-  mounted() {
-    this.requiredButton();
+  name: 'TestsInEducationLazy',
+  inheritAttrs: true,
+  components: {
+    TestsInEducation: defineAsyncComponent(() => 
+      import('./TestsInEducation.vue')
+    ),
   },
 };
 </script>
+
+<style scoped>
+.loading-spinner {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+</style>
+
+---------------------------
+'tests-in-education': () => import('./vue-apps/TestsInEducation/index.vue')
+
+<div data-vue-app="tests-in-education" data-id-test="1"></div>
