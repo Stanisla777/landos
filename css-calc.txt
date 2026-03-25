@@ -1,414 +1,359 @@
-SliderTest.vue
-<template lang="pug">
-  .test-window.wrap-test-list.swiper-container.js-slider-test-vue
-    template
-      window-plug(
-        v-show="plug"
-      )
+<template>
+  <div class="test-window wrap-test-list swiper-container js-slider-test-vue">
+    <WindowPlug v-show="plug" />
 
-    .test-pagination
-    template
-      slide-calculator(
-        :count_slide="count_slide"
-        :current_slide="current_slide"
-      )
-    .swiper-wrapper
-      .swiper-slide.slide-question-js(v-for="(slide,key,ind) in QUESTIONS")
-        template(
-          v-if="slide.FIELD_TYPE==='0'"
-        )
-          question-window-radio(
-            v-show="current_answer"
-            :question="slide.QUESTION"
-            :variants="slide.ANSWERS"
-            :item_key="parseInt(key+1)"
-            :btn_answer="btn_answer"
-            :circle_number="circle_number"
-            :count_answers="count_answers"
-            :required="slide.REQUIRED"
-            :current_answer="current_answer"
-            :field_clearing="field_clearing"
-            v-on:event_clickButtonAnswer ="clickButtonAnswer($event)"
-            v-on:event_clickVariant ="clickVariant($event)"
-            v-on:event_input_radio_another="inputRadioAnother($event)"
-          )
+    <div class="test-pagination"></div>
 
-        template(
-          v-if="slide.FIELD_TYPE==='2'"
-        )
-          question-window-block(
-            v-show="current_answer"
-            :question="slide.QUESTION"
-            :variants="slide.ANSWERS"
-            :item_key="parseInt(key+1)"
-            :btn_answer="btn_answer"
-            :circle_number="circle_number"
-            :count_answers="count_answers"
-            :required="slide.REQUIRED"
-            :current_answer="current_answer"
-            v-on:event_clickButtonAnswer ="clickButtonAnswer($event)"
-            v-on:event_clickVariant ="clickVariant($event)"
-          )
+    <SlideCalculator
+      :count_slide="count_slide"
+      :current_slide="current_slide"
+    />
 
-        template(
-          v-if="slide.FIELD_TYPE==='1'"
-        )
-          question-window-checkbox(
-            v-show="current_answer"
-            :question="slide.QUESTION"
-            :variants="slide.ANSWERS"
-            :item_key="parseInt(key+1)"
-            :btn_answer="btn_answer"
-            :circle_number="circle_number"
-            :count_answers="count_answers"
-            :required="slide.REQUIRED"
-            v-on:event_clickButtonAnswer ="clickButtonAnswer($event)"
-            v-on:event_clickVariant ="clickVariant($event)"
-            v-on:eventInputCheckAnother="InputCheckAnother($event)"
+    <div class="swiper-wrapper">
+      <div
+        v-for="(slide, key, ind) in QUESTIONS"
+        :key="key"
+        class="swiper-slide slide-question-js"
+      >
+        <!-- Тип вопроса: радиокнопки (FIELD_TYPE === '0') -->
+        <QuestionWindowRadio
+          v-if="slide.FIELD_TYPE === '0'"
+          v-show="current_answer"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key) + 1"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          :current_answer="current_answer"
+          @event_clickButtonAnswer="clickButtonAnswer"
+          @event_clickVariant="clickVariant"
+          @event_input_radio_another="inputRadioAnother"
+        />
 
+        <!-- Тип вопроса: блок (FIELD_TYPE === '2') -->
+        <QuestionWindowBlock
+          v-else-if="slide.FIELD_TYPE === '2'"
+          v-show="current_answer"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key) + 1"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          :current_answer="current_answer"
+          @event_clickButtonAnswer="clickButtonAnswer"
+          @event_clickVariant="clickVariant"
+        />
 
-          )
-        template(
-          v-if="slide.FIELD_TYPE==='99999'"
-        )
-          question-text-field(
-            v-if="current_answer"
-            :question="slide.QUESTION"
-            :variants="slide.ANSWERS"
-            :item_key="parseInt(key+1)"
-            :btn_answer="btn_answer"
-            :circle_number="circle_number"
-            :count_answers="count_answers"
-            :required="slide.REQUIRED"
-            v-on:event_inputAnswer ="inputAnswer($event)"
-            v-on:event_clickButtonAnswer ="clickButtonAnswer($event)"
-          )
-          //шаблон с ответом на конкретный вопрос, он пока не задествовавн
-          // В будущем окно с результатом ответа будет включаться, а окно с вопросом
-          //отключаться, когда будет меняться состояние current_answer
-        template
-          status-answer(
-            :correct="correct"
-            :description="interim_des"
-            :win="intermediate_window"
+        <!-- Тип вопроса: чекбоксы (FIELD_TYPE === '1') -->
+        <QuestionWindowCheckbox
+          v-else-if="slide.FIELD_TYPE === '1'"
+          v-show="current_answer"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key) + 1"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          @event_clickButtonAnswer="clickButtonAnswer"
+          @event_clickVariant="clickVariant"
+          @eventInputCheckAnother="InputCheckAnother"
+        />
 
-          )
-        template
-          finish-result-window(
-            v-show="finalResult"
-            :sum_of_points="sum_of_points"
-            :count_slide="count_slide"
-            :final_text="final_text"
-            :smile="smile"
-            :smile_1="smile_1"
-            :smile_2="smile_2"
-            :smile_3="smile_3"
-            :smile_4="smile_4"
-            :smile_5="smile_5"
-            :count_correct_answers="count_correct_answers"
-            :finalResult="finalResult"
-            :count_answers="count_answers"
-            v-on:event_repeatTest="repeatTest"
-          )
+        <!-- Тип вопроса: текстовое поле (FIELD_TYPE === '99999') -->
+        <QuestionTextField
+          v-else-if="slide.FIELD_TYPE === '99999'"
+          v-show="current_answer"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key) + 1"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          @event_inputAnswer="inputAnswer"
+          @event_clickButtonAnswer="clickButtonAnswer"
+        />
 
+        <!-- Статус ответа -->
+        <StatusAnswer
+          :correct="correct"
+          :description="interim_des"
+          :win="intermediate_window"
+        />
+      </div>
+    </div>
 
+    <!-- Окно с финальным результатом -->
+    <FinishWindow
+      v-show="finalResult"
+      :sum_of_points="sum_of_points"
+      :count_slide="count_slide"
+      :final_text="final_text"
+      :smile="smile"
+      :smile_1="smile_1"
+      :smile_2="smile_2"
+      :smile_3="smile_3"
+      :smile_4="smile_4"
+      :smile_5="smile_5"
+      :count_correct_answers="count_correct_answers"
+      :finalResult="finalResult"
+      :count_answers="count_answers"
+      @event_repeatTest="repeatTest"
+    />
 
-
-    template
-      slider-button(
-        v-show="btn_slider"
-        v-on:event_clickBtnPrev="clickBtnPrev($event)"
-        v-on:event_clickBtnNext="clickBtnNext"
-        v-on:event_clickResulted="clickResulted($event)"
-        :btn_result ="btn_result"
-      )
+    <SliderButton
+      v-show="btn_slider"
+      :btn_result="btn_result"
+      @event_clickBtnPrev="clickBtnPrev"
+      @event_clickBtnNext="clickBtnNext"
+      @event_clickResulted="clickResulted"
+    />
+  </div>
 </template>
+
 <script>
-import Swiper, {Navigation, Pagination} from 'swiper';
-import SlideCalculator from './SlideCalculator.vue'
-import WindowPlug from './WindowPlug.vue'
-import QuestionWindowBlock from './QuestionWindowBlock.vue'
-import QuestionWindowRadio from './QuestionWindowRadio.vue'
-import QuestionWindowCheckbox from './QuestionWindowCheckbox.vue'
-import QuestionTextField from './QuestionTextField.vue'
-import AnswerButton from './AnswerButton.vue'
-import SliderButton from './SliderButton.vue'
-import StatusAnswer from './StatusAnswer.vue'
-import FinishWindow from './FinishWindow.vue'
+import Swiper, { Navigation, Pagination } from 'swiper';
 import axios from 'axios';
-import Vue from 'vue';
-import VueAxios from 'vue-axios';
+import SlideCalculator from './components/SlideCalculator.vue';
+import WindowPlug from './components/WindowPlug.vue';
+import QuestionWindowBlock from './components/QuestionWindowBlock.vue';
+import QuestionWindowRadio from './components/QuestionWindowRadio.vue';
+import QuestionWindowCheckbox from './components/QuestionWindowCheckbox.vue';
+import QuestionTextField from './components/QuestionTextField.vue';
+import AnswerButton from './components/AnswerButton.vue';
+import SliderButton from './components/SliderButton.vue';
+import StatusAnswer from './components/StatusAnswer.vue';
+import FinishWindow from './components/FinishWindow.vue';
+
 Swiper.use([Navigation, Pagination]);
+
 let mySwiper;
 
-Vue.use(VueAxios, axios);
-const api = 'https://sprosidomrf-test.dev.alamics.ru/local/api/tests/?id_tests=1';
 export default {
-  name:'SliderTest',
-  props:['idTest'],
-  //У радиокнопок NAME_INPUT должны быть обязательно разные у зазных вопросов
-  data(){
+  name: 'TestsInEducation',
+  props: {
+    idTest: {
+      type: [String, Number],
+      default: 1,
+    },
+  },
+  data() {
     return {
-      "SESSID":"",
-      "QUESTIONS_3":{
-        "1":{
-          "FIELD_TYPE": "1", //тип вопроса 1 - радиокнопка 0 - чекбокс
-          "QUESTION": "Сам вопрос", //сам вопрос
-          "CORRECT_ANSWERS":"Минимальный срок договора может быть 5 лет",
-          'REQUIRED': 'Y', // Обязательный или нет вопрос. Если N то пролестнуть можно без ответа, кнопка будет активна
-          'ANSWERS': {
-            '1': {
-              'MESSAGE': 'Вариант чекбоксд 1', // вариант ответа
-              'FIELD_WIDTH': '0', //0 - ответ неправильный 1 - правильный 2 - под вопросом появляется текстовое поле
-              'FIELD_PARAM': "ответ промежуточного окна1",//ответ промежуточного окна для определенного ответа
-              "COLOR": "1",// будет или нет промежуточное окно 1 -будет 0 - не будет
+      SESSID: '',
+      // Тестовые данные для разработки
+      QUESTIONS_3: {
+        "1": {
+          "FIELD_TYPE": "1",
+          "QUESTION": "Сам вопрос",
+          "CORRECT_ANSWERS": "Минимальный срок договора может быть 5 лет",
+          "REQUIRED": "Y",
+          "ANSWERS": {
+            "1": {
+              "MESSAGE": "Вариант чекбоксд 1",
+              "FIELD_WIDTH": "0",
+              "FIELD_PARAM": "ответ промежуточного окна1",
+              "COLOR": "1",
               "NAME_INPUT": "vote_chek_1",
               "VALUE_INPUT": "значение чекбокса_1",
-              "DESCRIPTION_TO_ANSWER":"Ответ номер 9",//абзац для промежуточного экрана
-              "PLACEHOLDER":"Какие недостатки вы видите в нашей работе?"
+              "DESCRIPTION_TO_ANSWER": "Ответ номер 9",
+              "PLACEHOLDER": "Какие недостатки вы видите в нашей работе?"
             },
-            "2":{
-              'MESSAGE': 'Вариант чекбокс 2',
+            "2": {
+              "MESSAGE": "Вариант чекбокс 2",
               "FIELD_WIDTH": "1",
               "FIELD_PARAM": "Проверить репутацию застройщика, ознакомиться со всей документацией, графиком строительства и фотографиями со строительной площадки можно с помощью сервиса наш.дом.рф. Все строительные компании обязаны раскрывать информацию о своих проектах.",
               "COLOR": "1",
               "NAME_INPUT": "vote_chek_2",
               "VALUE_INPUT": "значение чекбокса_2",
-              "DESCRIPTION_TO_ANSWER":"Ответ номер 10",//абзац для промежуточного экрана
-              "PLACEHOLDER":"Ого" // PLACEHOLDER для текстового поля, если FIELD_WIDTH=2
-            },
+              "DESCRIPTION_TO_ANSWER": "Ответ номер 10",
+              "PLACEHOLDER": "Ого"
+            }
           }
         },
-        "2":{
+        "2": {
           "FIELD_TYPE": "0",
           "QUESTION": "Оцените работу Станислава",
-          "CORRECT_ANSWERS":"Минимальный срок договора может быть 5 лет",
-          "DESCRIPTION_TO_ANSWER":"Характеристики объекта недвижимости - площадь, адрес, количество комнат, этаж и другие - " +
-            "указываются непосредственно в обязательных полях рекламного объявления. В дополнение к ним создайте краткое " +
-            "продающее описание квартиры. ",
+          "CORRECT_ANSWERS": "Минимальный срок договора может быть 5 лет",
+          "DESCRIPTION_TO_ANSWER": "Характеристики объекта недвижимости - площадь, адрес, количество комнат, этаж и другие - указываются непосредственно в обязательных полях рекламного объявления. В дополнение к ним создайте краткое продающее описание квартиры.",
           "REQUIRED": "Y",
-          "ANSWERS":{
-            "1":{
-              "MESSAGE":"0",
+          "ANSWERS": {
+            "1": {
+              "MESSAGE": "0",
               "FIELD_WIDTH": "2",
               "FIELD_PARAM": "Описание номер ",
               "COLOR": "0",
               "NAME_INPUT": "vote_radio_2",
               "VALUE_INPUT": "что то тут в значении радиокнопки",
-              "DESCRIPTION_TO_ANSWER":"Ответ номер 6",//абзац для промежуточного экрана
-              "PLACEHOLDER":"Какие недостатки вы видите в нашей работе?"
+              "DESCRIPTION_TO_ANSWER": "Ответ номер 6",
+              "PLACEHOLDER": "Какие недостатки вы видите в нашей работе?"
             },
-            "2":{
-              "MESSAGE":"1",
+            "2": {
+              "MESSAGE": "1",
               "FIELD_WIDTH": "2",
               "FIELD_PARAM": "Описание номер ",
               "COLOR": "0",
               "NAME_INPUT": "vote_radio_2",
               "VALUE_INPUT": "2",
-              "DESCRIPTION_TO_ANSWER":"Ответ номер 6",//абзац для промежуточного экрана
-              "PLACEHOLDER":"Какие недостатки вы видите в нашей работе?"
-            },
+              "DESCRIPTION_TO_ANSWER": "Ответ номер 6",
+              "PLACEHOLDER": "Какие недостатки вы видите в нашей работе?"
+            }
           }
-        },
+        }
       },
-      "QUESTIONS":"",
-      class:'true',
-      current_answer:true,//будет или нет отображаться окно с вопросом
-      finalResult:false, //переменная показывать окно с финальным результатом всего теста
-      //переменная показывать окно с ответом на конкретный вопрос, она пока не задествовавна
-      //и отключена в методах. В будущем окно с результатом ответа будет включаться, а окно с вопросом
-      //отключаться, когда будет меняться состояние current_answer
-      intermediate_window:null, //перменная которая показывает отображается или нет промежуточное окно
-      intermediate_window_secondary:null, //для фермерования переменной intermediate_window
-      count_slide:0,//количество слайдов
-      btn_slider:true,// параметр отвечающий за видимость кнопок слайдера
-      btn_result:false,// параметр отвечающий за видимость кнопки "показать результат на финальном слайде"
-      btn_answer:true,// параметр отвечающий за видимость кнопки "Ответить"
-      circle_number:false,// наличие или отсутствие цветного круга с номеров
-      count_answers:0,//общее количество вопросов
-      count_correct_answers:0,// изначальное количество правильных ответов
-      sum_of_points:0,//количество набранных балов, отправляется в конце на сервак
-      correct:null, //true если ответ правильный, в зависимомти от ответа будет формироваться содержание промежуточного окна
-      result:0,
-      smile:null,
-      smile_1:null,
-      smile_2:null,
-      smile_3:null,
-      smile_4:null,
-      smile_5:null,
-      final_text:"",
-      interim_des:[],//для описания к ответу промежуточного экрана
-      answers_all_questions:[],// массив ответов пользователей на все вопросы
-      massive_checkbox:[], //массив с чекбоксами, которые отправляю на сервер
-      object_questions:[],// массив, который будет содержать объекты ключ - значение для массива answers_all_questions
-      object_checkbox:[],// массив, который будет содержать объекты ключ - значение для массива answers_all_questions
-      response_object:{},//на основе переменной формируется переменная object_questions
-      field_text:"",
-      current_slide:1,
-      plug:false,
-      count_radio_btn:false,
+      QUESTIONS: {},
+      class: 'true',
+      current_answer: true,
+      finalResult: false,
+      intermediate_window: null,
+      intermediate_window_secondary: null,
+      count_slide: 0,
+      btn_slider: true,
+      btn_result: false,
+      btn_answer: true,
+      circle_number: false,
+      count_answers: 0,
+      count_correct_answers: 0,
+      sum_of_points: 0,
+      correct: null,
+      result: 0,
+      smile: null,
+      smile_1: null,
+      smile_2: null,
+      smile_3: null,
+      smile_4: null,
+      smile_5: null,
+      final_text: "",
+      interim_des: [],
+      answers_all_questions: [],
+      massive_checkbox: [],
+      object_questions: [],
+      object_checkbox: [],
+      response_object: {},
+      field_text: "",
+      current_slide: 1,
+      plug: false,
+      count_radio_btn: false,
       config_header: {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-        }
+        },
       },
-      btn_verify:true,
-      required_button:null,
-      field_clearing:null
-    }
+      btn_verify: true,
+      required_button: null,
+      field_clearing: null,
+    };
   },
-  methods:{
-    //запрос к серверу
+  methods: {
     axios_get() {
-      axios.get(`/local/api/tests/?id_tests=${this.idTest}`, this.config_header)
+      axios
+        .get(`/local/api/tests/?id_tests=${this.idTest}`, this.config_header)
         .then((res) => {
-          this.QUESTIONS=res.data.QUESTIONS
-          this.SESSID = res.data.SESSID
-          // console.log(res);
+          this.QUESTIONS = res.data.QUESTIONS;
+          this.SESSID = res.data.SESSID;
         })
-        .then((res)=>{
-          this.initSlider()
-          this.countQuestion()
-          this.countTrueAnswer()
-          this.countSlideTest()
+        .then(() => {
+          this.initSlider();
+          this.countQuestion();
+          this.countTrueAnswer();
+          this.countSlideTest();
         })
         .catch((error) => {
           console.log(error);
+          // При ошибке используем тестовые данные
+          this.QUESTIONS = this.QUESTIONS_3;
+          this.initSlider();
+          this.countQuestion();
+          this.countTrueAnswer();
+          this.countSlideTest();
         });
     },
 
-    //инициализация слайдера
     initSlider() {
-      let current_slide = this.current_slide
+      let current_slide = this.current_slide;
       mySwiper = new Swiper('.js-slider-test-vue', {
         loop: false,
         simulateTouch: false,
         allowTouchMove: false,
         spaceBetween: 35,
-        autoHeight:true,
-        observer:true,
-
+        autoHeight: true,
+        observer: true,
         navigation: {
           nextEl: '.test-button-next',
-          prevEl: ''
+          prevEl: '',
         },
         pagination: {
-
           el: '.test-pagination',
-          clickable: true
+          clickable: true,
         },
-        // breakpoints: {
-        //   // when window width is >= 320px
-        //   300: {
-        //     autoHeight:true,
-        //   },
-        //   // when window width is >= 640px
-        //   680: {
-        //     autoHeight:false,
-        //   }
-        // }
       });
       mySwiper.init(this.activeSlideButton());
-      mySwiper.on('transitionEnd', function() {
-        const slide_calculator = document.querySelectorAll('.test-slide-calculator')
-        slide_calculator.forEach(function (item){
-          item.querySelector('p:first-child').textContent = mySwiper.realIndex+1
-        })
+      mySwiper.on('transitionEnd', () => {
+        const slide_calculator = document.querySelectorAll('.test-slide-calculator');
+        slide_calculator.forEach((item) => {
+          item.querySelector('p:first-child').textContent = mySwiper.realIndex + 1;
+        });
       });
-      this.current_slide = current_slide
+      this.current_slide = current_slide;
     },
 
-    //Подсчет общего количества вопросов
-    countQuestion(item){
-      let length_el
-      const len = this.QUESTIONS
-      const withoutSymbolLength = Object.keys(len);
-      this.count_answers =withoutSymbolLength.length
+    countQuestion() {
+      const len = this.QUESTIONS;
+      this.count_answers = Object.keys(len).length;
     },
 
-    //Подсчет общего количества правильных ответов
     countTrueAnswer() {
-      let count_correct_answers =0
-      const len = this.QUESTIONS
-      const keys = Object.values(len)
-      keys.forEach(function (item){
-        if(item.FIELD_TYPE=="2"){
-          const keys_2 = Object.values(item.ANSWERS)
-          for(let i=0;i<keys_2.length;i+=1){
+      let count_correct_answers = 0;
+      const len = this.QUESTIONS;
+      const keys = Object.values(len);
+      keys.forEach((item) => {
+        if (item.FIELD_TYPE == "2") {
+          const keys_2 = Object.values(item.ANSWERS);
+          for (let i = 0; i < keys_2.length; i += 1) {
             const mas = keys_2[i].DROPDOWN;
-            let massive_2=[]
-            for(let i=0;i<mas.length;i+=1){
-              if(mas[i].FIELD_WIDTH=="1"){
-                massive_2.push(i)
-                // count_correct_answers+=1
+            let massive_2 = [];
+            for (let j = 0; j < mas.length; j += 1) {
+              if (mas[j].FIELD_WIDTH == "1") {
+                massive_2.push(j);
               }
             }
-            if(massive_2.length>0){
-              count_correct_answers+=1
+            if (massive_2.length > 0) {
+              count_correct_answers += 1;
             }
           }
-        }
-        else if(item.FIELD_TYPE=="1"){
-          const keys_2 = Object.values(item.ANSWERS)
-          for(let i=0;i<keys_2.length;i+=1){
-            if(keys_2[i].FIELD_WIDTH=="1"){
-              count_correct_answers+=1
+        } else if (item.FIELD_TYPE == "1") {
+          const keys_2 = Object.values(item.ANSWERS);
+          for (let i = 0; i < keys_2.length; i += 1) {
+            if (keys_2[i].FIELD_WIDTH == "1") {
+              count_correct_answers += 1;
             }
           }
-        }
-        else {
-          const keys_2 = Object.values(item.ANSWERS)
-          let massive=[]
-          for(let i=0;i<keys_2.length;i+=1){
-            if(keys_2[i].FIELD_WIDTH=="1"){
-              massive.push(i)
-              // count_correct_answers+=1
+        } else {
+          const keys_2 = Object.values(item.ANSWERS);
+          let massive = [];
+          for (let i = 0; i < keys_2.length; i += 1) {
+            if (keys_2[i].FIELD_WIDTH == "1") {
+              massive.push(i);
             }
           }
-          if(massive.length>0){
-            count_correct_answers+=1
+          if (massive.length > 0) {
+            count_correct_answers += 1;
           }
         }
-      })
-      this.count_correct_answers = count_correct_answers
+      });
+      this.count_correct_answers = count_correct_answers;
     },
 
-    //Подсчет количества слайдов
-    countSlideTest(){
-      const slide_parent = document.querySelector('.test-window')
-      this.count_slide = slide_parent.querySelectorAll('.slide-question-js').length
-
-    },
-    //-----------------------------------------------------
-
-    //---------------функции для кнопок-------------
-
-    buttonsContainer(){
-      const container_answer = document.querySelectorAll('.test-cotainer-answer')
-      if(this.intermediate_window===false){
-        container_answer.forEach(function (item){
-          let test_window = item.closest('.test-window')
-          const btn = test_window.querySelectorAll('.test-window__slider-btn')
-          for(let i=0;i<btn.length;i++){
-            // btn[i].setAttribute('style','margin-top:-44px')
-          }
-        })
+    countSlideTest() {
+      const slide_parent = document.querySelector('.test-window');
+      if (slide_parent) {
+        this.count_slide = slide_parent.querySelectorAll('.slide-question-js').length;
       }
-      else{
-        container_answer.forEach(function (item){
-          let test_window = item.closest('.test-window')
-          const btn = test_window.querySelectorAll('.test-window__slider-btn')
-          for(let i=0;i<btn.length;i++){
-            btn[i].setAttribute('style','margin-top:auto')
-          }
-        })
-      }
-
-
-
-      // const container_window = container_answer.closest('.test-window')
-
     },
 
     removeEmpty(obj) {
@@ -417,1715 +362,739 @@ export default {
           delete obj[k];
         }
       });
-
       if (!Object.keys(obj).length) {
         return null;
       }
     },
-    //окно-заглушка перед финальным окном
-    appearancEmptyWindow(){
-      this.plug=true
-      let plug = this.plug
-      const promice = new Promise(function (res,rej){
-        setTimeout(function (){
-          plug=false
-          res()
-        },1000)
-      }).then(()=>{
-        this.plug=plug
-      })
+
+    appearancEmptyWindow() {
+      this.plug = true;
+      let plug = this.plug;
+      const promise = new Promise((resolve) => {
+        setTimeout(() => {
+          plug = false;
+          resolve();
+        }, 1000);
+      }).then(() => {
+        this.plug = plug;
+      });
     },
 
-    //клик по кнопке Узнать итоговые результаты
-    clickResulted(el){
-      const element = el
-      this.answers_all_questions = this.answers_all_questions.concat(this.object_questions)
-      this.massive_checkbox = this.massive_checkbox.concat(this.object_checkbox)
-      this.removeEmpty(this.answers_all_questions)
-      this.appearancEmptyWindow()
-      const sessid = this.SESSID
-      var res = sessid.split('=').pop();
+    clickResulted(el) {
+      this.answers_all_questions = this.answers_all_questions.concat(this.object_questions);
+      this.massive_checkbox = this.massive_checkbox.concat(this.object_checkbox);
+      this.removeEmpty(this.answers_all_questions);
+      this.appearancEmptyWindow();
+
+      const sessid = this.SESSID;
+      let res = sessid.split('=').pop();
       res = res.replace(/[^a-zа-яё0-9\s]/gi, ' ');
       const required_data = [
         { vote: "Y" },
-        { PUBLIC_VOTE_ID: this.idTest},
-        { VOTE_ID: this.idTest},
+        { PUBLIC_VOTE_ID: this.idTest },
+        { VOTE_ID: this.idTest },
         { sessid: `${res}` },
-        {sum_vote:this.sum_of_points}
-      ]
-      const array_to_send = {}
-      this.answers_all_questions = this.answers_all_questions.concat(required_data)
-      const an_all_que = this.answers_all_questions
-      const keys_2 = Object.keys(this.answers_all_questions)
-      keys_2.forEach(function (item,ind){
-        const keys = Object.keys(an_all_que[ind])
-        Object.assign(array_to_send, an_all_que[ind]);
-      })
-      const sending_data_server = {}
-      sending_data_server.stats=array_to_send
-      sending_data_server.checBox = this.massive_checkbox
-      let final_text = this.final_text
-      axios({
-        method:'post',
-        url:'/local/api/tests/',
+        { sum_vote: this.sum_of_points }
+      ];
 
+      const array_to_send = {};
+      this.answers_all_questions = this.answers_all_questions.concat(required_data);
+      const an_all_que = this.answers_all_questions;
+      const keys_2 = Object.keys(this.answers_all_questions);
+      keys_2.forEach((item, ind) => {
+        const keys = Object.keys(an_all_que[ind]);
+        Object.assign(array_to_send, an_all_que[ind]);
+      });
+
+      const sending_data_server = {};
+      sending_data_server.stats = array_to_send;
+      sending_data_server.checBox = this.massive_checkbox;
+      let final_text = this.final_text;
+
+      axios({
+        method: 'post',
+        url: '/local/api/tests/',
         headers: {
           "Content-type": "text/html; charset=UTF-8"
         },
-
-        data:sending_data_server,//превращаем собранные данные в json
+        data: sending_data_server,
       })
-        // Если запрос успешен
-        .then(function (res) {
-          final_text = res.data.UF_TEXT
-          const container = document.querySelectorAll('.test-cotainer-final-result')
-          container.forEach(function (item){
-            const promice = new Promise(function (resolve) {
-              item.querySelector('.final-result__des').innerHTML=final_text
-              resolve()
-            }).then(()=>{
-              return new Promise(function (resolve) {
-                const height_el = item.offsetHeight
-                item.closest('.test-window').setAttribute('style',`height:${height_el+147}px`)
-                resolve()
-              })
+        .then((res) => {
+          final_text = res.data.UF_TEXT;
+          const container = document.querySelectorAll('.test-cotainer-final-result');
+          container.forEach((item) => {
+            const promise = new Promise((resolve) => {
+              item.querySelector('.final-result__des').innerHTML = final_text;
+              resolve();
+            }).then(() => {
+              return new Promise((resolve) => {
+                const height_el = item.offsetHeight;
+                item.closest('.test-window').setAttribute('style', `height:${height_el + 147}px`);
+                resolve();
+              });
             });
-
-            // item.querySelector('.final-result__des').textContent=final_text
-            // const height_el = item.offsetHeight
-            // item.closest('.test-window').setAttribute('style',`height:${height_el+147}px`)
-          })
+          });
         })
-        // Если запрос с ошибкой
-        .catch(function (error) {
-          // final_text = "Благодарим вас за участие в нашем опросе!"//---
-          const container = document.querySelectorAll('.test-cotainer-final-result')
-          container.forEach(function (item){
-            // const promice = new Promise(function (resolve) {//-------
-            //   item.querySelector('.final-result__des').textContent=final_text
-            //   resolve()
-            // }).then(()=>{
-            //   return new Promise(function (resolve) {
-            //     const height_el = item.offsetHeight
-            //     item.closest('.test-window').setAttribute('style',`height:${height_el+175}px`)
-            //     resolve()
-            //   })
-            // });
-            // item.querySelector('.final-result__des').innerHTML=final_text//--------
-            const height_el = item.offsetHeight
-            item.closest('.test-window').setAttribute('style',`height:${height_el+147}px`)
-          })
+        .catch((error) => {
           console.log(error);
+          const container = document.querySelectorAll('.test-cotainer-final-result');
+          container.forEach((item) => {
+            const height_el = item.offsetHeight;
+            item.closest('.test-window').setAttribute('style', `height:${height_el + 147}px`);
+          });
         });
 
-      // this.receiveSher()
-      this.finalResult=true//добавил
-      this.intermediate_window=false//добавил
-      const container = document.querySelectorAll('.test-cotainer-result-answers')
-      container.forEach(function (item){
-        item.setAttribute('style','display:none')
-      })
+      this.finalResult = true;
+      this.intermediate_window = false;
+      const container = document.querySelectorAll('.test-cotainer-result-answers');
+      container.forEach((item) => {
+        item.setAttribute('style', 'display:none');
+      });
 
       const parent = document.querySelector('.test-window');
-      if(parent.clientHeight>655){
-        this.scrollBeginningTest()
+      if (parent && parent.clientHeight > 655) {
+        this.scrollBeginningTest();
       }
-      this.current_answer=false
-      this.btn_slider=false
-      this.btn_verify=false
-      this.interim_des = []
+      this.current_answer = false;
+      this.btn_slider = false;
+      this.btn_verify = false;
+      this.interim_des = [];
 
-      const percentage_responses = (parseInt(this.sum_of_points)*100)/this.count_answers
-      if(percentage_responses<=20){
-        this.smile_1=true
+      const percentage_responses = (parseInt(this.sum_of_points) * 100) / this.count_answers;
+      if (percentage_responses <= 20) {
+        this.smile_1 = true;
+      } else if (percentage_responses > 20 && percentage_responses <= 40) {
+        this.smile_2 = true;
+      } else if (percentage_responses > 40 && percentage_responses <= 60) {
+        this.smile_3 = true;
+      } else if (percentage_responses > 60 && percentage_responses <= 80) {
+        this.smile_4 = true;
+      } else if (percentage_responses > 80 && percentage_responses < 100) {
+        this.smile_5 = true;
+      } else if (percentage_responses === 100) {
+        this.smile = true;
       }
-      if(percentage_responses>20&&percentage_responses<=40){
-        this.smile_2=true
-      }
-      if(percentage_responses>40&&percentage_responses<=60){
-        this.smile_3=true
-      }
-      if(percentage_responses>60&&percentage_responses<=80){
-        this.smile_4=true
-      }
-      if(percentage_responses>80&&percentage_responses<100){
-        this.smile_5=true
-      }
-      if(percentage_responses===100){
-        this.smile=true
-      }
-      if(el.closest('.common-test-pop-up')){
+
+      if (el && el.closest('.common-test-pop-up')) {
         const pop_up = document.querySelector('.offer-test-pop-up-js');
         const common_pop_up = document.querySelector('.common-test-pop-up');
-        const btn = pop_up.querySelector('.offer-test-pop-up__btn');
-        common_pop_up.querySelector('.modal__closer').setAttribute('style','display:none')
-        common_pop_up.querySelector('.common-test-pop-up__wrapper').setAttribute('style','padding-top: 1rem;padding-bottom: 1rem;transition-duration: .6s;')
+        const btn = pop_up?.querySelector('.offer-test-pop-up__btn');
+        if (common_pop_up) {
+          common_pop_up.querySelector('.modal__closer').setAttribute('style', 'display:none');
+          common_pop_up.querySelector('.common-test-pop-up__wrapper').setAttribute('style', 'padding-top: 1rem;padding-bottom: 1rem;transition-duration: .6s;');
 
-        const promice = new Promise(((resolve) => {
-          setTimeout(() => {
-            common_pop_up.querySelector('.common-test-pop-up__wrapper').classList.remove('zoomIn');
-            common_pop_up.querySelector('.common-test-pop-up__wrapper').classList.add('zoomOut');
-            resolve();
-          }, 4000);
-        })).then(() => new Promise(((resolve) => {
-          setTimeout(() => {
-            common_pop_up.classList.remove('open');
-            pop_up.setAttribute('style', 'display:none');
-            resolve();
-          }, 500);
-        }))).then(() => new Promise(((resolve) => {
-          setTimeout(() => {
-            this.sum_of_points=0
-            this.result=0
-            this.btn_result=false
-            this.btn_slider=false
-            this.btn_answer=true
-            this.smile=null
-            this.smile_1=null
-            this.smile_2=null
-            this.smile_3=null
-            this.smile_4=null
-            this.smile_5=null
-            this.final_text=""
-            this.interim_des=[]
-            this.answers_all_questions=[]
-            this.response_object={}
-            this.object_questions=[]
-            this.object_checkbox=[]
-            this.massive_checkbox=[]
-            this.correct=null
-            resolve();
-          }, 3000);
-        })));
+          const promise = new Promise((resolve) => {
+            setTimeout(() => {
+              common_pop_up.querySelector('.common-test-pop-up__wrapper').classList.remove('zoomIn');
+              common_pop_up.querySelector('.common-test-pop-up__wrapper').classList.add('zoomOut');
+              resolve();
+            }, 4000);
+          }).then(() => new Promise((resolve) => {
+            setTimeout(() => {
+              common_pop_up.classList.remove('open');
+              if (pop_up) pop_up.setAttribute('style', 'display:none');
+              resolve();
+            }, 500);
+          })).then(() => new Promise((resolve) => {
+            setTimeout(() => {
+              this.sum_of_points = 0;
+              this.result = 0;
+              this.btn_result = false;
+              this.btn_slider = false;
+              this.btn_answer = true;
+              this.smile = null;
+              this.smile_1 = null;
+              this.smile_2 = null;
+              this.smile_3 = null;
+              this.smile_4 = null;
+              this.smile_5 = null;
+              this.final_text = "";
+              this.interim_des = [];
+              this.answers_all_questions = [];
+              this.response_object = {};
+              this.object_questions = [];
+              this.object_checkbox = [];
+              this.massive_checkbox = [];
+              this.correct = null;
+              resolve();
+            }, 3000);
+          }));
+        }
       }
     },
-// aaa3
-    unActiveButtonRepeatTest(){
-      const sub_but = document.querySelectorAll('.btn-slide-sub')
-      sub_but.forEach((item) => {
-        item.classList.remove('act')
-      })
-
-    },
-    //СЮДА ВЕРНУТЬСЯ!!!!!!!! чТОБЫ ПОЧИНИТЬ НЕАКТИВНОСТЬ КНОПКИ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ActiveButton(elem) {
-
-      const parent = elem.closest('.test-cotainer-answer')
-      if (parent.querySelector('.test-window__btn').classList.contains('unact')) {
-        parent.querySelector('.test-window__btn').classList.add('act')
-        // this.required_button = false
+      const parent = elem.closest('.test-cotainer-answer');
+      if (parent && parent.querySelector('.test-window__btn').classList.contains('unact')) {
+        parent.querySelector('.test-window__btn').classList.add('act');
       }
     },
 
-    unActiveButton(elem){
-      const parent = elem.closest('.test-cotainer-answer')
-      if(parent.querySelector('.test-window__btn').classList.contains('act')){
-        parent.querySelector('.test-window__btn').classList.remove('act')
+    unActiveButton(elem) {
+      const parent = elem.closest('.test-cotainer-answer');
+      if (parent && parent.querySelector('.test-window__btn').classList.contains('act')) {
+        parent.querySelector('.test-window__btn').classList.remove('act');
       }
     },
 
-    //клик по кнопке слайдера "Назад"
-    clickBtnPrev(el){
-      const element = el
-      this.intermediate_window=false
+    clickBtnPrev(el) {
+      this.intermediate_window = false;
 
-      const parent = element.closest('.test-window');
-      const active_slide = parent.querySelector('.swiper-slide-active')
-      const field_for_variant=active_slide.querySelectorAll('.test-window__field-for-variant')
-      for(let item of field_for_variant) {
-        item.querySelector('textarea').value = "";
+      const parent = el.closest('.test-window');
+      const active_slide = parent.querySelector('.swiper-slide-active');
+      const field_for_variant = active_slide.querySelectorAll('.test-window__field-for-variant');
+      for (let item of field_for_variant) {
+        const textarea = item.querySelector('textarea');
+        if (textarea) textarea.value = "";
         item.classList.remove('active');
       }
 
+      const container = document.querySelectorAll('.test-cotainer-result-answers');
+      container.forEach((item) => {
+        item.closest('.test-window').setAttribute('style', 'height:100%');
+        item.setAttribute('style', 'display:none');
+      });
 
+      this.current_answer = true;
+      this.activeSlideButton();
 
-      const container = document.querySelectorAll('.test-cotainer-result-answers')
-      container.forEach(function (item){
-        item.closest('.test-window').setAttribute('style','height:100%')
-        item.setAttribute('style','display:none')
-      })
+      const child = document.querySelectorAll('.test-window__item');
+      child.forEach((item) => {
+        item.classList.remove('active');
+        item.setAttribute('style', 'pointer-events:auto');
+      });
+      this.btn_answer = true;
 
-      this.current_answer=true
-      this.activeSlideButton()
-      const child = document.querySelectorAll('.test-window__item')
-      child.forEach(function (item){
-        item.classList.remove('active')
-        item.setAttribute('style','pointer-events:auto')
-      })
-      this.btn_answer=true
-// debugger
-
-
-
-
-
-
-      const swiper_active = parent.querySelector('.swiper-slide-active')
-      const test_window_item = swiper_active.querySelectorAll('.test-window__item.active-all')
-      let sum_points = this.sum_of_points
-      if(this.correct===true){
-        this.sum_of_points = this.sum_of_points - 1
+      const swiper_active = parent.querySelector('.swiper-slide-active');
+      const test_window_item = swiper_active.querySelectorAll('.test-window__item.active-all');
+      if (this.correct === true) {
+        this.sum_of_points = this.sum_of_points - 1;
       }
-      const test_item = swiper_active.querySelectorAll('.test-item.answer-selected')
-      test_item.forEach(function (item){
-        item.classList.remove('answer-selected')
-      })
 
+      const test_item = swiper_active.querySelectorAll('.test-item.answer-selected');
+      test_item.forEach((item) => {
+        item.classList.remove('answer-selected');
+      });
 
-      const active_this = element.closest('.test-item')
-      const active_all = document.querySelectorAll('.test-window__item.active-all')
-      const test_win_item = document.querySelectorAll('.test-window__item')
-      test_win_item.forEach(function (item){
-        item.classList.remove('false')
-      })
+      const active_all = document.querySelectorAll('.test-window__item.active-all');
+      const test_win_item = document.querySelectorAll('.test-window__item');
+      test_win_item.forEach((item) => {
+        item.classList.remove('false');
+      });
 
-
-      // if(parent.querySelector('.test-window__btn').classList.contains('act')){
-      //   parent.querySelector('.test-window__btn').classList.remove('act')
-      // }
-      active_all.forEach(function (item) {
-
+      active_all.forEach((item) => {
         if (item.classList.contains('false')) {
           item.classList.remove('false');
         }
-
         item.classList.remove('active-all');
-        if(item.classList.contains('false')){
-          item.classList.remove('false');
-        }
-
         item.classList.remove('true');
-
         if (item.classList.contains('test-window__radio-item') || item.classList.contains('test-window__checkbox-item')) {
-          item.querySelector('input').checked = false;
+          const input = item.querySelector('input');
+          if (input) input.checked = false;
         }
-      })
+      });
 
-      const pagination = document.querySelector('.test-pagination')
-      const bullet = pagination.querySelectorAll('.swiper-pagination-bullet.active')
-      for(let i =0;i<bullet.length;i++){
-        if(i===bullet.length-1){
-          bullet[i].classList.remove('active')
+      const pagination = document.querySelector('.test-pagination');
+      const bullet = pagination.querySelectorAll('.swiper-pagination-bullet.active');
+      for (let i = 0; i < bullet.length; i++) {
+        if (i === bullet.length - 1) {
+          bullet[i].classList.remove('active');
         }
       }
 
-      //Остановился тут, далее в watch и когда переменная меняетсчя формируем новый commit и передаём его в компонент с полем
-      this.field_clearing = true
-
-      this.count_radio_btn=false
-      this.interim_des=[]
-      this.response_object={}
-      this.object_questions=[]
-      this.object_checkbox=[]
-      this.correct=null
-      mySwiper.updateAutoHeight(500)
-
+      this.field_clearing = true;
+      this.count_radio_btn = false;
+      this.interim_des = [];
+      this.response_object = {};
+      this.object_questions = [];
+      this.object_checkbox = [];
+      this.correct = null;
+      if (mySwiper) mySwiper.updateAutoHeight(500);
     },
 
-    //клик по кнопке слайдера "Вперёд"
-    clickBtnNext(elem){
-      const child = document.querySelectorAll('.test-window__item')
-      child.forEach(function (item){
-        item.classList.remove('active')
-        item.setAttribute('style','pointer-events:auto')
-      })
-      this.intermediate_window=false
-      const container = document.querySelectorAll('.test-cotainer-result-answers')
-      container.forEach(function (item){
-        item.closest('.test-window').setAttribute('style','height:auto')
-        item.setAttribute('style','display:none')
+    clickBtnNext() {
+      const child = document.querySelectorAll('.test-window__item');
+      child.forEach((item) => {
+        item.classList.remove('active');
+        item.setAttribute('style', 'pointer-events:auto');
+      });
+      this.intermediate_window = false;
 
+      const container = document.querySelectorAll('.test-cotainer-result-answers');
+      container.forEach((item) => {
+        item.closest('.test-window').setAttribute('style', 'height:auto');
+        item.setAttribute('style', 'display:none');
+      });
+      this.current_answer = true;
+      this.activeSlideButton();
 
-      })
-      this.current_answer=true
-      this.activeSlideButton()
-
-      //формирую массив ответов для отправки на сервер
-      this.answers_all_questions = this.answers_all_questions.concat(this.object_questions)
-      this.massive_checkbox = this.massive_checkbox .concat(this.object_checkbox)
+      this.answers_all_questions = this.answers_all_questions.concat(this.object_questions);
+      this.massive_checkbox = this.massive_checkbox.concat(this.object_checkbox);
 
       const parent = document.querySelector('.test-window');
-      if(parent.clientHeight>655){
-        this.scrollBeginningTest()
+      if (parent && parent.clientHeight > 655) {
+        this.scrollBeginningTest();
       }
 
-
-      this.count_radio_btn=false
-      this.interim_des = []
-      this.object_questions = []
-      this.object_checkbox=[]
-      this.response_object=[]
-      this.btn_answer=true
-      this.correct=null
-
+      this.count_radio_btn = false;
+      this.interim_des = [];
+      this.object_questions = [];
+      this.object_checkbox = [];
+      this.response_object = [];
+      this.btn_answer = true;
+      this.correct = null;
     },
 
-    //повторить тест
-    repeatTest(){ //пройти тест ещё раз по нажатию на кнопку "Повторить тест"
-      this.finalResult=false
-      this.current_answer=true
-      document.querySelector('.test-window').classList.remove('result')
-      const variant_testdocument = document.querySelectorAll('.test-window__col-variant-item')
-      const radio = document.querySelectorAll('.test-window__radio-item')
-      const check = document.querySelectorAll('.test-window__checkbox-item')
-      const textarea = document.querySelectorAll('.test-window__textarea textarea')
+    repeatTest() {
+      this.finalResult = false;
+      this.current_answer = true;
+      const testWindow = document.querySelector('.test-window');
+      if (testWindow) testWindow.classList.remove('result');
+
+      const radio = document.querySelectorAll('.test-window__radio-item');
+      const check = document.querySelectorAll('.test-window__checkbox-item');
+      const textarea = document.querySelectorAll('.test-window__textarea textarea');
+      const variant_testdocument = document.querySelectorAll('.test-window__col-variant-item');
+
       radio.forEach((item) => {
-        item.classList.remove('active')
-        item.classList.remove('true')
-        item.classList.remove('false')
-        item.closest('.test-item').classList.remove('answer-selected')
-        item.setAttribute('style','pointer-events: auto;')
-        item.querySelector('input').checked = false;
-      })
+        item.classList.remove('active', 'true', 'false');
+        item.closest('.test-item')?.classList.remove('answer-selected');
+        item.setAttribute('style', 'pointer-events: auto;');
+        const input = item.querySelector('input');
+        if (input) input.checked = false;
+      });
+
       variant_testdocument.forEach((item) => {
-        item.classList.remove('active')
-        item.classList.remove('true')
-        item.classList.remove('false')
-        item.classList.remove('active-all')
-        item.closest('.test-item').classList.remove('answer-selected')
-        item.setAttribute('style','pointer-events: auto;')
-      })
+        item.classList.remove('active', 'true', 'false', 'active-all');
+        item.closest('.test-item')?.classList.remove('answer-selected');
+        item.setAttribute('style', 'pointer-events: auto;');
+      });
+
       check.forEach((item) => {
-        item.classList.remove('active')
-        item.classList.remove('true')
-        item.classList.remove('false')
-        item.closest('.test-item').classList.remove('answer-selected')
-        item.setAttribute('style','pointer-events: auto;')
-        item.querySelector('input').checked = false;
-      })
+        item.classList.remove('active', 'true', 'false');
+        item.closest('.test-item')?.classList.remove('answer-selected');
+        item.setAttribute('style', 'pointer-events: auto;');
+        const input = item.querySelector('input');
+        if (input) input.checked = false;
+      });
+
       textarea.forEach((item) => {
-        item.classList.remove('active')
-        item.classList.remove('true')
-        item.classList.remove('false')
-        item.closest('.test-item').classList.remove('answer-selected')
-        item.setAttribute('style','pointer-events: auto;')
-        item.value = ""
-      })
-      const but_sub = document.querySelectorAll('.btn-slide-sub')
+        item.classList.remove('active', 'true', 'false');
+        item.closest('.test-item')?.classList.remove('answer-selected');
+        item.setAttribute('style', 'pointer-events: auto;');
+        item.value = "";
+      });
 
-      const bullet = document.querySelectorAll('.swiper-pagination-bullet')
-      bullet.forEach((item)=>{
-        item.classList.remove('active')
-      })
-      const but = document.querySelectorAll('.test-window__slider-btn')
-      this.btn_slider=false
+      const bullet = document.querySelectorAll('.swiper-pagination-bullet');
+      bullet.forEach((item) => {
+        item.classList.remove('active');
+      });
+
+      const but = document.querySelectorAll('.test-window__slider-btn');
+      this.btn_slider = false;
       but.forEach((item) => {
-        item.querySelector('.test-button-next').setAttribute('style', 'display:block')
-        item.querySelector('.test-button-resultt').setAttribute('style','display:none')
+        const nextBtn = item.querySelector('.test-button-next');
+        const resultBtn = item.querySelector('.test-button-resultt');
+        if (nextBtn) nextBtn.setAttribute('style', 'display:block');
+        if (resultBtn) resultBtn.setAttribute('style', 'display:none');
+      });
 
-      })
+      const container_final = document.querySelectorAll('.test-cotainer-final-result');
+      container_final.forEach((item) => {
+        const desEl = item.querySelector('.final-result__des');
+        if (desEl) desEl.textContent = "";
+      });
 
-      const container_final = document.querySelectorAll('.test-cotainer-final-result')
-      container_final.forEach(function (item){
-        item.querySelector('.final-result__des').textContent=""
-      })
-      const container_test_win = document.querySelectorAll('.test-window')
-      if(this.current_answer===true){
-        container_test_win.forEach(function (item){
-          item.setAttribute('style','height:auto')
-        })
+      const container_test_win = document.querySelectorAll('.test-window');
+      if (this.current_answer === true) {
+        container_test_win.forEach((item) => {
+          item.setAttribute('style', 'height:auto');
+        });
       }
 
       const parent = document.querySelector('.test-window');
-      if(parent){
+      if (parent) {
         const field_for_variant = parent.querySelectorAll('.test-window__field-for-variant');
         for (let item of field_for_variant) {
           item.classList.remove('active');
-          item.querySelector('textarea').value = '';
+          const textarea = item.querySelector('textarea');
+          if (textarea) textarea.value = '';
         }
       }
 
-
-
-      const yOffset = -50;
-      const element = document.querySelector('.wrap-test-list');
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({top: y, behavior: 'smooth'});
-
-      this.unActiveButtonRepeatTest()
-      this.sum_of_points=0
-      this.result=0
-      this.btn_result=false
-      this.btn_slider=false
-      this.btn_answer=true
-      this.btn_verify=true
-      this.smile=null
-      this.smile_1=null
-      this.smile_2=null
-      this.smile_3=null
-      this.smile_4=null
-      this.smile_5=null
-      this.final_text=""
-      this.interim_des=[]
-      this.answers_all_questions=[]
-      this.response_object={}
-      this.object_questions=[]
-      this.object_checkbox=[]
-      this.massive_checkbox=[]
-      this.correct=null
-      mySwiper.slideTo(0)
+      this.unActiveButtonRepeatTest();
+      this.sum_of_points = 0;
+      this.result = 0;
+      this.btn_result = false;
+      this.btn_slider = false;
+      this.btn_answer = true;
+      this.btn_verify = true;
+      this.smile = null;
+      this.smile_1 = null;
+      this.smile_2 = null;
+      this.smile_3 = null;
+      this.smile_4 = null;
+      this.smile_5 = null;
+      this.final_text = "";
+      this.interim_des = [];
+      this.answers_all_questions = [];
+      this.response_object = {};
+      this.object_questions = [];
+      this.object_checkbox = [];
+      this.massive_checkbox = [];
+      this.correct = null;
+      if (mySwiper) mySwiper.slideTo(0);
+      this.scrollBeginningTest();
     },
 
-    activeButton (item) {
-      this.btn_slider = true
-      this.btn_verify=false
-      this.btn_answer=false
+    unActiveButtonRepeatTest() {
+      const sub_but = document.querySelectorAll('.btn-slide-sub');
+      sub_but.forEach((item) => {
+        item.classList.remove('act');
+      });
     },
 
-    //открытие промежуточного окна после отвта на вопрос
-    show_intermediate_window(){
-      const container = document.querySelectorAll('.test-cotainer-result-answers')
-      if(this.intermediate_window_secondary=="1"){
+    activeButton(item) {
+      this.btn_slider = true;
+      this.btn_verify = false;
+      this.btn_answer = false;
+    },
 
-        container.forEach(function (item){
-          //
-          item.setAttribute('style','display:flex')
-          const height = item.clientHeight
-          item.closest('.test-window').setAttribute('style',`height:${height+220}px`)
-        })
-        this.intermediate_window=true
-      }
-      // f*9
-      else if(this.intermediate_window_secondary=="0"){
-        container.forEach(function (item){
-          item.setAttribute('style','display:none')
-        })
-        this.intermediate_window=false
-        this.btn_answer=false
+    show_intermediate_window() {
+      const container = document.querySelectorAll('.test-cotainer-result-answers');
+      if (this.intermediate_window_secondary == "1") {
+        container.forEach((item) => {
+          item.setAttribute('style', 'display:flex');
+          const height = item.clientHeight;
+          item.closest('.test-window').setAttribute('style', `height:${height + 220}px`);
+        });
+        this.intermediate_window = true;
+      } else if (this.intermediate_window_secondary == "0") {
+        container.forEach((item) => {
+          item.setAttribute('style', 'display:none');
+        });
+        this.intermediate_window = false;
+        this.btn_answer = false;
       }
     },
-    result_answer(item){
-      const but_parent = item.closest('.test-window')
-      const child = but_parent.querySelectorAll('.test-window__item')
-      child.forEach(function (item){
-        item.classList.remove('active')
-        item.setAttribute('style','pointer-events:none')
-      })
-    },
-    //функция последнего слайда
-    lastSlide(){
-      const element_slide = document.querySelectorAll('.test-window .swiper-slide-active')
-      var nodes = Array.prototype.slice.call(document.querySelector('.swiper-wrapper').children),
-        liRef = document.getElementsByClassName('swiper-slide-active')[0];
 
+    result_answer(item) {
+      const but_parent = item.closest('.test-window');
+      const child = but_parent.querySelectorAll('.test-window__item');
+      child.forEach((item) => {
+        item.classList.remove('active');
+        item.setAttribute('style', 'pointer-events:none');
+      });
+    },
+
+    lastSlide() {
+      const element_slide = document.querySelectorAll('.test-window .swiper-slide-active');
+      var nodes = Array.prototype.slice.call(document.querySelector('.swiper-wrapper').children);
+      var liRef = document.getElementsByClassName('swiper-slide-active')[0];
       const num_slide = nodes.indexOf(liRef);
-      if(num_slide+1===this.count_slide){
-        this.btn_result=true
+      if (num_slide + 1 === this.count_slide) {
+        this.btn_result = true;
       }
-
-
     },
-    //полоса прохождения теста
+
     activeBullet(item) {
       const butParent = item.closest('.test-window');
       const activeBullet = butParent.querySelector('.test-pagination .swiper-pagination-bullet-active');
-      activeBullet.classList.add('active');
+      if (activeBullet) activeBullet.classList.add('active');
     },
-    //клик по кнопке ответить на вопрс  ПРОВЕРИТЬ НА ЧЕКБОКСАХ!!!!!!!
+
     clickButtonAnswer(elem) {
       this.activeButton(elem[0]);
       this.activeBullet(elem[0]);
       this.windowTrueAnswer(elem[0]);
       this.lastSlide();
-      this.result_answer(elem[0]); //остановился тут
+      this.result_answer(elem[0]);
       this.show_intermediate_window();
-      const parent = elem[0].closest('.test-window')
-      const active_slide = parent.querySelectorAll('.swiper-slide')
-      for(let item of active_slide){
-        const parent_check = item.querySelector('.test-container-answer')
-        if(item.classList.contains('swiper-slide-active')){
-          const checkbox = item.querySelectorAll('.test-window__checkbox-item').length
 
-          if(checkbox>0){
-            const checkbox_another = item.querySelectorAll('.test-winadow__item input:checked')
-            const count_checkbox_another = checkbox_another.length
-            const count_true = item.querySelectorAll('.test-wintdow__item').length
-            this.number_correct_answers(elem,count_true,item,count_checkbox_another)
+      const parent = elem[0].closest('.test-window');
+      const active_slide = parent.querySelectorAll('.swiper-slide');
+      for (let item of active_slide) {
+        if (item.classList.contains('swiper-slide-active')) {
+          const checkbox = item.querySelectorAll('.test-window__checkbox-item').length;
+          if (checkbox > 0) {
+            const checkbox_another = item.querySelectorAll('.test-winadow__item input:checked');
+            const count_checkbox_another = checkbox_another.length;
+            const count_true = item.querySelectorAll('.test-wintdow__item').length;
+            this.number_correct_answers(elem, count_true, item, count_checkbox_another);
           }
         }
       }
-      mySwiper.updateAutoHeight(500)
-
-      this.buttonsContainer()
-
-
+      if (mySwiper) mySwiper.updateAutoHeight(500);
+      this.buttonsContainer();
     },
 
-    //------------------------------------------------клик по ответу
+    buttonsContainer() {
+      const container_answer = document.querySelectorAll('.test-cotainer-answer');
+      if (this.intermediate_window === false) {
+        container_answer.forEach((item) => {
+          let test_window = item.closest('.test-window');
+          const btn = test_window.querySelectorAll('.test-window__slider-btn');
+          for (let i = 0; i < btn.length; i++) {
+            // btn[i].setAttribute('style','margin-top:-44px')
+          }
+        });
+      } else {
+        container_answer.forEach((item) => {
+          let test_window = item.closest('.test-window');
+          const btn = test_window.querySelectorAll('.test-window__slider-btn');
+          for (let i = 0; i < btn.length; i++) {
+            btn[i].setAttribute('style', 'margin-top:auto');
+          }
+        });
+      }
+    },
 
-    //собираю объект из данных выбранного пользователем варианта ответа для будущей отправки на сервер и пушу в переменную this.object_questions
-    selectedAnswerObject(element,el1,el2){
-      const object = this.object_questions
-      const object_checkbox = this.object_checkbox
-      if(element.classList.contains('test-window__checkbox-item')&&element.querySelector('input').checked){
+    windowTrueAnswer(item) {
+      if (this.intermediate_window_secondary == "1") {
+        this.current_answer = false;
+      } else if (this.intermediate_window_secondary == "0") {
+        this.current_answer = true;
+      }
+    },
 
+    number_correct_answers(el, count_true_answer, parent, count_another) {
+      const el_true = parent.querySelectorAll('.test-window__item.true').length;
+      const el_all_choose = parent.querySelectorAll('.test-window__item.active-all').length;
+      if (count_true_answer === el_true && count_true_answer == el_all_choose - count_another) {
+        this.correct = true;
+        this.sum_of_points = this.sum_of_points + 1;
+      } else {
+        this.correct = false;
+      }
+    },
 
-        const index = object_checkbox.findIndex(function (item){
-          return item[el1] === el2
+    selectedAnswerObject(element, el1, el2) {
+      const object_questions = this.object_questions;
+      const object_checkbox = this.object_checkbox;
+
+      if (element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
+        const index = object_checkbox.findIndex((item) => {
+          return item[el1] === el2;
         });
         if (index > -1) {
           object_checkbox.splice(index, 1);
         }
-
-      }
-      else if(element.classList.contains('test-window__checkbox-item')&&!element.querySelector('input').checked&&el2!==""&&el2!==undefined){
-        this.response_object={}
-        this.response_object[el1]=el2
-        this.object_checkbox.push(this.response_object)
-      }
-      else if(element.classList.contains('check-for-variant')&&el2!==""){
-        this.response_object={}
-        this.response_object[el1]=el2
-        this.object_checkbox.push(this.response_object)
-      }
-      else if (element.classList.contains('test-window__radio-item')||element.classList.contains('radio-for-variant')) {
-        this.response_object={}
-        this.object_questions=[]
+      } else if (element.classList.contains('test-window__checkbox-item') && !element.querySelector('input').checked && el2 !== "" && el2 !== undefined) {
+        this.response_object = {};
+        this.response_object[el1] = el2;
+        this.object_checkbox.push(this.response_object);
+      } else if (element.classList.contains('check-for-variant') && el2 !== "") {
+        this.response_object = {};
+        this.response_object[el1] = el2;
+        this.object_checkbox.push(this.response_object);
+      } else if (element.classList.contains('test-window__radio-item') || element.classList.contains('radio-for-variant')) {
+        this.response_object = {};
+        this.object_questions = [];
         this.response_object[el1] = el2;
         this.object_questions.push(this.response_object);
       }
-
-
     },
 
-    inputAnswerObject(element,el1,el2,el3){
-
-      const object = this.object_questions
-      this.response_object={}
-      this.object_questions=[]
+    inputAnswerObject(element, el1, el2, el3) {
+      this.response_object = {};
+      this.object_questions = [];
       this.response_object[el1] = el3;
       this.object_questions.push(this.response_object);
-
     },
 
-    //воод текста в поле радиокнопки другое
-    inputRadioAnother(event){
-      this.selectedAnswerObject(event[0],event[2],event[1])
-    },
-    InputCheckAnother(event){
-      this.selectedAnswerObject(event[0],event[2],event[1])
+    inputRadioAnother(event) {
+      this.selectedAnswerObject(event[0], event[2], event[1]);
     },
 
-    //функция клика по варианту ответа
+    InputCheckAnother(event) {
+      this.selectedAnswerObject(event[0], event[2], event[1]);
+    },
+
+    inputAnswer(ev_1) {
+      const element = ev_1[0];
+      this.inputAnswerObject(element, ev_1[2], ev_1[3], ev_1[4]);
+      if (ev_1[1] === "Y") {
+        element.classList.add('true');
+      } else {
+        element.classList.add('false');
+      }
+      this.sum_of_points = this.sum_of_points + 1;
+      this.ActiveButton(element);
+    },
+
     clickVariant(ev_1) {
       if (typeof ev_1[1] == 'object') {
         ev_1.splice(1, 1);
       }
 
-      const element = ev_1[0]//элемент по которому произошел клик
-      const main_container = element.closest('.swiper-wrapper')
-      const element_parent = element.closest('.test-item') //родитель элемента по которому произошел клик
-      const elements__window_item = element_parent.querySelectorAll('.test-window__item') //все элемнты с классом test-window__item в выборке
-      const variant_answer = element.querySelector('label')
-      const field_for_variant = element_parent.querySelectorAll('.test-window__field-for-variant.active')
-      const question_type =parseInt(ev_1[1])
+      const element = ev_1[0];
+      const element_parent = element.closest('.test-item');
+      const elements__window_item = element_parent.querySelectorAll('.test-window__item');
+      const field_for_variant = element_parent.querySelectorAll('.test-window__field-for-variant.active');
+      const question_type = parseInt(ev_1[1]);
 
-
-      if(question_type != 2){
-        this.selectedAnswerObject(element,ev_1[4],ev_1[5])
+      if (question_type != 2) {
+        this.selectedAnswerObject(element, ev_1[4], ev_1[5]);
       }
 
-
-
-      const setElemt = element_parent.querySelectorAll('.test-window__item')
-      setElemt.forEach((item)=>{
-        if(!item.classList.contains('test-window__checkbox-item')){
-          item.classList.remove('active')
-          item.classList.remove('true')
-          item.classList.remove('false')
+      const setElemt = element_parent.querySelectorAll('.test-window__item');
+      setElemt.forEach((item) => {
+        if (!item.classList.contains('test-window__checkbox-item')) {
+          item.classList.remove('active', 'true', 'false');
         }
-      })
-      element.classList.add('active')
+      });
+      element.classList.add('active');
 
-
-
-      //Нажатие на кнопку Иное
-      //Количество полей с возможность добавтить собственный вариант
-      const count_field_another = element_parent.querySelectorAll('.test-winadow__item').length
-      if(question_type == 2){
-        if(!element.classList.contains('test-window__checkbox-item')){
-          for(let item of field_for_variant){
-            item.classList.remove('active')
+      const count_field_another = element_parent.querySelectorAll('.test-winadow__item').length;
+      if (question_type == 2) {
+        if (!element.classList.contains('test-window__checkbox-item')) {
+          for (let item of field_for_variant) {
+            item.classList.remove('active');
           }
         }
-
-        element.querySelector('.test-window__field-for-variant').classList.add('active')
-        mySwiper.updateAutoHeight(500)
+        const variantField = element.querySelector('.test-window__field-for-variant');
+        if (variantField) variantField.classList.add('active');
+        if (mySwiper) mySwiper.updateAutoHeight(500);
       }
 
-
-
-      if(!element.classList.contains('test-window__checkbox-item')&&question_type != 2&&count_field_another!=0){
-
-        for(let item of field_for_variant){
-          item.classList.remove('active')
+      if (!element.classList.contains('test-window__checkbox-item') && question_type != 2 && count_field_another != 0) {
+        for (let item of field_for_variant) {
+          item.classList.remove('active');
         }
-        mySwiper.updateAutoHeight(500)
-      }
-      //Вернуться, скрывать через for(let item of field_for_variant)
-      // клик по ответу, когда он выбран ужу
-      if(question_type == 2&&element.classList.contains('test-window__checkbox-item')&&element.querySelector('input').checked){
-        // alert()
-        element.querySelector('.test-window__field-for-variant').classList.remove('active')
-        element.querySelector('.test-window__field-for-variant textarea').value=""
-        mySwiper.updateAutoHeight(500)
+        if (mySwiper) mySwiper.updateAutoHeight(500);
       }
 
-      if(question_type == 1&&!element.classList.contains('test-window__checkbox-item')&&this.count_radio_btn===false){
-        this.correct=true
-        element.classList.add('true')
-        this.sum_of_points=this.sum_of_points+parseFloat(question_type)
-        element_parent.classList.add('answer-selected')
-        this.count_radio_btn=true
-      }
-      if(question_type == 2&&!element.classList.contains('test-window__checkbox-item')&&this.count_radio_btn===false){
-        this.correct=true
-        element.classList.add('true')
-        this.sum_of_points=this.sum_of_points+(parseFloat(question_type-1))
-        element_parent.classList.add('answer-selected')
-        this.count_radio_btn=true
-      }
-      if(question_type == 1&&!element.classList.contains('test-window__checkbox-item')){
-        element.classList.add('true')
-      }
-      if(question_type == 2&&!element.classList.contains('test-window__checkbox-item')){
-        element.classList.add('true')
-      }
-      else if(question_type ==0||question_type === "") {
-        this.correct=false
-        element.classList.add('false')
-      }
-
-      if((question_type ==0||question_type === "")&&element_parent.classList.contains('answer-selected')&&!element.classList.contains('test-window__checkbox-item')&&!variant_answer==="Иное"){
-
-        this.sum_of_points=this.sum_of_points-1
-        this.count_radio_btn=false
-        element_parent.classList.remove('answer-selected')
-        for(let item of field_for_variant){
-          item.classList.remove('active')
+      if (question_type == 2 && element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
+        const variantField = element.querySelector('.test-window__field-for-variant');
+        if (variantField) {
+          variantField.classList.remove('active');
+          const textarea = variantField.querySelector('textarea');
+          if (textarea) textarea.value = "";
         }
-        mySwiper.updateAutoHeight(500)
+        if (mySwiper) mySwiper.updateAutoHeight(500);
       }
 
-      if((question_type ==0||question_type === "")&&element_parent.classList.contains('answer-selected')&&!element.classList.contains('test-window__checkbox-item')){
-
-        this.sum_of_points=this.sum_of_points-1
-        this.count_radio_btn=false
-        element_parent.classList.remove('answer-selected')
+      if (question_type == 1 && !element.classList.contains('test-window__checkbox-item') && this.count_radio_btn === false) {
+        this.correct = true;
+        element.classList.add('true');
+        this.sum_of_points = this.sum_of_points + parseFloat(question_type);
+        element_parent.classList.add('answer-selected');
+        this.count_radio_btn = true;
       }
 
-      if(question_type == 1&&element.classList.contains('test-window__checkbox-item')){
-        this.correct=true
-
-        // this.sum_of_points=this.sum_of_points+parseFloat(question_type)
-        element_parent.classList.add('answer-selected')
+      if (question_type == 2 && !element.classList.contains('test-window__checkbox-item') && this.count_radio_btn === false) {
+        this.correct = true;
+        element.classList.add('true');
+        this.sum_of_points = this.sum_of_points + (parseFloat(question_type - 1));
+        element_parent.classList.add('answer-selected');
+        this.count_radio_btn = true;
       }
 
-      if(question_type == 1&&element.classList.contains('test-window__checkbox-item')&&!element.querySelector('input').checked){
-        element.classList.add('true')
+      if (question_type == 1 && !element.classList.contains('test-window__checkbox-item')) {
+        element.classList.add('true');
       }
-      else if(question_type == 1&&element.classList.contains('test-window__checkbox-item')&&element.querySelector('input').checked){
-        element.classList.remove('true')
-      }
-
-
-      //прохожу по всем элементам и блокирую клик с помощью css
-      elements__window_item.forEach(function (item){
-        item.setAttribute('style','pointer-events: auto')
-      })
-      //Если элемент не чекбокс блокирую клик по нему и зидаю к класс, чтобы в будущем посчитать кол-во выбранных ответов
-      if(!element.classList.contains('test-window__checkbox-item')){
-        const neighbors_element = element_parent.querySelectorAll('.test-window__item')
-        neighbors_element.forEach(function (item){
-          item.classList.remove('active-all')
-        })
-        element.setAttribute('style','pointer-events: none')
-        element.classList.add('active-all')
-        // this.interim_des = []
+      if (question_type == 2 && !element.classList.contains('test-window__checkbox-item')) {
+        element.classList.add('true');
+      } else if (question_type == 0 || question_type === "") {
+        this.correct = false;
+        element.classList.add('false');
       }
 
-      if(element.classList.contains('test-window__checkbox-item')&&element.querySelector('input').checked){
-        element.classList.remove('active-all')
+      if ((question_type == 0 || question_type === "") && element_parent.classList.contains('answer-selected') && !element.classList.contains('test-window__checkbox-item')) {
+        this.sum_of_points = this.sum_of_points - 1;
+        this.count_radio_btn = false;
+        element_parent.classList.remove('answer-selected');
+        for (let item of field_for_variant) {
+          item.classList.remove('active');
+        }
+        if (mySwiper) mySwiper.updateAutoHeight(500);
+      }
+
+      if (question_type == 1 && element.classList.contains('test-window__checkbox-item')) {
+        this.correct = true;
+        element_parent.classList.add('answer-selected');
+      }
+
+      if (question_type == 1 && element.classList.contains('test-window__checkbox-item') && !element.querySelector('input').checked) {
+        element.classList.add('true');
+      } else if (question_type == 1 && element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
+        element.classList.remove('true');
+      }
+
+      elements__window_item.forEach((item) => {
+        item.setAttribute('style', 'pointer-events: auto');
+      });
+
+      if (!element.classList.contains('test-window__checkbox-item')) {
+        const neighbors_element = element_parent.querySelectorAll('.test-window__item');
+        neighbors_element.forEach((item) => {
+          item.classList.remove('active-all');
+        });
+        element.setAttribute('style', 'pointer-events: none');
+        element.classList.add('active-all');
+      }
+
+      if (element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
+        element.classList.remove('active-all');
         const index = this.interim_des.indexOf(ev_1[2]);
-
         if (index > -1) {
           this.interim_des.splice(index, 1);
         }
+      } else if (element.classList.contains('test-window__checkbox-item') && !element.querySelector('input').checked) {
+        element.classList.add('active-all');
+        this.interim_des.push(ev_1[2]);
+      } else if (!element.classList.contains('test-window__checkbox-item')) {
+        this.interim_des = [];
+        this.interim_des.push(ev_1[2]);
       }
-      else if(element.classList.contains('test-window__checkbox-item')&&!element.querySelector('input').checked){
-        element.classList.add('active-all')
-        this.interim_des.push(ev_1[2])
-      }
-      else if(!element.classList.contains('test-window__checkbox-item')){
-        this.interim_des = []
-        this.interim_des.push(ev_1[2])
-      }
-      if(element.classList.contains('test-window__checkbox-item')){
-        const parent_el = element.parentNode
-        const active_check = parent_el.querySelectorAll('.test-window__item.active-all')
-        const count_active_check = active_check.length
-        //закоментировал!!!!!!!!!!!!!!!!!!!!!!!!!!!! АХТУНГ!!!!!!!!!!!!
-        //когда снял чекбокс
-        if(count_active_check===0){
-          this.unActiveButton(element)
 
+      if (element.classList.contains('test-window__checkbox-item')) {
+        const parent_el = element.parentNode;
+        const active_check = parent_el.querySelectorAll('.test-window__item.active-all');
+        const count_active_check = active_check.length;
+        if (count_active_check === 0) {
+          this.unActiveButton(element);
         }
       }
 
-      if (ev_1[3]==""){
-        ev_1[3]="0"
+      if (ev_1[3] == "") {
+        ev_1[3] = "0";
       }
-      this.intermediate_window_secondary=ev_1[3]
-      if(element.classList.contains('active-all')){
-        this.ActiveButton(element)
-      }
+      this.intermediate_window_secondary = ev_1[3];
 
-    },
-
-    inputAnswer(ev_1){
-      // console.log(ev_1);
-      const element = ev_1[0]
-      this.inputAnswerObject(element,ev_1[2],ev_1[3],ev_1[4])
-      // debugger
-      // element.setAttribute('style','pointer-events: none')
-      // const element_parent = element.closest('.test-item')
-      // const setElemt = element_parent.querySelectorAll('.test-window__item')
-      // element.classList.add('active')
-      if(ev_1[1] === "Y"){
-        // this.correct=true
-        element.classList.add('true')
-      }
-      else {
-        // this.correct=false
-        element.classList.add('false')
-      }
-      this.sum_of_points=this.sum_of_points+1
-      this.ActiveButton(element)
-    },
-
-    activeSlideButton(){
-      let slideBtn = document.querySelectorAll('.test-window__slider-btn');
-      this.btn_slider=false
-      this.btn_verify=true
-      // eslint-disable-next-line no-unused-vars
-      let but = document.querySelectorAll('.btn-slide-sub');
-      but = Array.prototype.slice.call(but);
-
-      const container = document.querySelector('.test-window .swiper-wrapper')
-      const slide = container.querySelectorAll('.swiper-slide')
-    },
-
-    windowTrueAnswer(item){//промежуточное окно
-      if(this.intermediate_window_secondary=="1"){
-        this.current_answer=false
-      }
-      else if(this.intermediate_window_secondary=="0"){
-        this.current_answer=true
-      }
-
-    },
-
-    number_correct_answers(el,count_true_answer,parent,count_another){
-      const el_true = parent.querySelectorAll('.test-window__item.true').length;
-      const el_all_choose = parent.querySelectorAll('.test-window__item.active-all').length;
-      if (count_true_answer === el_true && count_true_answer == el_all_choose - count_another) {
-        this.correct = true;
-        this.sum_of_points=this.sum_of_points+1
-      }
-      else {
-        this.correct = false;
+      if (element.classList.contains('active-all')) {
+        this.ActiveButton(element);
       }
     },
 
-    scrollBeginningTest(){
+    activeSlideButton() {
+      this.btn_slider = false;
+      this.btn_verify = true;
+    },
+
+    scrollBeginningTest() {
       const yOffset = -50;
       const element = document.querySelector('.wrap-test-list');
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({top: y, behavior: 'smooth'});
-    }
-
-
+      if (element) {
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    },
   },
   mounted() {
-    this.axios_get()
-    // this.initSlider()
-    // this.countSlideTest()
-    // this.countTrueAnswer()
-    // this.countQuestion()
+    this.axios_get();
   },
-  watch:{
+  components: {
+    SlideCalculator,
+    WindowPlug,
+    QuestionWindowBlock,
+    QuestionWindowRadio,
+    QuestionWindowCheckbox,
+    QuestionTextField,
+    AnswerButton,
+    SliderButton,
+    StatusAnswer,
+    FinishWindow,
   },
-  components:{
-    'question-window-block':QuestionWindowBlock,
-    'question-window-radio':QuestionWindowRadio,
-    'question-window-checkbox':QuestionWindowCheckbox,
-    'question-text-field':QuestionTextField,
-    'slider-button':SliderButton,
-    'answer-button':AnswerButton,
-    'status-answer':StatusAnswer,
-    'finish-result-window':FinishWindow,
-    'slide-calculator':SlideCalculator,
-    'window-plug':WindowPlug
-  },
-}
-</script>
------------------
-AnswerButton.vue
-<template lang="pug">
-  button.test-window__btn.btn.btn-slide-sub(type="button")(
-    @click="pass_clickButtonAnswer"
-  ) Ответить
-</template>
-
-<script>
-export default {
-  name: 'AnswerButton',
-  data(){
-    return {
-
-    }
-  },
-  props:['btn_result'],
-  methods:{
-    pass_clickButtonAnswer(elem){
-      const element = elem.currentTarget
-      this.$emit('event_clickButtonAnswer',[element])
-    },
-
-  }
 };
 </script>
--------------
-FinishWindow.vue
-
-<template lang="pug">
-  .test-cotainer-final-result.final-result
-    .final-result__wrap-title
-      .final-result__emoticon(v-if="smile_1")
-        img(src="/local/templates/main/img/emoji-1.svg",alt="")
-      .final-result__emoticon(v-if="smile_2")
-        img(src="/local/templates/main/img/emoji-2.svg",alt="")
-      .final-result__emoticon(v-if="smile_3")
-        img(src="/local/templates/main/img/emoji-3.svg",alt="")
-      .final-result__emoticon(v-if="smile_4")
-        img(src="/local/templates/main/img/emoji-4.svg",alt="")
-      .final-result__emoticon(v-if="smile_5")
-        img(src="/local/templates/main/img/emoji-5.svg",alt="")
-      .final-result__emoticon(v-if="smile")
-        img(src="/local/templates/main/img/emoji-6.svg",alt="")
-      .final-result__title {{title}}     
-    .final-result__block-result
-      p.final-result__result.
-        Правильных ответов: <span>{{sum_of_points}}</span>/<span>{{count_answers}}</span>
-      p.final-result__des.fs-1rem(
-        v-if="final_text!==undefined"
-        v-html="final_text"
-      )
-    .space-between.final-result__btn.final-result__btn-old-test
-      a(href="/education/tests/").btn.test-window__btn-old-test.btn_green-n-white(type="button") Другие тесты
-      button.test-window__btn-old-test.btn(type="button")(@click="pass_repeatTest") Пройти еще раз
-    .final-result__empty-block
-</template>
-
-<script>
-
-export default {
-  name: "FinishWindow",
-  data(){
-    return {
-      status_smile:this.smile,
-      like:null,
-      sher:null,
-      title:"Тест завершен",
-    }
-  },
-  props:["sum_of_points","count_slide","final_text","smile","smile_1","smile_2","smile_3","smile_4","smile_5","count_correct_answers","finalResult","count_answers"],
-
-  methods:{
-    pass_repeatTest(){
-      this.$emit('event_repeatTest')
-    },
-    pressButton() {
-      const current_el = document.querySelector('.test-cotainer-final-result');
-      current_el.setAttribute('style', 'height:600px');
-    },
-    initializationServiceSher() {
-      let url = document.location.href;
-      let share = document.querySelector('.final-result__soc-list.ya-share2');
-      if (share) {
-        for (i = 0; i < share.length; i++) {
-          Ya.share2(share[i], {
-            content: {
-              url: url
-            }
-          });
-        }
-      }
-    },
-    preventDefaultSher() {
-      const sher = document.querySelectorAll('.final-result__soc-list');
-      for (let i = 0; i < sher.length; i++) {
-        // eslint-disable-next-line camelcase
-        const soc_list = sher[i].querySelectorAll('.soc-list__item a');
-        for (let j = 0; j < soc_list.length; j++) {
-          // eslint-disable-next-line func-names
-          soc_list[j].onclick = function (e) {
-            e.preventDefault();
-          };
-        }
-      }
-    }, //чтгобы можно было кликать по сердечку, оно сделано как ссылка
-    receiveDataFromTopSher() {
-      const parent = document.querySelector('.container-test')
-      if(parent){
-        const parent_shareUp = parent.querySelector('.space-between .soc-list')
-        if (parent_shareUp) {
-          const likeUp = parent_shareUp.querySelector('.soc-list__item:first-child');
-          if (likeUp) {
-            const likeUp_text = likeUp.querySelector('span').textContent;
-            const test = parent.querySelectorAll('.test-cotainer-final-result .final-result__soc-list .soc-list__item')
-            test[test.length - 3].querySelector('span').textContent = likeUp_text;
-              if (likeUp.querySelector('.soc-list__icon').classList.contains('active')) {
-                test[test.length - 3].querySelector('.soc-list__icon').classList.add('active')
-                test[test.length - 3].setAttribute('style','pointer-events: none')
-              }
-          }
-          const shareUp = parent_shareUp.querySelector('.soc-list__item:nth-child(2)');
-          if (shareUp) {
-            const shareUp_text = shareUp.textContent;
-            const test = parent.querySelectorAll('.test-cotainer-final-result .final-result__soc-list .soc-list__item');
-            test[test.length - 2].querySelector('span.share-js').textContent = shareUp_text;
-          }
-          const viewingUp = parent_shareUp.querySelector('.soc-list__item:nth-child(3)');
-          if (viewingUp) {
-            const viewingUp_text = viewingUp.textContent;
-            const test = parent.querySelectorAll('.test-cotainer-final-result .final-result__soc-list .soc-list__item');
-            for (let j = 0; j < test.length; j++) {
-              test[test.length - 1].querySelector('span').textContent = viewingUp_text;
-            }
-          }
-          const likes = parent_shareUp.querySelectorAll('.soc-list__item')
-        }
-      }
-
-    },
-    changeTopLikes(){
-      const elMent =document.querySelector('.container-test .space-between .soc-list')
-      const observerOptions = {
-        childList:true,
-        characterData: true,
-        subtree: true
-      };
-      const receiveDataFromTopSher = this.receiveDataFromTopSher
-      function callback() {
-        receiveDataFromTopSher();
-      }
-      const observer = new MutationObserver(callback);
-      observer.observe(elMent, observerOptions);
-
-    },
-    dispatchSher(el) {
-      const element = el.currentTarget;
-      const parent = element.closest('.container-test')
-      const up_soc_list = parent.querySelectorAll('.space-between .soc-list .soc-list__item')
-      const data = element.getAttribute('data-val')
-      if(data=='like'){
-        up_soc_list[0].querySelector('.soc-list__icon').click()
-      }
-      if(data=='share'){
-        up_soc_list[1].querySelector('.ya-share2__link').click()
-
-      }
-      const parent_shareUp = document.querySelector('.container-test .block-middle .space-between .soc-list')
-
-
-    },
-    serviceConnectionSher() {
-      let recaptchaScript = document.createElement('script');
-      recaptchaScript.setAttribute('src', 'https://yastatic.net/share2/share.js');
-      document.head.appendChild(recaptchaScript);
-    },
-    finalText(){
-      const popup = document.querySelector('.common-test-pop-up')
-      if(popup){
-        this.title= "Спасибо, что помогаете нам стать лучше!"
-      }
-    }
-  },
-  mounted(){
-    this.serviceConnectionSher()
-    this.preventDefaultSher()
-    this.initializationServiceSher()
-    this.finalText()
-    this.changeTopLikes()
-  },
-  watch:{
-    finalResult(){
-      this.receiveDataFromTopSher()
-    }
-  },
-}
-</script>
-<style scoped>
-
-</style>
------------------------------------
-QuestionWindowBlock.vue
-<template lang="pug">
-  .test-cotainer-answer(
-    v-bind:class="{mandatory:req}"
-  )
-    .test-window__number(
-      v-if="circle_number"
-      v-bind:data-color="[`${item_key}`]"
-    )
-      p <span>{{item_key}}</span>/<span>{{count_answers}}</span>
-    p.test-window__question(
-      v-html="question"
-    )
-    .test-item
-      .test-window__col-variant.test-window__height-limitation(
-        v-for ="(item,key,ind) in variants"
-      )
-        .test-window__item.test-window__radio-item.test-window__col-variant-item(
-          v-for ="answer in item.DROPDOWN"
-          @click="pass_clickVariant($event,answer.FIELD_WIDTH,(answer['~FIELD_PARAM'] || answer.FIELD_PARAM),answer.COLOR,answer.NAME_INPUT,answer.VALUE_INPUT)"
-          v-bind:class="[answer.FIELD_WIDTH==1?'test-wintdow__item':'test-winfdow__item' ]"
-        )
-          input(
-            v-bind:name="[`radio-${item_key}`]"
-          )(type="radio",value="")
-          p.fs-1rem.test-window__possible-answer(
-            v-html="answer.MESSAGE"
-          )
-    .fty(
-      v-if="btn_answer"
-    )
-    button.test-window__btn.btn.btn-slide-sub(type="button")(
-      v-bind:class="{unact:req}"
-      v-show="btn_answer"
-      @click="pass_clickButtonAnswer"
-    ) Ответить
-</template>
-<!---->
-<script>
-export default {
-  name: "QuestionWindowBlock",
-  props:['question','variants','item_key','btn_answer','circle_number','count_answers','required','current_answer'],
-  data(){
-    return{
-      req:null,
-    }
-  },
-
-  methods:{
-
-    pass_clickVariant(elem,param_1,param_2,param_3,param_4,param_5){
-      const element = elem.currentTarget
-      this.$emit('event_clickVariant',[element,elem,param_1,param_2,param_3,param_4,param_5])
-    },
-    pass_clickButtonAnswer(elem){
-      const element = elem.currentTarget
-      this.$emit('event_clickButtonAnswer',[element])
-    },
-    requiredButton(){
-      if(this.required==="Y"){
-        this.req=true
-      }
-      else if(this.required==="N"){
-        this.req=false
-      }
-    },
-    // correctCheck(){
-    //   const massive = []
-    //   const cor = this.variants
-    //   const wit = Object.keys(cor);
-    //   for (let i=0;i<wit.length;i++){
-    //     if(cor[wit[i]].FIELD_WIDTH=="1"){
-    //       massive.push(cor[wit[i]].FIELD_WIDTH=="1")
-    //     }
-    //   }
-    //   this.cor_answer = massive.length
-    // }
-    // e*
-
-  },
-  watch:{
-    current_answer(){
-      if(this.current_answer===true){
-
-        const er = document.querySelectorAll('.test-window')
-        er.forEach(function (item){
-          const coor = item.getBoundingClientRect()
-          const height = item.clientHeight
-
-          const btn = item.querySelectorAll('.test-window__btn');
-          for (let i=0;i<btn.length;i++){
-            btn[i].setAttribute('style',`top:600px`)
-          }
-
-          //
-          // const top = coor.top + document.body.scrollTop+height
-          // const btn = item.querySelector('.test-window__btn')
-          // item.querySelector('.test-window__btn').setAttribute('style',`top:${top}`)
-
-        })
-      }
-
-    }
-  },
-
-  mounted() {
-    this.requiredButton()
-  }
-
-}
-</script>
-
-<style scoped>
-
-</style>
-----------------------------
-QuestionWindowCheckbox.vue
-<template lang="pug">
-  .test-cotainer-answer(
-    v-bind:class="{mandatory:req}"
-  )
-    .test-window__number(
-      v-if="circle_number"
-      v-bind:data-color="[`${item_key}`]"
-    )
-      p <span>{{item_key}}</span>/<span>{{count_answers}}</span>
-    p.test-window__question(
-      v-html="question"
-    )
-    .test-item
-      .test-window__wrap-chec
-        .test-window__checkbox.test-window__height-limitation
-          .test-window__item.test-window__checkbox-item.choose(
-            v-for ="(answer,key,ind) in variants"
-            @click="pass_clickVariant($event,answer.FIELD_WIDTH,(answer['~FIELD_PARAM'] || answer.FIELD_PARAM),answer.COLOR,answer.NAME_INPUT,answer.VALUE_INPUT)"
-            v-bind:class="[(answer.FIELD_WIDTH==1)?'test-wintdow__item':(answer.FIELD_WIDTH==2)?'test-winadow__item':'test-winfdow__item' ]"
-          )
-            .test-window__item-container-answer
-              input(
-                v-bind:id="[`check-${item_key}-${key}`]"
-                v-on:click.stop=""
-              )(type="checkbox",name="test",value="")
-              label.fs-1rem.test-window__possible-answer(
-                v-bind:for="[`check-${item_key}-${key}`]"
-                v-html="answer.MESSAGE"
-              )
-              .test-window__field-for-variant(
-                v-if="answer.FIELD_WIDTH==2"
-              )
-                .test-window__item.test-window__textarea
-                  textarea.check-for-variant(
-                    @click.stop
-                    @change="passInputCheckAnother($event)"
-                    @input="limitInput"
-                    v-bind:placeholder="answer.PLACEHOLDER"
-                  )(name="",maxlength="1001")
-                  p.test-window__textarea-error.
-                    Превышено допустимое количество в 1000 символов
-    button.test-window__btn.test-window__btn-old-test.btn.btn-slide-sub(type="button")(
-      v-bind:class="{unact:req}"
-      v-if="btn_answer"
-      @click="pass_clickButtonAnswer"
-    ) Ответить
-</template>
-
-<script>
-export default {
-  name: "QuestionWindowCheckbox",
-  props:['question','variants','item_key','btn_answer','circle_number','count_answers','required','field_clearing'],
-  data(){
-    return{
-      req:null,
-      cor_answer:null,
-      name_radio:null,
-      inputs:null,
-      field_clearings:null
-    }
-  },
-  methods:{
-    pass_clickVariant(elem,param_1,param_2,param_3,param_4,param_5){
-      const element = elem.currentTarget
-      this.name_radio=param_4
-      this.$emit('event_clickVariant',[element,elem,param_1,param_2,param_3,param_4,param_5])
-    },
-    pass_clickButtonAnswer(elem){
-      const element = elem.currentTarget
-      this.$emit('event_clickButtonAnswer',[element,this.cor_answer])
-    },
-    requiredButton(){
-      if(this.required==="Y"){
-        this.req=true
-        this.$emit('eventrequiredButton',this.req)
-
-      }
-      else if(this.required==="N"){
-        this.req=false
-        this.$emit('eventrequiredButton',this.req)
-      }
-    },
-    correctCheck(){
-      const massive = []
-      const cor = this.variants
-      const wit = Object.keys(cor);
-      for (let i=0;i<wit.length;i++){
-        if(cor[wit[i]].FIELD_WIDTH=="1"){
-          massive.push(cor[wit[i]].FIELD_WIDTH=="1")
-        }
-      }
-      this.cor_answer = massive.length
-    },
-    passInputCheckAnother(elem){
-      const element = elem.currentTarget
-      this.$emit('eventInputCheckAnother',[element,element.value,this.name_radio])
-    },
-    limitInput(el) {
-      const max = 1001
-      const field=el.currentTarget
-      // field.value = field.value.substring(0, max);
-      const parent = field.closest('.test-window__item')
-      const item = parent.querySelectorAll('.test-window__textarea-error')
-      if (field.value.length === max) {
-        item.forEach(function (item){
-          item.setAttribute('style','display:block')
-        })
-      }
-      else
-      {
-        item.forEach(function (item){
-          item.setAttribute('style','display:none')
-        })
-      }
-    }
-
-  },
-
-  mounted() {
-    this.requiredButton()
-    this.correctCheck()
-  },
-  watch:{
-    field_clearings(){
-
-    }
-  }
-
-}
-</script>
-
-<style scoped>
-
-</style>
---------------------------
-QuestionWindowRadio.vue
-<template lang="pug">
-  .test-cotainer-answer(
-    v-bind:class="{mandatory:req}"
-  )
-    .test-window__number(
-      v-if="circle_number"
-      v-bind:data-color="[`${item_key}`]"
-    )
-      p <span>{{item_key}}</span>/<span>{{count_answers}}</span>
-    p.test-window__question(
-      v-html="question"
-    )
-    .test-item
-      .test-window__wrap-chec
-        .test-window__radio.test-window__height-limitation
-          .test-window__item.test-window__radio-item.choose(
-            v-for ="(answer,key,ind) in variants"
-            @click="pass_clickVariant($event,answer.FIELD_WIDTH,(answer['~FIELD_PARAM'] || answer.FIELD_PARAM),answer.COLOR,answer.NAME_INPUT,answer.VALUE_INPUT)"
-            v-bind:class="[(answer.FIELD_WIDTH==1)?'test-wintdow__item':(answer.FIELD_WIDTH==2)?'test-winadow__item':'test-winfdow__item' ]"
-          )
-            .test-window__item-container-answer
-              input(
-                v-bind:id="[`radio-${item_key}-${key}`]"
-                v-on:click.stop=""
-                v-bind:name="[`radio-${item_key}`]"
-              )(type="radio",value="")
-              label.fs-1rem.test-window__possible-answer(
-                v-bind:for="[`radio-${item_key}-${key}`]"
-                v-html="answer.MESSAGE"
-                )
-              .test-window__field-for-variant(
-                v-if="answer.FIELD_WIDTH==2"
-              )
-                .test-window__item.test-window__textarea
-                  textarea.radio-for-variant(
-                    @change="pass_input_radio_another($event)"
-                    @input="limitInput"
-                    v-bind:placeholder="answer.PLACEHOLDER"
-                  )(name="",maxlength="1001")
-                  p.test-window__textarea-error.
-                    Превышено допустимое количество в 1000 символов
-    button.test-window__btn.test-window__btn-old-test.btn.btn-slide-sub(type="button")(
-      v-bind:class="{unact:req}"
-      v-if="btn_answer"
-      @click="pass_clickButtonAnswer"
-    ) Ответить
-</template>
-
-<script>
-export default {
-  name: "QuestionWindowRadio",
-  props:['question','variants','item_key','btn_answer','circle_number','count_answers','required','current_answer'],
-
-  data(){
-    return{
-      true_answer:0,
-      req:null,
-      top:0,
-      name_radio:null,
-      input:null
-    }
-  },
-  methods:{
-    pass_clickVariant(elem,param_1,param_2,param_3,param_4,param_5){
-      const element = elem.currentTarget
-      this.name_radio=param_4
-      this.$emit('event_clickVariant',[element,elem,param_1,param_2,param_3,param_4,param_5])
-    },
-    pass_clickButtonAnswer(elem){
-      const element = elem.currentTarget
-      this.$emit('event_clickButtonAnswer',[element])
-    },
-    trueAnswer(item){
-      const countTru = this.countTrueAnswer
-      const variant = this.variants
-      const keys = Object.values(variant)
-      let el = this.true_answer
-      let true_answer=0
-      keys.forEach(function (item){
-        if(item.FIELD_PARAM==='Y'){
-          countTru()
-        }
-      })
-      this.true_answer = true_answer
-    },
-    requiredButton(){
-      if(this.required==="Y"){
-        this.req=true
-      }
-      else if(this.required==="N"){
-        this.req=false
-      }
-    },
-    pass_input_radio_another(elem){
-      const element = elem.currentTarget
-      this.$emit('event_input_radio_another',[element,element.value,this.name_radio])
-    },
-    limitInput(el) {
-      const max = 1001
-      const field=el.currentTarget
-      // field.value = field.value.substring(0, max);
-      const parent = field.closest('.test-window__item')
-      const item = parent.querySelectorAll('.test-window__textarea-error')
-      if (field.value.length === max) {
-        item.forEach(function (item){
-          item.setAttribute('style','display:block')
-        })
-      }
-      else
-      {
-        item.forEach(function (item){
-          item.setAttribute('style','display:none')
-        })
-      }
-    }
-  },
-  mounted() {
-    this.requiredButton()
-  },
-  watch:{
-    current_answer(){
-      if(this.current_answer===true){
-
-        const er = document.querySelectorAll('.test-window')
-        er.forEach(function (item){
-          const coor = item.getBoundingClientRect()
-          const height = item.clientHeight
-
-          const btn = item.querySelectorAll('.test-window__btn');
-          for (let i=0;i<btn.length;i++){
-            btn[i].setAttribute('style',`top:600px`)
-          }
-        })
-      }
-
-    }
-  },
-
-
-}
-</script>
-
-<style scoped>
-
-</style>
-------------------------
-SlideCalculator.vue
-
-<template lang="pug">
-  .test-slide-calculator
-    p.test-slide-calculator__item.
-      1
-    p.test-slide-calculator__item.
-      {{count_slide}}
-</template>
-<script>
-export default {
-  name: 'SlideCalculator',
-  props:['count_slide','current_slide'],
-  data(){
-    return {
-
-    }
-  }
-};
-</script>
-<style scoped>
-</style>
----------------------------
-SliderButton.vue
-<template lang="pug">
-  .test-window__slider-btn(
-    :class="!btn_prev?'justify-content-center':''"
-  )
-    div.btn.btn_gray-bor-black.test-button-prev(
-      v-if="btn_prev"
-      @click="pass_clickBtnPrev($event)"
-    ) Назад
-    div.btn.test-button-next(
-      v-show="!btn_result"
-      @click="pass_clickBtnNext"
-      ) Дальше
-    div.button.btn.btn_green-n-white.test-button-resultt(
-      v-show="btn_result"
-      @click="pass_clickResulted"
-    ) Результаты
-</template>
-
-<script>
-export default {
-  name: 'SliderButton',
-  data(){
-    return {
-      buton_result:this.btn_result,
-      btn_prev:false
-    }
-  },
-  props:['btn_result'],
-  methods:{
-    pass_clickBtnPrev(el){
-      const element = el.currentTarget
-      this.$emit('event_clickBtnPrev',element)
-    },
-    pass_clickBtnNext(){
-      this.$emit('event_clickBtnNext')
-    },
-    pass_clickResulted(el){
-      const element = el.currentTarget
-      this.$emit('event_clickResulted',element)
-    }
-
-  }
-};
-</script>
-
-<style scoped>
-
-</style>
---------------------------------------
-StatusAnswer.vue
-<template lang="pug">
-  .test-cotainer-result-answers()
-    .test-cotainer-result-emty-block
-    .test-window__response-status-icon(v-if="!correct")
-      .test-window__response-icon
-        img(src="/local/templates/main/img/test-inter-fail.png")
-      p.test-window__response-status-des Неверно
-    .test-window__response-status-icon(v-else)
-      .test-window__response-icon
-        img(src="/local/templates/main/img/test-inter-well.png")
-      p.test-window__response-status-des Верно
-    .test-window__response-correct-answer
-      p.test-window__response-des.fs-1rem(
-        v-for="item in response_description"
-        v-html="item"
-      )
-
-
-</template>
-
-<script>
-export default {
-  name: "StatusAnswer",
-  data(){
-    return{
-      status_answer:this.correct,
-      status:this.win,
-      response_description:[]
-    }
-  },
-
-  props:['correct','description','win'],
-  methods:{
-    heightIntermediateWindow(){
-
-      const elem = document.querySelector('.test-cotainer-result-answers')
-      const elem_em = elem.querySelector('.test-cotainer-result-emty-block')
-      const elem_em_2= elem.querySelector('.test-cotainer-result-answers')
-      const style = window.getComputedStyle(elem_em).getPropertyValue("display");
-      const style_2 = window.getComputedStyle(elem_em_2).getPropertyValue("display");
-
-      const height_el = elem.clientHeight
-      elem.closest('.swiper-wrapper').setAttribute('style','height:auto')
-      elem.closest('.test-window').setAttribute('style',`height:${height_el+125}px`)
-
-    },
-    sameAnswers(){
-      this.response_description = Array.from(new Set(this.description))
-    }
-
-  },
-  watch:{
-    description() {
-      this.sameAnswers()
-    }
-  },
-  mounted() {
-    // this.sameAnswers()
-  }
-
-}
-</script>
-
-<style scoped>
-
-</style>
----------------------------------
-WindowPlug.vue
-<template lang="pug">
-  .window-test-plug
-    .window-test-plug__icon
-      
-</template>
-<script>
-export default {
-  name: 'WindowPlug'
-};
-</script>
-<style scoped>
-</style>
------------------------------------
-QuestionTextField.vue
-<template lang="pug">
-  .test-cotainer-answer(
-    v-bind:class="{mandatory:req}"
-  )
-    .test-window__number(
-      v-if="circle_number"
-      v-bind:data-color="[`${item_key}`]"
-    )
-      p <span>{{item_key}}</span>/<span>{{count_answers}}</span>
-    p.test-window__question(
-      v-html="question"
-    )
-
-    .test-item
-      .test-window__item.test-window__textarea
-        textarea(
-          v-for ="(answer,key,ind) in variants"
-          @change="pass_inputAnswer($event,answer.NAME_INPUT,answer.VALUE_INPUT)"
-          @input="limitInput"
-          v-model="input"
-        )(name="",maxlength="1001")
-        p.test-window__textarea-error.
-          Превышено допустимое количество в 1000 символов
-    button.test-window__btn.btn.btn-slide-sub(type="button")(
-      v-bind:class="{unact:req}"
-      v-if="btn_answer"
-      @click="pass_clickButtonAnswer"
-    ) Отправить
-</template>
-
-<script>
-export default {
-  name: "QuestionTextField",
-  props:['question','variants','item_key','btn_answer','circle_number','count_answers','required','current_answer'],
-  data(){
-    return{
-      input:"",
-      req:null,
-    }
-  },
-
-  methods:{
-    pass_inputAnswer(elem,param_1,param_2){
-      const element = elem.currentTarget
-      this.$emit('event_inputAnswer',[element,elem,param_1,param_2,this.input])
-    },
-    pass_clickButtonAnswer(elem){
-      const element = elem.currentTarget
-      this.$emit('event_clickButtonAnswer',[element])
-    },
-    requiredButton(){
-      if(this.required==="Y"){
-        this.req=true
-      }
-      else if(this.required==="N"){
-        this.req=false
-      }
-    },
-    requiredButton_2(){
-      if(this.input.length!==0){
-        this.req=false
-      }
-      else if(this.input.length===0||this.required==="Y"){
-        this.req=true
-      }
-
-    },
-    limitInput(el) {
-      const max = 1001
-      const field=el.currentTarget
-      // field.value = field.value.substring(0, max);
-      const parent = field.closest('.test-window__item')
-      const item = parent.querySelectorAll('.test-window__textarea-error')
-      if (field.value.length === max) {
-        item.forEach(function (item){
-          item.setAttribute('style','display:block')
-        })
-      }
-      else
-      {
-        item.forEach(function (item){
-          item.setAttribute('style','display:none')
-        })
-      }
-    }
-
-  },
-  watch: {
-    input(){
-      this.requiredButton_2()
-    }
-  },
-  mounted() {
-    this.requiredButton()
-  },
-
-}
-</script>
-
-<style scoped>
-
-</style>
------------------------------
