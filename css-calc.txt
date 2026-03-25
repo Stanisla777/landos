@@ -1,38 +1,47 @@
 <template>
-  <div class="test-window__slider-btn" :class="!btn_prev ? 'justify-content-center' : ''">
-    <div v-if="btn_prev" class="btn btn_gray-bor-black test-button-prev" @click="pass_clickBtnPrev">
-      Назад
+  <div class="test-cotainer-result-answers">
+    <div class="test-cotainer-result-emty-block"></div>
+    <div v-if="!correct" class="test-window__response-status-icon">
+      <div class="test-window__response-icon">
+        <img src="/local/templates/main/img/test-inter-fail.png" alt="">
+      </div>
+      <p class="test-window__response-status-des">Неверно</p>
     </div>
-    <div v-show="!btn_result" class="btn test-button-next" @click="pass_clickBtnNext">
-      Дальше
+    <div v-else class="test-window__response-status-icon">
+      <div class="test-window__response-icon">
+        <img src="/local/templates/main/img/test-inter-well.png" alt="">
+      </div>
+      <p class="test-window__response-status-des">Верно</p>
     </div>
-    <div v-show="btn_result" class="button btn btn_green-n-white test-button-resultt" @click="pass_clickResulted">
-      Результаты
+    <div class="test-window__response-correct-answer">
+      <p v-for="(item, idx) in response_description" :key="idx" class="test-window__response-des fs-1rem" v-html="item"></p>
     </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'SliderButton',
+  name: 'StatusAnswer',
   data() {
     return {
-      btn_prev: false,
+      response_description: [],
     };
   },
-  props: ['btn_result'],
+  props: ['correct', 'description', 'win'],
   methods: {
-    pass_clickBtnPrev(el) {
-      const element = el.currentTarget;
-      this.$emit('event_clickBtnPrev', element);
+    sameAnswers() {
+      this.response_description = [...new Set(this.description)];
     },
-    pass_clickBtnNext() {
-      this.$emit('event_clickBtnNext');
+  },
+  watch: {
+    description() {
+      this.sameAnswers();
     },
-    pass_clickResulted(el) {
-      const element = el.currentTarget;
-      this.$emit('event_clickResulted', element);
-    },
+  },
+  mounted() {
+    if (this.description) {
+      this.sameAnswers();
+    }
   },
 };
 </script>
