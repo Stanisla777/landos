@@ -1,32 +1,18 @@
-<template>
-  <Suspense>
-    <template #default>
-      <TestsBuild v-bind="$attrs" />
-    </template>
-    <template #fallback>
-      <div class="loading-spinner">Загрузка теста...</div>
-    </template>
-  </Suspense>
-</template>
-
-<script>
-import { defineAsyncComponent } from 'vue';
-
-export default {
-  name: 'TestsBuildLazy',
-  inheritAttrs: true,
-  components: {
-    TestsBuild: defineAsyncComponent(() => 
-      import('./TestsBuild.vue')
-    ),
-  },
-};
-</script>
-
-<style scoped>
-.loading-spinner {
-  padding: 40px;
-  text-align: center;
-  color: #666;
+// test-build.js (обновлённая версия для Vue 3)
+export default function testBuild() {
+  const testElements = document.querySelectorAll('tests');
+  
+  testElements.forEach((item) => {
+    const id = item.getAttribute('id');
+    const views = item.getAttribute('views');
+    
+    // Создаём контейнер с правильными атрибутами для менеджера
+    const vueContainer = document.createElement('div');
+    vueContainer.setAttribute('data-vue-app', 'tests-build');
+    vueContainer.setAttribute('data-id-test', id);
+    vueContainer.setAttribute('data-view-test', views);
+    
+    // Заменяем старый элемент новым
+    item.parentNode.replaceChild(vueContainer, item);
+  });
 }
-</style>
