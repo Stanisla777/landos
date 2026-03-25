@@ -1,21 +1,28 @@
-.catch((error) => {
-          console.log(error);
-          // При ошибке используем тестовые данные
-          this.QUESTIONS = this.QUESTIONS_3;
-          this.initSlider();
-          this.countQuestion();
-          this.countTrueAnswer();
-          this.countSlideTest();
-        });
+
 
 
 SliderTest.vue
-swiper-wrapper
-countSlideTest() {
-      const slide_parent = document.querySelector('.test-window');
-      if (slide_parent) {
-        this.count_slide = slide_parent.querySelectorAll('.slide-question-js').length;
-      }
-      console.log('this.count_slide');
-      console.log(this.count_slide);
-    },
+.then((res) => {
+          final_text = res.data.UF_TEXT;
+          const container = document.querySelectorAll('.test-cotainer-final-result');
+          container.forEach((item) => {
+            const promise = new Promise((resolve) => {
+              item.querySelector('.final-result__des').innerHTML = final_text;
+              resolve();
+            }).then(() => {
+              return new Promise((resolve) => {
+                const height_el = item.offsetHeight;
+                item.closest('.test-window').setAttribute('style', `height:${height_el + 147}px`);
+                resolve();
+              });
+            });
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+          const container = document.querySelectorAll('.test-cotainer-final-result');
+          container.forEach((item) => {
+            const height_el = item.offsetHeight;
+            item.closest('.test-window').setAttribute('style', `height:${height_el + 147}px`);
+          });
+        });
