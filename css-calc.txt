@@ -6,11 +6,11 @@
     <p class="test-window__question" v-html="question"></p>
     <div class="test-item">
       <div class="test-window__wrap-chec">
-        <div class="test-window__radio test-window__height-limitation">
+        <div class="test-window__checkbox test-window__height-limitation">
           <div
             v-for="(answer, key) in variants"
             :key="key"
-            class="test-window__item test-window__radio-item choose"
+            class="test-window__item test-window__checkbox-item choose"
             :class="[
               answer.FIELD_WIDTH == 1 ? 'test-wintdow__item' :
               answer.FIELD_WIDTH == 2 ? 'test-winadow__item' : 'test-winfdow__item'
@@ -18,23 +18,18 @@
             @click="pass_clickVariant($event, answer.FIELD_WIDTH, (answer['~FIELD_PARAM'] || answer.FIELD_PARAM), answer.COLOR, answer.NAME_INPUT, answer.VALUE_INPUT)"
           >
             <div class="test-window__item-container-answer">
-              <input
-                :id="`radio-${item_key}-${key}`"
-                type="radio"
-                :name="`radio-${item_key}`"
-                @click.stop
-              >
+              <input :id="`check-${item_key}-${key}`" type="checkbox" @click.stop>
               <label
                 class="fs-1rem test-window__possible-answer"
-                :for="`radio-${item_key}-${key}`"
+                :for="`check-${item_key}-${key}`"
                 v-html="answer.MESSAGE"
               ></label>
               <div v-if="answer.FIELD_WIDTH == 2" class="test-window__field-for-variant">
                 <div class="test-window__item test-window__textarea">
                   <textarea
-                    class="radio-for-variant"
+                    class="check-for-variant"
                     :placeholder="answer.PLACEHOLDER"
-                    @change="pass_input_radio_another($event)"
+                    @change="passInputCheckAnother($event)"
                     @input="limitInput"
                     maxlength="1001"
                   ></textarea>
@@ -59,14 +54,15 @@
 
 <script>
 export default {
-  name: 'QuestionWindowRadio',
+  name: 'QuestionWindowCheckbox',
   props: [
     'question', 'variants', 'item_key', 'btn_answer', 'circle_number',
-    'count_answers', 'required', 'current_answer'
+    'count_answers', 'required', 'field_clearing'
   ],
   data() {
     return {
       req: null,
+      cor_answer: null,
       name_radio: null,
     };
   },
@@ -78,14 +74,25 @@ export default {
     },
     pass_clickButtonAnswer(elem) {
       const element = elem.currentTarget;
-      this.$emit('event_clickButtonAnswer', [element]);
+      this.$emit('event_clickButtonAnswer', [element, this.cor_answer]);
     },
     requiredButton() {
       this.req = this.required === "Y";
     },
-    pass_input_radio_another(elem) {
+    correctCheck() {
+      const massive = [];
+      const cor = this.variants;
+      const wit = Object.keys(cor);
+      for (let i = 0; i < wit.length; i++) {
+        if (cor[wit[i]].FIELD_WIDTH == "1") {
+          massive.push(cor[wit[i]].FIELD_WIDTH == "1");
+        }
+      }
+      this.cor_answer = massive.length;
+    },
+    passInputCheckAnother(elem) {
       const element = elem.currentTarget;
-      this.$emit('event_input_radio_another', [element, element.value, this.name_radio]);
+      this.$emit('eventInputCheckAnother', [element, element.value, this.name_radio]);
     },
     limitInput(el) {
       const max = 1001;
@@ -101,6 +108,7 @@ export default {
   },
   mounted() {
     this.requiredButton();
+    this.correctCheck();
   },
 };
 </script>
