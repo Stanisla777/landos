@@ -1,47 +1,97 @@
 <template>
-  <div class="test-cotainer-result-answers">
-    <div class="test-cotainer-result-emty-block"></div>
-    <div v-if="!correct" class="test-window__response-status-icon">
-      <div class="test-window__response-icon">
-        <img src="/local/templates/main/img/test-inter-fail.png" alt="">
+  <div class="test-cotainer-final-result final-result">
+    <div class="final-result__wrap-title">
+      <div v-if="smile_1" class="final-result__emoticon">
+        <img src="/local/templates/main/img/emoji-1.svg" alt="">
       </div>
-      <p class="test-window__response-status-des">Неверно</p>
-    </div>
-    <div v-else class="test-window__response-status-icon">
-      <div class="test-window__response-icon">
-        <img src="/local/templates/main/img/test-inter-well.png" alt="">
+      <div v-if="smile_2" class="final-result__emoticon">
+        <img src="/local/templates/main/img/emoji-2.svg" alt="">
       </div>
-      <p class="test-window__response-status-des">Верно</p>
+      <div v-if="smile_3" class="final-result__emoticon">
+        <img src="/local/templates/main/img/emoji-3.svg" alt="">
+      </div>
+      <div v-if="smile_4" class="final-result__emoticon">
+        <img src="/local/templates/main/img/emoji-4.svg" alt="">
+      </div>
+      <div v-if="smile_5" class="final-result__emoticon">
+        <img src="/local/templates/main/img/emoji-5.svg" alt="">
+      </div>
+      <div v-if="smile" class="final-result__emoticon">
+        <img src="/local/templates/main/img/emoji-6.svg" alt="">
+      </div>
+      <div class="final-result__title">{{ title }}</div>
     </div>
-    <div class="test-window__response-correct-answer">
-      <p v-for="(item, idx) in response_description" :key="idx" class="test-window__response-des fs-1rem" v-html="item"></p>
+    <div class="final-result__block-result">
+      <p class="final-result__result">
+        Правильных ответов: <span>{{ sum_of_points }}</span>/<span>{{ count_answers }}</span>
+      </p>
+      <p v-if="final_text !== undefined" class="final-result__des fs-1rem" v-html="final_text"></p>
     </div>
+    <div class="space-between final-result__btn final-result__btn-old-test">
+      <a href="/education/tests/" class="btn test-window__btn-old-test btn_green-n-white" type="button">Другие тесты</a>
+      <button class="test-window__btn-old-test btn" type="button" @click="pass_repeatTest">Пройти еще раз</button>
+    </div>
+    <div class="final-result__empty-block"></div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'StatusAnswer',
+  name: 'FinishWindow',
   data() {
     return {
-      response_description: [],
+      title: "Тест завершен",
     };
   },
-  props: ['correct', 'description', 'win'],
+  props: [
+    'sum_of_points', 'count_slide', 'final_text', 'smile', 'smile_1', 'smile_2',
+    'smile_3', 'smile_4', 'smile_5', 'count_correct_answers', 'finalResult', 'count_answers'
+  ],
   methods: {
-    sameAnswers() {
-      this.response_description = [...new Set(this.description)];
+    pass_repeatTest() {
+      this.$emit('event_repeatTest');
     },
-  },
-  watch: {
-    description() {
-      this.sameAnswers();
+    serviceConnectionSher() {
+      const script = document.createElement('script');
+      script.setAttribute('src', 'https://yastatic.net/share2/share.js');
+      document.head.appendChild(script);
+    },
+    preventDefaultSher() {
+      const sher = document.querySelectorAll('.final-result__soc-list');
+      for (let i = 0; i < sher.length; i++) {
+        const soc_list = sher[i].querySelectorAll('.soc-list__item a');
+        for (let j = 0; j < soc_list.length; j++) {
+          soc_list[j].onclick = function (e) {
+            e.preventDefault();
+          };
+        }
+      }
+    },
+    initializationServiceSher() {
+      let url = document.location.href;
+      let share = document.querySelector('.final-result__soc-list.ya-share2');
+      if (share) {
+        for (let i = 0; i < share.length; i++) {
+          if (window.Ya && window.Ya.share2) {
+            window.Ya.share2(share[i], {
+              content: { url: url }
+            });
+          }
+        }
+      }
+    },
+    finalText() {
+      const popup = document.querySelector('.common-test-pop-up');
+      if (popup) {
+        this.title = "Спасибо, что помогаете нам стать лучше!";
+      }
     },
   },
   mounted() {
-    if (this.description) {
-      this.sameAnswers();
-    }
+    this.serviceConnectionSher();
+    this.preventDefaultSher();
+    this.initializationServiceSher();
+    this.finalText();
   },
 };
 </script>
