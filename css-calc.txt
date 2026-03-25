@@ -1,1 +1,666 @@
 'tests-build': () => import('./vue-apps/TestsBuild/index.vue')
+<tests id="281" views="Test1"></tests>
+
+
+<template>
+  <div class="wrap-test-list test-one-window">
+    <div class="tests-questions">
+      <WindowPlug v-if="plug" />
+
+      <div
+        v-for="(slide, key, ind) in QUESTIONS"
+        :key="key"
+        class="test-list test-window-js"
+      >
+        <!-- Тип вопроса: радиокнопки (FIELD_TYPE === '0') -->
+        <QuestionWindowRadio
+          v-if="slide.FIELD_TYPE === '0'"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key) + 1"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          @event_clickVariant="clickVariant"
+        />
+
+        <!-- Тип вопроса: блок (FIELD_TYPE === '2') -->
+        <QuestionWindowBlock
+          v-else-if="slide.FIELD_TYPE === '2'"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key) + 1"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          @event_clickVariant="clickVariant"
+        />
+
+        <!-- Тип вопроса: чекбоксы (FIELD_TYPE === '1') -->
+        <QuestionWindowCheckbox
+          v-else-if="slide.FIELD_TYPE === '1'"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key) + 1"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          @event_clickVariant="clickVariant"
+        />
+
+        <!-- Тип вопроса: текстовое поле (FIELD_TYPE === '99999') -->
+        <QuestionTextField
+          v-else-if="slide.FIELD_TYPE === '99999'"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key) + 1"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          @event_inputAnswer="inputAnswer"
+        />
+      </div>
+    </div>
+
+    <div class="wrapper-final-result">
+      <FinishWindow
+        v-show="finalResult"
+        :sum_of_points="sum_of_points"
+        :count_slide="count_slide"
+        :final_text="final_text"
+        :smile="smile"
+        :smile_1="smile_1"
+        :smile_2="smile_2"
+        :smile_3="smile_3"
+        :smile_4="smile_4"
+        :smile_5="smile_5"
+        :count_correct_answers="count_correct_answers"
+        :finalResult="finalResult"
+        :count_answers="count_answers"
+        @event_repeatTest="repeatTest"
+      />
+    </div>
+
+    <div
+      class="button btn btn_green-n-white test-button-resultt btn-list-resuslt"
+      :class="{ unact: req }"
+      v-show="btn_result"
+      @click="clickResulted"
+    >
+      Результаты
+    </div>
+
+    <p v-if="active_result" class="full-warning">
+      Не все обязательные поля заполнены
+    </p>
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+import WindowPlug from './WindowPlug.vue';
+import QuestionWindowBlock from './QuestionWindowBlock.vue';
+import QuestionWindowRadio from './QuestionWindowRadio.vue';
+import QuestionWindowCheckbox from './QuestionWindowCheckbox.vue';
+import QuestionTextField from './QuestionTextField.vue';
+import FinishWindow from './FinishWindow.vue';
+
+export default {
+  name: 'StepTest',
+  props: {
+    idTest: {
+      type: [String, Number],
+      default: 0,
+    },
+  },
+  data() {
+    return {
+      SESSID: "",
+      // Тестовые данные для разработки
+      QUESTIONS_3: {
+        "1": {
+          "FIELD_TYPE": "99999",
+          "QUESTION": "Сам вопрос",
+          "CORRECT_ANSWERS": "Какой минимальный размер материнского капитала?",
+          "REQUIRED": "Y",
+          "ANSWERS": {
+            "1": {
+              "MESSAGE": "Вариант чекбоксд 1",
+              "FIELD_WIDTH": "0",
+              "FIELD_PARAM": "ответ промежуточного окна1",
+              "COLOR": "1",
+              "NAME_INPUT": "vote_chek_1",
+              "VALUE_INPUT": "значение чекбокса_1",
+              "DESCRIPTION_TO_ANSWER": "Ответ номер 9",
+              "PLACEHOLDER": "Какие недостатки вы видите в нашей работе?"
+            }
+          }
+        },
+        "2": {
+          "FIELD_TYPE": "0",
+          "QUESTION": "Оцените работу Станислава",
+          "CORRECT_ANSWERS": "Минимальный срок договора может быть 5 лет",
+          "DESCRIPTION_TO_ANSWER": "Характеристики объекта недвижимости - площадь, адрес, количество комнат, этаж и другие",
+          "REQUIRED": "Y",
+          "ANSWERS": {
+            "1": {
+              "MESSAGE": "0",
+              "FIELD_WIDTH": "2",
+              "FIELD_PARAM": "ромежуточное окно",
+              "COLOR": "0",
+              "NAME_INPUT": "vote_radio_2",
+              "VALUE_INPUT": "значение vote_radio_2",
+              "DESCRIPTION_TO_ANSWER": "Ответ номер 6",
+              "PLACEHOLDER": "Какие недостатки вы видите в нашей работе?"
+            },
+            "2": {
+              "MESSAGE": "1",
+              "FIELD_WIDTH": "2",
+              "FIELD_PARAM": "ромежуточное окно",
+              "COLOR": "0",
+              "NAME_INPUT": "vote_radio_2",
+              "VALUE_INPUT": "2",
+              "DESCRIPTION_TO_ANSWER": "Ответ номер 6",
+              "PLACEHOLDER": "Какие недостатки вы видите в нашей работе?"
+            }
+          }
+        },
+        "3": {
+          "FIELD_TYPE": "0",
+          "QUESTION": "Оцените работу Станислава",
+          "CORRECT_ANSWERS": "Минимальный срок договора может быть 5 лет",
+          "DESCRIPTION_TO_ANSWER": "Характеристики объекта недвижимости - площадь, адрес, количество комнат, этаж и другие",
+          "REQUIRED": "Y",
+          "ANSWERS": {
+            "1": {
+              "MESSAGE": "0",
+              "FIELD_WIDTH": "2",
+              "FIELD_PARAM": "Промежуточное окно ",
+              "COLOR": "0",
+              "NAME_INPUT": "vote_radio_3",
+              "VALUE_INPUT": "значение vote_radio_3",
+              "DESCRIPTION_TO_ANSWER": "Ответ номер 6",
+              "PLACEHOLDER": "Какие недостатки вы видите в нашей работе?"
+            },
+            "2": {
+              "MESSAGE": "1",
+              "FIELD_WIDTH": "2",
+              "FIELD_PARAM": "Промежуточное окно",
+              "COLOR": "0",
+              "NAME_INPUT": "vote_radio_2",
+              "VALUE_INPUT": "2",
+              "DESCRIPTION_TO_ANSWER": "Ответ номер 6",
+              "PLACEHOLDER": "Какие недостатки вы видите в нашей работе?"
+            }
+          }
+        }
+      },
+      QUESTIONS: {},
+      class: 'true',
+      finalResult: false,
+      answer_sResult: false,
+      count_slide: 0,
+      btn_slider: true,
+      btn_result: true,
+      btn_answer: false,
+      circle_number: true,
+      count_answers: 0,
+      count_correct_answers: 0,
+      sum_of_points: 0,
+      correct: null,
+      result: 0,
+      smile: null,
+      smile_1: null,
+      smile_2: null,
+      smile_3: null,
+      smile_4: null,
+      smile_5: null,
+      final_text: "",
+      interim_des: [],
+      answers_all_questions: [],
+      number_click: 0,
+      req: null,
+      object_questions: [],
+      response_object: {},
+      plug: false,
+      active_result: false,
+      massive_checkbox: [],
+      count_radio_btn: false,
+      config_header: {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      },
+    };
+  },
+  methods: {
+    axios_get() {
+      axios
+        .get(`/local/api/tests/?id_tests=${this.idTest}`, this.config_header)
+        .then((res) => {
+          this.QUESTIONS = res.data.QUESTIONS;
+          this.SESSID = res.data.SESSID;
+        })
+        .then(() => {
+          this.countQuestion();
+          this.countTrueAnswer();
+        })
+        .catch((error) => {
+          console.log(error);
+          // При ошибке используем тестовые данные
+          this.QUESTIONS = this.QUESTIONS_3;
+          this.countQuestion();
+          this.countTrueAnswer();
+        });
+    },
+
+    countQuestion() {
+      const len = this.QUESTIONS;
+      this.count_answers = Object.keys(len).length;
+    },
+
+    countTrueAnswer() {
+      let count_correct_answers = 0;
+      const len = this.QUESTIONS;
+      const keys = Object.values(len);
+
+      keys.forEach((item) => {
+        if (item.FIELD_TYPE == "2") {
+          const keys_2 = Object.values(item.ANSWERS);
+          for (let i = 0; i < keys_2.length; i += 1) {
+            const mas = keys_2[i].DROPDOWN;
+            let massive_2 = [];
+            for (let j = 0; j < mas.length; j += 1) {
+              if (mas[j].FIELD_WIDTH == "1") {
+                massive_2.push(j);
+              }
+            }
+            if (massive_2.length > 0) {
+              count_correct_answers += 1;
+            }
+          }
+        } else if (item.FIELD_TYPE == "1") {
+          const keys_2 = Object.values(item.ANSWERS);
+          for (let i = 0; i < keys_2.length; i += 1) {
+            if (keys_2[i].FIELD_WIDTH == "1") {
+              count_correct_answers += 1;
+            }
+          }
+        } else {
+          const keys_2 = Object.values(item.ANSWERS);
+          let massive = [];
+          for (let i = 0; i < keys_2.length; i += 1) {
+            if (keys_2[i].FIELD_WIDTH == "1") {
+              massive.push(i);
+            }
+          }
+          if (massive.length > 0) {
+            count_correct_answers += 1;
+          }
+        }
+      });
+      this.count_correct_answers = count_correct_answers;
+    },
+
+    removeEmpty(obj) {
+      Object.keys(obj).forEach(k => {
+        if (obj[k] && typeof obj[k] === 'object' && this.removeEmpty(obj[k]) === null) {
+          delete obj[k];
+        }
+      });
+      if (!Object.keys(obj).length) {
+        return null;
+      }
+    },
+
+    inputAnswerObject(element, el1, el2, el3) {
+      const object = this.answers_all_questions;
+      this.response_object = {};
+      const index = object.findIndex((item) => item[el1]);
+      if (index > -1) {
+        object.splice(index, 1);
+      }
+      this.response_object[el1] = el3;
+      this.object_questions.push(this.response_object);
+      this.answers_all_questions.push(this.response_object);
+    },
+
+    selectedAnswerObject(element, el1, el2) {
+      const object = this.answers_all_questions;
+      const object_checkbox = this.massive_checkbox;
+
+      if (element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
+        const index = object_checkbox.findIndex((item) => item[el1] === el2);
+        if (index > -1) {
+          object_checkbox.splice(index, 1);
+        }
+      } else if (element.classList.contains('test-window__checkbox-item') && !element.querySelector('input').checked) {
+        this.response_object = {};
+        this.response_object[el1] = el2;
+        this.massive_checkbox.push(this.response_object);
+      } else if (!element.classList.contains('test-window__checkbox-item')) {
+        this.response_object = {};
+        const index = object.findIndex((item) => item[el1]);
+        if (index > -1) {
+          object.splice(index, 1);
+        }
+        this.response_object[el1] = el2;
+        this.object_questions.push(this.response_object);
+        this.answers_all_questions.push(this.response_object);
+      }
+    },
+
+    clickVariant(ev_1) {
+      if (typeof ev_1[1] == 'object') {
+        ev_1.splice(1, 1);
+      }
+
+      const element = ev_1[0];
+      const element_parent = element.closest('.test-item');
+      const elements = element_parent.querySelectorAll('.test-window__item');
+      const main_container = element.closest('.test-cotainer-answer');
+      const inp = element.querySelector('input');
+
+      this.selectedAnswerObject(element, ev_1[4], ev_1[5]);
+
+      elements.forEach((item) => {
+        item.setAttribute('style', 'pointer-events: auto');
+      });
+
+      const setElemt = element_parent.querySelectorAll('.test-window__item');
+      setElemt.forEach((item) => {
+        if (!item.classList.contains('test-window__checkbox-item')) {
+          item.classList.remove('active', 'true', 'false');
+          element.classList.add('active');
+        }
+      });
+
+      if (element.classList.contains('test-window__checkbox-item') && !inp.checked) {
+        element.classList.add('active');
+      }
+      if (element.classList.contains('test-window__checkbox-item') && inp.checked) {
+        element.classList.remove('active', 'true', 'false');
+      }
+
+      if (ev_1[1] === '1' && !element.classList.contains('test-window__checkbox-item') && !main_container.classList.contains('radio-active')) {
+        this.correct = true;
+        element.classList.add('true');
+        this.sum_of_points = this.sum_of_points + parseFloat(ev_1[1]);
+        element_parent.classList.add('answer-selected');
+        main_container.classList.add('radio-active');
+      } else if ((ev_1[1] === '0' || ev_1[1] === '') && element.classList.contains('test-window__checkbox-item')) {
+        this.correct = false;
+        element.classList.add('false');
+      }
+
+      if ((ev_1[1] === '0' || ev_1[1] === '') && element.classList.contains('test-window__checkbox-item') && inp.checked) {
+        element.classList.remove('false');
+      }
+
+      if ((ev_1[1] === '0' || ev_1[1] === '') && element_parent.classList.contains('answer-selected') && !element.classList.contains('test-window__checkbox-item')) {
+        this.sum_of_points = this.sum_of_points - 1;
+        this.count_radio_btn = false;
+        element_parent.classList.remove('answer-selected');
+        main_container.classList.remove('radio-active');
+      }
+
+      if (ev_1[1] === '1' && element.classList.contains('test-window__checkbox-item') && !inp.checked) {
+        element.classList.add('true');
+      }
+      if (ev_1[1] === '0' && element.classList.contains('test-window__checkbox-item') && !inp.checked) {
+        element.classList.add('false');
+      }
+
+      if (ev_1[1] === '1' && element.classList.contains('test-window__checkbox-item')) {
+        this.correct = true;
+        this.sum_of_points = this.sum_of_points + 1;
+        element_parent.classList.add('answer-selected');
+      }
+
+      if ((ev_1[1] === '0' || ev_1[1] === '') && element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
+        this.sum_of_points = this.sum_of_points - 0;
+      }
+      if (ev_1[1] === '1' && element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
+        this.sum_of_points = this.sum_of_points - 2;
+      }
+
+      if (!element.classList.contains('test-window__checkbox-item')) {
+        element.setAttribute('style', 'pointer-events: none');
+      }
+
+      if (element.classList.contains('test-window__checkbox-item')) {
+        const elem_massive = element_parent.querySelectorAll('.test-window__item input:checked');
+        if (elem_massive.length == 1 && main_container.classList.contains('active') && inp.checked) {
+          main_container.classList.remove('active');
+        } else {
+          main_container.classList.add('active');
+        }
+      } else {
+        main_container.classList.add('active');
+      }
+    },
+
+    inputAnswer(ev_1) {
+      const element = ev_1[0];
+      this.inputAnswerObject(element, ev_1[2], ev_1[3], ev_1[4]);
+
+      const element_parent = element.closest('.test-item');
+      element.classList.add('active');
+
+      if (ev_1[1] === "1") {
+        this.correct = true;
+        element.classList.add('true');
+      } else {
+        this.correct = false;
+        element.classList.add('false');
+      }
+    },
+
+    clickResulted(elem) {
+      const element = elem.currentTarget;
+      const parent = element.closest('.test-one-window');
+      const mandatory_len = parent.querySelectorAll('.test-cotainer-answer.mandatory');
+      const active_answer = parent.querySelectorAll('.test-cotainer-answer.mandatory.active');
+
+      mandatory_len.forEach((item) => {
+        item.closest('.test-list').setAttribute('style', 'border-color:transparent');
+      });
+
+      if (active_answer.length !== mandatory_len.length) {
+        this.active_result = true;
+        mandatory_len.forEach((item) => {
+          if (!item.classList.contains('active')) {
+            item.closest('.test-list').setAttribute('style', 'border-color:red');
+          }
+        });
+      } else {
+        this.finalResult = true;
+        this.btn_result = false;
+        this.active_result = false;
+        mandatory_len.forEach((item) => {
+          item.closest('.test-list').setAttribute('style', 'border-color:transparent');
+        });
+
+        const items = document.querySelectorAll('.test-window__item');
+        items.forEach((item) => {
+          item.setAttribute('style', 'pointer-events: none');
+        });
+
+        this.highlightingAnswer(parent);
+      }
+
+      this.removeEmpty(this.answers_all_questions);
+
+      const percentage_responses = (parseInt(this.sum_of_points) * 100) / this.count_correct_answers;
+      if (percentage_responses <= 20) {
+        this.smile_1 = true;
+      } else if (percentage_responses > 20 && percentage_responses <= 40) {
+        this.smile_2 = true;
+      } else if (percentage_responses > 40 && percentage_responses <= 60) {
+        this.smile_3 = true;
+      } else if (percentage_responses > 60 && percentage_responses <= 80) {
+        this.smile_4 = true;
+      } else if (percentage_responses > 80 && percentage_responses < 100) {
+        this.smile_5 = true;
+      } else if (percentage_responses === 100) {
+        this.smile = true;
+      }
+
+      const sessid = this.SESSID;
+      let res = sessid.split('=').pop();
+      res = res.replace(/[^a-zа-яё0-9\s]/gi, ' ');
+
+      const required_data = [
+        { vote: "Y" },
+        { PUBLIC_VOTE_ID: this.idTest },
+        { VOTE_ID: this.idTest },
+        { sessid: `${res}` },
+        { sum_vote: this.sum_of_points }
+      ];
+
+      const array_to_send = {};
+      this.answers_all_questions = this.answers_all_questions.concat(required_data);
+      const an_all_que = this.answers_all_questions;
+      const keys_2 = Object.keys(this.answers_all_questions);
+
+      keys_2.forEach((item, ind) => {
+        const keys = Object.keys(an_all_que[ind]);
+        Object.assign(array_to_send, an_all_que[ind]);
+      });
+
+      const sending_data_server = {};
+      sending_data_server.stats = array_to_send;
+      sending_data_server.checBox = this.massive_checkbox;
+      let final_text = this.final_text;
+
+      axios({
+        method: 'post',
+        url: '/local/api/tests/',
+        headers: {
+          "Content-type": "text/html; charset=UTF-8"
+        },
+        data: sending_data_server,
+      })
+        .then((res) => {
+          final_text = res.data.UF_TEXT;
+          const container = document.querySelectorAll('.test-cotainer-final-result');
+          container.forEach((item) => {
+            const desEl = item.querySelector('.final-result__des');
+            if (desEl) desEl.innerHTML = final_text;
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+
+    highlightingAnswer(parent) {
+      const massive_answer = parent.querySelectorAll('.test-window__item');
+      massive_answer.forEach((item) => {
+        if (item.classList.contains('test-wintdow__item')) {
+          item.classList.add('true-answer');
+        } else if (item.classList.contains('test-winfdow__item')) {
+          item.classList.add('faled-answer');
+        }
+      });
+    },
+
+    repeatTest() {
+      this.finalResult = false;
+
+      const variant_testdocument = document.querySelectorAll('.test-window__col-variant-item');
+      const radio = document.querySelectorAll('.test-window__radio-item');
+      const check = document.querySelectorAll('.test-window__checkbox-item');
+      const textarea = document.querySelectorAll('.test-window__textarea textarea');
+      const test_cotainer_answer = document.querySelectorAll('.test-cotainer-answer');
+
+      test_cotainer_answer.forEach((item) => {
+        item.classList.remove('active', 'radio-active');
+      });
+
+      radio.forEach((item) => {
+        item.classList.remove('active', 'true', 'false');
+        item.setAttribute('style', 'pointer-events: auto;');
+        const input = item.querySelector('input');
+        if (input) input.checked = false;
+      });
+
+      variant_testdocument.forEach((item) => {
+        item.classList.remove('active', 'true', 'false');
+        item.setAttribute('style', 'pointer-events: auto;');
+      });
+
+      check.forEach((item) => {
+        item.classList.remove('active', 'true', 'false');
+        item.setAttribute('style', 'pointer-events: auto;');
+        const input = item.querySelector('input');
+        if (input) input.checked = false;
+      });
+
+      textarea.forEach((item) => {
+        item.classList.remove('active', 'true', 'false');
+        item.setAttribute('style', 'pointer-events: auto;');
+        item.value = "";
+      });
+
+      const all_element = document.querySelectorAll('.test-one-window .test-winfdow__item.faled-answer');
+      const all_element_true = document.querySelectorAll('.true-answer');
+      all_element_true.forEach((item) => {
+        item.classList.remove('true-answer');
+      });
+      all_element.forEach((item) => {
+        item.classList.remove('faled-answer');
+      });
+
+      const items = document.querySelectorAll('.test-window__item');
+      items.forEach((item) => {
+        item.setAttribute('style', 'pointer-events: auto');
+      });
+
+      const test_item = document.querySelectorAll('.test-item');
+      test_item.forEach((item) => {
+        item.classList.remove('answer-selected');
+      });
+
+      this.sum_of_points = 0;
+      this.result = 0;
+      this.btn_result = true;
+      this.btn_slider = false;
+      this.smile = null;
+      this.smile_1 = null;
+      this.smile_2 = null;
+      this.smile_3 = null;
+      this.final_text = "";
+      this.interim_des = [];
+      this.answers_all_questions = [];
+      this.response_object = {};
+      this.object_questions = [];
+      this.massive_checkbox = [];
+      this.plug = false;
+
+      const yOffset = -50;
+      const element = document.querySelector('.wrap-test-list');
+      if (element) {
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    },
+  },
+  mounted() {
+    this.axios_get();
+  },
+  components: {
+    WindowPlug,
+    QuestionWindowBlock,
+    QuestionWindowRadio,
+    QuestionWindowCheckbox,
+    QuestionTextField,
+    FinishWindow,
+  },
+};
+</script>
