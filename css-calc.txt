@@ -1,27 +1,11 @@
-keyUpTimeout: null
+import eventBus from '../eventBus';
+Файл  eventBus такой:
+import mitt from 'mitt';
 
-keyUp(e) {
-      if (this.keyUpTimeout) {
-        clearTimeout(this.keyUpTimeout);
-      }
-      
-      this.keyUpTimeout = setTimeout(() => {
-        const element = e.currentTarget;
-        
-        if(element.value!==''&&(parseInt(element.value.replace(/\s/g, ''))>=this.stgMin)&&parseInt(element.value.replace(/\s/g, ''))<=this.stgMax){
-          Storage.dispatch('ActionDebtOldCredit',parseInt(element.value.replace(/\s/g, '')))
-          this.realtySlider.set(parseInt(element.value.replace(/\s/g, '')));
-        }
-        else if(parseInt(element.value.replace(/\s/g, ''))>this.stgMax)  {
-          Storage.dispatch('ActionDebtOldCredit',parseInt(this.stgMax))
-          this.realtySlider.set(this.stgMax);
-        }
-        else if(parseInt(element.value.replace(/\s/g, ''))<this.stgMin)  {
-          Storage.dispatch('ActionDebtOldCredit',parseInt(this.stgMin))
-        }
-        
-        if(parseInt(element.value.replace(/\s/g, ''))>=this.stgMax){
-          this.dataField = this.stgMax.toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
-        }
-      }, 150);
-    },
+export default mitt();
+
+created(){
+    eventBus.$on('receivePaymentType',(param)=>{
+      this.data_type_payment=param
+    })
+  },
