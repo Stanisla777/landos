@@ -1,16 +1,27 @@
-В компоненте:
-store.dispatch('ActionDebtOldCredit',this.stgMin)
+keyUpTimeout: null
 
-В state
-
-  
-  // Добавляем debounced версию для частых вызовов
-  ActionDebouncedCalculate({ commit }) {
-    if (this._calculateTimeout) {
-      clearTimeout(this._calculateTimeout);
-    }
-    this._calculateTimeout = setTimeout(() => {
-      commit('mutationCalculateOldCredit');
-    }, 100);
-  }
-}
+keyUp(e) {
+      if (this.keyUpTimeout) {
+        clearTimeout(this.keyUpTimeout);
+      }
+      
+      this.keyUpTimeout = setTimeout(() => {
+        const element = e.currentTarget;
+        
+        if(element.value!==''&&(parseInt(element.value.replace(/\s/g, ''))>=this.stgMin)&&parseInt(element.value.replace(/\s/g, ''))<=this.stgMax){
+          Storage.dispatch('ActionDebtOldCredit',parseInt(element.value.replace(/\s/g, '')))
+          this.realtySlider.set(parseInt(element.value.replace(/\s/g, '')));
+        }
+        else if(parseInt(element.value.replace(/\s/g, ''))>this.stgMax)  {
+          Storage.dispatch('ActionDebtOldCredit',parseInt(this.stgMax))
+          this.realtySlider.set(this.stgMax);
+        }
+        else if(parseInt(element.value.replace(/\s/g, ''))<this.stgMin)  {
+          Storage.dispatch('ActionDebtOldCredit',parseInt(this.stgMin))
+        }
+        
+        if(parseInt(element.value.replace(/\s/g, ''))>=this.stgMax){
+          this.dataField = this.stgMax.toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+        }
+      }, 150);
+    },
