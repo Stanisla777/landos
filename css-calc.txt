@@ -1,17 +1,369 @@
-// CreditCalculator.vue
-import { onBeforeUnmount } from 'vue';
-import { useStore } from 'vuex';
+/* eslint-disable */
+import { createStore } from 'vuex';
 
-export default {
-  setup() {
-    const store = useStore();
-    
-    onBeforeUnmount(() => {
-      if (store.state.calculateTimeout) {
-        clearTimeout(store.state.calculateTimeout);
+export default createStore({
+  state: {
+    // Состояние кнопок нового кредита
+    button_state: {
+      parameter_debt: false,
+      parameter_rate: true,
+      parameter_time: false
+    },
+    // модальное окно
+    modal_state: false,
+
+    // сумма кредита
+    old_debt: 0,
+
+    // тип периода
+    type_period_credit: {
+      old: 'year',
+      new: 'year'
+    },
+
+    old_rate: 0,
+    credit_old_time: 0,
+    annuity_monthly_payment_old_credid: 0,
+    annuity_overpayment_old_credit: 0,
+    annuity_debt_plus_interest_old_credit: 0,
+    payment_annuity_list: [],
+    dateArray: [],
+    dateArrayPsk: [],
+    start_payment: [],
+    psk: 0,
+    final_window: false
+  },
+  getters: {
+    FINALWINDOW(state) {
+      return state.final_window;
+    },
+    MODAL_STATE(state) {
+      return state.modal_state;
+    },
+    //  ежумесячный платёж старого кредита
+    ANNUITYMONTHLYPAYMENTOLDCREDIT(state) { // нужно
+      return state.annuity_monthly_payment_old_credid;
+    },
+    //  переплата
+    ANNUITYOVERPAYMENTOLDCREDIT(state) { // нужно
+      return state.annuity_overpayment_old_credit;
+    },
+    // Долг + проценты старого кредита
+    ANNUITYDEBTPLUSINTEREST(state) {
+      return state.annuity_debt_plus_interest_old_credit;
+    },
+    // График платежей
+    //  массив для аннуетного графика платежей
+    PAYMENTLIST(state) {
+      return state.payment_annuity_list;
+    },
+    PSK(state) {
+      return state.psk.toFixed(2);
+    }
+  },
+  mutations: {
+
+    // Открытие - закрытие модального окна
+    mutationModal(state, received_perem) {
+      state.modal_state = received_perem;
+    },
+    mutationFinalWindow(state, received_perem) {
+      state.final_window = received_perem;
+    },
+
+    // -----Старый кредит
+    // Остаток долга
+    mutationDebtOldCredit(state, received_perem) {
+      state.old_debt = received_perem;
+    },
+
+    mutationRateOldCredit(state, received_perem) {
+      state.old_rate = received_perem;
+    },
+    mutationTimeOldCredit(state, received_perem) {
+      if (state.type_period_credit.old === 'year') {
+        state.credit_old_time = (parseInt(received_perem) * 12);
+
+        if (state.button_state.parameter_time === false) {
+          state.credit_new_time = parseInt(received_perem) * 12;
+        }
+      } else if (state.type_period_credit.old === 'month') {
+        state.credit_old_time = parseInt(received_perem);
       }
-    });
-    
-    return { store };
-  }
-};
+    },
+
+    // тип периода старого кредита
+    mutationTypePeriodOldCredit(state, received_perem) {
+      state.type_period_credit.old = received_perem;
+    },
+
+    // дата начала выплат
+    mutationStartPayment(state,received_perem){
+
+      state.start_payment=[]
+      state.start_payment.push(received_perem[0])
+      state.start_payment.push(received_perem[1])
+
+      state.arr_data_small_debt=[]
+      state.annuity_monthly_payment_old_credid=0
+      state.differentiated_monthly_payment=[]
+      state.annuity_debt_plus_interest_old_credit=0
+      state.annuity_overpayment_old_credit=0
+      state.payment_annuity_list=[]
+      state.payment_differentiated_list=[]
+      state.dateArray=[]
+      state.dateArrayPsk=[]
+
+      //рассчитываю платежи
+      const old_rate = (state.old_rate / 12)/100
+
+      //формирую даты
+      const month_array = []
+      const month_year = []
+      var amountOfDatesFromPast = state.credit_old_time;
+
+
+      for (let i = 0; i < amountOfDatesFromPast+1; i++){
+        var dateObj = new Date(state.start_payment[0]);
+
+        dateObj.setMonth(dateObj.getMonth() + i);
+        var month = dateObj.getUTCMonth() + 1; //months from 1-12
+        month_array.push(month)
+        var year = dateObj.getUTCFullYear();
+        month_year.push(year)
+
+      }
+      //
+      //
+      for(let i=0;i<month_array.length;i++){
+        if(month_array[i]===month_array[i+1]){
+          month_array[i]=month_array[i]-1
+        }
+      }
+      for(let i=0;i<month_array.length;i++){
+        month_array[i]===1?month_array[i]='01':month_array[i]===2?month_array[i]='02':month_array[i]===3?month_array[i]='03'
+          :month_array[i]===4?month_array[i]='04':month_array[i]===5?month_array[i]='05':month_array[i]===6?month_array[i]='06'
+            :month_array[i]===7?month_array[i]='07':month_array[i]===8?month_array[i]='08':month_array[i]===9?month_array[i]='09'
+              :month_array[i]===10?month_array[i]='10':month_array[i]===11?month_array[i]='11':month_array[i]='12'
+      }
+      for(let i=0;i<month_array.length;i++){
+        state.dateArray.push(state.start_payment[1] + '.'+month_array[i]+'.' +month_year[i])
+      }
+
+      const annuity_ratio = old_rate * ((1 + old_rate)**state.credit_old_time) / (((1 + old_rate)**state.credit_old_time)-1)
+      const annuity_monthly_payment_old_credid = (state.old_debt * annuity_ratio).toFixed(2)
+      //ежемесячный платёж
+      state.annuity_monthly_payment_old_credid = parseFloat(annuity_monthly_payment_old_credid)
+      //Долг + проценты
+      state.annuity_debt_plus_interest_old_credit = state.annuity_monthly_payment_old_credid * state.credit_old_time
+      //переплата по процентам
+      state.annuity_overpayment_old_credit = state.annuity_debt_plus_interest_old_credit - state.old_debt
+
+
+      //Формирую график платежей
+      let obj_payment = {}
+      let main_debt = state.old_debt
+
+
+      for(let i=1;i<=state.credit_old_time;i++){
+        //ежемесячный платёж по процентам в определённом месяце = основной долг на тякущий месяц * на процентную ставку
+        const monthly_interest_payment = main_debt * old_rate
+        //платёж по основному долгу = ежемесячный платёж - ежемесячный платёж по процентам в определённом месяце
+        const principal_payment = parseFloat(annuity_monthly_payment_old_credid) - monthly_interest_payment
+        //остаток долга = основной долг на тякущий месяц - платёж по основному долгу на тякущий месяц
+        main_debt = main_debt - principal_payment
+
+        obj_payment.payment = parseFloat(annuity_monthly_payment_old_credid);
+        obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2));
+        obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2));
+        obj_payment.remainder = parseFloat(main_debt.toFixed(2));
+        obj_payment.month = state.dateArray[i];
+        state.payment_annuity_list.push(obj_payment);
+        obj_payment={}
+      }
+
+
+    },
+
+    //   рассчёт платежей
+    mutationCalculateOldCredit(state) {
+      // Очищаем предыдущий таймаут
+      if (state.calculateTimeout) {
+        clearTimeout(state.calculateTimeout);
+      }
+
+      // Устанавливаем новый таймаут
+      state.calculateTimeout = setTimeout(() => {
+        // ВЕСЬ ВАШ СТАРЫЙ КОД (без изменений)
+        state.arr_data_small_debt = [];
+        state.annuity_monthly_payment_old_credid = 0;
+        state.differentiated_monthly_payment = [];
+        state.annuity_debt_plus_interest_old_credit = 0;
+        state.annuity_overpayment_old_credit = 0;
+        state.payment_annuity_list = [];
+        state.payment_differentiated_list = [];
+        state.dateArray = [];
+        state.dateArrayPsk = [];
+
+        // рассчитываю платежи
+        const old_rate = (state.old_rate / 12) / 100;
+
+        // формирую даты
+        const month_array = [];
+        const month_year = [];
+        var amountOfDatesFromPast = state.credit_old_time;
+
+        for (let i = 0; i < amountOfDatesFromPast + 1; i++) {
+          var dateObj = new Date(state.start_payment[0]);
+          dateObj.setMonth(dateObj.getMonth() + i);
+          var month = dateObj.getUTCMonth() + 1;
+          month_array.push(month);
+          var year = dateObj.getUTCFullYear();
+          month_year.push(year);
+        }
+
+        for (let i = 0; i < month_array.length; i++) {
+          if (month_array[i] === month_array[i + 1]) {
+            month_array[i] = month_array[i] - 1;
+          }
+        }
+        for (let i = 0; i < month_array.length; i++) {
+          month_array[i] === 1 ? month_array[i] = '01' : month_array[i] === 2 ? month_array[i] = '02' : month_array[i] === 3 ? month_array[i] = '03'
+            : month_array[i] === 4 ? month_array[i] = '04' : month_array[i] === 5 ? month_array[i] = '05' : month_array[i] === 6 ? month_array[i] = '06'
+              : month_array[i] === 7 ? month_array[i] = '07' : month_array[i] === 8 ? month_array[i] = '08' : month_array[i] === 9 ? month_array[i] = '09'
+                : month_array[i] === 10 ? month_array[i] = '10' : month_array[i] === 11 ? month_array[i] = '11' : month_array[i] = '12';
+        }
+        for (let i = 0; i < month_array.length; i++) {
+          state.dateArray.push(state.start_payment[1] + '.' + month_array[i] + '.' + month_year[i]);
+        }
+
+        const annuity_ratio = old_rate * ((1 + old_rate) ** state.credit_old_time) / (((1 + old_rate) ** state.credit_old_time) - 1);
+        const annuity_monthly_payment_old_credid = (state.old_debt * annuity_ratio).toFixed(2);
+        state.annuity_monthly_payment_old_credid = parseFloat(annuity_monthly_payment_old_credid);
+        state.annuity_debt_plus_interest_old_credit = state.annuity_monthly_payment_old_credid * state.credit_old_time;
+        state.annuity_overpayment_old_credit = state.annuity_debt_plus_interest_old_credit - state.old_debt;
+
+        // Формирую график платежей
+        let obj_payment = {};
+        let main_debt = state.old_debt;
+
+        for (let i = 1; i <= state.credit_old_time; i++) {
+          const monthly_interest_payment = main_debt * old_rate;
+          const principal_payment = parseFloat(annuity_monthly_payment_old_credid) - monthly_interest_payment;
+          main_debt = main_debt - principal_payment;
+
+          obj_payment.payment = parseFloat(annuity_monthly_payment_old_credid);
+          obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2));
+          obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2));
+          obj_payment.remainder = parseFloat(main_debt.toFixed(2));
+          obj_payment.month = state.dateArray[i];
+          state.payment_annuity_list.push(obj_payment);
+          obj_payment = {};
+        }
+
+        // ПСК
+        for (let i = 0; i < month_array.length; i++) {
+          const dateArrayPskObj = {};
+          if (i === 0) {
+            dateArrayPskObj.data = new Date(month_year[i] + '-' + month_array[i] + '-' + state.start_payment[1]);
+            dateArrayPskObj.payment = -state.old_debt;
+          } else {
+            dateArrayPskObj.data = new Date(month_year[i] + '-' + month_array[i] + '-' + state.start_payment[1]);
+            dateArrayPskObj.payment = state.annuity_monthly_payment_old_credid;
+          }
+          state.dateArrayPsk.push(dateArrayPskObj);
+        }
+
+        // входящие данные - даты платежей
+        var dates = [];
+        var sum = [];
+        for (let i = 0; i < state.dateArrayPsk.length; i++) {
+          dates.push(state.dateArrayPsk[i].data);
+          sum.push(state.dateArrayPsk[i].payment);
+        }
+
+        var m = dates.length;
+        let bp = 30;
+        var cbp = Math.round(365 / bp);
+
+        var days = [];
+        for (let k = 0; k < m; k++) {
+          days[k] = (dates[k] - dates[0]) / (24 * 60 * 60 * 1000);
+        }
+
+        var e = [];
+        var q = [];
+        for (let k = 0; k < m; k++) {
+          e[k] = (days[k] % bp) / bp;
+          q[k] = Math.floor(days[k] / bp);
+        }
+
+        var i = 0;
+        var x = 1;
+        var x_m = 0;
+        var s = 0.000001;
+        while (x > 0) {
+          x_m = x;
+          x = 0;
+          for (let k = 0; k < m; k++) {
+            x = x + sum[k] / ((1 + e[k] * i) * Math.pow(1 + i, q[k]));
+          }
+          i = i + s;
+        }
+        if (x > x_m) {
+          i = i - s;
+        }
+
+        state.psk = Math.floor(i * cbp * 100 * 1000) / 1000;
+
+        setTimeout(() => {
+          state.final_window = false;
+        }, 300);
+
+      }, 150); // Задержка 150ms - можно настроить
+    },
+
+  },
+  actions:{
+
+    //Вызов закрытие модального окна !!
+    ActionModal({commit,state},param){
+      commit('mutationModal',param)
+    },
+
+    ActionFinalWindow({commit,state},param){
+      commit('mutationFinalWindow',param)
+    },
+
+    //Старый кредит
+
+    ActionDebtOldCredit({commit,state},param){
+      commit('mutationDebtOldCredit',param)
+      commit('mutationCalculateOldCredit');
+
+    },
+
+    //вызывается, когда вбивается процентная ставка в старом кредите
+    ActionRateOldCredit({commit,state},param){
+      commit('mutationRateOldCredit',param)
+      commit('mutationCalculateOldCredit');
+    },
+
+    //вызывается, когда вбивается срок кредита в старом кредите
+    ActionTimeOldCredit({commit,state},param){
+      commit('mutationTimeOldCredit',param)
+      commit('mutationCalculateOldCredit');
+    },
+
+    //дата начала выплат
+    ActionStartPayment({ commit, state }, param) {
+      commit('mutationStartPayment', param);
+      // commit('mutationCalculateOldCredit');
+    },
+
+    //тип периода год-месяц
+    ActionTypePeriodOldCredit({commit,state},param){
+      commit('mutationTypePeriodOldCredit',param)
+    },
+  },
+});
