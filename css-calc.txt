@@ -1,11 +1,17 @@
-for (let i = 0; i < month_array.length; i++) {
-          const dateArrayPskObj = {};
-          if (i === 0) {
-            dateArrayPskObj.data = new Date(month_year[i] + '-' + month_array[i] + '-' + state.start_payment[1]);
-            dateArrayPskObj.payment = -state.old_debt;
-          } else {
-            dateArrayPskObj.data = new Date(month_year[i] + '-' + month_array[i] + '-' + state.start_payment[1]);
-            dateArrayPskObj.payment = state.annuity_monthly_payment_old_credid;
-          }
-          state.dateArrayPsk.push(dateArrayPskObj);
-        }
+// CreditCalculator.vue
+import { onBeforeUnmount } from 'vue';
+import { useStore } from 'vuex';
+
+export default {
+  setup() {
+    const store = useStore();
+    
+    onBeforeUnmount(() => {
+      if (store.state.calculateTimeout) {
+        clearTimeout(store.state.calculateTimeout);
+      }
+    });
+    
+    return { store };
+  }
+};
