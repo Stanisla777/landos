@@ -1,534 +1,194 @@
-/* eslint-disable */
-import { createStore } from 'vuex';
+mutationCalculateOldCredit(state){
+  state.arr_data_small_debt = []
+  state.annuity_monthly_payment_old_credid = 0
+  state.differentiated_monthly_payment = []
+  state.annuity_debt_plus_interest_old_credit = 0
+  state.annuity_overpayment_old_credit = 0
+  state.payment_annuity_list = []
+  state.payment_differentiated_list = []
+  state.dateArray = []
+  
+  // рассчитываю платежи
+  const old_rate = (state.old_rate / 12) / 100
+  
+  // формирую даты
+  const month_array = []
+  const month_year = []
+  var amountOfDatesFromPast = state.credit_old_time
+  
+  for (var i = 0; i < amountOfDatesFromPast; i++){
+    var dateObj = new Date()
+    dateObj.setMonth(dateObj.getMonth() + i)
+    var month = dateObj.getUTCMonth() + 1
+    month_array.push(month)
+    var year = dateObj.getUTCFullYear()
+    month_year.push(year)
+  }
+  
+  for(let i=0; i<month_array.length; i++){
+    if(month_array[i] === month_array[i+1]){
+      month_array[i] = month_array[i] - 1
+    }
+  }
+  for(let i=0; i<month_array.length; i++){
+    month_array[i] === 1 ? month_array[i] = 'Январь' : month_array[i] === 2 ? month_array[i] = 'Февраль' : month_array[i] === 3 ? month_array[i] = 'Март'
+      : month_array[i] === 4 ? month_array[i] = 'Апрель' : month_array[i] === 5 ? month_array[i] = 'Май' : month_array[i] === 6 ? month_array[i] = 'Июнь'
+        : month_array[i] === 7 ? month_array[i] = 'Июль' : month_array[i] === 8 ? month_array[i] = 'Август' : month_array[i] === 9 ? month_array[i] = 'Сентябрь'
+          : month_array[i] === 10 ? month_array[i] = 'Октябрь' : month_array[i] === 11 ? month_array[i] = 'Ноябрь' : month_array[i] = 'Декабрь'
+  }
+  for(let i=0; i<month_array.length; i++){
+    state.dateArray.push(month_array[i] + ' ' + month_year[i])
+  }
 
-export default createStore({
-  state:{
-    //Состояние кнопок нового кредита
-    button_state:{
-      parameter_debt:false,
-      parameter_rate:true,
-      parameter_time:false
-    },
-    //модальное окно
-    modal_state:false,
-    //остаток кредита
-    old_debt:0,
-    //тип периода
-    type_period_credit: {
-      old:'year',
-      new:'year'
-    },
-    old_rate:0,
-    credit_old_time:0,
-    annuity_monthly_payment_old_credid:0,
-    annuity_overpayment_old_credit:0,
-    annuity_debt_plus_interest_old_credit:0,
-    //----Новый кредит
-    //остаток кредита
-    new_debt:0,
-    new_rate:0,
-    credit_new_time:0,
-    annuity_monthly_payment_new_credid:0,
-    annuity_overpayment_new_credit:0,
-    annuity_debt_plus_interest_new_credit:0,
-    //переплата - экономия
-    savings_overpayment:0,
-    appartment_price:0,
-    initialfee:0, //первоначальный взнос
-    initialfee_show:'', //первоначальный взнос
-    maternal_capital_show:0,
-    personal_funds_show:0,
-    maternal_capital:0,
-    personal_funds:0,
-    interest_rate_show:0,
-    limit_init_fee:0,
-    limit_material_capital:0,
-    limit_mat_capital_law:0,
-    limit_personal_funds:0,
-    differentiated_monthly_payment:[0],
-    differentiated_overpayment:0,
-    differentiated_debt_plus_interest:0,
-    necessary_income:0,
-    payment_annuity_list:[],
-    payment_differentiated_list:[],
-    dateArray:[],
-    interest_filled:false,
-    term_filled:false,
-    checkbox_status:false,
-    share_percent_small_chart:0,
-    arr_data_small_debt:[],
-    type_payment:null
-  },
-  getters:{
-    //Состояние кнопок нового кредита
-    BUTTON_STATE(state){
-      return state.button_state
-    },
-    MODAL_STATE(state){
-      return state.modal_state
-    },
-    //  ежумесячный платёж старого кредита
-    ANNUITYMONTHLYPAYMENTOLDCREDIT(state){ //нужно
-      return state.annuity_monthly_payment_old_credid
-    },
-    //  переплата
-    ANNUITYOVERPAYMENTOLDCREDIT(state){ //нужно
-      return state.annuity_overpayment_old_credit
-    },
-    //Долг + проценты старого кредита
-    ANNUITYDEBTPLUSINTEREST(state){ //возможно нигде не выводится нужен только для расчётов
-      return state.annuity_debt_plus_interest_old_credit
-    },
-    //Новый кредит
-    //  ежумесячный платёж старого кредита
-    ANNUITYMONTHLYPAYMENTNEWCREDIT(state){ //нужно
-      return state.annuity_monthly_payment_new_credid
-    },
-    //  переплата
-    ANNUITYOVERPAYMENTNEWCREDIT(state){ //нужно
-      return state.annuity_overpayment_new_credit
-    },
-    //Данные при загрузке страницы для нового кредита на основе старого
-    OLDDEBTFORNEW(state){
-      return state.old_debt
-    },
-    OLDRATEFORNEW(state){
-      return state.old_rate
-    },
-    OLDTIMEFORNEW(state){
-      if(state.type_period_credit.old==='year'){
-        return state.credit_old_time/12
-      }
-      else if(state.type_period_credit.old==='month'){
-        return state.credit_old_time
-      }
-    },
-    TYPE_PERIOD_CREDITOLD(state){
-      return state.type_period_credit['old']
-    },
-    //Переплата - экономия
-    SAVINGS_OVERPAYMENT(state){
-      return state.savings_overpayment
-    },
-    SAVINGS_OVERPAYMENT_SHOW(state){
-      return state.savings_overpayment
-    },
-    ANNUITYDEBTPLUSINTERESTNEWCREDIT(state){
-      return state.annuity_debt_plus_interest_new_credit
-    },
-    //График платежей
-    //  массив для аннуетного графика платежей
-    PAYMENTLIST(state){
-      return state.payment_annuity_list
-    },
-    LOAN_AMOUNT(state){
-      return state.old_debt
-    },
-    APPARTMENT_PRICE(state){
-      return state.appartment_price
-    },
-    INITIALFEE(state){
-      return state.initialfee
-    },
-    INITIALFESHOW(state){
-      return state.initialfee_show
-    },
-    //нужен для ограничения вводимой максимальной суммы материнского капитала на основе того, что вбито в стоим. пер.вз., лич.сред.
-    LIMITMATERIALCAPITAL(state){
-      return state.limit_material_capital
-    },
-    //нужен для ограничения вводимой максимальной суммы материнского капитала на основе того, что вбито в стоим. пер.вз., лич.сред.
-    LIMITPERSONALFUNDS(state){
-      return state.limit_personal_funds
-    },
-    LIMITINITFEE(state){
-      return state.limit_init_fee
-    },
-    //  дифференциальный платёж
-    DIFFERENTIATEDPAYMENT(state){
-      return state.differentiated_monthly_payment
-    },
+  // === ИСПРАВЛЕННАЯ ФОРМУЛА АННУИТЕТА ===
+  let annuity_ratio
+  if (old_rate === 0) {
+    annuity_ratio = 1 / state.credit_old_time
+  } else {
+    annuity_ratio = old_rate / (1 - Math.pow(1 + old_rate, -state.credit_old_time))
+  }
+  
+  // Храним платёж с полной точностью для расчётов
+  const annuity_payment_full = state.old_debt * annuity_ratio
+  // Округляем только для отображения
+  const annuity_monthly_payment_old_credid = parseFloat(annuity_payment_full.toFixed(2))
+  
+  state.annuity_monthly_payment_old_credid = annuity_monthly_payment_old_credid
+  state.annuity_debt_plus_interest_old_credit = annuity_monthly_payment_old_credid * state.credit_old_time
+  state.annuity_overpayment_old_credit = state.annuity_debt_plus_interest_old_credit - state.old_debt
 
-    //  необходимый доход
-    NECESSARYINCOME(state){
-      return state.necessary_income
-    },
-    //  массив для дифференцируемого графика платежей
-    DIFFERENTIATEDPAYMENTLIST(state){
-      return state.payment_differentiated_list
-    },
+  // === ФОРМИРОВАНИЕ ГРАФИКА С ЗАЩИТОЙ ===
+  let obj_payment = {}
+  let main_debt = state.old_debt // работаем с полной точностью
 
-    //статус запоненности поля проценты
-    INTERESTFILLED(state){
-      return state.interest_filled
-    },
-    //статус запоненности поля срок
-    TERMFILLED(state){
-      return state.term_filled
-    },
-    //  материнский капитал с подставленным рублём и потредактированное
-    MATERNALCAPITALSHOW(state){
-      return state.maternal_capital_show
-    },
-    //  личные средства с подставленным рублём и потредактированное
-    PERSONALFUNDSHOW(state){
-      return state.personal_funds_show
-    },
-    //  проценты с подставленным рублём и потредактированное
-    INTERESTRATESHOW(state){
-      return state.interest_rate_show
-    },
+  for(let i = 0; i <= state.credit_old_time - 1; i++){
+    // Если долг уже погашен — завершаем график
+    if (main_debt <= 0.005) {
+      break
+    }
+    
+    const monthly_interest_payment = main_debt * old_rate
+    let principal_payment = annuity_payment_full - monthly_interest_payment // полная точность
+    
+    // === КЛЮЧЕВАЯ ПРОВЕРКА: не позволяем погасить больше, чем осталось ===
+    let isLastPayment = false
+    if (principal_payment > main_debt) {
+      principal_payment = main_debt
+      isLastPayment = true
+    }
+    
+    main_debt = main_debt - principal_payment
+    
+    // === Пересчитываем общий платёж для последнего месяца ===
+    const payment_amount = isLastPayment 
+      ? principal_payment + monthly_interest_payment 
+      : annuity_monthly_payment_old_credid
+    
+    obj_payment.payment = parseFloat(payment_amount.toFixed(2))
+    obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2))
+    obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2))
+    obj_payment.remainder = parseFloat(main_debt.toFixed(2))
+    obj_payment.month = state.dateArray[i]
+    
+    state.payment_annuity_list.push(obj_payment)
+    obj_payment = {}
+  }
+  
+  // расчитываю переплату или экономию
+  state.savings_overpayment = state.annuity_overpayment_old_credit - state.annuity_overpayment_new_credit
+},
 
-    //  доля процентов для маленькой диаграммы
-    SHAREPERCENTSMALLCHART(state){
-      return state.share_percent_small_chart
-    },
-    // для маленького графика данные долей основного долга и начисленных процентов
-    ARRDATASMALLDEBT(state){
-      return state.arr_data_small_debt
-    },
-    TYPEPAYMENT(state){
-      return state.type_payment
-    },
-  },
-  mutations:{
-    //Смена статуса параметров рефинансирования
-    mutationStateChange(state,received_perem){
-      if(state.button_state[received_perem]===false){
-        state.button_state[received_perem] = true;
-      }
-      else {
-        state.button_state[received_perem] = false;
+--------------------------------------
 
-        if (received_perem === 'parameter_debt') {
-          state.new_debt = state.old_debt;
-          this.dispatch('ActionCalc');
-        }
-        if (received_perem === 'parameter_rate') {
-          state.new_rate = state.old_rate;
-          this.dispatch('ActionCalc');
-        }
-        if (received_perem === 'parameter_time') {
-          state.credit_new_time = state.credit_old_time;
-          this.dispatch('ActionCalc');
-        }
-      }
-    },
-    //Открытие - закрытие модального окна
-    mutationModal(state,received_perem){
-      state.modal_state=received_perem
-    },
-    //-----Старый кредит
-    //Остаток долга
-    mutationDebtOldCredit(state,received_perem){
-      state.old_debt = received_perem
-      //в том случае, когда скрываем новый остаток для нового кредита
-      if(state.button_state.parameter_debt===false){
-        state.new_debt = received_perem
-        this.dispatch('ActionCalc');
-      }
-    },
-    mutationRateOldCredit(state,received_perem){
-      state.old_rate = received_perem
-      //в том случае, когда скрываем новую ставку для нового кредита
-      if(state.button_state.parameter_rate===false){
-        state.new_rate = received_perem
-        this.dispatch('ActionCalc');
-      }
-    },
-    mutationTimeOldCredit(state,received_perem){
-      if(state.type_period_credit.old==='year'){
-        state.credit_old_time = parseInt(received_perem) * 12
+mutationCalculateNewCredit(state){
+  state.arr_data_small_debt = []
+  state.annuity_monthly_payment_new_credid = 0
+  state.differentiated_monthly_payment = []
+  state.annuity_debt_plus_interest_new_credit = 0
+  state.annuity_overpayment_new_credit = 0
+  state.payment_annuity_list = []
+  state.payment_differentiated_list = []
+  state.dateArray = []
 
-        if(state.button_state.parameter_time===false){
-          state.credit_new_time = parseInt(received_perem) * 12
-          this.dispatch('ActionCalc');
-        }
-      }
-      else if(state.type_period_credit.old==='month'){
-        state.credit_old_time = parseInt(received_perem)
-        if(state.button_state.parameter_time===false){
-          state.credit_new_time = parseInt(received_perem)
-          this.dispatch('ActionCalc');
-        }
-      }
-    },
-    //тип периода старого кредита
-    mutationTypePeriodOldCredit(state,received_perem){
-      state.type_period_credit.old = received_perem;
-    },
-    //   рассчёт платежей
-    mutationCalculateOldCredit(state){
-      state.arr_data_small_debt=[]
-      state.annuity_monthly_payment_old_credid=0
-      state.differentiated_monthly_payment=[]
-      state.annuity_debt_plus_interest_old_credit=0
-      state.annuity_overpayment_old_credit=0
-      state.payment_annuity_list=[]
-      state.payment_differentiated_list=[]
-      state.dateArray=[]
-      //рассчитываю платежи
-      const old_rate = (state.old_rate / 12)/100
-      //формирую даты
-      const month_array = []
-      const month_year = []
-      var amountOfDatesFromPast = state.credit_old_time;
-      for (var i = 0; i < amountOfDatesFromPast; i++){
-        var dateObj = new Date();
-        dateObj.setMonth(dateObj.getMonth() + i);
-        var month = dateObj.getUTCMonth() + 1; //months from 1-12
-        month_array.push(month)
-        var year = dateObj.getUTCFullYear();
-        month_year.push(year)
+  // рассчитываю платежи
+  const new_rate = (state.new_rate / 12) / 100
 
-      }
-      for(let i=0;i<month_array.length;i++){
-        if(month_array[i]===month_array[i+1]){
-          month_array[i]=month_array[i]-1
-        }
-      }
-      for(let i=0;i<month_array.length;i++){
-        month_array[i]===1?month_array[i]='Январь':month_array[i]===2?month_array[i]='Февраль':month_array[i]===3?month_array[i]='Март'
-          :month_array[i]===4?month_array[i]='Апрель':month_array[i]===5?month_array[i]='Май':month_array[i]===6?month_array[i]='Июнь'
-            :month_array[i]===7?month_array[i]='Июль':month_array[i]===8?month_array[i]='Август':month_array[i]===9?month_array[i]='Сентябрь'
-              :month_array[i]===10?month_array[i]='Октябрь':month_array[i]===11?month_array[i]='Ноябрь':month_array[i]='Декабрь'
-      }
-      for(let i=0;i<month_array.length;i++){
-        state.dateArray.push(month_array[i]+' ' +month_year[i])
-      }
+  // формирую даты
+  const month_array = []
+  const month_year = []
+  var amountOfDatesFromPast = state.credit_new_time
 
-      // debugger
+  for (var i = 0; i < amountOfDatesFromPast; i++){
+    var dateObj = new Date()
+    dateObj.setMonth(dateObj.getMonth() + i)
+    var month = dateObj.getUTCMonth() + 1
+    month_array.push(month)
+    var year = dateObj.getUTCFullYear()
+    month_year.push(year)
+  }
+  
+  for(let i=0; i<month_array.length; i++){
+    if(month_array[i] === month_array[i+1]){
+      month_array[i] = month_array[i] - 1
+    }
+  }
+  for(let i=0; i<month_array.length; i++){
+    month_array[i] === 1 ? month_array[i] = 'Январь' : month_array[i] === 2 ? month_array[i] = 'Февраль' : month_array[i] === 3 ? month_array[i] = 'Март'
+      : month_array[i] === 4 ? month_array[i] = 'Апрель' : month_array[i] === 5 ? month_array[i] = 'Май' : month_array[i] === 6 ? month_array[i] = 'Июнь'
+        : month_array[i] === 7 ? month_array[i] = 'Июль' : month_array[i] === 8 ? month_array[i] = 'Август' : month_array[i] === 9 ? month_array[i] = 'Сентябрь'
+          : month_array[i] === 10 ? month_array[i] = 'Октябрь' : month_array[i] === 11 ? month_array[i] = 'Ноябрь' : month_array[i] = 'Декабрь'
+  }
+  for(let i=0; i<month_array.length; i++){
+    state.dateArray.push(month_array[i] + ' ' + month_year[i])
+  }
 
-      const annuity_ratio = old_rate * ((1 + old_rate)**state.credit_old_time) / (((1 + old_rate)**state.credit_old_time)-1)
-      // debugger
-      const annuity_monthly_payment_old_credid = (state.old_debt * annuity_ratio).toFixed(2)
-      //ежемесячный платёж
-      state.annuity_monthly_payment_old_credid = parseFloat(annuity_monthly_payment_old_credid)
-      //Долг + проценты
-      state.annuity_debt_plus_interest_old_credit = state.annuity_monthly_payment_old_credid * state.credit_old_time
-      //переплата по процентам
-      state.annuity_overpayment_old_credit = state.annuity_debt_plus_interest_old_credit - state.old_debt
+  // === ИСПРАВЛЕННАЯ ФОРМУЛА АННУИТЕТА ===
+  let annuity_ratio
+  if (new_rate === 0) {
+    annuity_ratio = 1 / state.credit_new_time
+  } else {
+    annuity_ratio = new_rate / (1 - Math.pow(1 + new_rate, -state.credit_new_time))
+  }
+  
+  const annuity_payment_full = state.new_debt * annuity_ratio
+  const annuity_monthly_payment_new_credid = parseFloat(annuity_payment_full.toFixed(2))
+  
+  state.annuity_monthly_payment_new_credid = annuity_monthly_payment_new_credid
+  state.annuity_debt_plus_interest_new_credit = annuity_monthly_payment_new_credid * state.credit_new_time
+  state.annuity_overpayment_new_credit = state.annuity_debt_plus_interest_new_credit - state.new_debt
+  
+  // === ФОРМИРОВАНИЕ ГРАФИКА С ЗАЩИТОЙ ===
+  let obj_payment = {}
+  let main_debt = state.new_debt
 
-      //Формирую график платежей
-      let obj_payment = {}
-      let main_debt = state.old_debt
-      for(let i=0;i<=state.credit_old_time-1;i++){
-        //ежемесячный платёж по процентам в определённом месяце = основной долг на тякущий месяц * на процентную ставку
-        const monthly_interest_payment = main_debt * old_rate
-        //платёж по основному долгу = ежемесячный платёж - ежемесячный платёж по процентам в определённом месяце
-        const principal_payment = parseFloat(annuity_monthly_payment_old_credid) - monthly_interest_payment
-        //остаток долга = основной долг на тякущий месяц - платёж по основному долгу на тякущий месяц
-        main_debt = main_debt - principal_payment
-
-        obj_payment.payment = parseFloat(annuity_monthly_payment_old_credid);
-        obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2));
-        obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2));
-        obj_payment.remainder = parseFloat(main_debt.toFixed(2));
-        obj_payment.month = state.dateArray[i];
-        state.payment_annuity_list.push(obj_payment);
-        obj_payment={}
-      }
-      //расчитываю переплату или экономию
-      state.savings_overpayment = state.annuity_overpayment_old_credit - state.annuity_overpayment_new_credit
-
-      // console.log(state.savings_overpayment);
-
-    },
-
-    //-------------------------НОВЫЙ КРЕДИТ--------------------------------
-
-    //Остаток долга
-    mutationDebtNewCredit(state,received_perem){
-      state.new_debt = received_perem
-
-    },
-
-    mutationRateNewCredit(state,received_perem){
-      state.new_rate = received_perem
-    },
-    mutationTimeNewCredit(state,received_perem){
-      // console.log(received_perem);
-      if(state.type_period_credit.old==='year'){
-        state.credit_new_time = parseInt(received_perem) * 12
-      }
-      else if(state.type_period_credit.old==='month'){
-        state.credit_new_time = parseInt(received_perem)
-      }
-    },
-
-    //тип периода старого кредита
-    mutationTypePeriodNewCredit(state,received_perem){
-      state.type_period_credit.old = received_perem;
-    },
-
-    //   рассчёт платежей
-    mutationCalculateNewCredit(state){
-
-      state.arr_data_small_debt=[]
-      state.annuity_monthly_payment_new_credid=0
-      state.differentiated_monthly_payment=[]
-      state.annuity_debt_plus_interest_new_credit=0
-      state.annuity_overpayment_new_credit=0
-      state.payment_annuity_list=[]
-      state.payment_differentiated_list=[]
-      state.dateArray=[]
-
-      //рассчитываю платежи
-      const new_rate = (state.new_rate / 12)/100
-
-      //формирую даты
-      const month_array = []
-      const month_year = []
-      var amountOfDatesFromPast = state.credit_new_time;
-
-      for (var i = 0; i < amountOfDatesFromPast; i++){
-        var dateObj = new Date();
-        dateObj.setMonth(dateObj.getMonth() + i);
-        var month = dateObj.getUTCMonth() + 1; //months from 1-12
-        month_array.push(month)
-        var year = dateObj.getUTCFullYear();
-        month_year.push(year)
-
-      }
-      for(let i=0;i<month_array.length;i++){
-        if(month_array[i]===month_array[i+1]){
-          month_array[i]=month_array[i]-1
-        }
-      }
-      for(let i=0;i<month_array.length;i++){
-        month_array[i]===1?month_array[i]='Январь':month_array[i]===2?month_array[i]='Февраль':month_array[i]===3?month_array[i]='Март'
-          :month_array[i]===4?month_array[i]='Апрель':month_array[i]===5?month_array[i]='Май':month_array[i]===6?month_array[i]='Июнь'
-            :month_array[i]===7?month_array[i]='Июль':month_array[i]===8?month_array[i]='Август':month_array[i]===9?month_array[i]='Сентябрь'
-              :month_array[i]===10?month_array[i]='Октябрь':month_array[i]===11?month_array[i]='Ноябрь':month_array[i]='Декабрь'
-      }
-      for(let i=0;i<month_array.length;i++){
-        state.dateArray.push(month_array[i]+' ' +month_year[i])
-      }
-
-      // debugger
-
-      const annuity_ratio = new_rate * ((1 + new_rate)**state.credit_new_time) / (((1 + new_rate)**state.credit_new_time)-1)
-      // debugger
-      const annuity_monthly_payment_new_credid = (state.new_debt * annuity_ratio).toFixed(2)
-      //ежемесячный платёж
-      state.annuity_monthly_payment_new_credid = parseFloat(annuity_monthly_payment_new_credid)
-      //Долг + проценты
-      state.annuity_debt_plus_interest_new_credit = state.annuity_monthly_payment_new_credid * state.credit_new_time
-      //переплата по процентам
-      state.annuity_overpayment_new_credit = state.annuity_debt_plus_interest_new_credit - state.new_debt
-      //Формирую график платежей
-      let obj_payment = {}
-      let main_debt = state.new_debt
-      for(let i=0;i<=state.credit_new_time-1;i++){
-        //ежемесячный платёж по процентам в определённом месяце = основной долг на тякущий месяц * на процентную ставку
-        const monthly_interest_payment = main_debt * new_rate
-        //платёж по основному долгу = ежемесячный платёж - ежемесячный платёж по процентам в определённом месяце
-        const principal_payment = parseFloat(annuity_monthly_payment_new_credid) - monthly_interest_payment
-        //остаток долга = основной долг на тякущий месяц - платёж по основному долгу на тякущий месяц
-        main_debt = main_debt - principal_payment
-
-        obj_payment.payment = parseFloat(annuity_monthly_payment_new_credid);
-        obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2));
-        obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2));
-        obj_payment.remainder = parseFloat(main_debt.toFixed(2));
-        obj_payment.month = state.dateArray[i];
-        state.payment_annuity_list.push(obj_payment);
-        obj_payment={}
-      }
-      //расчитываю переплату или экономию
-      state.savings_overpayment = state.annuity_overpayment_old_credit - state.annuity_overpayment_new_credit
-
-      // console.log(state.payment_annuity_list);
-
-    },
-    //Может пригодится, это условие заполенности
-    //  заполенность поля проценты
-    mutationInterestFilled(state,received_perem){
-      state.interest_filled = received_perem
-    },
-
-    //  заполенность поля проценты
-    mutationTermFilled(state,received_perem){
-      state.term_filled = received_perem
-    },
-    //  в переменную записал ограничение по мат.капиталу
-    mutationLimitMaternityCapital(state,received_perem){
-      state.limit_mat_capital_law = received_perem
-    },
-  },
-  actions:{
-    //Смена статуса параметров рефинансирования
-    ActionStateChange({commit,state},param){
-      commit('mutationStateChange',param)
-    },
-
-    //Вызов закрытие модального окна !!!!!!!!!!Нужно будет обратно поменять!!!!!!!!!
-    ActionModal({commit,state},param){
-      commit('mutationModal',param)
-    },
-
-
-
-
-
-    //Старый кредит
-
-    ActionDebtOldCredit({commit,state},param){
-      commit('mutationDebtOldCredit',param)
-      commit('mutationCalculateOldCredit')
-
-    },
-
-    //вызывается, когда вбивается процентная ставка в старом кредите
-    ActionRateOldCredit({commit,state},param){
-      commit('mutationRateOldCredit',param)
-      commit('mutationCalculateOldCredit')
-    },
-
-    //вызывается, когда вбивается срок кредита в старом кредите
-    ActionTimeOldCredit({commit,state},param){
-      commit('mutationTimeOldCredit',param)
-      commit('mutationCalculateOldCredit')
-    },
-
-    //тип периода год-месяц
-    ActionTypePeriodOldCredit({commit,state},param){
-      commit('mutationTypePeriodOldCredit',param)
-    },
-
-
-
-    //  Новый кредит
-
-    ActionDebtNewCredit({commit,state},param){
-      commit('mutationDebtNewCredit',param)
-      commit('mutationCalculateNewCredit')
-    },
-
-    //вызывается, когда вбивается процентная ставка в старом кредите
-    ActionRateNewCredit({commit,state},param){
-
-      commit('mutationRateNewCredit',param)
-      commit('mutationCalculateNewCredit')
-    },
-
-    //вызывается, когда вбивается срок кредита в старом кредите
-    ActionTimeNewCredit({commit,state},param){
-      commit('mutationTimeNewCredit',param)
-      commit('mutationCalculateNewCredit')
-    },
-
-    //тип периода год-месяц
-    ActionTypePeriodNewCredit({commit,state},param){
-      commit('mutationTypePeriodNewCredit',param)
-    },
-
-
-    ActionCalc({commit,state},param){
-      commit('mutationCalculateNewCredit')
-    },
-
-
-
-  },
-});
+  for(let i = 0; i <= state.credit_new_time - 1; i++){
+    if (main_debt <= 0.005) break
+    
+    const monthly_interest_payment = main_debt * new_rate
+    let principal_payment = annuity_payment_full - monthly_interest_payment
+    
+    let isLastPayment = false
+    if (principal_payment > main_debt) {
+      principal_payment = main_debt
+      isLastPayment = true
+    }
+    
+    main_debt = main_debt - principal_payment
+    
+    const payment_amount = isLastPayment 
+      ? principal_payment + monthly_interest_payment 
+      : annuity_monthly_payment_new_credid
+    
+    obj_payment.payment = parseFloat(payment_amount.toFixed(2))
+    obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2))
+    obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2))
+    obj_payment.remainder = parseFloat(main_debt.toFixed(2))
+    obj_payment.month = state.dateArray[i]
+    
+    state.payment_annuity_list.push(obj_payment)
+    obj_payment = {}
+  }
+  
+  // расчитываю переплату или экономию
+  state.savings_overpayment = state.annuity_overpayment_old_credit - state.annuity_overpayment_new_credit
+},
