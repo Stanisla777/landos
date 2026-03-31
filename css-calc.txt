@@ -1,499 +1,164 @@
-/* eslint-disable */
-import { createStore } from 'vuex';
+mutationCalculate(state){
+  state.arr_data_small_debt = []
+  state.annuity_monthly_payment = 0
+  state.differentiated_monthly_payment = []
+  state.annuity_debt_plus_interest = 0
+  state.annuity_overpayment = 0
+  state.payment_annuity_list = []
+  state.payment_differentiated_list = []
+  state.dateArray = []
 
-export default createStore({
-  state:{
-    appartment_price:0,
-    initialfee:0, //первоначальный взнос
-    initialfee_show:'', //первоначальный взнос
-    maternal_capital_show:0,
-    personal_funds_show:0,
+  // рассчитываю платежи
+  const interest_rate = (state.interest_rate / 12) / 100
+  
+  // формирую даты
+  const month_array = []
+  const month_year = []
+  var amountOfDatesFromPast = state.credit_time
+  
+  for (var i = 0; i < amountOfDatesFromPast; i++){
+    var dateObj = new Date()
+    dateObj.setMonth(dateObj.getMonth() + i)
+    var month = dateObj.getUTCMonth() + 1
+    month_array.push(month)
+    var year = dateObj.getUTCFullYear()
+    month_year.push(year)
+  }
+  
+  for(let i=0; i<month_array.length; i++){
+    if(month_array[i] === month_array[i+1]){
+      month_array[i] = month_array[i] - 1
+    }
+  }
+  for(let i=0; i<month_array.length; i++){
+    month_array[i] === 1 ? month_array[i] = 'Январь' : month_array[i] === 2 ? month_array[i] = 'Февраль' : month_array[i] === 3 ? month_array[i] = 'Март'
+      : month_array[i] === 4 ? month_array[i] = 'Апрель' : month_array[i] === 5 ? month_array[i] = 'Май' : month_array[i] === 6 ? month_array[i] = 'Июнь'
+        : month_array[i] === 7 ? month_array[i] = 'Июль' : month_array[i] === 8 ? month_array[i] = 'Август' : month_array[i] === 9 ? month_array[i] = 'Сентябрь'
+          : month_array[i] === 10 ? month_array[i] = 'Октябрь' : month_array[i] === 11 ? month_array[i] = 'Ноябрь' : month_array[i] = 'Декабрь'
+  }
+  for(let i=0; i<month_array.length; i++){
+    state.dateArray.push(month_array[i] + ' ' + month_year[i])
+  }
 
-    maternal_capital:0,
-    personal_funds:0,
-
-    interest_rate:0,
-    interest_rate_show:0,
-    loan_amount:0,
-    credit_time:0,
-    type_period_credit:'year',
-    limit_init_fee:0,
-    limit_material_capital:0,
-    limit_mat_capital_law:0,
-    limit_personal_funds:0,
-
-    annuity_monthly_payment:0,
-    annuity_overpayment:0,
-    annuity_debt_plus_interest:0,
-
-    differentiated_monthly_payment:[0],
-    differentiated_overpayment:0,
-    differentiated_debt_plus_interest:0,
-    necessary_income:0,
-
-    payment_annuity_list:[],
-    payment_differentiated_list:[],
-
-    dateArray:[],
-
-    interest_filled:true,
-    term_filled:true,
-
-    checkbox_status:false,
-
-    share_percent_small_chart:0,
-    arr_data_small_debt:[],
-    type_payment:null,
-    type_credit:'ann',
-    //модальное окно
-    modal_state:false,
-  },
-  getters:{
-    LOAN_AMOUNT(state){
-      return state.loan_amount
-    },
-    APPARTMENT_PRICE(state){
-      return state.appartment_price
-    },
-    INITIALFEE(state){
-      return state.initialfee
-    },
-    INITIALFESHOW(state){
-      return state.initialfee_show
-    },
-
-    //нужен для ограничения вводимой максимальной суммы материнского капитала на основе того, что вбито в стоим. пер.вз., лич.сред.
-    LIMITMATERIALCAPITAL(state){
-      return state.limit_material_capital
-    },
-    //нужен для ограничения вводимой максимальной суммы материнского капитала на основе того, что вбито в стоим. пер.вз., лич.сред.
-    LIMITPERSONALFUNDS(state){
-      return state.limit_personal_funds
-    },
-    LIMITINITFEE(state){
-      return state.limit_init_fee
-    },
-
-    //  аннуетный платёж
-    ANNUITYMONTHLYPAYMENT(state){
-      return state.annuity_monthly_payment
-    },
-
-    //  переплата
-    ANNUITYOVERPAYMENT(state){
-      return state.annuity_overpayment
-    },
-
-    //Долг + проценты
-    ANNUITYDEBTPLUSINTEREST(state){
-      return state.annuity_debt_plus_interest
-    },
-
-    //  дифференциальный платёж
-    DIFFERENTIATEDPAYMENT(state){
-      return state.differentiated_monthly_payment
-    },
-
-    //  необходимый доход
-    NECESSARYINCOME(state){
-      return state.necessary_income
-    },
-
-    //  массив для аннуетного графика платежей
-    ANNUITYPAYMENTLIST(state){
-      return state.payment_annuity_list
-    },
-
-    //  массив для дифференцируемого графика платежей
-    DIFFERENTIATEDPAYMENTLIST(state){
-      return state.payment_differentiated_list
-    },
-
-    //статус запоненности поля проценты
-    INTERESTFILLED(state){
-      return state.interest_filled
-    },
-    //статус запоненности поля срок
-    TERMFILLED(state){
-      return state.term_filled
-    },
-
-    //  материнский капитал с подставленным рублём и потредактированное
-    MATERNALCAPITALSHOW(state){
-      return state.maternal_capital_show
-    },
-
-    //  личные средства с подставленным рублём и потредактированное
-    PERSONALFUNDSHOW(state){
-      return state.personal_funds_show
-    },
-    //  проценты с подставленным рублём и потредактированное
-    INTERESTRATESHOW(state){
-      return state.interest_rate_show
-    },
-
-    //  доля процентов для маленькой диаграммы
-    SHAREPERCENTSMALLCHART(state){
-      return state.share_percent_small_chart
-    },
-    // для маленького графика данные долей основного долга и начисленных процентов
-    ARRDATASMALLDEBT(state){
-      return state.arr_data_small_debt
-    },
-    TYPEPAYMENT(state){
-      return state.type_payment
-    },
-    TYPECREDIT(state){
-      return state.type_credit
-    },
-
-    CHECKBOXSTATUS(state){
-      return state.checkbox_status
-    },
-    MODAL_STATE(state){
-      return state.modal_state
-    },
-  },
-  mutations:{
-    mutationPriceAppartment(state,received_perem){
-      if (received_perem == NaN || received_perem == '') {
-        state.appartment_price = 0;
-      }
-      else {
-        state.appartment_price = parseInt(received_perem)
-      }
-      if(state.appartment_price==NaN){
-        state.appartment_price=0
-      }
-      if(state.appartment_price<state.initialfee){
-        state.initialfee=state.appartment_price
-        state.initialfee_show = state.initialfee
-        state.personal_funds = state.initialfee
-        state.personal_funds_show = state.personal_funds
-        if(state.maternal_capital>=state.appartment_price){
-          state.maternal_capital=state.appartment_price
-          state.maternal_capital_show = state.maternal_capital
-          state.personal_funds = 0
-          state.personal_funds_show = state.personal_funds + ' ₽'
-        }
-      }
-    },
-    mutationInitialFee(state, received_perem) {
-      state.initialfee = parseInt(received_perem);
-      if (received_perem == NaN || received_perem == '') {
-        state.initialfee = 0;
-      }
-      else {
-        state.initialfee_show = received_perem
-      }
-    },
-    mutationInterestRate(state,received_perem){
-      state.interest_rate = parseFloat(received_perem)
-      state.interest_rate_show = parseFloat(received_perem)
-    },
-    mutationMaternalCapital(state,received_perem){
-      state.maternal_capital = parseInt(received_perem)
-      if(received_perem==NaN||received_perem==''){
-        state.maternal_capital=0
-      }
-      state.initialfee = state.maternal_capital + state.personal_funds
-      if(state.initialfee>state.apartment_price){
-        state.initialfee=state.apartment_price
-      }
-      state.initialfee_show = state.initialfee.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ') + ' ₽'
-    },
-    mutationPersonalFunds(state,received_perem){
-      state.personal_funds = parseInt(received_perem)
-      if(received_perem==NaN||received_perem==''){
-        state.personal_funds=0
-      }
-      state.initialfee = state.maternal_capital + state.personal_funds
-      state.initialfee_show = state.initialfee.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ') + ' ₽'
-
-    },
-    //  рассчитывается материнский капитал и личные средства на основе вбитого первоночального взноса ПВ / 2
-    mutationMaternalCapitalCalculation(state,received_perem){
-      state.personal_funds = Math.floor(state.initialfee - state.maternal_capital)
-      state.maternal_capital = 0
-      state.maternal_capital_show = state.maternal_capital.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ') + ' ₽'
-      state.personal_funds_show = state.personal_funds.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ') + ' ₽'
-      state.checkbox_status=received_perem
-      state.initialfee_show = state.initialfee.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ') + ' ₽'
-      state.limit_material_capital = state.appartment_price - state.personal_funds
-      state.limit_personal_funds = state.appartment_price - state.maternal_capital
-    },
-
-    //тип периода  кредита
-    mutationTypePeriodCredit(state,received_perem){
-      state.type_period_credit=received_perem
-    },
-
-    mutationCreditTime(state,received_perem){
-      state.credit_time = parseInt(received_perem)
-      if(state.type_period_credit==='year'){
-        state.credit_time = (parseInt(received_perem) * 12)
-      }
-      else if(state.type_period_credit==='month'){
-        state.credit_time = parseInt(received_perem)
-      }
-    },
-    mutationLoanAmount(state,received_perem){
-      // state.loan_amount = state.appartment_price - state.initialfee - state.maternal_capital - state.personal_funds
-      state.loan_amount = state.appartment_price - state.initialfee
-    },
-    //нужен для ограничения вводимой максимальной суммы материнского капитала на основе того, что вбито в стоим. пер.вз., лич.сред.
-    mutationLimitationMaternityCapital(state,received_perem){
-      state.limit_material_capital = state.appartment_price - state.personal_funds
-    },
-    //нужен для ограничения вводимой максимальной суммы персональных данных на основе того, что вбито в стоим. пер.вз., мат.кап.
-    mutationLimitationPersonalFunds(state,received_perem){
-      state.limit_personal_funds = state.appartment_price - state.maternal_capital
-    },
-    //нужен для ограничения вводимой максимальной суммы пер.вз на основе того, что вбито в стоим. материнского капитала, лич.сред.
-    mutationmutationLimitationInitialFee(state){
-      // state.limit_init_fee = state.appartment_price - state.maternal_capital - state.personal_funds
-      state.limit_init_fee = state.appartment_price
-    },
-    //   рассчёт платежей
-    mutationCalculate(state){
-      state.arr_data_small_debt=[]
-      state.annuity_monthly_payment=0
-      state.differentiated_monthly_payment=[]
-      state.annuity_debt_plus_interest=0
-      state.annuity_overpayment=0
-      state.payment_annuity_list=[]
-      state.payment_differentiated_list=[]
-      state.dateArray=[]
-
-      //рассчитываю платежи
-      const interest_rate = (state.interest_rate / 12)/100
-      //формирую даты
-      const month_array = []
-      const month_year = []
-      var amountOfDatesFromPast = state.credit_time;
-      for (var i = 0; i < amountOfDatesFromPast; i++){
-        var dateObj = new Date();
-        dateObj.setMonth(dateObj.getMonth() + i);
-        var month = dateObj.getUTCMonth() + 1; //months from 1-12
-        month_array.push(month)
-        var year = dateObj.getUTCFullYear();
-        month_year.push(year)
-      }
-      for(let i=0;i<month_array.length;i++){
-        if(month_array[i]===month_array[i+1]){
-          month_array[i]=month_array[i]-1
-        }
-      }
-      for(let i=0;i<month_array.length;i++){
-        month_array[i]===1?month_array[i]='Январь':month_array[i]===2?month_array[i]='Февраль':month_array[i]===3?month_array[i]='Март'
-          :month_array[i]===4?month_array[i]='Апрель':month_array[i]===5?month_array[i]='Май':month_array[i]===6?month_array[i]='Июнь'
-            :month_array[i]===7?month_array[i]='Июль':month_array[i]===8?month_array[i]='Август':month_array[i]===9?month_array[i]='Сентябрь'
-              :month_array[i]===10?month_array[i]='Октябрь':month_array[i]===11?month_array[i]='Ноябрь':month_array[i]='Декабрь'
-      }
-      for(let i=0;i<month_array.length;i++){
-        state.dateArray.push(month_array[i]+' ' +month_year[i])
-      }
-      //Если платёж аннутентный
-      if (state.type_credit==='ann'){
-        const annuity_ratio = interest_rate * ((1 + interest_rate)**state.credit_time) / (((1 + interest_rate)**state.credit_time)-1)
-        const annuity_monthly_payment = (state.loan_amount * annuity_ratio).toFixed(2)
-        state.annuity_monthly_payment = parseFloat(annuity_monthly_payment)
-        //Долг + проценты
-        state.annuity_debt_plus_interest = state.annuity_monthly_payment * state.credit_time
-        //переплата по процентам
-        state.annuity_overpayment = state.annuity_debt_plus_interest - state.loan_amount
-        //  обязательная зарплата
-        state.necessary_income = state.annuity_monthly_payment / 0.6
-        //Формирую график платежей
-        let obj_payment = {}
-        let main_debt = state.loan_amount
-        for(let i=0;i<=state.credit_time-1;i++){
-          //ежемесячный платёж по процентам в определённом месяце = основной долг на тякущий месяц * на процентную ставку
-          const monthly_interest_payment = main_debt * interest_rate
-          //платёж по основному долгу = ежемесячный платёж - ежемесячный платёж по процентам в определённом месяце
-          const principal_payment = parseFloat(annuity_monthly_payment) - monthly_interest_payment
-          //остаток долга = основной долг на тякущий месяц - платёж по основному долгу на тякущий месяц
-          main_debt = main_debt - principal_payment
-
-          obj_payment.payment = parseFloat(annuity_monthly_payment);
-          obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2));
-          obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2));
-          obj_payment.remainder = parseFloat(main_debt.toFixed(2));
-          obj_payment.month = state.dateArray[i];
-          state.payment_annuity_list.push(obj_payment);
-          obj_payment={}
-        }
-        //  Формирую долю начисленных процентов для маленькой диаграммы
-        //   state.share_percent_small_chart = ((state.annuity_overpayment * 100)/state.annuity_debt_plus_interest).toFixed(2)
-        //  Формирую долю начисленных процентов для маленькой диаграммы
-        state.share_percent_small_chart = ((state.annuity_overpayment * 100)/state.annuity_debt_plus_interest).toFixed(1)
-        state.arr_data_small_debt.push(state.annuity_overpayment)
-        state.arr_data_small_debt.push(state.appartment_price)
-        if(state.share_percent_small_chart=="NaN"){
-          state.share_percent_small_chart=0
-        }
-      }
-      //Если платёж дифееренциальный
-      if (state.type_credit=='def'){
-        let equal_payment = state.loan_amount / state.credit_time
-        for(let i=0;i<=state.credit_time-1;i++){
-          let interest = (state.loan_amount - equal_payment*i) * interest_rate
-          let main_debt = (state.loan_amount - equal_payment*i) / (state.credit_time - i)
-          const differentiated_monthly_payment = main_debt + interest
-          state.differentiated_monthly_payment.push(parseFloat(differentiated_monthly_payment.toFixed(2)))
-
-        }
-        //Долг + проценты
-        state.annuity_debt_plus_interest = state.differentiated_monthly_payment.reduce(function(a, b) { return parseFloat(a) + parseFloat(b); }, 0);
-        //переплата по процентам
-        state.annuity_overpayment = state.annuity_debt_plus_interest - state.loan_amount
-        //  обязательная зарплата, тут расчитывается от первого платежа
-        state.necessary_income = state.differentiated_monthly_payment[0] / 0.6
-
-        //Формирую график платежей
-        let obj_payment = {}
-        let main_debt = state.loan_amount
-        for(let i=0;i<=state.differentiated_monthly_payment.length-1;i++){
-          //ежемесячный платёж по процентам в определённом месяце = основной долг на тякущий месяц * на процентную ставку
-          const monthly_interest_payment = main_debt * interest_rate
-          //платёж по основному долгу = ежемесячный платёж - ежемесячный платёж по процентам в определённом месяце
-          const principal_payment = state.differentiated_monthly_payment[i] - monthly_interest_payment
-          //остаток долга = основной долг на тякущий месяц - платёж по основному долгу на тякущий месяц
-          main_debt = main_debt - principal_payment
-
-          obj_payment.payment = state.differentiated_monthly_payment[i];
-          obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2));
-          obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2));
-          obj_payment.remainder = parseFloat(main_debt.toFixed(2));
-          obj_payment.month = state.dateArray[i];
-          state.payment_differentiated_list.push(obj_payment);
-          obj_payment={}
-        }
-        //  Формирую долю начисленных процентов для маленькой диаграммы
-        state.share_percent_small_chart = ((state.annuity_overpayment * 100)/state.annuity_debt_plus_interest).toFixed(1)
-        state.arr_data_small_debt.push(state.annuity_overpayment)
-        state.arr_data_small_debt.push(state.appartment_price)
-        if(state.share_percent_small_chart=="NaN"){
-          state.share_percent_small_chart=0
-        }
-      }
-    },
-    //  заполенность поля проценты
-    mutationInterestFilled(state,received_perem){
-      state.interest_filled = received_perem
-    },
-    //  заполенность поля проценты
-    mutationTermFilled(state,received_perem){
-      state.term_filled = received_perem
-    },
-    //  в переменную записал ограничение по мат.капиталу
-    mutationLimitMaternityCapital(state,received_perem){
-      state.limit_mat_capital_law = received_perem
-    },
-    //  тип платежа
-    mutationTypeCredit(state,received_perem){
-      state.type_credit = received_perem
-    },
-    mutationModal(state,received_perem){
-      state.modal_state=received_perem
-    },
-  },
-  actions:{
-    ActionRealPriceAppartment({commit,state},param){
-      commit('mutationPriceAppartment',param)
-      //подсчитывается сумма кредита
-      commit('mutationLoanAmount')
-      //нужен для ограничения вводимой максимальной суммы пер.вз на основе того, что вбито в стоим. материнского капитала, лич.сред.
-      commit('mutationmutationLimitationInitialFee')
-      //нужен для ограничения вводимой максимальной суммы материнского капитала на основе того, что вбито в стоим. пер.вз., лич.сред.
-      commit('mutationLimitationMaternityCapital')
-      //нужен для ограничения вводимой максимальной суммы личного капитала на основе того, что вбито в стоим. пер.вз., мат.кап.
-      commit('mutationLimitationPersonalFunds')
-      commit('mutationCalculate')
-    },
-    //вызывается, когда меняется первоначальный взнос
-    ActionInitialFee({commit,state},param){
-      //формируется первоначальный взнос
-      commit('mutationInitialFee',param)
-      commit('mutationLoanAmount')
-      //нужен для ограничения вводимой максимальной суммы материнского капитала на основе того, что вбито в стоим. пер.вз., лич.сред.
-      commit('mutationLimitationMaternityCapital')
-      //нужен для ограничения вводимой максимальной суммы личного капитала на основе того, что вбито в стоим. пер.вз., мат.кап.
-      commit('mutationLimitationPersonalFunds')
-      commit('mutationCalculate')
-    },
-    //вызывается, когда вбивается мат.капитал
-    ActionMaternalCapital({commit,state},param){
-      commit('mutationMaternalCapital',param)
-      commit('mutationLoanAmount')
-      //нужен для ограничения вводимой максимальной суммы пер.вз на основе того, что вбито в стоим. материнского капитала, лич.сред.
-      commit('mutationmutationLimitationInitialFee')
-      //нужен для ограничения вводимой максимальной суммы личного капитала на основе того, что вбито в стоим. пер.вз., мат.кап.
-      commit('mutationLimitationPersonalFunds')
-      commit('mutationCalculate')
-    },
-    //вызывается, когда вбивается личные средства
-    ActionPersonalFunds({commit,state},param){
-      commit('mutationPersonalFunds',param)
-      //подсчитывается сумма кредита
-      commit('mutationLoanAmount')
-      //нужен для ограничения вводимой максимальной суммы пер.вз на основе того, что вбито в стоим. материнского капитала, лич.сред.
-      commit('mutationmutationLimitationInitialFee')
-      //нужен для ограничения вводимой максимальной суммы материнского капитала на основе того, что вбито в стоим. пер.вз., лич.сред.
-      commit('mutationLimitationMaternityCapital')
-      commit('mutationCalculate')
-    },
-    //вызывается, когда вбивается процентная ставка
-    ActionInterestRate({commit,state},param){
-      commit('mutationInterestRate',param)
-      commit('mutationCalculate')
-    },
-    //Выбирается когда выбирается тип срока
-    //тип периода год-месяц
-    ActionTypePeriodCredit({commit,state},param){
-      commit('mutationTypePeriodCredit',param)
-      commit('mutationCalculate')
-    },
-    //вызывается, когда вбивается срок кредита
-    ActionCreditTime({commit,state},param){
-      commit('mutationCreditTime',param)
-      commit('mutationCalculate')
-    },
+  // ==================== АННУИТЕТНЫЙ ПЛАТЁЖ ====================
+  if (state.type_credit === 'ann'){
+    // === ИСПРАВЛЕННАЯ ФОРМУЛА АННУИТЕТА ===
+    let annuity_ratio
+    if (interest_rate === 0) {
+      annuity_ratio = 1 / state.credit_time
+    } else {
+      annuity_ratio = interest_rate / (1 - Math.pow(1 + interest_rate, -state.credit_time))
+    }
     
-    //  вызывается, когда в поле проценты вбивается значение, это нужно для активности кнопки
-    ActionInterestFilled({commit,state},param){
-      commit('mutationInterestFilled',param)
-    },
+    const annuity_payment_full = state.loan_amount * annuity_ratio
+    const annuity_monthly_payment = parseFloat(annuity_payment_full.toFixed(2))
+    
+    state.annuity_monthly_payment = annuity_monthly_payment
+    state.annuity_debt_plus_interest = annuity_monthly_payment * state.credit_time
+    state.annuity_overpayment = state.annuity_debt_plus_interest - state.loan_amount
+    state.necessary_income = annuity_monthly_payment / 0.6
 
-    //  вызывается, когда в поле срок вбивается значение, это нужно для активности кнопки
-    ActionTermFilled({commit,state},param){
-      commit('mutationTermFilled',param)
-    },
+    // === ФОРМИРОВАНИЕ ГРАФИКА С ЗАЩИТОЙ ===
+    let obj_payment = {}
+    let main_debt = state.loan_amount // полная точность
 
-    //  вызывается когда меняется чекбокс
-    ActionMaternalCapitalCalculation({commit,state},param){
-      commit('mutationMaternalCapitalCalculation',param)
-      commit('mutationCalculate')
-    },
+    for(let i = 0; i <= state.credit_time - 1; i++){
+      if (main_debt <= 0.005) break
+      
+      const monthly_interest_payment = main_debt * interest_rate
+      let principal_payment = annuity_payment_full - monthly_interest_payment
+      
+      let isLastPayment = false
+      if (principal_payment > main_debt) {
+        principal_payment = main_debt
+        isLastPayment = true
+      }
+      
+      main_debt = main_debt - principal_payment
+      
+      const payment_amount = isLastPayment 
+        ? principal_payment + monthly_interest_payment 
+        : annuity_monthly_payment
+      
+      obj_payment.payment = parseFloat(payment_amount.toFixed(2))
+      obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2))
+      obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2))
+      obj_payment.remainder = parseFloat(main_debt.toFixed(2))
+      obj_payment.month = state.dateArray[i]
+      
+      state.payment_annuity_list.push(obj_payment)
+      obj_payment = {}
+    }
+    
+    state.share_percent_small_chart = ((state.annuity_overpayment * 100) / state.annuity_debt_plus_interest).toFixed(1)
+    state.arr_data_small_debt.push(state.annuity_overpayment)
+    state.arr_data_small_debt.push(state.appartment_price)
+    if(state.share_percent_small_chart == "NaN"){
+      state.share_percent_small_chart = 0
+    }
+  }
 
-    //  вызывается при загрузке страницы и передаётся ограничение по мат. капиталу
-    ActionLimitMaternityCapital({commit,state},param){
-      commit('mutationLimitMaternityCapital',param)
-    },
+  // ==================== ДИФФЕРЕНЦИРОВАННЫЙ ПЛАТЁЖ ====================
+  if (state.type_credit === 'def'){
+    // === ИСПРАВЛЕНИЕ: фиксируем equal_payment с полной точностью ===
+    const equal_payment_full = state.loan_amount / state.credit_time
+    
+    // Сначала считаем массив платежей для отображения
+    state.differentiated_monthly_payment = []
+    for(let i = 0; i <= state.credit_time - 1; i++){
+      const remaining_balance = state.loan_amount - equal_payment_full * i
+      const interest = remaining_balance * interest_rate
+      const principal = equal_payment_full
+      const payment = principal + interest
+      
+      state.differentiated_monthly_payment.push(parseFloat(payment.toFixed(2)))
+    }
 
-    //  Тип платежа
-    ActionTypeCredit({commit,state},param){
-      commit('mutationTypeCredit',param)
-      commit('mutationCalculate')
-    },
+    // Долг + проценты
+    state.annuity_debt_plus_interest = state.differentiated_monthly_payment.reduce((a, b) => parseFloat(a) + parseFloat(b), 0)
+    state.annuity_overpayment = state.annuity_debt_plus_interest - state.loan_amount
+    state.necessary_income = state.differentiated_monthly_payment[0] / 0.6
 
-    //вызывается, когда нажимается кнопка рассчитать
-    ActionCalculate({commit,state},param){
-      commit('mutationCalculate',param)
-    },
+    // === ФОРМИРОВАНИЕ ГРАФИКА С ЗАЩИТОЙ ===
+    let obj_payment = {}
+    let main_debt = state.loan_amount
 
-    ActionModal({commit,state},param){
-      commit('mutationModal',param)
-    },
-  },
-});
+    for(let i = 0; i <= state.differentiated_monthly_payment.length - 1; i++){
+      if (main_debt <= 0.005) break
+      
+      const monthly_interest_payment = main_debt * interest_rate
+      
+      // === КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: не позволяем погасить больше, чем осталось ===
+      let principal_payment = equal_payment_full
+      let isLastPayment = false
+      
+      if (principal_payment > main_debt) {
+        principal_payment = main_debt
+        isLastPayment = true
+      }
+      
+      main_debt = main_debt - principal_payment
+      
+      // Пересчитываем платёж для последнего месяца
+      const payment_amount = isLastPayment 
+        ? principal_payment + monthly_interest_payment 
+        : state.differentiated_monthly_payment[i]
+      
+      obj_payment.payment = parseFloat(payment_amount.toFixed(2))
+      obj_payment.principal_payment = parseFloat(principal_payment.toFixed(2))
+      obj_payment.monthly_interest_payment = parseFloat(monthly_interest_payment.toFixed(2))
+      obj_payment.remainder = parseFloat(main_debt.toFixed(2))
+      obj_payment.month = state.dateArray[i]
+      
+      state.payment_differentiated_list.push(obj_payment)
+      obj_payment = {}
+    }
+    
+    state.share_percent_small_chart = ((state.annuity_overpayment * 100) / state.annuity_debt_plus_interest).toFixed(1)
+    state.arr_data_small_debt.push(state.annuity_overpayment)
+    state.arr_data_small_debt.push(state.appartment_price)
+    if(state.share_percent_small_chart == "NaN"){
+      state.share_percent_small_chart = 0
+    }
+  }
+},
