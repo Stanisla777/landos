@@ -1,25 +1,63 @@
- isCalendarInitialized: false
-
 showCalendar(el){
   const element = el.currentTarget;
-  const calendarContainer = element.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc');
+  // ✅ Ищем контейнер календаря ВНУТРИ ближайшего .js--credit-calendar-input
+  const calendarContainer = element.closest('.js--credit-calendar-input')
+    .querySelector('.js__vanilla-calendar-calc');
   
-  // Показываем контейнер
   calendarContainer.classList.add('active');
   
-  // ✅ Инициализируем календарь ПОСЛЕ того, как DOM обновился
   this.$nextTick(() => {
     if (!this.isCalendarInitialized) {
-      // Первая инициализация
       this.initPluginCalendarVanilla();
       this.isCalendarInitialized = true;
     } else if (this.calendar && typeof this.calendar.update === 'function') {
-      // Если календарь уже инициализирован — обновляем (если библиотека поддерживает)
       this.calendar.update();
     } else {
-      // Если update нет — переинициализируем
       this.calendar = null;
       this.initPluginCalendarVanilla();
     }
   });
 },
+-----
+
+initPluginCalendarVanilla(dates, month, year, contextElement = null){
+  let text_footnote = this.pop_up_text
+  
+  // ✅ Если передан контекст (элемент, рядом с которым клик), ищем календарь относительно него
+  const selector = contextElement 
+    ? contextElement.closest('.js--credit-calendar-input').querySelector('.js__vanilla-calendar-calc')
+    : '.js__vanilla-calendar-calc';
+  
+  this.calendar = new VanillaCalendar(selector, {
+    settings: {
+      lang: 'ru',
+      range: {
+        max: new Date().toISOString().slice(0, 10)
+      },
+      selected: {
+        dates: dates,
+        month: month,
+        year: year
+      },
+      selection: {}
+    },
+    actions: {
+      clickDay(e, dates) {
+        // ... ваш существующий код ...
+      }
+    }
+  })
+  this.calendar.init();
+},
+
+-------------------
+
+// В showCalendar:
+this.$nextTick(() => {
+  if (!this.isCalendarInitialized) {
+    // ✅ Передаём element как контекст
+    this.initPluginCalendarVanilla(undefined, undefined, undefined, element);
+    this.isCalendarInitialized = true;
+  }
+  // ...
+});
