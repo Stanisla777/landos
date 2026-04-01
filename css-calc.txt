@@ -1,59 +1,33 @@
-tooltip-cost-property='{"size":"small","info":"Текст"}'
-tooltip-initial-payment='{"size":"small","info":"Текст"}'
-tooltip-interest-rate='{"size":"small","info":"Текст"}'
-tooltip-credit-time='{"size":"small","info":"Текст"}'
-tooltip-data-loan-amount='{"size":"small","info":"Текст"}'
-tooltip-data-monthly-payment='{"size":"small","info":"Текст"}'
-tooltip-data-tax-deduction='{"size":"small","info":"Текст"}'
-
-
-
-
-mounted(){
-//объект с тултипами
+mounted() {
+  this.$nextTick(() => {
     const tooltips = {};
     const attributes = this.$el.attributes;
 
-    // Перебираем все атрибуты элемента
     for (let i = 0; i < attributes.length; i++) {
       const attr = attributes[i];
 
-      // Проверяем, начинается ли атрибут с 'tooltip-'
-      if (attr.name.startsWith('tooltip-')) {
+      // ✅ Изменили префикс на 'data-tooltip-'
+      if (attr.name.startsWith('data-tooltip-')) {
         try {
-          // Парсим JSON из значения атрибута
           const value = JSON.parse(attr.value);
-
-          // Извлекаем имя из названия атрибута (удаляем 'tooltip-')
-          const name = attr.name.replace('tooltip-', '');
-
-          // Добавляем свойство name, если его нет в объекте
+          
+          // ✅ Изменили удаление префикса
+          const name = attr.name.replace('data-tooltip-', '');
+          
           if (!value.name) {
-            value.name = attr.name.replace('tooltip-', '');
+            value.name = name;
           }
-
-          // Добавляем в результирующий объект
+          
           tooltips[name] = value;
         } catch (error) {
           console.error(`Ошибка парсинга атрибута ${attr.name}:`, error);
         }
       }
     }
-    // на выходе получаем:
-    // {
-    //   initial_payment: {info: 'Какая-то информация', name: 'initial-payment', size: 'small'},
-    //   ...
-    // }
 
-    // отправляю в state
+    // ✅ Отправляем в store (проверьте, что используете this.$store)
     if (Object.keys(tooltips).length > 0) {
-      Storage.dispatch('ActionTransferTooltip', tooltips);
+      this.$store.dispatch('ActionTransferTooltip', tooltips);
     }
-
-data-tooltip-cost-property='{"size":"small","info":"Текст"}'
-data-tooltip-initial-payment='{"size":"small","info":"Текст"}'
-data-tooltip-interest-rate='{"size":"small","info":"Текст"}'
-data-tooltip-credit-time='{"size":"small","info":"Текст"}'
-data-tooltip-data-loan-amount='{"size":"small","info":"Текст"}'
-data-tooltip-data-monthly-payment='{"size":"small","info":"Текст"}'
-data-tooltip-data-tax-deduction='{"size":"small","info":"Текст"}'
+  });
+}
