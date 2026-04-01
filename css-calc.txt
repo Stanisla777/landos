@@ -1,7 +1,54 @@
-const transfer_parametr = {
-      initial_payment_perc: parseInt(this.initialPayment) || 20,
-      max_tax_deduction_property: parseInt(this.maxTaxDeduction) || 260000,
-      max_tax_deduction_interest: parseInt(this.maxTaxDeductionInterest) || 390000,
-    }
-    
-    this.$store.dispatch('ActionTransferParametr', transfer_parametr)
+<div data-vue-app="family-mortgage-calculator"
+   data-answers='{"loanAmount":"8000000","initialPayment":"5000000","bet":"8.2","loanTerm":"3"}'
+
+
+answers: {
+      type: [Array, String],
+      default: () => [],
+      validator: (value) => {
+        if (Array.isArray(value)) return true;
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed);
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      },
+    },
+
+watch: {
+    answers: {
+      handler(newVal) {
+        this.parseAnswerData(newVal);
+      },
+      immediate: true,
+      deep: true,
+    },
+  }
+
+methods: {
+    parseAnswerData(data) {
+      if (!data) return;
+
+      let parsedData;
+      if (typeof data === 'string') {
+        try {
+          parsedData = JSON.parse(data);
+        } catch (e) {
+          console.warn('Ошибка парсинга circleChart:', e);
+          return;
+        }
+      } else if (Array.isArray(data)) {
+        parsedData = data;
+      } else {
+        return;
+      }
+
+      if (parsedData) {
+        store.dispatch('ActionAnswers',this.answers)
+      }
+    },
+  },
