@@ -1,19 +1,57 @@
-// ❌ Было (Vue 2)
-Vue.set(state.answers_to_send, 'loanAmount', state.cost_property)
+data(){
+    return {
+      transfer_parametr: [
+         {'initial_payment_perc':20},
+         {'max_tax_deduction_property':260000},
+         {'max_tax_deduction_interest':390000},
+       ],
 
-// ✅ Стало (Vue 3)
-state.answers_to_send.loanAmount = state.cost_property
 
-------------------
+mounted(){
+    //обязательный процент от стоимости недвижимости для первоначального взноса
+    let initial_payment_perc = this.$el.getAttribute('initial-payment')
+    if (initial_payment_perc){
+      try{
+        this.transfer_parametr.initial_payment_perc=parseInt(initial_payment_perc)
+      } catch (error) {
+        console.log('Ошибка при парсинге');
+      }
+    }
 
-mutationCollectAnswer(state) {
-  // ✅ Прямое присваивание вместо Vue.set
-  state.answers_to_send.loanAmount = state.cost_property
-  state.answers_to_send.initialPayment = state.initial_payment
-  state.answers_to_send.bet = state.annualInterestRate
-  state.answers_to_send.loanTerm = state.loanTerm
-}
+    //максимальный налоговый вычет за имущество
+    let max_tax_deduction = this.$el.getAttribute('max-tax-deduction')
+    if (max_tax_deduction){
+      try{
+        this.transfer_parametr.max_tax_deduction_property=parseInt(max_tax_deduction)
+      } catch (error) {
+        console.log('Ошибка при парсинге');
+      }
+    }
 
-----------------
+    //максимальный налоговый вычет за проценты
+    let max_tax_deduction_interest = this.$el.getAttribute('max-tax-deduction-interest')
+    if (max_tax_deduction_interest){
+      try{
+        this.transfer_parametr.max_tax_deduction_interest=parseInt(max_tax_deduction_interest)
+      } catch (error) {
+        console.log('Ошибка при парсинге');
+      }
+    }
+    Storage.dispatch('ActionTransferParametr',this.transfer_parametr)
 
-store.state.answers_to_send.loanAmount = newValue
+---------
+
+props: {
+instanceId: {
+      type: String,
+      required: true
+    },
+    initialPayment: {
+      type: String,
+      default: '20'
+    },
+    maxTaxDeduction: {
+      type: String,
+      default: '260000'
+    },
+.......................
