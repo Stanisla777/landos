@@ -1,54 +1,48 @@
-<div data-vue-app="family-mortgage-calculator"
-   data-answers='{"loanAmount":"8000000","initialPayment":"5000000","bet":"8.2","loanTerm":"3"}'
-
-
-answers: {
-      type: [Array, String],
-      default: () => [],
-      validator: (value) => {
-        if (Array.isArray(value)) return true;
-        if (typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value);
-            return Array.isArray(parsed);
-          } catch (e) {
-            return false;
-          }
-        }
-        return false;
-      },
-    },
-
-watch: {
-    answers: {
-      handler(newVal) {
-        this.parseAnswerData(newVal);
-      },
-      immediate: true,
-      deep: true,
-    },
-  }
-
-methods: {
-    parseAnswerData(data) {
-      if (!data) return;
-
-      let parsedData;
-      if (typeof data === 'string') {
+props: {
+  answers: {
+    type: [Object, String],  // ✅ Принимаем и объект, и строку
+    default: () => ({}),
+    validator: (value) => {
+      // Если уже объект — ок
+      if (typeof value === 'object' && value !== null) return true;
+      // Если строка — пробуем распарсить
+      if (typeof value === 'string') {
         try {
-          parsedData = JSON.parse(data);
+          const parsed = JSON.parse(value);
+          return typeof parsed === 'object' && parsed !== null; // ✅ Объект или массив
         } catch (e) {
-          console.warn('Ошибка парсинга circleChart:', e);
-          return;
+          return false;
         }
-      } else if (Array.isArray(data)) {
-        parsedData = data;
-      } else {
-        return;
       }
-
-      if (parsedData) {
-        store.dispatch('ActionAnswers',this.answers)
-      }
+      return false;
     },
   },
+},
+
+methods: {
+  parseAnswerData(data) {
+    if (!data) return;
+    
+    // Если уже объект — используем как есть
+    if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+      store.dispatch('ActionAnswers', data);
+      return;
+    }
+    
+    // Если строка — парсим
+    if (typeof data === 'string') {
+      try {
+        const parsed = JSON.parse(data);
+        store.dispatch('ActionAnswers', parsed);
+      } catch (e) {
+        console.warn('Ошибка парсинга answers:', e);
+      }
+    }
+  },
+},
+
+mounted() {
+  this.parseAnswerData(this.answers);
+
+}
+
