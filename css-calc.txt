@@ -1,7 +1,17 @@
-payment_type: {
-    handler(newVal, oldVal) {
-      console.log(`⚠️ payment_type изменился: "${oldVal}" → "${newVal}"`);
-      console.trace('Стек вызовов изменения'); // покажет, откуда пришло изменение
-    },
-    immediate: false
-  }
+const radioAnn = document.querySelector('#ann');
+    
+    // Наблюдаем за изменениями атрибута checked
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'checked') {
+          console.log('🚨 DOM-манипуляция обнаружена!');
+          console.log('Новое состояние #ann:', radioAnn.checked);
+          console.trace('Стек вызовов');
+        }
+      });
+    });
+    
+    observer.observe(radioAnn, { attributes: true, attributeFilter: ['checked'] });
+    
+    // Сохраните ссылку, чтобы отключить при уничтожении компонента
+    this._radioObserver = observer;
