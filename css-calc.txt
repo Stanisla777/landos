@@ -1,486 +1,215 @@
 receivedClearHolidayReceive(index){
-      //передаю в календарь периодов команду и флаг, что в основном календаре блока досрочного погашения стёрли дату
-      this.min_date_holidays_begin = this.min_date_holidays
-      this.min_date_holidays_end = this.min_date_holidays
-      eventBus.emit('sendToBeginCalendarClear',index)
-      this.$emit('sendClearCompareWhithHoliday',index)
-      eventBus.emit('sendClearToEnd', index)
-      //обнуляю календарь конец
-      const targetComponentMain = this.$children.find(c => c.calendarContainerId === `calendar-${index}`)
-      if (targetComponentMain) {
-        //ВЕРНУТЬСЯ
-        targetComponentMain.updateCalendar()
-      }
-      //обнуляю календарь начала
-      const targetComponentBegin = this.$children.find(c => c.calendarContainerId === `calendar-begin-${index}`)
-      if (targetComponentBegin) {
-        //ВЕРНУТЬСЯ
-        targetComponentBegin.$el.querySelector('input.js--calendar-field-begin').value=''
-        targetComponentBegin.$el.querySelector('.js-early-period-required').classList.remove('js-filled')
-        targetComponentBegin.$el.querySelector('input').classList.remove('active')
-        targetComponentBegin.$el.querySelector('.js--clear-calc-tax').classList.remove('active')
-        targetComponentBegin.updateCalendar()
-      }
-      const existingItemsFieldData = this.array_block_early_repayment.find(item => item.id === index);
-      if (existingItemsFieldData) {
-        existingItemsFieldData.field_data=''
-      }
-      const existingItemsFieldPeriod = this.array_block_early_repayment_period.find(item => item.id === index);
-      if (existingItemsFieldPeriod) {
-        existingItemsFieldPeriod.selected_value=null
-      }
-      const indexArray = this.block_requared.findIndex(obj => obj.id === index);
-      if (indexArray !== -1) {
-        this.block_requared[indexArray].date_full = false;
-        this.block_requared[indexArray].date_begin = false;
-      }
-      this.$emit('sendButtonResult')
-    },
+  //передаю в календарь периодов команду и флаг, что в основном календаре блока досрочного погашения стёрли дату
+  this.min_date_holidays_begin = this.min_date_holidays
+  this.min_date_holidays_end = this.min_date_holidays
+  eventBus.emit('sendToBeginCalendarClear',index)
+  this.$emit('sendClearCompareWhithHoliday',index)
+  eventBus.emit('sendClearToEnd', index)
+  
+  //обнуляю календарь конец
+  // замена this.$children.find на this.$refs
+  const refNameMain = `js-calendar-early-repayment-${index}`;
+  const targetComponentMain = this.$refs[refNameMain]?.[0];
+  if (targetComponentMain && typeof targetComponentMain.updateCalendar === 'function') {
+    targetComponentMain.updateCalendar()
+  }
+  
+  //обнуляю календарь начала
+  const refNameBegin = `js-calendar-early-period-begin-${index}`;
+  const targetComponentBegin = this.$refs[refNameBegin]?.[0];
+  if (targetComponentBegin && targetComponentBegin.$el) {
+    const input = targetComponentBegin.$el.querySelector('input.js--calendar-field-begin');
+    if (input) {
+      input.value = '';
+      targetComponentBegin.$el.querySelector('.js-early-period-required')?.classList.remove('js-filled');
+      targetComponentBegin.$el.querySelector('input')?.classList.remove('active');
+      targetComponentBegin.$el.querySelector('.js--clear-calc-tax')?.classList.remove('active');
+    }
+    if (typeof targetComponentBegin.updateCalendar === 'function') {
+      targetComponentBegin.updateCalendar()
+    }
+  }
+  
+  const existingItemsFieldData = this.array_block_early_repayment.find(item => item.id === index);
+  if (existingItemsFieldData) {
+    existingItemsFieldData.field_data=''
+  }
+  const existingItemsFieldPeriod = this.array_block_early_repayment_period.find(item => item.id === index);
+  if (existingItemsFieldPeriod) {
+    existingItemsFieldPeriod.selected_value=null
+  }
+  const indexArray = this.block_requared.findIndex(obj => obj.id === index);
+  if (indexArray !== -1) {
+    this.block_requared[indexArray].date_full = false;
+    this.block_requared[indexArray].date_begin = false;
+  }
+  this.$emit('sendButtonResult')
+},
 
-    receivedClearBeginCalendar(index) {
-      this.$emit('sendClearInCalendarBegin', index)
-      this.$emit('sendClearCompareWhithHoliday', index)
-      eventBus.emit('sendClearToEnd', index)
-      const targetComponentBegin = this.$children.find(c => c.calendarContainerId === `calendar-${index}`)
-      if (targetComponentBegin) {
-        //ВЕРНУТЬСЯ
-        targetComponentBegin.$el.querySelector('input.js--calendar-field').value=''
-        targetComponentBegin.$el.querySelector('.js-early-required').classList.remove('js-filled')
-        targetComponentBegin.$el.querySelector('input').classList.remove('btn-active')
-        targetComponentBegin.$el.querySelector('.js--clear-calc-tax').classList.remove('active')
-        targetComponentBegin.updateCalendar()
-      }
-      const existingItems = this.array_block_early_repayment.find(item => item.id === index);
-      if (existingItems) {
-        existingItems.field_data=''
-      }
-      const indexArray = this.block_requared.findIndex(obj => obj.id === index);
-      if (indexArray !== -1) {
-        this.block_requared[indexArray].date_full = false;
-        this.block_requared[indexArray].date_begin = false;
-      }
-    },
+---------------------
 
+receivedClearBeginCalendar(index) {
+  this.$emit('sendClearInCalendarBegin', index)
+  this.$emit('sendClearCompareWhithHoliday', index)
+  eventBus.emit('sendClearToEnd', index)
+  
+  // замена this.$children.find на this.$refs
+  const refName = `js-calendar-early-repayment-${index}`;
+  const targetComponentBegin = this.$refs[refName]?.[0];
+  if (targetComponentBegin && targetComponentBegin.$el) {
+    const input = targetComponentBegin.$el.querySelector('input.js--calendar-field');
+    if (input) {
+      input.value = '';
+      targetComponentBegin.$el.querySelector('.js-early-required')?.classList.remove('js-filled');
+      targetComponentBegin.$el.querySelector('input')?.classList.remove('btn-active');
+      targetComponentBegin.$el.querySelector('.js--clear-calc-tax')?.classList.remove('active');
+    }
+    if (typeof targetComponentBegin.updateCalendar === 'function') {
+      targetComponentBegin.updateCalendar()
+    }
+  }
+  
+  const existingItems = this.array_block_early_repayment.find(item => item.id === index);
+  if (existingItems) {
+    existingItems.field_data=''
+  }
+  const indexArray = this.block_requared.findIndex(obj => obj.id === index);
+  if (indexArray !== -1) {
+    this.block_requared[indexArray].date_full = false;
+    this.block_requared[indexArray].date_begin = false;
+  }
+},
+-------------------------
 clearAllFieldBlock(blockId,el) {
-      const parent = document.querySelector(`.js--container-block[data-index="${blockId}"]`);
-      const container = parent.querySelector('.js--acc-wr')
-      const targetKey = parseInt(parent.dataset.index)
-      container.classList.remove('calendar-full')
-      container.classList.remove('sum-full')
-      container.classList.remove('period-full')
 
-      if (this.array_block_early_repayment.length===1) {
-        if (parent) {
-          const array_block_input = parent.querySelectorAll('.js--for-clear-field')
-          for (let item of array_block_input) {
-            if (item.querySelector('input.js--normal-field')) {
-              item.querySelector('input.js--normal-field').value = ''
-            }
-            //при клике очистить всё переключение в дефолтное состояние списка переодичность в блоке досрочное погашение
-            if (item.classList.contains('js--for-clear-list-periodicity')) {
-              if (item.querySelector('.js--select-option')) {
-                item.querySelector('.js--select-option').classList.add('input-emty')
-                item.querySelector('.js--select-option').textContent='Выберите параметр'
-                if (item.querySelector('.js--openlist-item.active')) {
-                  item.querySelector('.js--openlist-item.active').classList.remove('active')
-                }
-              }
-            }
-            parent.querySelector('.js--repetition-period input[value="all-term"]').click()
-            //при клике очистить всё переключение в дефолтное состояние радиокнопки группы что хотите уменьшить в блоке досрочное погашение
-            if (item.classList.contains('js--for-clear-radio-what-reduce')) {
-              if(item.querySelector('input[type="radio"]').value==='payment') {
-                item.querySelector('input[type="radio"]').click();
-              }
-            }
-            //при клике очистить всё очищение поля инпут календаря
-            if (item.querySelector('input.js--calendar-field')) {
-              item.querySelector('input.js--calendar-field').value = ''
-            }
-            if (item.querySelector('.js--clear-calc-tax')) {
-              item.querySelector('.js--clear-calc-tax').classList.remove('active')
-            }
-            if (item.closest('.js--container-block-required') && item.closest('.js--container-block-required').querySelector('.js--required-error')) {
-              item.closest('.js--container-block-required').querySelector('.js--required-error').classList.add('display-none')
-            }
-            item.classList.remove('input_error')
-            item.closest('.js--container-block-early').classList.add('mobile-error')
-          }
-          if (parent.querySelector('.js--repetition-period')) {
-            parent.querySelector('.js--repetition-period').classList.remove('active')
-          }
-          const array_requared = parent.querySelectorAll('.js-early-required')
-          for (let item of array_requared) {
-            item.classList.remove('js-filled')
-            item.classList.remove('btn-active')
-          }
-          const array_period_requared = parent.querySelectorAll('.js-early-period-required')
-          for (let item of array_period_requared) {
-            item.classList.remove('js-filled')
-            item.classList.remove('btn-active')
-          }
-          const targetComponentUpdate = this.$children.find(c => c.calendarContainerId === `calendar-${blockId}`)
-          if (targetComponentUpdate) {
-            targetComponentUpdate.updateCalendar()
-          }
-          const targetComponentUpdateEnd = this.$children.find(c => c.calendarContainerId === `calendar-end-${blockId}`)
-          if (targetComponentUpdateEnd) {
-            targetComponentUpdateEnd.updateCalendar()
-          }
-          const targetComponentBegin = this.$children.find(c => c.calendarContainerId === `calendar-begin-${blockId}`)
-        }
-      }
-      if (this.array_block_early_repayment.length>1){
-        if (parent) {
-          const targetComponent = this.$children.find(c => c.calendarContainerId === `calendar-${blockId}`)
-          if (targetComponent) {
-            targetComponent.destroyCalendar()
-          }
-          const targetComponentBegin = this.$children.find(c => c.calendarContainerId === `calendar-begin-${blockId}`)
-          if (targetComponentBegin) {
-            targetComponentBegin.destroyCalendar()
-          }
-          const targetComponentEnd = this.$children.find(c => c.calendarContainerId === `calendar-end-${blockId}`)
-            if (targetComponentEnd) {
-              targetComponentEnd.destroyCalendar()
-            }
-        }
-      }
-      if (parent) {
-        if (this.array_block_early_repayment.length > 1) {
-          const index = this.array_block_early_repayment.findIndex(obj => obj.id === blockId);
-          if (index !== -1) {
-            this.array_block_early_repayment.splice(index, 1);
-          }
-        }
-        else if (this.array_block_early_repayment.length === 1) {
-          const obj = this.array_block_early_repayment[0];
-          if (obj.id === blockId) {
-            this.array_block_early_repayment[0].field_data = ''
-            this.array_block_early_repayment[0].field_amount = ''
-            this.array_block_early_repayment[0].field_period = ''
-            this.array_block_early_repayment[0].repetitionPeriod='all-term'
-            this.array_block_early_repayment[0].periodicityParameter=0
-            this.array_block_early_repayment[0].dateEarly=['']
-            this.array_block_early_repayment[0].whatReduce='payment'
-            this.array_block_early_repayment[0].fieldAmount=''
-          }
-        }
-        for (let i = this.array_early_repayment.length-1; i>=0;i--){
-          if (this.array_early_repayment[i].id ===blockId) {
-            this.array_early_repayment.splice(i,1)
-          }
-        }
-        //---------------------------------------------------------------------
 
-        for (let i = this.array_amount_early_repayment.length-1; i>=0;i--){
-          if (this.array_amount_early_repayment[i].index ===blockId) {
-            this.array_amount_early_repayment.splice(i,1)
-          }
-        }
-        //---------------------------------------------------------------------
-        if (this.array_what_reduce.length > 1) {
-          const index = this.array_what_reduce.findIndex(obj => obj.index === blockId);
-          if (index !== -1) {
-            this.array_what_reduce.splice(index, 1);
-          }
-        }
-        else if (this.array_what_reduce.length === 1) {
-          const obj = this.array_what_reduce[0];
-          if (obj.index === blockId) {
-            this.array_what_reduce[0].what_reduce = 'payment';
-          }
-        }
-        if (this.block_requared.length > 1) {
-          const index = this.block_requared.findIndex(obj => obj.id === blockId);
-          if (index !== -1) {
-            this.block_requared.splice(index, 1);
-          }
-        } else if (this.block_requared.length === 1) {
-          const obj = this.block_requared[0];
-          if (obj.id === blockId) {
-            this.block_requared[0].date_full = false;
-            this.block_requared[0].date_end = false;
-            this.block_requared[0].date_begin = false;
-            this.block_requared[0].amount_full = false;
-            this.block_requared[0].period_full = false;
-            this.block_requared[0].period = false;
-          }
-        }
-        //---------------------------------------------------------------------
-        if (this.array_block_early_repayment_period.length > 1) {
-          const index = this.array_block_early_repayment_period.findIndex(obj => obj.id === blockId);
-          if (index !== -1) {
-            this.array_block_early_repayment_period.splice(index, 1);
-          }
-        } else if (this.array_block_early_repayment_period.length === 1) {
-          const obj = this.array_block_early_repayment_period[0];
-          if (obj.id === blockId) {
-            if (this.min_date_holidays_begin === '1995-01-01') {
-              this.array_block_early_repayment_period[0].min_date_holidays_begin = `${new Date().getFullYear() - 30}-01-01`
-              this.array_block_early_repayment_period[0].selected_value = null
-              this.array_block_early_repayment_period[0].flag = 0
-            } else {
-              this.array_block_early_repayment_period[0].min_date_holidays_begin = this.min_date_holidays_begin
-              this.array_block_early_repayment_period[0].selected_value = null
-              this.array_block_early_repayment_period[0].flag = 0
-            }
-          }
-        }
-        //---------------------------------------------------------------------
-        if (this.array_block_early_repayment_main.length > 1) {
-          const index = this.array_block_early_repayment_main.findIndex(obj => obj.id === blockId);
-          if (index !== -1) {
-            this.array_block_early_repayment_main.splice(index, 1);
-          }
-        } else if (this.array_block_early_repayment_main.length === 1) {
-          const obj = this.array_block_early_repayment_main[0];
-          if (obj.id === blockId) {
-            if (this.min_date_holidays_begin === '1995-01-01') {
-              this.array_block_early_repayment_main[0].min_date_holidays_begin = `${new Date().getFullYear() - 30}-01-01`
-              this.array_block_early_repayment_main[0].selected_value = null
-              this.array_block_early_repayment_main[0].flag = 0
-            } else {
-              this.array_block_early_repayment_main[0].min_date_holidays_begin = this.min_date_holidays_begin
-              this.array_block_early_repayment_main[0].selected_value = null
-              this.array_block_early_repayment_main[0].flag = 0
-            }
-          }
-        }
-        //---------------------------------------------------------------------
-        if (this.array_block_early_repayment_all_period.length > 1) {
-          const index = this.array_block_early_repayment_all_period.findIndex(obj => obj.id === blockId);
-          if (index !== -1) {
-            this.array_block_early_repayment_all_period.splice(index, 1);
-          }
-        } else if (this.array_block_early_repayment_all_period.length === 1) {
-          const obj = this.array_block_early_repayment_all_period[0];
-          if (obj.id === blockId) {
-            if (this.min_date_holidays_begin === '1995-01-01') {
-              this.array_block_early_repayment_all_period[0].selected_value_end = null
-              this.array_block_early_repayment_all_period[0].selected_value_begin = null
-            } else {
-              this.array_block_early_repayment_all_period[0].selected_value_end = null
-              this.array_block_early_repayment_all_period[0].selected_value_begin = null
-            }
-          }
-        }
-        //---------------------------------------------------------------------
-        if (this.array_block_early_repayment_end.length > 1) {
-          const index = this.array_block_early_repayment_end.findIndex(obj => obj.id === blockId);
-          if (index !== -1) {
-            this.array_block_early_repayment_end.splice(index, 1);
-          }
-        } else if (this.array_block_early_repayment_end.length === 1) {
-          const obj = this.array_block_early_repayment_end[0];
-          if (obj.id === blockId) {
-            if (this.min_date_holidays_begin === '1995-01-01') {
-              this.array_block_early_repayment_end[0].min_date_holidays_begin = `${new Date().getFullYear() - 30}-01-01`
-              this.array_block_early_repayment_end[0].selected_value = null
-              this.array_block_early_repayment_end[0].flag = 0
-            } else {
-              this.array_block_early_repayment_end[0].min_date_holidays_begin = this.min_date_holidays_begin
-              this.array_block_early_repayment_end[0].selected_value = null
-              this.array_block_early_repayment_end[0].flag = 0
-            }
-          }
-        }
-        //---------------------------------------------------------------------
-        for (let i = this.select_period_array.length-1; i>=0;i--){
-          if (this.select_period_array[i].key ===blockId) {
-            this.select_period_array.splice(i,1)
-          }
-        }
-        for (let i = this.array_early_repayment_date.length-1; i>=0;i--){
-          if (this.array_early_repayment_date[i][1] ===blockId) {
-            this.array_early_repayment_date.splice(i,1)
-          }
-        }
-        this.$emit('sendClearCompareWhithHoliday',blockId)
-      }
-      this.term_holiday=0
-      this.data_holiday=null
-      this.$emit('sendButtonResult')
-      this.handlerBtn()
-    },
+// ... предыдущий код без изменений ...
 
+// ✅ ИСПРАВЛЕНО: замена this.$children.find на this.$refs
+const refNameMain = `js-calendar-early-repayment-${blockId}`;
+const targetComponentUpdate = this.$refs[refNameMain]?.[0];
+if (targetComponentUpdate && typeof targetComponentUpdate.updateCalendar === 'function') {
+  targetComponentUpdate.updateCalendar()
+}
+
+const refNameEnd = `js-calendar-early-period-end-${blockId}`;
+const targetComponentUpdateEnd = this.$refs[refNameEnd]?.[0];
+if (targetComponentUpdateEnd && typeof targetComponentUpdateEnd.updateCalendar === 'function') {
+  targetComponentUpdateEnd.updateCalendar()
+}
+
+const refNameBegin = `js-calendar-early-period-begin-${blockId}`;
+const targetComponentBegin = this.$refs[refNameBegin]?.[0];
+// targetComponentBegin используется ниже, если нужно
+
+// ... далее в блоке if (this.array_block_early_repayment.length>1) ...
+
+if (this.array_block_early_repayment.length>1){
+  if (parent) {
+    // ✅ ИСПРАВЛЕНО: замена this.$children.find на this.$refs
+    const targetComponent = this.$refs[refNameMain]?.[0];
+    if (targetComponent && typeof targetComponent.destroyCalendar === 'function') {
+      targetComponent.destroyCalendar()
+    }
+    
+    const targetComponentBeginDestroy = this.$refs[refNameBegin]?.[0];
+    if (targetComponentBeginDestroy && typeof targetComponentBeginDestroy.destroyCalendar === 'function') {
+      targetComponentBeginDestroy.destroyCalendar()
+    }
+    
+    const targetComponentEndDestroy = this.$refs[refNameEnd]?.[0];
+    if (targetComponentEndDestroy && typeof targetComponentEndDestroy.destroyCalendar === 'function') {
+      targetComponentEndDestroy.destroyCalendar()
+    }
+  }
+}
+
+// ... остальной код без изменений ...
+
+-----------------
 
 receivedEearlyRepayment(array_data) {
-      this.array_early_repayment_date = this.addOrReplace(this.array_early_repayment_date,array_data)
-      this.array_selected_dates.push(array_data[0])
-      this.$emit('sendClearCompareWhithHoliday',array_data[1])
-      const targetComponentEnd = this.$children.find(c => c.calendarContainerId === `calendar-end-${array_data[1]}`)
-      if (targetComponentEnd) {
-        targetComponentEnd.newMethods([array_data[1],array_data[0]]);
-      }
-      const targetComponentMain = this.$children.find(c => c.calendarContainerId === `calendar-begin-${array_data[1]}`)
-      if (targetComponentMain) {
-        const parent = targetComponentMain.parent
-        if(parent){
-          const element_eray = parent.querySelector('input.js--calendar-field-begin');
-          if (element_eray){
-            element_eray.value = `${this.month[parseInt(array_data[0][0])]}, ${array_data[0][1]}`;
-            if(element_eray.classList.contains('js-early-required')) {
-              element_eray.classList.add('js-filled')
-            }
-            if (element_eray.closest('.js--container-block-required')
-              && element_eray.closest('.js--container-block-required').querySelector('.js--required-error')) {
-              element_eray.closest('.js--container-block-required').querySelector('.js--required-error').classList.add('display-none')
-            }
-            if (element_eray.closest('.js--for-clear-field')) {
-              element_eray.closest('.js--for-clear-field').classList.remove('input_error')
-            }
-            if (element_eray.closest('.js--for-clear-field') && element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax')) {
-              element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax').classList.add('active')
-            }
-            if (element_eray.classList.contains('js-early-period-required')) {
-              element_eray.classList.add('js-filled')
-            }
-          }
+  this.array_early_repayment_date = this.addOrReplace(this.array_early_repayment_date,array_data)
+  this.array_selected_dates.push(array_data[0])
+  this.$emit('sendClearCompareWhithHoliday',array_data[1])
+  
+  // ✅ ИСПРАВЛЕНО: замена this.$children.find на this.$refs
+  const refNameEnd = `js-calendar-early-period-end-${array_data[1]}`;
+  const targetComponentEnd = this.$refs[refNameEnd]?.[0];
+  if (targetComponentEnd && typeof targetComponentEnd.newMethods === 'function') {
+    targetComponentEnd.newMethods([array_data[1],array_data[0]]);
+  }
+  
+  const refNameBegin = `js-calendar-early-period-begin-${array_data[1]}`;
+  const targetComponentMain = this.$refs[refNameBegin]?.[0];
+  if (targetComponentMain && targetComponentMain.$el) {
+    const parent = targetComponentMain.$el.closest('.js--credit-calendar-input');
+    if(parent){
+      const element_eray = parent.querySelector('input.js--calendar-field-begin');
+      if (element_eray){
+        element_eray.value = `${this.month[parseInt(array_data[0][0])]}, ${array_data[0][1]}`;
+        if(element_eray.classList.contains('js-early-required')) {
+          element_eray.classList.add('js-filled')
+        }
+        if (element_eray.closest('.js--container-block-required')
+          && element_eray.closest('.js--container-block-required').querySelector('.js--required-error')) {
+          element_eray.closest('.js--container-block-required').querySelector('.js--required-error').classList.add('display-none')
+        }
+        if (element_eray.closest('.js--for-clear-field')) {
+          element_eray.closest('.js--for-clear-field').classList.remove('input_error')
+        }
+        if (element_eray.closest('.js--for-clear-field') && element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax')) {
+          element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax').classList.add('active')
+        }
+        if (element_eray.classList.contains('js-early-period-required')) {
+          element_eray.classList.add('js-filled')
         }
       }
+    }
+  }
 
-
-      //ЗАПИСЫВАЮ В МАССИВЫ ДАННЫЕ КОТОРЫЕ ПРИШЛИ ОТ ОСНОВНОГО КАЛЕНДАРЯ ДОСРОЧКИ
-      const fountId = this.array_block_early_repayment_period.find(user => user.id === array_data[1])
-      if (fountId){
-        fountId.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        fountId.flag=1
-      }
-      const fountIdAllPeriod = this.array_block_early_repayment_end.find(user => user.id === array_data[1])
-      if (fountIdAllPeriod){
-        fountIdAllPeriod.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        fountIdAllPeriod.selected_value_begin=array_data[0]
-      }
-
-      const existingItems = this.array_block_early_repayment.find(item => item.id === array_data[1]);
-      if (existingItems) {
-        existingItems.field_data=array_data[0][1]
-        existingItems.dateEarly=array_data[0]
-      }
-      //А ТУТ ЗАПИСЫВАЮ ДАННЫЕ В МАССИВЫ ОТ КАЛЕНДАРЯ НАЧАЛО ПЕРИОДА, ТАК КАК ДАННЫЕ ИЗ ОСНОВНОГО КАЛЕНДАРЯ ПОДСТАВЛЯЮТСЯ КАЛЕНДАРЬ НАЧАЛА ПЕРИОДА
-
-      //ЗАПИСЫВАЮ ДАННЫЕ В МАССИВЫ ОТ КАЛЕНДАРЯ НАЧАЛО ПЕРИОДА
-      const fountIdA = this.array_block_early_repayment_main.find(user => user.id === array_data[1])
-      if (fountIdA){
-        fountIdA.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        fountIdA.flag=1
-      }
-
-      const fountIdEnd = this.array_block_early_repayment_end.find(user => user.id === array_data[1])
-      if (fountIdEnd){
-        fountIdEnd.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        fountIdEnd.flag=1
-      }
-      const fountIdAllPeriodA = this.array_block_early_repayment_end.find(user => user.id === array_data[1])
-      if (fountIdAllPeriodA){
-        fountIdAllPeriodA.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        if (this.array_block_early_repayment_all_period[array_data[1]]!==undefined) {
-          this.array_block_early_repayment_all_period[array_data[1]].selected_value_begin=array_data[0]
-        }
-      }
-      const fountIdAllPeriodU = this.array_block_early_repayment_all_period.find(user => user.id === array_data[1])
-      if (fountIdAllPeriodU){
-        fountIdAllPeriodU.selected_value_begin=array_data[0]
-      }
-      if (this.array_block_early_repayment_all_period[array_data[1]]!==undefined&&this.array_block_early_repayment_all_period[array_data[1]].selected_value_end!==null) {
-        this.array_early_repayment_date = this.addOrReplace(this.array_early_repayment_date,array_data)
-        this.array_selected_dates.push(array_data[0])
-      }
-      const indexArray = this.block_requared.findIndex(obj => obj.id === array_data[1]);
-      if (indexArray !== -1) {
-        this.block_requared[indexArray].date_full = true;
-        this.block_requared[indexArray].date_begin = true;
-      }
-    },
-
+  // ... остальной код без изменений ...
+},
+---------------------
 receivedEearlyRepaymentPeriodBegin(array_data) {
-      const t = `${array_data[0][1]}-${array_data[0][0]}`
-      this.$emit('sendClearCompareWhithHoliday',array_data[1])
-      const targetComponentEnd = this.$children.find(c => c.calendarContainerId === `calendar-end-${array_data[1]}`)
-      if (targetComponentEnd) {
-        targetComponentEnd.newMethods([array_data[1],array_data[0]]);
-      }
-      const targetComponentMain = this.$children.find(c => c.calendarContainerId === `calendar-${array_data[1]}`)
-      if (targetComponentMain) {
-        const parent = targetComponentMain.parent
-        if(parent){
-          const element_eray = parent.querySelector('input.js--calendar-field-early-repayment');
-          if (element_eray){
-            element_eray.value = `${this.month[parseInt(array_data[0][0])]}, ${array_data[0][1]}`;
-            if(element_eray.classList.contains('js-early-required')) {
-              element_eray.classList.add('js-filled')
-            }
-            if (element_eray.closest('.js--container-block-required')
-              && element_eray.closest('.js--container-block-required').querySelector('.js--required-error')) {
-              element_eray.closest('.js--container-block-required').querySelector('.js--required-error').classList.add('display-none')
-            }
-            if (element_eray.closest('.js--for-clear-field')) {
-              element_eray.closest('.js--for-clear-field').classList.remove('input_error')
-            }
-            if (element_eray.closest('.js--for-clear-field') && element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax')) {
-              element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax').classList.add('active')
-            }
-            if (element_eray.classList.contains('js-early-period-required')) {
-              element_eray.classList.add('js-filled')
-            }
-          }
+  const t = `${array_data[0][1]}-${array_data[0][0]}`
+  this.$emit('sendClearCompareWhithHoliday',array_data[1])
+  
+  // ✅ ИСПРАВЛЕНО: замена this.$children.find на this.$refs
+  const refNameEnd = `js-calendar-early-period-end-${array_data[1]}`;
+  const targetComponentEnd = this.$refs[refNameEnd]?.[0];
+  if (targetComponentEnd && typeof targetComponentEnd.newMethods === 'function') {
+    targetComponentEnd.newMethods([array_data[1],array_data[0]]);
+  }
+  
+  const refNameMain = `js-calendar-early-repayment-${array_data[1]}`;
+  const targetComponentMain = this.$refs[refNameMain]?.[0];
+  if (targetComponentMain && targetComponentMain.$el) {
+    const parent = targetComponentMain.$el.closest('.js--credit-calendar-input');
+    if(parent){
+      const element_eray = parent.querySelector('input.js--calendar-field-early-repayment');
+      if (element_eray){
+        element_eray.value = `${this.month[parseInt(array_data[0][0])]}, ${array_data[0][1]}`;
+        if(element_eray.classList.contains('js-early-required')) {
+          element_eray.classList.add('js-filled')
+        }
+        if (element_eray.closest('.js--container-block-required')
+          && element_eray.closest('.js--container-block-required').querySelector('.js--required-error')) {
+          element_eray.closest('.js--container-block-required').querySelector('.js--required-error').classList.add('display-none')
+        }
+        if (element_eray.closest('.js--for-clear-field')) {
+          element_eray.closest('.js--for-clear-field').classList.remove('input_error')
+        }
+        if (element_eray.closest('.js--for-clear-field') && element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax')) {
+          element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax').classList.add('active')
+        }
+        if (element_eray.classList.contains('js-early-period-required')) {
+          element_eray.classList.add('js-filled')
         }
       }
-      //ЗАПИСЫВАЮ ДАННЫЕ В МАССИВЫ ОТ КАЛЕНДАРЯ НАЧАЛО ПЕРИОДА
-      const fountId = this.array_block_early_repayment_main.find(user => user.id === array_data[1])
-      if (fountId){
-        fountId.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        fountId.flag=1
-      }
-      const fountIdEnd = this.array_block_early_repayment_end.find(user => user.id === array_data[1])
-      if (fountIdEnd){
-        fountIdEnd.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        fountIdEnd.flag=1
-      }
-      const fountIdAllPeriod = this.array_block_early_repayment_end.find(user => user.id === array_data[1])
-      if (fountIdAllPeriod){
-        fountIdAllPeriod.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        if (this.array_block_early_repayment_all_period[array_data[1]]!==undefined) {
-          this.array_block_early_repayment_all_period[array_data[1]].selected_value_begin=array_data[0]
-        }
-      }
-      const fountIdAllPeriodU = this.array_block_early_repayment_all_period.find(user => user.id === array_data[1])
-      if (fountIdAllPeriodU){
-        fountIdAllPeriodU.selected_value_begin=array_data[0]
-      }
-      if (this.array_block_early_repayment_all_period[array_data[1]]!==undefined&&this.array_block_early_repayment_all_period[array_data[1]].selected_value_end!==null) {
-        this.array_early_repayment_date = this.addOrReplace(this.array_early_repayment_date,array_data)
-        this.array_selected_dates.push(array_data[0])
-      }
-      const indexArray = this.block_requared.findIndex(obj => obj.id === array_data[1]);
-      if (indexArray !== -1) {
-        this.block_requared[indexArray].date_full = true;
-        this.block_requared[indexArray].date_begin = true;
-      }
+    }
+  }
+  
+  // ... остальной код без изменений ...
+},
 
-      //ЗАПИСЫВАЮ В МАССИВЫ ДАННЫЕ КОТОРЫЕ ПРИШЛИ ОТ ОСНОВНОГО КАЛЕНДАРЯ ДОСРОЧКИ ТАК КАК ДАННЫЕ ОТ КАЛЕНДАРЯ НАЧАЛО ПОДСТАВЛЯЮТСЯ В ОСНОВНОЙ КАЛЕНДАРЬ
-      const fountIdMain = this.array_block_early_repayment_period.find(user => user.id === array_data[1])
-      if (fountIdMain){
-        fountIdMain.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        fountIdMain.flag=1
-      }
-      const indexArrayMain = this.block_requared.findIndex(obj => obj.id === array_data[1]);
-      if (indexArrayMain !== -1) {
-        this.block_requared[indexArrayMain] = {
-          ...this.block_requared[indexArrayMain],
-          date_full: true
-        };
-        this.block_requared[indexArray].date_begin = true;
-      }
-      const fountIdAllPeriodMain = this.array_block_early_repayment_end.find(user => user.id === array_data[1])
-      if (fountIdAllPeriodMain){
-        fountIdAllPeriodMain.selected_value=`${array_data[0][1]}-${array_data[0][0]}`
-        fountIdAllPeriodMain.selected_value_begin=array_data[0]
-      }
-      const existingItemsMain = this.array_block_early_repayment.find(item => item.id === array_data[1]);
-      if (existingItemsMain) {
-        existingItemsMain.field_data=array_data[0][1]
-        existingItemsMain.dateEarly=array_data[0]
-      }
-    },
