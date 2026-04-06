@@ -1,29 +1,18 @@
-tooltip_information: {
-    handler(newVal, oldVal) {
-      console.log('🔄 tooltip_information изменился');
-      console.log('payment_type:', this.payment_type);
-      console.log('#ann.checked:', document.querySelector('#ann')?.checked);
-    },
-    deep: true,
-    immediate: true
-  },
+<div style="border: 2px solid red; padding: 10px; margin: 10px;">
+  <p>🧪 ТЕСТОВЫЙ БЛОК (не должен сбрасываться)</p>
+  <input id="test-ann" type="radio" value="annuity" name="test-payment" v-model="payment_type" />
+  <label for="test-ann">Тест: Аннуитетный</label>
+  <input id="test-dif" type="radio" value="differentiated" name="test-payment" v-model="payment_type" />
+  <label for="test-dif">Тест: Дифференцированный</label>
+  <p>payment_type: {{ payment_type }}</p>
+  <p>test-ann.checked: <span id="test-checked-state"></span></p>
+</div>
 
 
-
-const radioAnn = document.querySelector('#ann');
-    console.log('📍 #ann найден при монтировании:', !!radioAnn);
-    
-    // Создаём слабый референс (WeakRef), чтобы отследить, жив ли старый элемент
-    const radioRef = new WeakRef(radioAnn);
-    
-    // Периодически проверяем, не "умер" ли исходный элемент
-    this._checkInterval = setInterval(() => {
-      const el = radioRef.deref();
-      if (!el) {
-        console.log('💀 Исходный элемент #ann удалён из DOM!');
-        console.log('Новый #ann в документе:', !!document.querySelector('#ann'));
-        console.log('payment_type:', this.payment_type);
-        console.trace('Стек');
-        clearInterval(this._checkInterval);
+this._testCheckInterval = setInterval(() => {
+      const testRadio = document.querySelector('#test-ann');
+      const span = document.querySelector('#test-checked-state');
+      if (testRadio && span) {
+        span.textContent = testRadio.checked + ' (property)';
       }
-    }, 100);
+    }, 200);
