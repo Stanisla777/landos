@@ -1,215 +1,750 @@
-receivedClearHolidayReceive(index){
-  //передаю в календарь периодов команду и флаг, что в основном календаре блока досрочного погашения стёрли дату
-  this.min_date_holidays_begin = this.min_date_holidays
-  this.min_date_holidays_end = this.min_date_holidays
-  eventBus.emit('sendToBeginCalendarClear',index)
-  this.$emit('sendClearCompareWhithHoliday',index)
-  eventBus.emit('sendClearToEnd', index)
-  
-  //обнуляю календарь конец
-  // замена this.$children.find на this.$refs
-  const refNameMain = `js-calendar-early-repayment-${index}`;
-  const targetComponentMain = this.$refs[refNameMain]?.[0];
-  if (targetComponentMain && typeof targetComponentMain.updateCalendar === 'function') {
-    targetComponentMain.updateCalendar()
-  }
-  
-  //обнуляю календарь начала
-  const refNameBegin = `js-calendar-early-period-begin-${index}`;
-  const targetComponentBegin = this.$refs[refNameBegin]?.[0];
-  if (targetComponentBegin && targetComponentBegin.$el) {
-    const input = targetComponentBegin.$el.querySelector('input.js--calendar-field-begin');
-    if (input) {
-      input.value = '';
-      targetComponentBegin.$el.querySelector('.js-early-period-required')?.classList.remove('js-filled');
-      targetComponentBegin.$el.querySelector('input')?.classList.remove('active');
-      targetComponentBegin.$el.querySelector('.js--clear-calc-tax')?.classList.remove('active');
+<div class="feed_back__user-form-block calc-tax-deduc-new__row-title-container">
+                      <input id="ann" type="radio" value="annuity" name="type" checked="checked"
+                       @change="paymentType"/>
+                      <label class="feed_back__radio-label" for="ann">
+                      <p>Аннуитетный</p>
+                    </label>
+                      <span class="content-note desctop content-note__center js--content-note"
+                                  v-if="tooltip_information['annuity-payment']!==''">
+                        <span class="content-note__text">{{ tooltip_information["annuity-payment"] }}</span>
+                      </span>
+                      <span class="content-note mobile" v-if="tooltip_information['annuity-payment']!==''"
+                        @click="openTooltipMobile">
+                      </span>
+                    </div>
+
+<template>
+  <div class="calc-tax-deduc-new__block calc-tax-deduc-new__area grey js--container-block">
+    <div class="calc-tax-deduc-new__container-title">
+      <div class="calc-tax-deduc-new__row-title-container not-margin">
+        <h3 class="calc-tax-deduc-new__block-title big">Данные об ипотеке</h3>
+      </div>
+    </div>
+    <div class="calc-tax-deduc-new__wr-function-block always-active">
+      <div class="calc-tax-deduc-new__acc-wr">
+        <div class="calc-tax-deduc-new__block-subtitle">
+          <p>Блок содержит исходные данные об ипотеке и является обязательным для заполнения</p>
+        </div>
+        <div class="mor-rep-calculators__body-block">
+          <div class="calc-tax-deduc-new__row js--tax-deduc-row">
+            <div class="calc-tax-deduc-new__row-input js--calc-row-input">
+              <div
+                class="calc-tax-deduc-new__container-block mor-rep-calculators__parent-tooltip-mobile js--container-block js--tooltip-parent">
+                <div class="calc-tax-deduc-new__row-title-container">
+                  <p class="calc-tax-deduc-new__row-title">Сумма кредита, ₽</p><span
+                  class="content-note desctop content-note__center js--content-note"
+                  v-if="tooltip_information['loan-amount']!==''"><span
+                  class="content-note__text">{{ tooltip_information["loan-amount"] }}</span></span><span
+                  class="content-note mobile" v-if="tooltip_information['loan-amount']!==''"
+                  @click="openTooltipMobile"></span>
+                </div>
+                <div v-if="tooltip_information['loan-amount']!==''">
+                  <div class="select__background modal-special-background" @click="closeTooltipMobile"></div>
+                  <div class="select-list__selection-window modal-special-styles js--openlist-body">
+                    <div class="select-list__head">
+                      <p>Сумма кредита</p>
+                      <div class="select-list__head-close" @click="closeTooltipMobile">
+                        <svg width="10" height="10" viewbox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z"
+                                fill="#252628"></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="select-list__wr-search mor-rep-calculators__wr-search">
+                      <p>{{ tooltip_information["loan-amount"] }}</p>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="calc-tax-deduc-new__col-input js--number-debt js--tex-deduc-input js--loan-amount js--for-clear-field">
+                  <input class="js--normal-field js-mor-required" ref="inputLoanAmount" inputmode="numeric"
+                         placeholder="Введите сумму" @keyup="fieldNotEmpty" @focus="inpFocus" @blur="inpBlur"
+                         @input="multiplyActionsInpuLoanAmount(1000000000,$event)"/>
+                  <div class="calc-tax-deduc-new__input-clear js--clear-calc-tax"
+                       @click="multiClickCloseLoanAmount"></div>
+                </div>
+                <p class="mor-rep-calculators__input-error js--required-error display-none">Это поле обязательное для
+                  заполнения</p>
+              </div>
+
+              <component-calendar :tooltip_information="tooltip_information" :answers="answers"
+                                  @sendDateLoanReceipt="receivedDateLoanReceipt"
+                                  @sendClearDateReceive="receivedClearDateReceive"
+                                  @sendTimeDataLoan="receivedTimeDataLoan">
+              </component-calendar>
+
+            </div>
+          </div>
+          <div class="calc-tax-deduc-new__row js--tax-deduc-row">
+            <div class="calc-tax-deduc-new__row-input js--calc-row-input">
+              <div
+                class="calc-tax-deduc-new__container-block mor-rep-calculators__parent-tooltip-mobile js--container-block js--tooltip-parent">
+                <div class="calc-tax-deduc-new__row-title-container">
+                  <p class="calc-tax-deduc-new__row-title">Ставка, %</p><span
+                  class="content-note desctop content-note__center js--content-note"
+                  v-if="tooltip_information['bet']!==''"><span
+                  class="content-note__text">{{ tooltip_information["bet"] }}</span></span><span
+                  class="content-note mobile" v-if="tooltip_information['bet']!==''" @click="openTooltipMobile"></span>
+                </div>
+                <div v-if="tooltip_information['bet']!==''">
+                  <div class="select__background modal-special-background" @click="closeTooltipMobile"></div>
+                  <div class="select-list__selection-window modal-special-styles js--openlist-body">
+                    <div class="select-list__head">
+                      <p>Ставка</p>
+                      <div class="select-list__head-close" @click="closeTooltipMobile">
+                        <svg width="10" height="10" viewbox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z"
+                                fill="#252628"></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="select-list__wr-search mor-rep-calculators__wr-search">
+                      <p>{{ tooltip_information["bet"] }}</p>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="calc-tax-deduc-new__col-input js--number-debt js--tex-deduc-input js--interest-rate-calc js--for-clear-field">
+                  <input class="js--normal-field js-mor-required" ref="inputPersent" type="text" inputmode="decimal"
+                         placeholder="Введите процент" @keyup="fieldNotEmpty" @focus="inpFocus" @blur="inpBlur"
+                         @input="maxPercent"/>
+                  <div class="calc-tax-deduc-new__input-clear js--clear-calc-tax" @click="clearInputPercent"></div>
+                </div>
+                <p class="mor-rep-calculators__input-error js--required-error display-none">Это поле обязательное для
+                  заполнения</p>
+              </div>
+              <div
+                class="calc-tax-deduc-new__container-block mor-rep-calculators__parent-tooltip-mobile js--calc-row-input js--container-block js--tooltip-parent">
+                <div class="calc-tax-deduc-new__row-title-container">
+                  <p class="calc-tax-deduc-new__row-title">Срок кредита</p><span
+                  class="content-note desctop content-note__center js--content-note"
+                  v-if="tooltip_information['loan-term']!==''"><span
+                  class="content-note__text">{{ tooltip_information["loan-term"] }}</span></span><span
+                  class="content-note mobile" v-if="tooltip_information['loan-term']!==''"
+                  @click="openTooltipMobile"></span>
+                </div>
+                <div v-if="tooltip_information['loan-term']!==''">
+                  <div class="select__background modal-special-background" @click="closeTooltipMobile"></div>
+                  <div class="select-list__selection-window modal-special-styles js--openlist-body">
+                    <div class="select-list__head">
+                      <p>Срок кредита</p>
+                      <div class="select-list__head-close" @click="closeTooltipMobile">
+                        <svg width="10" height="10" viewbox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z"
+                                fill="#252628"></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="select-list__wr-search mor-rep-calculators__wr-search">
+                      <p>{{ tooltip_information["loan-term"] }}</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="mor-rep-calculators__row-term">
+                  <div
+                    class="calc-tax-deduc-new__col-input js--number-debt js--tex-deduc-input js--for-clear-field js-mor-required"
+                    ref="fieldTermWrapper">
+                    <input class="js--normal-field js--field-term" ref="fieldTerm" inputmode="numeric" placeholder="Введите количество"
+                       v-if="term==='year'"
+                       @keyup="fieldNotEmpty"
+                       @focus="inpFocus" @blur="inpBlur"
+                       @input="justNumber(40,$event)"/>
+                    <input class="js--normal-field js--field-term" ref="fieldTerm" inputmode="numeric" placeholder="Введите количество"
+                       v-if="term==='month'"
+                       @keyup="fieldNotEmpty"
+                       @focus="inpFocus"
+                       @blur="inpBlur"
+                       @input="justNumber(480,$event)"/>
+                    <div class="calc-tax-deduc-new__input-clear js--clear-calc-tax" @click="clearInputTermAmount"></div>
+                  </div>
+                  <div
+                    class="radio-button-switch mor-rep-calculators__radio-button-switch js--for-clear-field js--for-clear-radio-term">
+                    <div class="radio-button-switch__item">
+                      <input class="js--radio-term" id="fid-1" ref="switchTermYear" type="radio" name="term" value="year" checked="checked"
+                         @change="changeMortgageTerm"/>
+                      <label for="fid-1">Годы</label>
+                    </div>
+                    <div class="radio-button-switch__item mor-rep-calculators__switch">
+                      <input class="js--radio-term"
+                        id="fid-2"
+                        ref="switchTermMonth"
+                        type="radio" name="term"
+                        value="month"
+                        @change="changeMortgageTerm"/>
+                      <label for="fid-2">Месяцы</label>
+                    </div>
+                  </div>
+                </div>
+                <p class="mor-rep-calculators__input-error js--required-error display-none">Это поле обязательное для заполнения</p>
+              </div>
+            </div>
+          </div>
+          <div class="calc-tax-deduc-new__row js--tax-deduc-row">
+            <div class="calc-tax-deduc-new__container-block">
+              <div class="calc-tax-deduc-new__row-title-container">
+                <p class="calc-tax-deduc-new__row-title">Тип платежа</p>
+              </div>
+              <div class="mor-rep-calculators__row-flex height">
+                <div class="mor-rep-calculators__radio-type js--for-clear-field js--for-clear-radio-type-payment">
+                  <div
+                    class="checkbox-stylized feed_back__user-form-subscription mor-rep-calculators__parent-tooltip-mobile js--checkbox_wrapper js--tooltip-parent">
+                    <div class="personal-office__user-form-subscription-em"></div>
+                    <div class="feed_back__user-form-block calc-tax-deduc-new__row-title-container">
+                      <input id="ann" type="radio" value="annuity" name="type" checked="checked"
+                       @change="paymentType"/>
+                      <label class="feed_back__radio-label" for="ann">
+                      <p>Аннуитетный</p>
+                    </label>
+                      <span class="content-note desctop content-note__center js--content-note"
+                                  v-if="tooltip_information['annuity-payment']!==''">
+                        <span class="content-note__text">{{ tooltip_information["annuity-payment"] }}</span>
+                      </span>
+                      <span class="content-note mobile" v-if="tooltip_information['annuity-payment']!==''"
+                        @click="openTooltipMobile">
+                      </span>
+                    </div>
+                    <div v-if="tooltip_information['annuity-payment']!==''">
+                      <div class="select__background modal-special-background" @click="closeTooltipMobile"></div>
+                      <div class="select-list__selection-window modal-special-styles js--openlist-body">
+                        <div class="select-list__head">
+                          <p>Тип платежа</p>
+                          <div class="select-list__head-close" @click="closeTooltipMobile">
+                            <svg width="10" height="10" viewbox="0 0 10 10" fill="none"
+                                 xmlns="http://www.w3.org/2000/svg">
+                              <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z"
+                                    fill="#252628"></path>
+                            </svg>
+                          </div>
+                        </div>
+                        <div class="select-list__wr-search mor-rep-calculators__wr-search">
+                          <p>{{ tooltip_information["annuity-payment"] }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="checkbox-stylized feed_back__user-form-subscription mor-rep-calculators__parent-tooltip-mobile js--tooltip-parent js--checkbox_wrapper">
+                    <div class="personal-office__user-form-subscription-em"></div>
+                    <div class="feed_back__user-form-block calc-tax-deduc-new__row-title-container">
+                      <input id="dif" type="radio" value="differentiated" name="type"
+                         ref="differentiatedCheck"
+                         @change="paymentType"/>
+                      <label class="feed_back__radio-label calc-tax-deduc-new__row-title-container" for="dif">
+                      <p>Дифференцированный</p>
+                    </label>
+                      <span class="content-note desctop content-note__center js--content-note"
+                            v-if="tooltip_information['differentiated-payment']!==''">
+                        <span class="content-note__text">{{ tooltip_information["differentiated-payment"] }}</span>
+                      </span>
+                      <span class="content-note mobile"
+                        v-if="tooltip_information['differentiated-payment']!==''"
+                        @click="openTooltipMobile">
+                      </span>
+                    </div>
+                    <div v-if="tooltip_information['differentiated-payment']!==''">
+                      <div class="select__background modal-special-background" @click="closeTooltipMobile"></div>
+                      <div class="select-list__selection-window modal-special-styles js--openlist-body">
+                        <div class="select-list__head">
+                          <p>Тип платежа</p>
+                          <div class="select-list__head-close" @click="closeTooltipMobile">
+                            <svg width="10" height="10" viewbox="0 0 10 10" fill="none"
+                                 xmlns="http://www.w3.org/2000/svg">
+                              <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z"
+                                    fill="#252628"></path>
+                            </svg>
+                          </div>
+                        </div>
+                        <div class="select-list__wr-search mor-rep-calculators__wr-search">
+                          <p>{{ tooltip_information["differentiated-payment"] }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div><!--кнопка очистить-->
+                <div class="mor-rep-calculators__clear-block" v-show="allFieldsFilled"
+                     @click="multiClickClearAllLoanAmount">
+                  <div class="mor-rep-calculators__clear-block-icon"></div>
+                  <p>Очистить</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+<script>
+import eventBus from '../eventBus';
+import componentCalendar from './v-2-component-calendar-mortgage-data.vue';
+import numberFormatting from '../mixin/numberFormatting.js';
+import IMask from 'imask';
+
+let maskCalendarMortgageData
+
+let mask_interest;
+export default {
+  name: 'v-component-information-mortgage',
+  mixins: [numberFormatting],
+  props:['answers','tooltip_information', 'screenWidth'],
+  data(){
+    return {
+      mask_interest:null,
+      term:'year',
+      //поля
+      payment_type:'annuity',
+      a_calculation:null,// исходный ежемесячный платеж (нужно передавать в стейт)
+      n_calculation:0, // количество платежей (возможно нужно передавать в общий стейт)
+      date_receipt_mortgage:null, //дата получения ипотеки
+      field_loan_term:null, //срок кредита
+      field_loan_term_error:'',
+      loan_amount:0, //сумма кредита
+      i_calculation:0,//  ежемесячная процентная ставка (возможно не нужно передавать в стейт)
     }
-    if (typeof targetComponentBegin.updateCalendar === 'function') {
-      targetComponentBegin.updateCalendar()
-    }
-  }
-  
-  const existingItemsFieldData = this.array_block_early_repayment.find(item => item.id === index);
-  if (existingItemsFieldData) {
-    existingItemsFieldData.field_data=''
-  }
-  const existingItemsFieldPeriod = this.array_block_early_repayment_period.find(item => item.id === index);
-  if (existingItemsFieldPeriod) {
-    existingItemsFieldPeriod.selected_value=null
-  }
-  const indexArray = this.block_requared.findIndex(obj => obj.id === index);
-  if (indexArray !== -1) {
-    this.block_requared[indexArray].date_full = false;
-    this.block_requared[indexArray].date_begin = false;
-  }
-  this.$emit('sendButtonResult')
-},
+  },
+  methods:{
+    //ВБИВАНИЯ В ПОЛЯ
+    receivedTimeDataLoan(data){
+      eventBus.emit('emitTimeDataLoan',data)
+    },
 
----------------------
+    //отправляю сумму кредита
+    loanAmount(el) {
+      let element;
+      if (el instanceof Event) {
+       element = el.currentTarget;
+      }
+      else if(el instanceof HTMLElement ) {
+        element = el;
+      }
 
-receivedClearBeginCalendar(index) {
-  this.$emit('sendClearInCalendarBegin', index)
-  this.$emit('sendClearCompareWhithHoliday', index)
-  eventBus.emit('sendClearToEnd', index)
-  
-  // замена this.$children.find на this.$refs
-  const refName = `js-calendar-early-repayment-${index}`;
-  const targetComponentBegin = this.$refs[refName]?.[0];
-  if (targetComponentBegin && targetComponentBegin.$el) {
-    const input = targetComponentBegin.$el.querySelector('input.js--calendar-field');
-    if (input) {
-      input.value = '';
-      targetComponentBegin.$el.querySelector('.js-early-required')?.classList.remove('js-filled');
-      targetComponentBegin.$el.querySelector('input')?.classList.remove('btn-active');
-      targetComponentBegin.$el.querySelector('.js--clear-calc-tax')?.classList.remove('active');
-    }
-    if (typeof targetComponentBegin.updateCalendar === 'function') {
-      targetComponentBegin.updateCalendar()
-    }
-  }
-  
-  const existingItems = this.array_block_early_repayment.find(item => item.id === index);
-  if (existingItems) {
-    existingItems.field_data=''
-  }
-  const indexArray = this.block_requared.findIndex(obj => obj.id === index);
-  if (indexArray !== -1) {
-    this.block_requared[indexArray].date_full = false;
-    this.block_requared[indexArray].date_begin = false;
-  }
-},
--------------------------
-clearAllFieldBlock(blockId,el) {
-
-
-// ... предыдущий код без изменений ...
-
-// ✅ ИСПРАВЛЕНО: замена this.$children.find на this.$refs
-const refNameMain = `js-calendar-early-repayment-${blockId}`;
-const targetComponentUpdate = this.$refs[refNameMain]?.[0];
-if (targetComponentUpdate && typeof targetComponentUpdate.updateCalendar === 'function') {
-  targetComponentUpdate.updateCalendar()
-}
-
-const refNameEnd = `js-calendar-early-period-end-${blockId}`;
-const targetComponentUpdateEnd = this.$refs[refNameEnd]?.[0];
-if (targetComponentUpdateEnd && typeof targetComponentUpdateEnd.updateCalendar === 'function') {
-  targetComponentUpdateEnd.updateCalendar()
-}
-
-const refNameBegin = `js-calendar-early-period-begin-${blockId}`;
-const targetComponentBegin = this.$refs[refNameBegin]?.[0];
-// targetComponentBegin используется ниже, если нужно
-
-// ... далее в блоке if (this.array_block_early_repayment.length>1) ...
-
-if (this.array_block_early_repayment.length>1){
-  if (parent) {
-    // ✅ ИСПРАВЛЕНО: замена this.$children.find на this.$refs
-    const targetComponent = this.$refs[refNameMain]?.[0];
-    if (targetComponent && typeof targetComponent.destroyCalendar === 'function') {
-      targetComponent.destroyCalendar()
-    }
-    
-    const targetComponentBeginDestroy = this.$refs[refNameBegin]?.[0];
-    if (targetComponentBeginDestroy && typeof targetComponentBeginDestroy.destroyCalendar === 'function') {
-      targetComponentBeginDestroy.destroyCalendar()
-    }
-    
-    const targetComponentEndDestroy = this.$refs[refNameEnd]?.[0];
-    if (targetComponentEndDestroy && typeof targetComponentEndDestroy.destroyCalendar === 'function') {
-      targetComponentEndDestroy.destroyCalendar()
-    }
-  }
-}
-
-// ... остальной код без изменений ...
-
------------------
-
-receivedEearlyRepayment(array_data) {
-  this.array_early_repayment_date = this.addOrReplace(this.array_early_repayment_date,array_data)
-  this.array_selected_dates.push(array_data[0])
-  this.$emit('sendClearCompareWhithHoliday',array_data[1])
-  
-  // ✅ ИСПРАВЛЕНО: замена this.$children.find на this.$refs
-  const refNameEnd = `js-calendar-early-period-end-${array_data[1]}`;
-  const targetComponentEnd = this.$refs[refNameEnd]?.[0];
-  if (targetComponentEnd && typeof targetComponentEnd.newMethods === 'function') {
-    targetComponentEnd.newMethods([array_data[1],array_data[0]]);
-  }
-  
-  const refNameBegin = `js-calendar-early-period-begin-${array_data[1]}`;
-  const targetComponentMain = this.$refs[refNameBegin]?.[0];
-  if (targetComponentMain && targetComponentMain.$el) {
-    const parent = targetComponentMain.$el.closest('.js--credit-calendar-input');
-    if(parent){
-      const element_eray = parent.querySelector('input.js--calendar-field-begin');
-      if (element_eray){
-        element_eray.value = `${this.month[parseInt(array_data[0][0])]}, ${array_data[0][1]}`;
-        if(element_eray.classList.contains('js-early-required')) {
-          element_eray.classList.add('js-filled')
+      let parse_element = element.value.replace(/\s/g, '')
+      this.loan_amount = parseInt(parse_element)
+      if (element.value.length>0) {
+        this.$emit('sendLoanAmountForHolidays',this.loan_amount)
+        if (element.classList.contains('js-mor-required')) {
+          element.classList.add('js-filled')
+          this.$emit('sendButtonResult')
         }
-        if (element_eray.closest('.js--container-block-required')
-          && element_eray.closest('.js--container-block-required').querySelector('.js--required-error')) {
-          element_eray.closest('.js--container-block-required').querySelector('.js--required-error').classList.add('display-none')
+        if (element.closest('.js--container-block')
+          && element.closest('.js--container-block').querySelector('.js--required-error')) {
+          element.closest('.js--container-block').querySelector('.js--required-error').classList.add('display-none')
         }
-        if (element_eray.closest('.js--for-clear-field')) {
-          element_eray.closest('.js--for-clear-field').classList.remove('input_error')
-        }
-        if (element_eray.closest('.js--for-clear-field') && element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax')) {
-          element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax').classList.add('active')
-        }
-        if (element_eray.classList.contains('js-early-period-required')) {
-          element_eray.classList.add('js-filled')
+        if (element.closest('.js--for-clear-field')) {
+          element.closest('.js--for-clear-field').classList.remove('input_error')
         }
       }
-    }
-  }
+      else if (element.value.length===0) {
+        this.loan_amount=0
+        element.classList.remove('js-filled')
+        this.$emit('sendButtonResult')
+      }
+    },
+    ////ввод только цифр в строке
+    justNumber(count,e){
+      let element;
+      if (e instanceof Event) {
+        element = e.currentTarget;
+      }
+      else if(e instanceof HTMLElement ) {
+        element = e;
+      }
+      element.value = element.value.replace(/[^\d]/g, '');
 
-  // ... остальной код без изменений ...
-},
----------------------
-receivedEearlyRepaymentPeriodBegin(array_data) {
-  const t = `${array_data[0][1]}-${array_data[0][0]}`
-  this.$emit('sendClearCompareWhithHoliday',array_data[1])
-  
-  // ✅ ИСПРАВЛЕНО: замена this.$children.find на this.$refs
-  const refNameEnd = `js-calendar-early-period-end-${array_data[1]}`;
-  const targetComponentEnd = this.$refs[refNameEnd]?.[0];
-  if (targetComponentEnd && typeof targetComponentEnd.newMethods === 'function') {
-    targetComponentEnd.newMethods([array_data[1],array_data[0]]);
-  }
-  
-  const refNameMain = `js-calendar-early-repayment-${array_data[1]}`;
-  const targetComponentMain = this.$refs[refNameMain]?.[0];
-  if (targetComponentMain && targetComponentMain.$el) {
-    const parent = targetComponentMain.$el.closest('.js--credit-calendar-input');
-    if(parent){
-      const element_eray = parent.querySelector('input.js--calendar-field-early-repayment');
-      if (element_eray){
-        element_eray.value = `${this.month[parseInt(array_data[0][0])]}, ${array_data[0][1]}`;
-        if(element_eray.classList.contains('js-early-required')) {
-          element_eray.classList.add('js-filled')
+      if (element.value.length > 0 && element.value[0] === '0'){
+        element.value = '1' +  element.value.slice(1)
+      }
+
+      if (parseInt(element.value) > count) {
+        element.value = count
+      }
+      this.field_loan_term_error=element.value
+
+      if (element.value.length===0) {
+        this.field_loan_term=null
+        if (element.closest('.js-mor-required')) {
+          element.closest('.js-mor-required').classList.remove('js-filled')
+          this.$emit('sendButtonResult')
         }
-        if (element_eray.closest('.js--container-block-required')
-          && element_eray.closest('.js--container-block-required').querySelector('.js--required-error')) {
-          element_eray.closest('.js--container-block-required').querySelector('.js--required-error').classList.add('display-none')
+        if (element.closest('.js--for-clear-field')) {
+          element.closest('.js--for-clear-field').classList.remove('input_error')
         }
-        if (element_eray.closest('.js--for-clear-field')) {
-          element_eray.closest('.js--for-clear-field').classList.remove('input_error')
+        eventBus.emit('emitMonthlyPayment',0)
+      }
+      else if(element.value.length>0) {
+        this.field_loan_term = parseInt(element.value)
+        if (this.term==='year') {
+          this.n_calculation = this.field_loan_term * 12
+        } else {
+          this.n_calculation = this.field_loan_term
         }
-        if (element_eray.closest('.js--for-clear-field') && element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax')) {
-          element_eray.closest('.js--for-clear-field').querySelector('.js--clear-calc-tax').classList.add('active')
+        if (element.closest('.js-mor-required').classList.contains('js-mor-required')) {
+          element.closest('.js-mor-required').classList.add('js-filled')
+          this.$emit('sendButtonResult')
         }
-        if (element_eray.classList.contains('js-early-period-required')) {
-          element_eray.classList.add('js-filled')
+        if (element.closest('.js--container-block')
+          && element.closest('.js--container-block').querySelector('.js--required-error')) {
+          element.closest('.js--container-block').querySelector('.js--required-error').classList.add('display-none')
+        }
+        if (element.closest('.js--for-clear-field')) {
+          element.closest('.js--for-clear-field').classList.remove('input_error')
+        }
+        //передаю срок кредита в родитель и в компоненту Ипотечные каникулы и Досрочное погашение
+        eventBus.emit('emitMonthlyPayment',this.n_calculation)
+      }
+    },
+
+    //СТИРАНИЯ ПОЛЕЙ
+    //стирание в поле сумма ипотеки находится в файле nimbertFormattng.js
+    receivedClearDateReceive(){
+      this.date_receipt_mortgage=null
+      //отправил стирание в календарь каникул и досрочки
+      eventBus.emit('emitClearCalendarHolidaysPayment')
+      this.$emit('sendButtonResult')
+    },
+    //стираю срок кредита
+    clearInputTermAmount(e){
+      const element = e.currentTarget;
+      const parent = element.closest('.js--tex-deduc-input');
+      if (parent) {
+        parent.querySelector('input').value='';
+        parent.querySelector('input').classList.remove('active')
+        parent.classList.remove('js-filled')
+        element.classList.remove('active')
+      }
+      this.field_loan_term=null
+      this.field_loan_term_error=''
+      eventBus.emit('emitMonthlyPayment',0)
+      this.$emit('sendButtonResult')
+    },
+    //Очистка поля с процентами
+    clearInputPercent(el) {
+      const element = el.currentTarget
+      const parent = element.closest('.js--tex-deduc-input');
+      if (parent) {
+        this.mask_interest.value='';
+        parent.querySelector('input').classList.remove('active')
+        element.classList.remove('active')
+      }
+      this.i_calculation=0
+      if (element.closest('.js--for-clear-field')
+        && element.closest('.js--for-clear-field').querySelector('.js-mor-required')) {
+        element.closest('.js--for-clear-field').querySelector('.js-mor-required').classList.remove('js-filled')
+      }
+      this.$emit('sendButtonResult')
+
+    },
+
+    //именение радио-кнопок Годы - месяцы, в зависимости от данных формируется вввод в поле "Срок кредита"
+    // возможность вбивать двух или трёхзначное число
+    changeMortgageTerm(el) {
+      const element = el.currentTarget
+      this.term = element.getAttribute('value')
+
+      if (this.field_loan_term!==null){
+        if (this.term==='year') {
+          this.n_calculation = this.field_loan_term * 12
+        } else {
+          this.n_calculation = this.field_loan_term
+        }
+      } else {
+        this.n_calculation = 0
+      }
+      //передаю срок кредита в родитель и в компоненту Ипотечные каникулы
+      eventBus.emit('emitMonthlyPayment',this.n_calculation)
+
+    },
+    //маска для ввода процентов
+    inputRate(){
+      const input_status = document.querySelectorAll('.js--interest-rate-calc input');
+      const el = this.$refs.inputPersent;
+      // Проверяем, что элемент существует в DOM
+      if (!el) {
+        console.warn('Элемент inputPersent не найден при инициализации маски');
+        return;
+      }
+      // Ваши настройки маски — оставляем без изменений
+      const maskOptions = {
+        mask: Number,
+        scale: 2,
+        thousandsSeparator: '',
+        padFractionalZeros: false,
+        normalizeZeros: 'trim',
+        radix: ',',
+        mapToRadix: ['.', ','],
+        min: 0.1,
+        max: 100,
+        autofix: true
+      };
+
+      // Создаём экземпляр IMask
+      this.mask_interest = IMask(el, maskOptions);
+      this.mask_interest.on('accept',()=>{
+        const parse_element = this.mask_interest.value.replace(',', '.')
+        this.i_calculation = parseFloat(parse_element)
+        if (this.mask_interest.value.length===0) {
+          this.i_calculation=0
+        }
+      })
+    },
+    //ограничение ввода процентной ставки, число не больше 100
+    maxPercent(el) {
+      let element;
+      if (el instanceof Event) {
+        element = el.currentTarget;
+      }
+      else if(el instanceof HTMLElement ) {
+        element = el;
+      }
+      if (parseInt(element.value)>100){
+        element.value=100
+      }
+      if(element.value=='100,') {
+        element.value=100
+      }
+      if (element.value.length>0) {
+        if (element.classList.contains('js-mor-required')) {
+          element.classList.add('js-filled')
+          this.$emit('sendButtonResult')
+        }
+        if (element.closest('.js--container-block')
+          && element.closest('.js--container-block').querySelector('.js--required-error')) {
+          element.closest('.js--container-block').querySelector('.js--required-error').classList.add('display-none')
+        }
+        if (element.closest('.js--for-clear-field')) {
+          element.closest('.js--for-clear-field').classList.remove('input_error')
         }
       }
-    }
-  }
-  
-  // ... остальной код без изменений ...
-},
+      else if (element.value.length===0) {
+        element.classList.remove('js-filled')
+        this.$emit('sendButtonResult')
+      }
+    },
 
+    // общая функция для методов при вводе в поле срок кредита
+    multiplyActionsInputLoanTerm(perem,el) {
+      this.justNumber(perem,el)
+      this.totalCountPayments(el);
+    },
+
+    //передаю в родитель, что стёрли поле сумма кредита
+    clearInputLoanAmount(e) {
+      const element = e.currentTarget
+      const container = element.closest('.js--container-block')
+      if (element.closest('.js--for-clear-field')
+        && element.closest('.js--for-clear-field').querySelector('.js-mor-required')) {
+        element.closest('.js--for-clear-field').querySelector('.js-mor-required').classList.remove('js-filled')
+      }
+      this.$emit('sendClearInputLoanAmount')
+      this.$emit('sendButtonResult')
+    },
+    clearInputLoanAmountAll(e) {
+      const element = e.currentTarget
+      const container = element.closest('.js--container-block')
+      const array_requared = container.querySelectorAll('.js-mor-required')
+      for (let item of array_requared) {
+        item.classList.remove('js-filled')
+      }
+      this.$emit('sendButtonResult')
+      this.mask_interest.value='';
+      this.$emit('sendClearInputLoanAmount')
+    },
+    //---------------------------------------------------------------------------------------------
+
+    //общая функция для клика по стереть все поля блока
+    multiClickClearAllLoanAmount(e) {
+      this.clearAllFieldBlock(e)
+      this.clearInputLoanAmountAll(e)
+    },
+    //очистить все поля блока
+    clearAllFieldBlock(el) {
+      const element = el.currentTarget
+      const parent = element.closest('.js--container-block');
+      if (parent) {
+        const array_block_input = parent.querySelectorAll('.js--for-clear-field')
+        for (let item of array_block_input) {
+          if (item.querySelector('input.js--normal-field')) {
+            item.querySelector('input.js--normal-field').value = ''
+          }
+          //при клике очистить всё переключение в дефолтное состояние радиокнопки группы срок кредита в группе данные об ипотеке
+          if (item.classList.contains('js--for-clear-radio-term')) {
+            if(item.querySelector('input[type="radio"]').value==='year') {
+              item.querySelector('input[type="radio"]').click();
+            }
+          }
+          //при клике очистить всё переключение в дефолтное состояние радиокнопки группы тип платежав группе данные об ипотеке
+          if (item.classList.contains('js--for-clear-radio-type-payment')) {
+            if(item.querySelector('input[type="radio"]').value==='annuity') {
+              item.querySelector('input[type="radio"]').click();
+            }
+          }
+          //при клике очистить всё очищение поля инпут календаря
+          if (item.querySelector('input.js--calendar-field')) {
+            item.querySelector('input.js--calendar-field').value = ''
+          }
+          if (item.querySelector('.js--clear-calc-tax')) {
+            item.querySelector('.js--clear-calc-tax').classList.remove('active')
+          }
+          //отправил в календарь что всё стёрли
+          eventBus.emit('emitClearCalendarHolidaysPaymentAll')
+          //отправляю в календарь блока
+          eventBus.emit('emitClearCalendarHolidaysPayment')
+        }
+      }
+      this.date_receipt_mortgage=null
+      this.field_loan_term=null
+      this.field_loan_term_error=''
+      this.loan_amount=0
+      this.i_calculation=0
+      eventBus.emit('emitMonthlyPayment',0)
+    },
+    //-----------------------------------------------------------------------------------
+
+    //общая функция для клика по стереть поле Сумма кредита
+    multiClickCloseLoanAmount(e) {
+      this.clearInput(e)
+      this.clearInputLoanAmount(e)
+    },
+    // общая функция для методов при вводе в поле сумма кредита
+    multiplyActionsInpuLoanAmount(perem,el) {
+      this.numberFormattingThousandths(perem,el)
+      //сумма кредита
+      this.loanAmount(el)
+    },
+    //формирую тип платежа
+    paymentType(el){
+      const element = el.currentTarget
+      this.payment_type = element.value
+    },
+    //РАСЧЁТ И ОТПРАВКА ДАННЫХ РОДТЕЛЬСКОМУ КОМПОНЕНТУ
+
+    //получил данные календаря "Дата получения кредита" записал в переменную для отправки потом родителю, следующей строкой в компонент Ипотечные каникулы и досрочное погашение
+    receivedDateLoanReceipt(data) {
+      this.date_receipt_mortgage=data
+      eventBus.emit('emitDateLoanReceipt',data)
+      this.$emit('sendButtonResult')
+    },
+
+  },
+  watch:{
+    allFieldsFilled() {
+      if (this.allFieldsFilled) {
+
+      }
+    },
+    //ошибка, если поле не заполнено воззвращает underfind
+    term() {
+      if (this.term==='year' && this.$refs.fieldTerm.value.length > 2) {
+        this.$refs.fieldTerm.value = parseInt(parseInt(this.$refs.fieldTerm.value) / 12);
+        this.field_loan_term = this.$refs.fieldTerm.value
+      }
+      if (this.term==='year' && this.field_loan_term!==null) {
+        this.n_calculation = this.field_loan_term * 12
+      }
+      else if (this.term==='month' && this.field_loan_term!==null) {
+        this.n_calculation = this.field_loan_term
+      }
+    },
+  },
+  mounted() {
+    console.log(document.querySelector('input#ann').checked);
+    this.$nextTick(() => {
+      console.log(document.querySelector('input#ann').checked);
+      // Сначала создаём маску для процентной ставки
+      this.inputRate();
+      console.log(document.querySelector('input#ann').checked);
+      // После создания маски — безопасно работать с answers
+      if (this.answers.length > 0 && Object.keys(this.answers[0]).length !== 0) {
+        // Подставляем сумму кредита
+        if (this.answers[0].loanAmount) {
+          this.$refs.inputLoanAmount.value = new Intl.NumberFormat("ru-RU").format(this.answers[0].loanAmount);
+          this.fieldNotEmpty(this.$refs.inputLoanAmount);
+          this.loanAmount(this.$refs.inputLoanAmount);
+        }
+        // Подставляем ставку
+        if (this.answers[0].bet) {
+          const betValue = this.answers[0].bet.toString().replace(/\./g, ',');
+          this.$refs.inputPersent.value = betValue;
+          if (this.mask_interest) {
+            this.mask_interest.value = betValue;
+          }
+          this.maxPercent(this.$refs.inputPersent);
+          this.fieldNotEmpty(this.$refs.inputPersent);
+          this.i_calculation = parseFloat(this.answers[0].bet);
+        }
+        // Подставляем срок кредита и переключаем радиокнопки
+        if (this.answers[0].loanTerm) {
+          if (this.answers[0].term === 'month') {
+            this.$refs.switchTermMonth.click();
+          } else {
+            this.$refs.switchTermYear.click();
+          }
+          const termInput = this.$refs.fieldTermWrapper.querySelector('.js--field-term');
+          if (termInput) {
+            if (this.answers[0].term === 'month') {
+              termInput.value = this.answers[0].loanTerm;
+              this.justNumber(480, termInput);
+            } else {
+              termInput.value = parseInt(this.answers[0].loanTerm, 10) / 12;
+              this.justNumber(40, termInput);
+            }
+            this.fieldNotEmpty(termInput);
+          }
+        }
+        // Подставляем тип платежа
+        if (this.answers[0].paymentType && this.answers[0].paymentType === 'differentiated') {
+          this.$refs.differentiatedCheck.click();
+        }
+        // Обрабатываем дату получения кредита
+        if (this.answers[0].dateReceipt) {
+          let dateReceipt;
+          try {
+            dateReceipt = JSON.parse(this.answers[0].dateReceipt);
+            const time_data_loan = parseInt(dateReceipt[1], 10) * 12 + parseInt(dateReceipt[0], 10) + 1;
+            eventBus.emit('emitTimeDataLoan', time_data_loan);
+            eventBus.emit('emitDateLoanReceipt', dateReceipt);
+          } catch (e) {
+            console.warn('Ошибка парсинга dateReceipt:', e);
+          }
+        }
+      }
+      // Обязательный emit при загрузке
+      eventBus.emit('emitMonthlyPayment', this.n_calculation);
+      console.log(document.querySelector('input#ann').checked);
+    });
+  },
+  computed:{
+    allFieldsFilled() {
+      if (
+        this.date_receipt_mortgage !==null ||
+        this.field_loan_term_error !=='' ||
+        this.loan_amount !==0 ||
+        this.i_calculation !==0
+      ) {
+        return true
+      }
+    }
+  },
+  components:{
+    componentCalendar
+  },
+  created(){
+    //была нажата кнопка рассчитать
+    eventBus.on('sendtotalCalculation', () => {
+      this.$emit('sendDateLoanReceipt',this.date_receipt_mortgage)
+      this.$emit('sendMonthlyPayment',this.n_calculation)
+      this.$emit('sendMonthlyInterestRate',this.i_calculation)
+      this.$emit('sendLoanAmount',this.loan_amount)
+      this.$emit('sendPaymentType',this.payment_type)
+      this.$emit('sendTermMonthOrYear',this.term)
+    })
+  }
+};
+</script>
+<style scoped>
+</style>
