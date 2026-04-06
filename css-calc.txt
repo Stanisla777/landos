@@ -1,17 +1,17 @@
 const radioAnn = document.querySelector('#ann');
+    console.log('📍 #ann найден при монтировании:', !!radioAnn);
     
-    // Наблюдаем за изменениями атрибута checked
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'checked') {
-          console.log('🚨 DOM-манипуляция обнаружена!');
-          console.log('Новое состояние #ann:', radioAnn.checked);
-          console.trace('Стек вызовов');
-        }
-      });
-    });
+    // Создаём слабый референс (WeakRef), чтобы отследить, жив ли старый элемент
+    const radioRef = new WeakRef(radioAnn);
     
-    observer.observe(radioAnn, { attributes: true, attributeFilter: ['checked'] });
-    
-    // Сохраните ссылку, чтобы отключить при уничтожении компонента
-    this._radioObserver = observer;
+    // Периодически проверяем, не "умер" ли исходный элемент
+    this._checkInterval = setInterval(() => {
+      const el = radioRef.deref();
+      if (!el) {
+        console.log('💀 Исходный элемент #ann удалён из DOM!');
+        console.log('Новый #ann в документе:', !!document.querySelector('#ann'));
+        console.log('payment_type:', this.payment_type);
+        console.trace('Стек');
+        clearInterval(this._checkInterval);
+      }
+    }, 100);
