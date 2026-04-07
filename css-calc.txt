@@ -1,121 +1,120 @@
-shedule:Array[4]
-      0:Reactive          
-      month:2
-      year:2026
-      nameMonth:февраль
-      payment: 126304.79035793085
-      principal: 124221.45702459752
-    interest: 2083.3333333333335
-    remainingBalance: 375778.5429754025
-    prepayments: Array[0]
-    1: Reactive
-    month: 3
-    year: 2026
-    nameMonth: март
-    payment: 126304.79035793085
-    principal: 124739.04642886667
-    interest: 1565.743929064177
-    remainingBalance: 251039.4965465358
-    prepayments: Array[0]
-    2: Reactive
-    month: 4
-    year: 2026
-    nameMonth:
-    апрель
-    payment: 126304.79035793085
-    principal: 125258.79245565362
-    interest: 1045.9979022772325
-    remainingBalance: 125780.7040908822
-    prepayments: Array[1]
-    0: Object
-    amount: 2000
-    month: 4
-    nameMonth: апрель
-    remainingBalance: 123780.7040908822
-    type: payment
-    year: 2026
-    3: Reactive
-    month: 5
-    year: 2026
-    nameMonth: май
-    payment: 124296.4570245942
-    principal: 123780.7040908822
-    interest: 515.7529337120092
-    remainingBalance: 0
-    prepayments: Array[0]
-
-------------------------------------------
-
-<div class="calc-tax-deduc-new__payment-schedule-tbody">
-              <div class="calc-tax-deduc-new__payment-schedule-row-container" v-for="(item,index) in shedule"
-                :key="index" :class="getItemClasses(item)">
-                <!--будет появляться если это ипотечные каникулы и у родителя стоит класс .mortgage-holidays-->
-                <div class="mor-rep-calculators__payment-schedule-early-wrapper" v-if="item.isHoliday===true">
-                  <div class="mor-rep-calculators__payment-schedule-early-plate black">
-                    <p>Ипотечные каникулы</p>
+<div class="mor-rep-calculators__shedule-calendar-mobile-item calc-tax-deduc-new__area js-accordion-parent-calc"
+             v-for="(item,index) in shedule"
+             :key="index"
+             :class="getItemClasses(item)"
+             :data-date="`${item.year}-${item.month}`">
+            <div class="mor-rep-calculators__shedule-calendar-mobile-wr-row" @click="dropdownAreaMobileShedule">
+              <div class="mor-rep-calculators__payment-schedule-early-wrapper" v-if="item.isHoliday===true">
+                <div class="mor-rep-calculators__payment-schedule-early-plate black">
+                  <p>Ипотечные каникулы</p>
+                </div>
+              </div>
+              <div class="mor-rep-calculators__shedule-calendar-mobile-row">
+                <div class="mor-rep-calculators__calendar-mobile-item-col">
+                  <div class="mor-rep-calculators__shedule-calendar-mobile-month">{{ item.nameMonth }},
+                    {{ item.year }}
                   </div>
                 </div>
-                <div class="calc-tax-deduc-new__payment-schedule-row">
-                  <div class="calc-tax-deduc-new__payment-schedule-col">
-                    <p>{{ index + 1 }}</p>
+                <div class="mor-rep-calculators__calendar-mobile-item-col row">
+                  <div class="mor-rep-calculators__shedule-calendar-mobile-value">{{ format_decimal(item.payment) }}
+                    ₽
                   </div>
-                  <div class="calc-tax-deduc-new__payment-schedule-col">
-                    <p>{{ item.nameMonth }}, {{ item.year }}</p>
-                  </div>
-                  <div class="calc-tax-deduc-new__payment-schedule-col">
-                    <p>{{ format_decimal(item.remainingBalance) }} ₽</p>
-                  </div>
-                  <div class="calc-tax-deduc-new__payment-schedule-col">
-                    <p>{{ format_decimal(item.interest) }} ₽</p>
-                  </div>
-                  <div class="calc-tax-deduc-new__payment-schedule-col">
-                    <p>{{ format_decimal(item.principal) }} ₽</p>
-                  </div>
-                  <div class="calc-tax-deduc-new__payment-schedule-col">
-                    <p>{{ format_decimal(item.payment) }} ₽</p>
-                  </div>
+                  <div class="mor-rep-calculators__shedule-calendar-mobile-icon"></div>
                 </div>
-                <!--появляется блок, если есть досрочное погашение-->
-                <div class="mor-rep-calculators__payment-schedule-early-container"
-                     v-if="(item.prepayments&&item.prepayments.length>0) && !String(product.amount).toLowerCase().includes('e')"
-                     v-for="(product,index) in item.prepayments" :key="index">
-                  <div class="mor-rep-calculators__payment-schedule-early-container-wr">
-                    <div class="mor-rep-calculators__payment-schedule-early-wrapper">
-                      <div class="mor-rep-calculators__payment-schedule-early-plate yellow">
-                        <p>Досрочное погашение</p>
-                      </div>
-                      <div class="mor-rep-calculators__payment-schedule-early-plate white">
-                        <p v-if="product.type==='payment'">Уменьшение платежа</p>
-                        <p v-if="product.type==='term'">Уменьшение срока</p>
-                        <p v-if="product.type===''">Уменьшение платежа</p>
+              </div>
+            </div>
+            <div class="calc-tax-deduc-new__wr-function-block active" @transitionend="handleTransitionEnd">
+              <div class="calc-tax-deduc-new__acc-wr">
+                <div class="mor-rep-calculators__shedule-calendar-mobile">
+                  <div class="mor-rep-calculators__shedule-calendar-mobile-row">
+                    <div class="mor-rep-calculators__calendar-mobile-item-col">
+                      <p class="mor-rep-calculators__shedule-calendar-mobile-key">Задолженность</p>
+                      <div class="mor-rep-calculators__shedule-calendar-mobile-value">
+                        {{  format_decimal(item.remainingBalance) }} ₽
                       </div>
                     </div>
-                    <div class="calc-tax-deduc-new__payment-schedule-row mor-rep-calculators__early-repayment">
-                      <div class="calc-tax-deduc-new__payment-schedule-col">
-                        <p></p>
+                    <div class="mor-rep-calculators__calendar-mobile-item-col">
+                      <p class="mor-rep-calculators__shedule-calendar-mobile-key">Сумма платежа</p>
+                      <div class="mor-rep-calculators__shedule-calendar-mobile-value">
+                        {{ format_decimal(item.payment) }} ₽
                       </div>
-                      <div class="calc-tax-deduc-new__payment-schedule-col">
-                        <p>{{ product.nameMonth }}, {{ product.year }}</p>
+                    </div>
+                  </div>
+                  <div class="mor-rep-calculators__shedule-calendar-mobile-row margin">
+                    <div class="mor-rep-calculators__calendar-mobile-item-col">
+                      <p class="mor-rep-calculators__shedule-calendar-mobile-key col-1">Погашение процентов</p>
+                      <div class="mor-rep-calculators__shedule-calendar-mobile-value">
+                        {{ format_decimal(item.interest) }} ₽
                       </div>
-                      <div class="calc-tax-deduc-new__payment-schedule-col">
-                        <p>{{ format_decimal(product.remainingBalance) }} ₽</p>
-                      </div>
-                      <div class="calc-tax-deduc-new__payment-schedule-col">
-                        <p>-</p>
-                      </div>
-                      <div class="calc-tax-deduc-new__payment-schedule-col">
-                        <p>{{ format_decimal(product.amount) }} ₽</p>
-                      </div>
-                      <div class="calc-tax-deduc-new__payment-schedule-col">
-                        <p>{{ format_decimal(product.amount) }} ₽</p>
+                    </div>
+                    <div class="mor-rep-calculators__calendar-mobile-item-col">
+                      <p class="mor-rep-calculators__shedule-calendar-mobile-key col-2">Погашение основного долга</p>
+                      <div class="mor-rep-calculators__shedule-calendar-mobile-value">
+                        {{ format_decimal(item.principal) }} ₽
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-
-Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'amount')
-v-if="(item.prepayments&&item.prepayments.length>0) && !String(product.amount).toLowerCase().includes('e')"
-
-
+            <div class="mor-rep-calculators__shedule-calendar-mobile-item-early calc-tax-deduc-new__area js-accordion-parent-calc-early"
+               v-if="(item.prepayments&&item.prepayments.length>0) && !String(product.amount).toLowerCase().includes('e')"
+               v-for="(product,index) in item.prepayments" :key="index">
+              <div class="mor-rep-calculators__shedule-calendar-mobile-wr-row" @click="dropdownAreaMobileSheduleEarly">
+                <div class="mor-rep-calculators__payment-schedule-early-wrapper">
+                  <div class="mor-rep-calculators__payment-schedule-early-plate yellow">
+                    <p>Досрочное погашение</p>
+                  </div>
+                  <div class="mor-rep-calculators__payment-schedule-early-plate white">
+                    <p v-if="product.type==='payment'">Уменьшение платежа</p>
+                    <p v-if="product.type==='term'">Уменьшение срока</p>
+                  </div>
+                </div>
+                <div class="mor-rep-calculators__shedule-calendar-mobile-row">
+                  <div class="mor-rep-calculators__calendar-mobile-item-col">
+                    <div class="mor-rep-calculators__shedule-calendar-mobile-month">{{ product.nameMonth }},
+                      {{ product.year }}
+                    </div>
+                  </div>
+                  <div class="mor-rep-calculators__calendar-mobile-item-col row">
+                    <div class="mor-rep-calculators__shedule-calendar-mobile-value green">
+                      {{ format_decimal(product.amount) }} ₽
+                    </div>
+                    <div class="mor-rep-calculators__shedule-calendar-mobile-icon early"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="mor-rep-calculators__wr-function-block active" @transitionend="handleTransitionEndEarly">
+                <div class="calc-tax-deduc-new__acc-wr">
+                  <div class="mor-rep-calculators__shedule-calendar-mobile">
+                    <div class="mor-rep-calculators__shedule-calendar-mobile-row">
+                      <div class="mor-rep-calculators__calendar-mobile-item-col">
+                        <p class="mor-rep-calculators__shedule-calendar-mobile-key">Задолженность</p>
+                        <div class="mor-rep-calculators__shedule-calendar-mobile-value">
+                          {{ format_decimal(product.remainingBalance) }} ₽
+                        </div>
+                      </div>
+                      <div class="mor-rep-calculators__calendar-mobile-item-col">
+                        <p class="mor-rep-calculators__shedule-calendar-mobile-key">Сумма платежа</p>
+                        <div class="mor-rep-calculators__shedule-calendar-mobile-value">
+                          {{ format_decimal(product.amount) }} ₽
+                        </div>
+                      </div>
+                    </div>
+                    <div class="mor-rep-calculators__shedule-calendar-mobile-row margin">
+                      <div class="mor-rep-calculators__calendar-mobile-item-col">
+                        <p class="mor-rep-calculators__shedule-calendar-mobile-key col-1">Погашение процентов</p>
+                        <div class="mor-rep-calculators__shedule-calendar-mobile-value">-</div>
+                      </div>
+                      <div class="mor-rep-calculators__calendar-mobile-item-col">
+                        <p class="mor-rep-calculators__shedule-calendar-mobile-key col-2">Погашение основного долга</p>
+                        <div class="mor-rep-calculators__shedule-calendar-mobile-value">
+                          {{ format_decimal(product.amount) }} ₽
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
