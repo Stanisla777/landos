@@ -1,7 +1,121 @@
-<component-information-mortgage
-          :answers="answersData"
+shedule:Array[4]
+      0:Reactive          
+      month:2
+      year:2026
+      nameMonth:февраль
+      payment: 126304.79035793085
+      principal: 124221.45702459752
+    interest: 2083.3333333333335
+    remainingBalance: 375778.5429754025
+    prepayments: Array[0]
+    1: Reactive
+    month: 3
+    year: 2026
+    nameMonth: март
+    payment: 126304.79035793085
+    principal: 124739.04642886667
+    interest: 1565.743929064177
+    remainingBalance: 251039.4965465358
+    prepayments: Array[0]
+    2: Reactive
+    month: 4
+    year: 2026
+    nameMonth:
+    апрель
+    payment: 126304.79035793085
+    principal: 125258.79245565362
+    interest: 1045.9979022772325
+    remainingBalance: 125780.7040908822
+    prepayments: Array[1]
+    0: Object
+    amount: 2000
+    month: 4
+    nameMonth: апрель
+    remainingBalance: 123780.7040908822
+    type: payment
+    year: 2026
+    3: Reactive
+    month: 5
+    year: 2026
+    nameMonth: май
+    payment: 124296.4570245942
+    principal: 123780.7040908822
+    interest: 515.7529337120092
+    remainingBalance: 0
+    prepayments: Array[0]
 
-data() {
-    return {
-     
-      answersData: [],
+------------------------------------------
+
+<div class="calc-tax-deduc-new__payment-schedule-tbody">
+              <div class="calc-tax-deduc-new__payment-schedule-row-container" v-for="(item,index) in shedule"
+                :key="index" :class="getItemClasses(item)">
+                <!--будет появляться если это ипотечные каникулы и у родителя стоит класс .mortgage-holidays-->
+                <div class="mor-rep-calculators__payment-schedule-early-wrapper" v-if="item.isHoliday===true">
+                  <div class="mor-rep-calculators__payment-schedule-early-plate black">
+                    <p>Ипотечные каникулы</p>
+                  </div>
+                </div>
+                <div class="calc-tax-deduc-new__payment-schedule-row">
+                  <div class="calc-tax-deduc-new__payment-schedule-col">
+                    <p>{{ index + 1 }}</p>
+                  </div>
+                  <div class="calc-tax-deduc-new__payment-schedule-col">
+                    <p>{{ item.nameMonth }}, {{ item.year }}</p>
+                  </div>
+                  <div class="calc-tax-deduc-new__payment-schedule-col">
+                    <p>{{ format_decimal(item.remainingBalance) }} ₽</p>
+                  </div>
+                  <div class="calc-tax-deduc-new__payment-schedule-col">
+                    <p>{{ format_decimal(item.interest) }} ₽</p>
+                  </div>
+                  <div class="calc-tax-deduc-new__payment-schedule-col">
+                    <p>{{ format_decimal(item.principal) }} ₽</p>
+                  </div>
+                  <div class="calc-tax-deduc-new__payment-schedule-col">
+                    <p>{{ format_decimal(item.payment) }} ₽</p>
+                  </div>
+                </div>
+                <!--появляется блок, если есть досрочное погашение-->
+                <div class="mor-rep-calculators__payment-schedule-early-container"
+                     v-if="(item.prepayments&&item.prepayments.length>0) && !String(product.amount).toLowerCase().includes('e')"
+                     v-for="(product,index) in item.prepayments" :key="index">
+                  <div class="mor-rep-calculators__payment-schedule-early-container-wr">
+                    <div class="mor-rep-calculators__payment-schedule-early-wrapper">
+                      <div class="mor-rep-calculators__payment-schedule-early-plate yellow">
+                        <p>Досрочное погашение</p>
+                      </div>
+                      <div class="mor-rep-calculators__payment-schedule-early-plate white">
+                        <p v-if="product.type==='payment'">Уменьшение платежа</p>
+                        <p v-if="product.type==='term'">Уменьшение срока</p>
+                        <p v-if="product.type===''">Уменьшение платежа</p>
+                      </div>
+                    </div>
+                    <div class="calc-tax-deduc-new__payment-schedule-row mor-rep-calculators__early-repayment">
+                      <div class="calc-tax-deduc-new__payment-schedule-col">
+                        <p></p>
+                      </div>
+                      <div class="calc-tax-deduc-new__payment-schedule-col">
+                        <p>{{ product.nameMonth }}, {{ product.year }}</p>
+                      </div>
+                      <div class="calc-tax-deduc-new__payment-schedule-col">
+                        <p>{{ format_decimal(product.remainingBalance) }} ₽</p>
+                      </div>
+                      <div class="calc-tax-deduc-new__payment-schedule-col">
+                        <p>-</p>
+                      </div>
+                      <div class="calc-tax-deduc-new__payment-schedule-col">
+                        <p>{{ format_decimal(product.amount) }} ₽</p>
+                      </div>
+                      <div class="calc-tax-deduc-new__payment-schedule-col">
+                        <p>{{ format_decimal(product.amount) }} ₽</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'amount')
+v-if="(item.prepayments&&item.prepayments.length>0) && !String(product.amount).toLowerCase().includes('e')"
+
+
