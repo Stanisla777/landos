@@ -1,120 +1,28 @@
-<div class="mor-rep-calculators__shedule-calendar-mobile-item calc-tax-deduc-new__area js-accordion-parent-calc"
-             v-for="(item,index) in shedule"
-             :key="index"
-             :class="getItemClasses(item)"
-             :data-date="`${item.year}-${item.month}`">
-            <div class="mor-rep-calculators__shedule-calendar-mobile-wr-row" @click="dropdownAreaMobileShedule">
-              <div class="mor-rep-calculators__payment-schedule-early-wrapper" v-if="item.isHoliday===true">
-                <div class="mor-rep-calculators__payment-schedule-early-plate black">
-                  <p>Ипотечные каникулы</p>
-                </div>
-              </div>
-              <div class="mor-rep-calculators__shedule-calendar-mobile-row">
-                <div class="mor-rep-calculators__calendar-mobile-item-col">
-                  <div class="mor-rep-calculators__shedule-calendar-mobile-month">{{ item.nameMonth }},
-                    {{ item.year }}
-                  </div>
-                </div>
-                <div class="mor-rep-calculators__calendar-mobile-item-col row">
-                  <div class="mor-rep-calculators__shedule-calendar-mobile-value">{{ format_decimal(item.payment) }}
-                    ₽
-                  </div>
-                  <div class="mor-rep-calculators__shedule-calendar-mobile-icon"></div>
-                </div>
-              </div>
-            </div>
-            <div class="calc-tax-deduc-new__wr-function-block active" @transitionend="handleTransitionEnd">
-              <div class="calc-tax-deduc-new__acc-wr">
-                <div class="mor-rep-calculators__shedule-calendar-mobile">
-                  <div class="mor-rep-calculators__shedule-calendar-mobile-row">
-                    <div class="mor-rep-calculators__calendar-mobile-item-col">
-                      <p class="mor-rep-calculators__shedule-calendar-mobile-key">Задолженность</p>
-                      <div class="mor-rep-calculators__shedule-calendar-mobile-value">
-                        {{  format_decimal(item.remainingBalance) }} ₽
-                      </div>
-                    </div>
-                    <div class="mor-rep-calculators__calendar-mobile-item-col">
-                      <p class="mor-rep-calculators__shedule-calendar-mobile-key">Сумма платежа</p>
-                      <div class="mor-rep-calculators__shedule-calendar-mobile-value">
-                        {{ format_decimal(item.payment) }} ₽
-                      </div>
-                    </div>
-                  </div>
-                  <div class="mor-rep-calculators__shedule-calendar-mobile-row margin">
-                    <div class="mor-rep-calculators__calendar-mobile-item-col">
-                      <p class="mor-rep-calculators__shedule-calendar-mobile-key col-1">Погашение процентов</p>
-                      <div class="mor-rep-calculators__shedule-calendar-mobile-value">
-                        {{ format_decimal(item.interest) }} ₽
-                      </div>
-                    </div>
-                    <div class="mor-rep-calculators__calendar-mobile-item-col">
-                      <p class="mor-rep-calculators__shedule-calendar-mobile-key col-2">Погашение основного долга</p>
-                      <div class="mor-rep-calculators__shedule-calendar-mobile-value">
-                        {{ format_decimal(item.principal) }} ₽
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="mor-rep-calculators__shedule-calendar-mobile-item-early calc-tax-deduc-new__area js-accordion-parent-calc-early"
-               v-if="(item.prepayments&&item.prepayments.length>0) && !String(product.amount).toLowerCase().includes('e')"
-               v-for="(product,index) in item.prepayments" :key="index">
-              <div class="mor-rep-calculators__shedule-calendar-mobile-wr-row" @click="dropdownAreaMobileSheduleEarly">
-                <div class="mor-rep-calculators__payment-schedule-early-wrapper">
-                  <div class="mor-rep-calculators__payment-schedule-early-plate yellow">
-                    <p>Досрочное погашение</p>
-                  </div>
-                  <div class="mor-rep-calculators__payment-schedule-early-plate white">
-                    <p v-if="product.type==='payment'">Уменьшение платежа</p>
-                    <p v-if="product.type==='term'">Уменьшение срока</p>
-                  </div>
-                </div>
-                <div class="mor-rep-calculators__shedule-calendar-mobile-row">
-                  <div class="mor-rep-calculators__calendar-mobile-item-col">
-                    <div class="mor-rep-calculators__shedule-calendar-mobile-month">{{ product.nameMonth }},
-                      {{ product.year }}
-                    </div>
-                  </div>
-                  <div class="mor-rep-calculators__calendar-mobile-item-col row">
-                    <div class="mor-rep-calculators__shedule-calendar-mobile-value green">
-                      {{ format_decimal(product.amount) }} ₽
-                    </div>
-                    <div class="mor-rep-calculators__shedule-calendar-mobile-icon early"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="mor-rep-calculators__wr-function-block active" @transitionend="handleTransitionEndEarly">
-                <div class="calc-tax-deduc-new__acc-wr">
-                  <div class="mor-rep-calculators__shedule-calendar-mobile">
-                    <div class="mor-rep-calculators__shedule-calendar-mobile-row">
-                      <div class="mor-rep-calculators__calendar-mobile-item-col">
-                        <p class="mor-rep-calculators__shedule-calendar-mobile-key">Задолженность</p>
-                        <div class="mor-rep-calculators__shedule-calendar-mobile-value">
-                          {{ format_decimal(product.remainingBalance) }} ₽
-                        </div>
-                      </div>
-                      <div class="mor-rep-calculators__calendar-mobile-item-col">
-                        <p class="mor-rep-calculators__shedule-calendar-mobile-key">Сумма платежа</p>
-                        <div class="mor-rep-calculators__shedule-calendar-mobile-value">
-                          {{ format_decimal(product.amount) }} ₽
-                        </div>
-                      </div>
-                    </div>
-                    <div class="mor-rep-calculators__shedule-calendar-mobile-row margin">
-                      <div class="mor-rep-calculators__calendar-mobile-item-col">
-                        <p class="mor-rep-calculators__shedule-calendar-mobile-key col-1">Погашение процентов</p>
-                        <div class="mor-rep-calculators__shedule-calendar-mobile-value">-</div>
-                      </div>
-                      <div class="mor-rep-calculators__calendar-mobile-item-col">
-                        <p class="mor-rep-calculators__shedule-calendar-mobile-key col-2">Погашение основного долга</p>
-                        <div class="mor-rep-calculators__shedule-calendar-mobile-value">
-                          {{ format_decimal(product.amount) }} ₽
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+var test_radiobtn = JSON.stringify({
+                                                            "colorTheme": "black",
+                                                            "description": "<p></p>",
+                                                            "end_text": "<p>Текст после ответа</p>",
+                                                            "end_title": "Заголовок перед ответом",
+                                                            "title": "Опрос с просто чекбоксами",
+                                                            "btn": "Текст кнопки",
+                                                            "type": "poll",
+                                                            "name": "my_poll_just_checkboxes",
+                                                            "taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }],
+                                                            "answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }],
+                                                            "settings": [],
+                                                            "layout": "0,0",
+                                                            "options": [{
+                                                              "text": "Первый вариант радиокнопки (да)",
+                                                              "isCorrect": true
+                                                            }, {
+                                                              "text": "Второй вариант радиокнопки (нет)",
+                                                              "isCorrect": true
+                                                            }, {
+                                                              "text": "Третий вариант радиокнопки (нет)",
+                                                              "isCorrect": false
+                                                            }],
+                                                            "typeOfTest": "justradio"
+                                                          })
+
+
+<div data-vue-app="test-n" data-param="<%test_radiobtn%"></div>
