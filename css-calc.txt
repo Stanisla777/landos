@@ -1,12 +1,10 @@
-Сейчас
-
 <template>
   <div class="test-n-slider" :class="addClasses">
-    <!-- Vue 3: v-model работает как раньше, но внутри используется modelValue -->
     <Slider
       v-model="answerValue"
       ref="slider"
       :marks="marksConfig"
+      :labels="true"
       :min="minValue"
       :max="maxValue"
       :disabled="isAnswered"
@@ -16,7 +14,8 @@
       :dot-style="{ height: '32px', width: '32px', background: '#fff', border: '2px solid #000' }"
       :label-style="{ marginTop: '20px', fontSize: '14px' }"
       :process-style="{ background: '#ccc' }"
-      @change="onSliderChange"
+      @update:modelValue="onSliderMove"
+      @change="onSliderRelease"
     />
     <div class="test-n-slider__value">{{ currentValueLabel }}</div>
   </div>
@@ -36,6 +35,7 @@ export default {
     return {
       answerValue: null,
       isAnswerValueCorrect: null,
+      allowedValues: [] // кэшируем допустимые значения для быстрого поиска
     }
   },
   computed: {
@@ -45,11 +45,12 @@ export default {
     maxValue() {
       return +Object.keys(this.options.answers).at(-1);
     },
-    // Преобразуем {0: "Плохо", 5: "Норм", 10: "Отлично"} → {0: {label: "Плохо"}, ...}
+    // Преобразуем { "5000": "Плохо", "23000": "Норм" } → { 5000: {label: "Плохо"}, ... }
     marksConfig() {
       const marks = {};
       Object.entries(this.options.answers).forEach(([key, label]) => {
-        marks[key] = { label, style: { fontSize: '12px' } };
+        // Ключи из Object.entries — строки! Преобразуем в числа:
+        marks[+key] = { label, style: { fontSize: '12px' } };
       });
       return marks;
     },
@@ -60,10 +61,14 @@ export default {
       }
     },
     currentValueLabel() {
-      return this.answerValue
-        ? this.options.answers[this.answerValue]
+      return this.answerValue 
+        ? this.options.answers[this.answerValue] 
         : this.options.answers[this.minValue];
     }
+  },
+  created() {
+    // Кэшируем массив допустимых значений (чисел) при создании компонента
+    this.allowedValues = Object.keys(this.options.answers).map(Number);
   },
   watch: {
     isAnswered(newVal) {
@@ -72,180 +77,100 @@ export default {
         this.prepareDataForSend();
       } else {
         this.setDefault();
-        this.answerValue = Object.keys(this.options.answers)[0];
+        this.answerValue = this.allowedValues[0];
       }
     }
   },
   methods: {
-    onSliderChange() {
-      if (this.answerValue) {
-        this.$emit('valuesIsChosen');
-        // Vue 3: DOM-манипуляции только после $nextTick
-        this.$nextTick(() => this.setActiveLabel());
-      }
+    // Вызывается при каждом движении ползунка (опционально, если нужна реакция в реальном времени)
+    onSliderMove(value) {
+      // Можно добавить визуальный фидбек, но не менять answerValue
+      // console.log('Движение:', value);
     },
+    
+    // Вызывается при отпускании ползунка — здесь делаем "примагничивание"
+    onSliderRelease() {
+      if (!this.answerValue && this.answerValue !== 0) return;
+      
+      // Находим ближайшее допустимое значение
+      const closest = this.findClosestValue(this.answerValue);
+      
+      // Если значение изменилось — принудительно устанавливаем ближайшее
+      if (closest !== this.answerValue) {
+        this.answerValue = closest;
+      }
+      
+      // Эмитим события только после "примагничивания"
+      this.$emit('valuesIsChosen');
+      this.$nextTick(() => this.setActiveLabel());
+    },
+    
+    // Поиск ближайшего значения в массиве
+    findClosestValue(current) {
+      return this.allowedValues.reduce((prev, curr) => {
+        return Math.abs(curr - current) < Math.abs(prev - current) ? curr : prev;
+      });
+    },
+    
     setActiveLabel() {
-      // @vueform/slider рендерит метки с data-value
       const sliderEl = this.$refs.slider?.$el;
       if (!sliderEl) return;
-
-      const labelEls = sliderEl.querySelectorAll('[data-value]');
+      
+      // Снимаем активный класс со всех меток
+      const labelEls = sliderEl.querySelectorAll('.slider-mark-label');
       labelEls.forEach((labelEl) => {
         labelEl.classList.remove('active');
       });
 
-      if (this.answerValue !== null) {
-        const activeLabel = sliderEl.querySelector(`[data-value="${this.answerValue}"]`);
+      // Добавляем активный класс нужной метке
+      if (this.answerValue !== null && this.answerValue !== undefined) {
+        // Ищем по текстовому содержимому, так как data-value может не работать
+        const targetLabel = this.options.answers[this.answerValue];
+        const activeLabel = Array.from(labelEls).find(
+          el => el.textContent.trim() === targetLabel
+        );
         if (activeLabel) activeLabel.classList.add('active');
       }
     },
+    
     checkAnswerValue() {
       this.isAnswerValueCorrect = this.answerValue === this.options.correctAnswer;
     },
+    
     setDefault() {
       this.answerValue = null;
       this.isAnswerValueCorrect = null;
       this.$emit('valuesIsUnchosen');
     },
+    
     prepareDataForSend() {
       const data = {
         answerValue: this.answerValue,
         isAnswerValueCorrect: this.isAnswerValueCorrect
       };
       this.$emit('readyForDataSending', data);
-      // $forceUpdate в Vue 3 работает, но редко нужен
     }
   },
   mounted() {
-    this.answerValue = Object.keys(this.options.answers)[0];
-    this.$nextTick(() => this.setActiveLabel());
+    // Устанавливаем первое значение из списка как дефолт
+    this.answerValue = this.allowedValues[0];
+    this.$nextTick(() => {
+      this.setActiveLabel();
+      
+      // 🔍 Диагностика: проверяем, отрисовались ли маркеры
+      const sliderEl = this.$refs.slider?.$el;
+      if (sliderEl) {
+        console.log('🔍 marksConfig:', this.marksConfig);
+        console.log('🔍 allowedValues:', this.allowedValues);
+        console.log('🔍 Маркеры в DOM:', sliderEl.querySelectorAll('.slider-mark').length);
+        console.log('🔍 Лейблы маркеров:', 
+          Array.from(sliderEl.querySelectorAll('.slider-mark-label')).map(el => el.textContent.trim())
+        );
+      }
+    });
   }
 }
 </script>
 
-Как было:
-<template lang="pug">
-  .test-n-slider(:class="addClasses")
-    vue-slider(
-      v-model="answerValue"
-      ref="slider"
-      :marks="options.answers"
-      :data="options.answers"
-      :max="maxValue"
-      :min="minValue"
-      :process="false"
-      :tooltip="'none'"
-      :dot-size="32"
-      :dot-style="{ height: '32px', width: '32px' }"
-      :label-style="{ marginTop: '20px' }"
-      :height="15"
-      :disabled="isAnswered"
-      contained
-      included
-      silent
-    )
-    .test-n-slider__value {{ currentValueLabel }}
-</template>
-
-<script>
-import VueSlider from 'vue-slider-component';
-
-export default {
-  name: 'TextNSlider',
-  components: {
-    VueSlider,
-  },
-  props: {
-    options: {
-      type: Object,
-      required: true
-    },
-    isAnswered: {
-      type: Boolean,
-      default: false
-    }
-  },
-  data() {
-    return {
-      answerValue: null,
-      isAnswerValueCorrect: null,
-    }
-  },
-  computed: {
-    minValue() {
-      return +Object.keys(this.options.answers)[0]; // минимальное значение, первое значение из массива ответов
-    },
-    maxValue() {
-      return +Object.keys(this.options.answers).at(-1); // максимальное значение, первое значение из массива ответов
-    },
-    addClasses() { // дополнительные классы
-      return {
-        'correct-answer': this.isAnswerValueCorrect === true, // если был выбран правильный ответ
-        'uncorrect-answer': this.isAnswerValueCorrect === false // если был выбран неправильный ответ
-      }
-    },
-    currentValueLabel() { // используется на мобилке, т.к. на ней не отображаются лейблы под слайдером. Если ответ не выбран - показывает лейбл минимального значения
-      return this.answerValue ? this.options.answers[this.answerValue] : this.options.answers[this.minValue];
-    }
-  },
-  watch: {
-    answerValue() {
-      if (this.answerValue) this.$emit('valuesIsChosen');
-      this.setActiveLabel();
-    },
-    isAnswered() {
-      if (this.isAnswered) {
-        this.checkAnswerValue();
-        this.prepareDataForSend();
-      } else {
-        this.setDefault();
-        this.answerValue=Object.keys(this.options.answers)[0]
-      }
-    },
-  },
-  methods: {
-    /**
-     * Проставляем класс active для лейбла выбранного значения, убираем у остальных
-     */
-    setActiveLabel() {
-      const sliderEl = this.$refs.slider.$el;
-      const labelEls = sliderEl.querySelectorAll('.vue-slider-mark-label');
-      labelEls.forEach((labelEl) => {
-        labelEl.classList.remove('active');
-      });
-
-      if (this.answerValue) {
-        const indexOfAnswer = Object.keys(this.options.answers).indexOf(this.answerValue);
-        labelEls[indexOfAnswer].classList.add('active');
-      }
-    },
-    checkAnswerValue() {
-      this.isAnswerValueCorrect = this.answerValue === this.options.correctAnswer;
-    },
-    setDefault() {
-      this.answerValue = null;
-      this.isAnswerValueCorrect = null;
-      this.$emit('valuesIsUnchosen');
-    },
-    /**
-     * Подготавливает необходимые данные и вызывает событие для отправки
-     */
-    prepareDataForSend() {
-      const data = {
-        answerValue: this.answerValue,
-        isAnswerValueCorrect: this.isAnswerValueCorrect
-      };
-      this.$emit('readyForDataSending', data);
-      this.$forceUpdate()
-    }
-  },
-  mounted() {
-    this.answerValue=Object.keys(this.options.answers)[0]
-  },
-
-
-
-}
-</script>
-
-
+<style scoped>
+</style>
