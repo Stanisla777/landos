@@ -1,91 +1,45 @@
-/* Ваш отдельный файл: slider-styles.scss */
+onSliderRelease() {
+  if (this.isAnswered) return;
 
-// 🔒 Неймспейс, чтобы стили не ломали другие слайдеры на сайте
-.test-n-slider {
-  position: relative;
-  padding: 0 16px;
-  user-select: none;
+  // Микрозадержка: даём библиотеке завершить внутренние расчеты drag-end
+  setTimeout(() => {
+    const nearest = Math.round(this.selectedIndex);
+    
+    // Обновляем только если реально изменилось
+    if (nearest !== this.selectedIndex) {
+      this.selectedIndex = nearest;
+    }
 
-  &__track {
-    margin-bottom: 40px;
-  }
+    this.answerValue = this.answersList[nearest]?.value;
+    this.$emit('valuesIsChosen');
+  }, 0);
+}
 
-  // 🌊 Плавная анимация "отката" к ближайшему маркеру
+onSliderRelease() {
+  if (this.isAnswered) return;
+
+  // Микрозадержка: даём библиотеке завершить внутренние расчеты drag-end
+  setTimeout(() => {
+    const nearest = Math.round(this.selectedIndex);
+    
+    // Обновляем только если реально изменилось
+    if (nearest !== this.selectedIndex) {
+      this.selectedIndex = nearest;
+    }
+
+    this.answerValue = this.answersList[nearest]?.value;
+    this.$emit('valuesIsChosen');
+  }, 0);
+}
+
+ // 🌊 Анимация для ручки и линии
   .slider-origin,
   .slider-connect {
     transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
   }
 
-  // 🚫 Во время перетаскивания отключаем transition, чтобы ползунок не "плавал" за курсором с задержкой
+  // 🚫 Отключаем анимацию во время драга (чтобы ползунок не "плавал" за курсором)
   .slider-target.slider-state-drag .slider-origin,
   .slider-target.slider-state-drag .slider-connect {
     transition: none !important;
   }
-
-  // 📍 Контейнер меток
-  &__marks {
-    position: relative;
-    height: 40px;
-    pointer-events: none;
-
-    &.is-disabled {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-  }
-
-  // 🎯 Отдельная метка
-  &__mark {
-    position: absolute;
-    top: 0;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    pointer-events: auto;
-    cursor: pointer;
-    transition: transform 0.15s ease;
-
-    &:hover {
-      transform: translateX(-50%) scale(1.05);
-    }
-  }
-
-  &__mark-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #b0b0b0;
-    margin-bottom: 8px;
-    transition: all 0.2s ease;
-
-    .is-active & {
-      background: #000;
-      transform: scale(1.5);
-    }
-  }
-
-  &__mark-label {
-    font-size: 12px;
-    color: #666;
-    white-space: nowrap;
-    transition: color 0.2s ease, font-weight 0.2s ease;
-
-    .is-active & {
-      color: #000;
-      font-weight: 600;
-    }
-  }
-
-  // 💬 Текущее значение под слайдером
-  &__value {
-    text-align: center;
-    margin-top: 12px;
-    font-weight: 500;
-    min-height: 20px;
-  }
-
-  // ✅❌ Состояния проверки ответа
-  &.correct-answer .is-active &__mark-dot { background: #4caf50; }
-  &.uncorrect-answer .is-active &__mark-dot { background: #f44336; }
-}
