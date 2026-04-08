@@ -1,1 +1,111 @@
-"vue-slider-component": "^3.2.20",
+<template>
+  <div class="test-n-slider" :class="addClasses">
+    <vue-slider v-model="answerValue" ref="slider" :marks="options.answers" :data="options.answers" :max="maxValue"
+                :min="minValue" :process="false" :tooltip="'none'" :dot-size="32"
+                :dot-style="{ height: '32px', width: '32px' }" :label-style="{ marginTop: '20px' }" :height="15"
+                :disabled="isAnswered" contained="contained" included="included" silent="silent"></vue-slider>
+    <div class="test-n-slider__value">{{ currentValueLabel }}</div>
+  </div>
+</template>
+
+<script>
+import VueSlider from 'vue-slider-component';
+
+export default {
+  name: 'TextNSlider',
+  components: {
+    VueSlider,
+  },
+  props: {
+    options: {
+      type: Object,
+      required: true
+    },
+    isAnswered: {
+      type: Boolean,
+      default: false
+    }
+  },
+  data() {
+    return {
+      answerValue: null,
+      isAnswerValueCorrect: null,
+    }
+  },
+  computed: {
+    minValue() {
+      return +Object.keys(this.options.answers)[0]; // минимальное значение, первое значение из массива ответов
+    },
+    maxValue() {
+      return +Object.keys(this.options.answers).at(-1); // максимальное значение, первое значение из массива ответов
+    },
+    addClasses() { // дополнительные классы
+      return {
+        'correct-answer': this.isAnswerValueCorrect === true, // если был выбран правильный ответ
+        'uncorrect-answer': this.isAnswerValueCorrect === false // если был выбран неправильный ответ
+      }
+    },
+    currentValueLabel() { // используется на мобилке, т.к. на ней не отображаются лейблы под слайдером. Если ответ не выбран - показывает лейбл минимального значения
+      return this.answerValue ? this.options.answers[this.answerValue] : this.options.answers[this.minValue];
+    }
+  },
+  watch: {
+    answerValue() {
+      if (this.answerValue) this.$emit('valuesIsChosen');
+      this.setActiveLabel();
+    },
+    isAnswered() {
+      if (this.isAnswered) {
+        this.checkAnswerValue();
+        this.prepareDataForSend();
+      } else {
+        this.setDefault();
+        this.answerValue=Object.keys(this.options.answers)[0]
+      }
+    },
+  },
+  methods: {
+    /**
+     * Проставляем класс active для лейбла выбранного значения, убираем у остальных
+     */
+    setActiveLabel() {
+      const sliderEl = this.$refs.slider.$el;
+      const labelEls = sliderEl.querySelectorAll('.vue-slider-mark-label');
+      labelEls.forEach((labelEl) => {
+        labelEl.classList.remove('active');
+      });
+
+      if (this.answerValue) {
+        const indexOfAnswer = Object.keys(this.options.answers).indexOf(this.answerValue);
+        labelEls[indexOfAnswer].classList.add('active');
+      }
+    },
+    checkAnswerValue() {
+      this.isAnswerValueCorrect = this.answerValue === this.options.correctAnswer;
+    },
+    setDefault() {
+      this.answerValue = null;
+      this.isAnswerValueCorrect = null;
+      this.$emit('valuesIsUnchosen');
+    },
+    /**
+     * Подготавливает необходимые данные и вызывает событие для отправки
+     */
+    prepareDataForSend() {
+      const data = {
+        answerValue: this.answerValue,
+        isAnswerValueCorrect: this.isAnswerValueCorrect
+      };
+      this.$emit('readyForDataSending', data);
+      this.$forceUpdate()
+    }
+  },
+  mounted() {
+    this.answerValue=Object.keys(this.options.answers)[0]
+  },
+
+
+
+}
+</script>
+
