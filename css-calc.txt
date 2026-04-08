@@ -1,214 +1,119 @@
-<template>
-  <div class="test-n-slider" :class="addClasses">
-    <!-- 
-      Слайдер работает с ИНДЕКСАМИ (0, 1, 2, 3...), а не с реальными значениями.
-      step="1" и snap="true" делают поведение идентичным радиокнопкам.
-    -->
-    <Slider
-      v-model="selectedIndex"
-      :min="0"
-      :max="answersList.length - 1"
-      :step="1"
-      :snap="true"
-      :tooltip="false"
-      :height="15"
-      :dot-size="32"
-      :disabled="isAnswered"
-      @change="onSliderRelease"
-      class="test-n-slider__track"
-    />
-    
-    <!-- Маркеры позиционируются РАВНОМЕРНО -->
-    <div class="test-n-slider__marks" :class="{ 'is-disabled': isAnswered }">
-      <div
-        v-for="(item, index) in answersList"
-        :key="item.value"
-        class="test-n-slider__mark"
-        :class="{ 'is-active': index === selectedIndex }"
-        :style="{ left: getEvenPosition(index) + '%' }"
-        @click.stop="selectByIndex(index)"
-      >
-        <span class="test-n-slider__mark-dot"></span>
-        <span class="test-n-slider__mark-label">{{ item.label }}</span>
-      </div>
-    </div>
+<Slider
+  v-model="selectedIndex"
+  :min="0"
+  :max="answersList.length - 1"
+  :step="0.01"          <!-- ✅ Свободное плавное перетаскивание -->
+  :tooltip="false"
+  :height="15"
+  :dot-size="32"
+  :disabled="isAnswered"
+  @change="onSliderRelease" <!-- Срабатывает только при ОТПУСКАНИИ -->
+  class="test-n-slider__track"
+/>
 
-    <div class="test-n-slider__value">{{ currentValueLabel }}</div>
-  </div>
-</template>
-
-<script>
-import Slider from '@vueform/slider';
-
-export default {
-  name: 'TextNSlider',
-  components: { Slider },
-  props: {
-    options: { type: Object, required: true },
-    isAnswered: { type: Boolean, default: false }
-  },
-  data() {
-    return {
-      selectedIndex: 0,
-      answerValue: null,
-      isAnswerValueCorrect: null
-    }
-  },
-  computed: {
-    // Преобразуем объект {10000: "10k", 20000: "20k"} → массив [{value:10000, label:"10k"}, ...]
-    answersList() {
-      if (!this.options.answers) return [];
-      return Object.entries(this.options.answers).map(([val, label]) => ({
-        value: +val,
-        label
-      }));
-    },
-    addClasses() {
-      return {
-        'correct-answer': this.isAnswerValueCorrect === true,
-        'uncorrect-answer': this.isAnswerValueCorrect === false
-      }
-    },
-    currentValueLabel() {
-      const current = this.answersList[this.selectedIndex];
-      return current ? current.label : this.answersList[0]?.label;
-    }
-  },
-  watch: {
-    isAnswered(val) {
-      if (val) {
-        this.checkAnswerValue();
-        this.prepareDataForSend();
-      } else {
-        this.setDefault();
-        this.selectedIndex = 0;
-      }
-    }
-  },
-  methods: {
-    // Равномерное распределение: 0%, 33.3%, 66.6%, 100%
-    getEvenPosition(index) {
-      if (this.answersList.length <= 1) return 0;
-      return (index / (this.answersList.length - 1)) * 100;
-    },
-
-    // Срабатывает при отпускании ползунка
-    onSliderRelease() {
-      // selectedIndex уже целое число благодаря step=1 и snap=true
-      const selectedItem = this.answersList[this.selectedIndex];
-      if (!selectedItem) return;
-
-      this.answerValue = selectedItem.value;
-      this.$emit('valuesIsChosen');
-      
-      // Опционально: если нужна мгновенная проверка ответа при выборе
-      // this.checkAnswerValue(); 
-    },
-
-    // Клик по маркеру
-    selectByIndex(index) {
-      if (this.isAnswered) return;
-      this.selectedIndex = index;
-      this.onSliderRelease();
-    },
-
-    checkAnswerValue() {
-      this.isAnswerValueCorrect = this.answerValue === this.options.correctAnswer;
-    },
-    setDefault() {
-      this.selectedIndex = 0;
-      this.answerValue = this.answersList[0]?.value;
-      this.isAnswerValueCorrect = null;
-      this.$emit('valuesIsUnchosen');
-    },
-    prepareDataForSend() {
-      this.$emit('readyForDataSending', {
-        answerValue: this.answerValue,
-        isAnswerValueCorrect: this.isAnswerValueCorrect
-      });
-    }
-  },
-  mounted() {
-    this.selectedIndex = 0;
-    this.answerValue = this.answersList[0]?.value;
-  }
+onSliderRelease() {
+  if (this.isAnswered) return;
+  
+  // Находим ближайший целый индекс
+  const nearestIndex = Math.round(this.selectedIndex);
+  
+  // Обновляем значение → срабатывает реактивность → слайдер плавно едет к маркеру
+  this.selectedIndex = nearestIndex;
+  
+  // Сохраняем реальное значение ответа
+  this.answerValue = this.answersList[nearestIndex]?.value;
+  this.$emit('valuesIsChosen');
 }
-</script>
 
-<style scoped>
+
+/* Ваш отдельный файл: slider-styles.scss */
+
+// 🔒 Неймспейс, чтобы стили не ломали другие слайдеры на сайте
 .test-n-slider {
   position: relative;
   padding: 0 16px;
   user-select: none;
-}
 
-.test-n-slider__track {
-  margin-bottom: 40px; /* Отступ до меток */
-}
+  &__track {
+    margin-bottom: 40px;
+  }
 
-/* Контейнер меток */
-.test-n-slider__marks {
-  position: relative;
-  height: 40px;
-  pointer-events: none;
-}
+  // 🌊 Плавная анимация "отката" к ближайшему маркеру
+  .slider-origin,
+  .slider-connect {
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  }
 
-.test-n-slider__marks.is-disabled {
-  opacity: 0.5;
-  pointer-events: none;
-}
+  // 🚫 Во время перетаскивания отключаем transition, чтобы ползунок не "плавал" за курсором с задержкой
+  .slider-target.slider-state-drag .slider-origin,
+  .slider-target.slider-state-drag .slider-connect {
+    transition: none !important;
+  }
 
-/* Отдельная метка */
-.test-n-slider__mark {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: auto;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
+  // 📍 Контейнер меток
+  &__marks {
+    position: relative;
+    height: 40px;
+    pointer-events: none;
 
-.test-n-slider__mark:hover {
-  transform: translateX(-50%) scale(1.05);
-}
+    &.is-disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  }
 
-.test-n-slider__mark-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #b0b0b0;
-  margin-bottom: 8px;
-  transition: all 0.2s ease;
-}
+  // 🎯 Отдельная метка
+  &__mark {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.15s ease;
 
-.test-n-slider__mark.is-active .test-n-slider__mark-dot {
-  background: #000;
-  transform: scale(1.5);
-}
+    &:hover {
+      transform: translateX(-50%) scale(1.05);
+    }
+  }
 
-.test-n-slider__mark-label {
-  font-size: 12px;
-  color: #666;
-  white-space: nowrap;
-  transition: color 0.2s ease, font-weight 0.2s ease;
-}
+  &__mark-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #b0b0b0;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
 
-.test-n-slider__mark.is-active .test-n-slider__mark-label {
-  color: #000;
-  font-weight: 600;
-}
+    .is-active & {
+      background: #000;
+      transform: scale(1.5);
+    }
+  }
 
-.test-n-slider__value {
-  text-align: center;
-  margin-top: 12px;
-  font-weight: 500;
-  min-height: 20px;
-}
+  &__mark-label {
+    font-size: 12px;
+    color: #666;
+    white-space: nowrap;
+    transition: color 0.2s ease, font-weight 0.2s ease;
 
-/* Состояния ответа */
-.test-n-slider.correct-answer .test-n-slider__mark.is-active .test-n-slider__mark-dot { background: #4caf50; }
-.test-n-slider.uncorrect-answer .test-n-slider__mark.is-active .test-n-slider__mark-dot { background: #f44336; }
-</style>
+    .is-active & {
+      color: #000;
+      font-weight: 600;
+    }
+  }
+
+  // 💬 Текущее значение под слайдером
+  &__value {
+    text-align: center;
+    margin-top: 12px;
+    font-weight: 500;
+    min-height: 20px;
+  }
+
+  // ✅❌ Состояния проверки ответа
+  &.correct-answer .is-active &__mark-dot { background: #4caf50; }
+  &.uncorrect-answer .is-active &__mark-dot { background: #f44336; }
+}
