@@ -1,18 +1,30 @@
-answerValues: {
-    handler() {
-      if (this.answerValues.includes(true)) {
-        this.$emit('valuesIsChosen');
-      } else {
-        this.$emit('valuesIsUnchosen');
-      }
-    },
-    deep: true,  // ← Ключевое изменение!
-    immediate: false
-  },
-  isAnswered() {
-    if (this.isAnswered) {
-      this.prepareDataForSend();
-    } else {
-      this.setDefaultValues();
-    }
-  },
+.test-n-multiple-choice(:class="{ 'test-n-multiple-choice_answered' : isAnswered }")
+    .test-n-multiple-choice__row.test-n-multiple-choice__row_main
+      .test-n-multiple-choice__elections
+        span.test-n-multiple-choice__election-text Да
+        span.test-n-multiple-choice__election-text Нет
+    .test-n-multiple-choice__row(v-for="(option, index) in options" :key="option.text")
+      p.test-n-multiple-choice__text {{ option.text }}
+      .test-n-multiple-choice__elections
+        label.test-n-multiple-choice__checkbox-wrap
+          .test-n-checkbox(:class="setCheckboxClasses(index)")
+            input(
+              v-model="answerValues[index]"
+              :value="true"
+              :name="option.text"
+              :disabled="isAnswered"
+              type="radio"
+            )
+            .test-n-checkbox__icon
+          span.test-n-multiple-choice__checkbox-text Да
+        label.test-n-multiple-choice__checkbox-wrap
+          .test-n-checkbox(:class="setCheckboxClasses(index)")
+            input(
+              v-model="answerValues[index]"
+              :value="false"
+              :name="option.text"
+              :disabled="isAnswered"
+              type="radio"
+            )
+            .test-n-checkbox__icon
+          span.test-n-multiple-choice__checkbox-text Нет
