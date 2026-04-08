@@ -1,56 +1,156 @@
-<Slider
-  v-model="selectedIndex"
-  :min="0"
-  :max="answersList.length - 1"
-  :step="0.01"
-  :tooltip="false"
-  :height="15"
-  :dot-size="32"
-  :disabled="isAnswered"
-  @change="onSliderChange"
-  @dragstart="onDragStart"
-  @dragend="onDragEnd"
-  class="test-n-slider__track"
-/>
+<template>
+  <div class="test-n-slider" :class="addClasses">
 
+    <Slider
+      v-model="selectedIndex"
+      :min="0"
+      :max="answersList.length - 1"
+      :step="0.01"
+      :tooltip="false"
+      :height="15"
+      :dot-size="32"
+      :disabled="isAnswered"
+      @end="onSliderRelease"
+      class="test-n-slider__track"
+    />
 
- isDragging: false  // ← Новый флаг
+    <!-- Маркеры позиционируются РАВНОМЕРНО -->
+    <div class="test-n-slider__marks" :class="{ 'is-disabled': isAnswered }">
+      <div
+        v-for="(item, index) in answersList"
+        :key="item.value"
+        class="test-n-slider__mark"
+        :class="{ 'is-active': index === selectedIndex }"
+        :style="{ left: getEvenPosition(index) + '%' }"
+        @click.stop="selectByIndex(index)"
+      >
+        <span class="test-n-slider__mark-label">{{ item.label }}</span>
+      </div>
+    </div>
 
-onDragStart() {
-    this.isDragging = true;
+    <div class="test-n-slider__value">{{ currentValueLabel }}</div>
+  </div>
+</template>
+
+<script>
+import Slider from '@vueform/slider';
+
+export default {
+  name: 'TextNSlider',
+  components: { Slider },
+  props: {
+    options: { type: Object, required: true },
+    isAnswered: { type: Boolean, default: false }
   },
-  
-  // ← Срабатывает при окончании перетаскивания
-  onDragEnd() {
-    this.isDragging = false;
-    // Если отпустили после драга — применяем "примагничивание"
-    this.snapToNearest();
-  },
-  
-  // ← Срабатывает при клике по треку (не при драге!)
-  onSliderChange() {
-    // Если сейчас идёт драг — игнорируем, обработаем в onDragEnd
-    if (this.isDragging) return;
-    
-    // Если клик по треку — сразу применяем "примагничивание"
-    this.snapToNearest();
-  },
-  
-  // ← Единая логика "примагничивания" к ближайшему маркеру
-  snapToNearest() {
-    const nearest = Math.round(this.selectedIndex);
-    
-    if (nearest !== this.selectedIndex) {
-      this.selectedIndex = nearest;
+  data() {
+    return {
+      selectedIndex: 0,
+      answerValue: null,
+      isAnswerValueCorrect: null
     }
-    
-    this.answerValue = this.answersList[nearest]?.value;
-    this.$emit('valuesIsChosen');
   },
-  
-  // Клик по маркеру
-  selectByIndex(index) {
-    if (this.isAnswered) return;
-    this.selectedIndex = index;
-    this.snapToNearest();
+  computed: {
+    // Преобразуем объект {10000: "10k", 20000: "20k"} → массив [{value:10000, label:"10k"}, ...]
+    answersList() {
+      if (!this.options.answers) return [];
+      return Object.entries(this.options.answers).map(([val, label]) => ({
+        value: +val,
+        label
+      }));
+    },
+    addClasses() {
+      return {
+        'correct-answer': this.isAnswerValueCorrect === true,
+        'uncorrect-answer': this.isAnswerValueCorrect === false
+      }
+    },
+    currentValueLabel() {
+      const current = this.answersList[this.selectedIndex];
+      return current ? current.label : this.answersList[0]?.label;
+    }
   },
+  watch: {
+    isAnswered(val) {
+      if (val) {
+        // Проверяем ответ только если значение уже установлено
+        if (this.answerValue !== null && this.answerValue !== undefined) {
+          this.checkAnswerValue();
+        }
+        this.prepareDataForSend();
+      } else {
+        this.setDefault();
+        this.selectedIndex = 0;
+      }
+    }
+  },
+  methods: {
+    // Равномерное распределение: 0%, 33.3%, 66.6%, 100%
+    getEvenPosition(index) {
+      if (this.answersList.length <= 1) return 0;
+      return (index / (this.answersList.length - 1)) * 100;
+    },
+
+    // Срабатывает при отпускании ползунка
+    onSliderRelease() {
+      if (this.isAnswered) return;
+
+      setTimeout(() => {
+        const nearest = Math.round(this.selectedIndex);
+        if (nearest !== this.selectedIndex) {
+          this.selectedIndex = nearest;
+        }
+
+        this.answerValue = this.answersList[nearest]?.value;
+
+        // Если уже нажата кнопка "Проверить" — сразу проверяем ответ
+        if (this.isAnswered) {
+          this.checkAnswerValue();
+        }
+
+        this.$emit('valuesIsChosen');
+      }, 0);
+    },
+
+    // Клик по маркеру
+    selectByIndex(index) {
+      if (this.isAnswered) return;
+      this.selectedIndex = index;
+      this.onSliderRelease();
+    },
+
+    checkAnswerValue() {
+      // Приводим оба значения к числу для надёжного сравнения
+      const selected = +this.answerValue;
+      const correct = +this.options.correctAnswer;
+
+      this.isAnswerValueCorrect = selected === correct;
+
+      // Для отладки (удалите после проверки)
+      console.log('✅ Проверка ответа:', {
+        selected,
+        correct,
+        isCorrect: this.isAnswerValueCorrect
+      });
+    },
+    setDefault() {
+      this.selectedIndex = 0;
+      this.answerValue = this.answersList[0]?.value;
+      this.isAnswerValueCorrect = null;
+      this.$emit('valuesIsUnchosen');
+    },
+    prepareDataForSend() {
+      this.$emit('readyForDataSending', {
+        answerValue: this.answerValue,
+        isAnswerValueCorrect: this.isAnswerValueCorrect
+      });
+    }
+  },
+  mounted() {
+    this.selectedIndex = 0;
+    this.answerValue = this.answersList[0]?.value;
+  }
+}
+</script>
+
+<style scoped>
+</style>
