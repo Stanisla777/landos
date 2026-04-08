@@ -1,144 +1,83 @@
-<template>
-  <div class="test-n-slider" :class="addClasses">
-    <!-- Слайдер БЕЗ встроенных marks -->
-    <Slider
-      v-model="answerValue"
-      :min="minValue"
-      :max="maxValue"
-      :tooltip="false"
-      :height="15"
-      :dot-size="32"
-      :disabled="isAnswered"
-      @change="onSliderRelease"
-      class="test-n-slider__track"
-    />
-    
-    <!-- Кастомные метки, позиционируются математически -->
-    <div class="test-n-slider__marks" :class="{ 'is-disabled': isAnswered }">
-      <div
-        v-for="(label, value) in options.answers"
-        :key="value"
-        class="test-n-slider__mark"
-        :class="{ 'is-active': +value === answerValue }"
-        :style="{ left: getMarkPosition(+value) + '%' }"
-        @click.stop="selectMark(+value)"
-      >
-        <span class="test-n-slider__mark-dot"></span>
-        <span class="test-n-slider__mark-label">{{ label }}</span>
-      </div>
-    </div>
-
-    <!-- Текущее значение -->
-    <div class="test-n-slider__value">{{ currentValueLabel }}</div>
-  </div>
-</template>
-
-<script>
-import Slider from '@vueform/slider';
-
-export default {
-  name: 'TextNSlider',
-  components: { Slider },
-  props: {
-    options: { type: Object, required: true },
-    isAnswered: { type: Boolean, default: false }
-  },
-  data() {
-    return {
-      answerValue: null,
-      isAnswerValueCorrect: null
-    }
-  },
-  computed: {
-    minValue() {
-      return +Object.keys(this.options.answers)[0];
-    },
-    maxValue() {
-      return +Object.keys(this.options.answers).at(-1);
-    },
-    // Массив допустимых значений (числа)
-    allowedValues() {
-      return Object.keys(this.options.answers).map(Number);
-    },
-    addClasses() {
-      return {
-        'correct-answer': this.isAnswerValueCorrect === true,
-        'uncorrect-answer': this.isAnswerValueCorrect === false
-      }
-    },
-    currentValueLabel() {
-      return this.answerValue 
-        ? this.options.answers[this.answerValue] 
-        : this.options.answers[this.minValue];
-    }
-  },
-  watch: {
-    isAnswered(val) {
-      if (val) {
-        this.checkAnswerValue();
-        this.prepareDataForSend();
-      } else {
-        this.setDefault();
-        this.answerValue = this.allowedValues[0];
-      }
-    }
-  },
-  methods: {
-    // Вычисляет позицию метки в % от min до max
-    getMarkPosition(value) {
-      if (this.maxValue === this.minValue) return 0;
-      return ((value - this.minValue) / (this.maxValue - this.minValue)) * 100;
-    },
-    
-    // Находит ближайшее допустимое значение
-    findClosest(current) {
-      return this.allowedValues.reduce((prev, curr) => 
-        Math.abs(curr - current) < Math.abs(prev - current) ? curr : prev
-      );
-    },
-    
-    // Срабатывает при ОТПУСКАНИИ ползунка
-    onSliderRelease() {
-      if (this.answerValue === null || this.answerValue === undefined) return;
-      
-      // Примагничиваем к ближайшему разрешённому значению
-      const closest = this.findClosest(this.answerValue);
-      if (closest !== this.answerValue) {
-        this.answerValue = closest;
-      }
-      
-      this.$emit('valuesIsChosen');
-    },
-    
-    // Клик по метке
-    selectMark(value) {
-      if (this.isAnswered) return;
-      this.answerValue = value;
-      this.$emit('valuesIsChosen');
-    },
-    
-    checkAnswerValue() {
-      this.isAnswerValueCorrect = this.answerValue === this.options.correctAnswer;
-    },
-    setDefault() {
-      this.answerValue = null;
-      this.isAnswerValueCorrect = null;
-      this.$emit('valuesIsUnchosen');
-    },
-    prepareDataForSend() {
-      this.$emit('readyForDataSending', {
-        answerValue: this.answerValue,
-        isAnswerValueCorrect: this.isAnswerValueCorrect
-      });
-    }
-  },
-  mounted() {
-    // Инициализируем первым значением из списка
-    this.answerValue = this.allowedValues[0];
-  }
+.test-n-slider {
+  position: relative;
+  padding: 0 16px;
+  user-select: none;
 }
-</script>
 
-<style scoped>
+/* Трек слайдера */
+.test-n-slider__track {
+  margin-bottom: 36px; /* Отступ до меток */
+}
 
-</style>
+/* Контейнер меток */
+.test-n-slider__marks {
+  position: relative;
+  height: 36px;
+  pointer-events: none; /* Клики проходят сквозь контейнер */
+}
+
+.test-n-slider__marks.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Отдельная метка */
+.test-n-slider__mark {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto; /* Включаем клики для самой метки */
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.test-n-slider__mark:hover {
+  transform: translateX(-50%) scale(1.05);
+}
+
+/* Точка под ползунком */
+.test-n-slider__mark-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b0b0b0;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.test-n-slider__mark.is-active .test-n-slider__mark-dot {
+  background: #000;
+  transform: scale(1.4);
+}
+
+/* Текст метки */
+.test-n-slider__mark-label {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.test-n-slider__mark.is-active .test-n-slider__mark-label {
+  color: #000;
+  font-weight: 600;
+}
+
+/* Текущее значение под всем блоком */
+.test-n-slider__value {
+  text-align: center;
+  margin-top: 12px;
+  font-weight: 500;
+  min-height: 20px;
+}
+
+/* Состояния правильного/неправильного ответа */
+.test-n-slider.correct-answer .test-n-slider__mark.is-active .test-n-slider__mark-dot {
+  background: #4caf50;
+}
+.test-n-slider.uncorrect-answer .test-n-slider__mark.is-active .test-n-slider__mark-dot {
+  background: #f44336;
+}
