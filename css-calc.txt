@@ -1,34 +1,32 @@
-<test-n :id='"<?= $pollsQuestionId ?>"' param='<?= $jsonPoll ?>'></test-n>
-<test-n id='"<?= $pollsQuestionId ?>"' param='<?= $jsonPoll ?>'></test-n>
-
-<div data-vue-app="test-n" data-id="10" data-param="<%= test_dual %>"></div>
-
-
- props: {
-    instanceId: {
-      type: String,
-      required: true
-    },
-    id: { // нужен для запрашивания данных по api
-      type: [String,Number],
-      required: true
-    },
-
-
 export default function testNbuild() {
   const testElements = document.querySelectorAll('test-n');
+  
   testElements.forEach((item) => {
-    const id = item.getAttribute('id');
-    const dataParam = item.getAttribute('param');
+    // Проверяем :id (Vue binding) ИЛИ id (обычный атрибут)
+    const id = item.getAttribute(':id') || item.getAttribute('id');
+    
+    // То же самое для param, если используется :param
+    const dataParam = item.getAttribute(':param') || item.getAttribute('param');
 
-    // Создаём контейнер с правильными атрибутами для менеджера
+    // Защита: если нет ни id, ни :id — пропускаем с предупреждением
+    if (!id) {
+      console.warn('Пропущен <test-n> без id/:id:', item);
+      return;
+    }
+
+    // Создаём новый контейнер
     const vueContainer = document.createElement('div');
     vueContainer.setAttribute('data-vue-app', 'test-n');
     vueContainer.setAttribute('data-id', id);
-    vueContainer.setAttribute('data-param', dataParam);
+    
+    if (dataParam) {
+      vueContainer.setAttribute('data-param', dataParam);
+    }
 
-    // Заменяем старый элемент новым
-    item.parentNode.replaceChild(vueContainer, item);
+    // Переносим контент (если внутри были дети)
+    vueContainer.innerHTML = item.innerHTML;
+
+    // Заменяем элемент
+    item.parentNode?.replaceChild(vueContainer, item);
   });
 }
-
