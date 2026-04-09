@@ -1,32 +1,18 @@
-export default function testNbuild() {
-  const testElements = document.querySelectorAll('test-n');
-  
-  testElements.forEach((item) => {
-    // Проверяем :id (Vue binding) ИЛИ id (обычный атрибут)
-    const id = item.getAttribute(':id') || item.getAttribute('id');
-    
-    // То же самое для param, если используется :param
-    const dataParam = item.getAttribute(':param') || item.getAttribute('param');
+sendData(data) {
+      data.id = this.id; // добавляем id теста
+      data.typeOfTest = this.typeOfTest; // добавляем тип теста
+      data.URL = document.URL; // добавляем url страницы
 
-    // Защита: если нет ни id, ни :id — пропускаем с предупреждением
-    if (!id) {
-      console.warn('Пропущен <test-n> без id/:id:', item);
-      return;
-    }
 
-    // Создаём новый контейнер
-    const vueContainer = document.createElement('div');
-    vueContainer.setAttribute('data-vue-app', 'test-n');
-    vueContainer.setAttribute('data-id', id);
-    
-    if (dataParam) {
-      vueContainer.setAttribute('data-param', dataParam);
-    }
-
-    // Переносим контент (если внутри были дети)
-    vueContainer.innerHTML = item.innerHTML;
-
-    // Заменяем элемент
-    item.parentNode?.replaceChild(vueContainer, item);
-  });
-}
+      //----!!!!!!!!!!!!! Расскоментировать!!!!!!!!!!!------------------
+      axios({
+        method: 'post',
+        url: apiForSend,
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        },
+        data: data
+      }).catch((error)=> {
+        console.log(error);
+      });
+    },
