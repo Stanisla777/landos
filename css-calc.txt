@@ -1,17 +1,29 @@
-// Вместо Vue.set(this.sending_data_server,'stats',this.stats)
-this.sending_data_server.stats = this.stats
-
-// Вместо Vue.set(this.sending_data_server,'checBox',this.checBox)
-this.sending_data_server.checBox = this.checBox
-
-// Вместо Vue.set(this.stats, perem[0], perem[1])
-this.stats[perem[0]] = perem[1]
-
-// Вместо Vue.set(array_answer, perem[0], perem[1])
-array_answer[perem[0]] = perem[1]
-
-// Вместо Vue.set(array_answer, 'id_question', perem[2])
-array_answer.id_question = perem[2]
-
-// Вместо Vue.set(this.stats, perem[1], perem[2])
-this.stats[perem[1]] = perem[2]
+<template>
+  <div class="polls__component-question js--polls-component-radio"
+       :class="required === 'Y' ? 'required' : 'optional'">
+    
+    <p class="polls__question" v-html="question"></p>
+    
+    <div class="polls__list-answers js--list-answers">
+      <div class="checkbox-stylized polls__list-answers-item polls__list-radio js--list-radio js--list-variant"
+           v-for="(answer, key, ind) in variants" 
+           :key="answer.ID || key"
+           :data-sort="answer.ID"
+           @click="pass_clickVariant($event, answer.FIELD_WIDTH, (answer['~FIELD_PARAM'] || answer.FIELD_PARAM), answer.COLOR, answer.NAME_INPUT, answer.VALUE_INPUT, answer.ID, id_question)">
+        
+        <!-- Исправлены :id, :name, :for и @click -->
+        <input :id="`${id_question}-${item_key}-${key}`" 
+               :name="`${id_question}-${item_key}`" 
+               type="radio" 
+               value="" 
+               @click.stop />
+               
+        <label :for="`${id_question}-${item_key}-${key}`" v-html="answer.MESSAGE"></label>
+        
+        <p class="polls__answer-to-question js--answer-to-question" v-if="answer.COLOR == 1">
+          {{ (answer['~FIELD_PARAM'] || answer.FIELD_PARAM) }}
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
