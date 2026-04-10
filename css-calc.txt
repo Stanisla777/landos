@@ -1,16 +1,51 @@
-transitionEnd: (el)=>{
-            console.log(mySwiper.realIndex);
-            const parent = el.$el[0];
-            if (parent.closest('.content-block-new') && el.$el[0].querySelector('.js--calculator-insruction')) {
-              el.$el[0].querySelector('.js--calculator-insruction p span').textContent = this.mySwiper.realIndex+1;
-            }
+initSlider() {
+  // 🔑 Сохраняем контекст Vue-компонента
+  const vm = this;
+  
+  if (vm.mySwiper) {
+    vm.mySwiper.destroy(true, true);
+  }
 
-            const slide_calculator = document.querySelectorAll('.test-slide-calculator')
-            slide_calculator.forEach((item) => {
-              item.querySelector('p:first-child').textContent = this.mySwiper.realIndex+1
-            })
+  vm.mySwiper = new Swiper('.js-slider-test-vue', {
+    loop: false,
+    simulateTouch: false,
+    allowTouchMove: false,
+    spaceBetween: 35,
+    autoHeight: true,
+    observer: true,
+    observeParents: true,
 
-            if (this.mySwiper?.params?.autoHeight) {
-              this.callSwiperMethod('update');
-            }
-          },
+    navigation: {
+      nextEl: '.test-button-next',
+      prevEl: ''
+    },
+    pagination: {
+      el: '.test-pagination',
+      clickable: true
+    },
+    on: {
+      init: () => {
+        vm.activeSlideButton();
+      },
+      transitionEnd: (swiper) => {  // ← Swiper передаёт экземпляр как первый аргумент!
+        // ✅ Используем `swiper` (экземпляр Swiper) вместо `this.mySwiper`
+        const realIndex = swiper?.realIndex ?? 0;
+        
+        const parent = swiper?.el;
+        if (parent?.closest('.content-block-new') && parent?.querySelector('.js--calculator-insruction')) {
+          parent.querySelector('.js--calculator-insruction p span').textContent = realIndex + 1;
+        }
+
+        const slide_calculator = document.querySelectorAll('.test-slide-calculator');
+        slide_calculator.forEach((item) => {
+          item.querySelector('p:first-child').textContent = realIndex + 1;
+        });
+
+        // ✅ Обновление высоты через хелпер
+        if (swiper?.params?.autoHeight) {
+          vm.callSwiperMethod('update');
+        }
+      },
+    },
+  });
+},
