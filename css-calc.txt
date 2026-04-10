@@ -1,51 +1,58 @@
-initSlider() {
-  // 🔑 Сохраняем контекст Vue-компонента
-  const vm = this;
-  
-  if (vm.mySwiper) {
-    vm.mySwiper.destroy(true, true);
+lastSlide(){
+      const element_slide = document.querySelectorAll('.test-window .swiper-slide-active')
+      var nodes = Array.prototype.slice.call(document.querySelector('.swiper-wrapper').children),
+        liRef = document.getElementsByClassName('swiper-slide-active')[0];
+
+      const num_slide = nodes.indexOf(liRef);
+      if(num_slide+1===this.count_slide){
+        this.btn_result=true
+      }
+    },
+
+
+<slider-button
+      v-show="btn_slider"
+      v-on:event_clickBtnPrev="clickBtnPrev($event)"
+      v-on:event_clickBtnNext="clickBtnNext"
+      v-on:event_clickResulted="clickResulted($event)"
+      :btn_result ="btn_result"
+    />
+
+<template>
+  <div class="test-window__slider-btn">
+    <div class="btn btn_gray-bor-black test-button-prev" @click="pass_clickBtnPrev($event)">Назад</div>
+    <div class="btn test-button-next" v-show="!btn_result" @click="pass_clickBtnNext">Дальше</div>
+    <div class="button btn btn_green-n-white test-button-resultt" v-show="btn_result" @click="pass_clickResulted">Результаты</div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'SliderButton',
+  data(){
+    return {
+      // buton_result:this.btn_result
+    }
+  },
+  props:['btn_result'],
+  methods:{
+    pass_clickBtnPrev(el){
+      const element = el.currentTarget
+      this.$emit('event_clickBtnPrev',element)
+    },
+    pass_clickBtnNext(){
+      this.$emit('event_clickBtnNext')
+    },
+    pass_clickResulted(el){
+      const element = el.currentTarget
+      this.$emit('event_clickResulted',element)
+    }
+
   }
+};
+</script>
 
-  vm.mySwiper = new Swiper('.js-slider-test-vue', {
-    loop: false,
-    simulateTouch: false,
-    allowTouchMove: false,
-    spaceBetween: 35,
-    autoHeight: true,
-    observer: true,
-    observeParents: true,
+<style scoped>
 
-    navigation: {
-      nextEl: '.test-button-next',
-      prevEl: ''
-    },
-    pagination: {
-      el: '.test-pagination',
-      clickable: true
-    },
-    on: {
-      init: () => {
-        vm.activeSlideButton();
-      },
-      transitionEnd: (swiper) => {  // ← Swiper передаёт экземпляр как первый аргумент!
-        // ✅ Используем `swiper` (экземпляр Swiper) вместо `this.mySwiper`
-        const realIndex = swiper?.realIndex ?? 0;
-        
-        const parent = swiper?.el;
-        if (parent?.closest('.content-block-new') && parent?.querySelector('.js--calculator-insruction')) {
-          parent.querySelector('.js--calculator-insruction p span').textContent = realIndex + 1;
-        }
+</style>
 
-        const slide_calculator = document.querySelectorAll('.test-slide-calculator');
-        slide_calculator.forEach((item) => {
-          item.querySelector('p:first-child').textContent = realIndex + 1;
-        });
-
-        // ✅ Обновление высоты через хелпер
-        if (swiper?.params?.autoHeight) {
-          vm.callSwiperMethod('update');
-        }
-      },
-    },
-  });
-},
