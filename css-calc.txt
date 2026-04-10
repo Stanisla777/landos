@@ -1,31 +1,16 @@
-callSwiperMethod(methodName, ...args) {
-    // 1. Проверяем, что экземпляр существует
-    if (!this.mySwiper) {
-      console.warn(`⚠️ Swiper не инициализирован, метод ${methodName} пропущен`);
-      return;
-    }
-    
-    // 2. Проверяем, что метод существует и является функцией
-    if (typeof this.mySwiper[methodName] !== 'function') {
-      console.warn(`⚠️ Метод Swiper.${methodName} не найден, используем fallback`);
-      // Fallback: если не нашли специфичный метод, пробуем общий update()
-      if (methodName !== 'update' && typeof this.mySwiper.update === 'function') {
-        this.mySwiper.update();
-      }
-      return;
-    }
-    
-    // 3. Вызываем метод
-    try {
-      return this.mySwiper[methodName](...args);
-    } catch (e) {
-      console.error(`❌ Ошибка при вызове Swiper.${methodName}:`, e);
-      // Fallback на update()
-      if (typeof this.mySwiper.update === 'function') {
-        this.mySwiper.update();
-      }
-    }
-  },
+transitionEnd: (el)=>{
+            console.log(mySwiper.realIndex);
+            const parent = el.$el[0];
+            if (parent.closest('.content-block-new') && el.$el[0].querySelector('.js--calculator-insruction')) {
+              el.$el[0].querySelector('.js--calculator-insruction p span').textContent = this.mySwiper.realIndex+1;
+            }
 
+            const slide_calculator = document.querySelectorAll('.test-slide-calculator')
+            slide_calculator.forEach((item) => {
+              item.querySelector('p:first-child').textContent = this.mySwiper.realIndex+1
+            })
 
-this.callSwiperMethod('updateAutoHeight', 500);
+            if (this.mySwiper?.params?.autoHeight) {
+              this.callSwiperMethod('update');
+            }
+          },
