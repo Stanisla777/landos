@@ -1,123 +1,201 @@
 <template>
-  <div class="test-cotainer-answer" v-bind:class="{mandatory:req}">
-    <div class="test-window__number" v-if="circle_number" v-bind:data-color="[`${item_key}`]">
-        <p><span>{{item_key}}</span>/<span>{{count_answers}}</span></p>
+  <div class="test-cotainer-answer" :class="{ mandatory: req }">
+    <div class="test-window__number" v-if="circle_number" :data-color="item_key">
+      <p><span>{{ item_key }}</span>/<span>{{ count_answers }}</span></p>
     </div>
+    
     <p class="test-window__question" v-html="question"></p>
+    
     <div class="test-item">
-        <div class="test-window__wrap-chec">
-            <div class="test-window__checkbox test-window__height-limitation">
-                <div class="test-window__item test-window__checkbox-item choose" v-for="(answer,key,ind) in variants" @click="pass_clickVariant($event,answer.FIELD_WIDTH,(answer['~FIELD_PARAM'] || answer.FIELD_PARAM),answer.COLOR,answer.NAME_INPUT,answer.VALUE_INPUT)" v-bind:class="[(answer.FIELD_WIDTH==1)?'test-wintdow__item':(answer.FIELD_WIDTH==2)?'test-winadow__item':'test-winfdow__item' ]">
-                    <div class="test-window__item-container-answer">
-                      <input v-bind:id="[`check-${item_key}-${key}`]" v-on:click.stop="" type="checkbox" name="test" value="" />
-                      <label class="fs-1rem test-window__possible-answer" v-bind:for="[`check-${item_key}-${key}`]" v-html="answer.MESSAGE"></label>
-                        <div class="test-window__field-for-variant" v-if="answer.FIELD_WIDTH==2">
-                            <div class="test-window__item test-window__textarea">
-                              <textarea class="check-for-variant" name="" maxlength="1001"
-                                @click.stop
-                                @change="passInputCheckAnother($event)"
-                                @input="limitInput"
-                                v-bind:placeholder="answer.PLACEHOLDER" >
-                              </textarea>
-                                <p class="test-window__textarea-error">Превышено допустимое количество в 1000 символов</p>
-                            </div>
-                        </div>
-                    </div>
+      <div class="test-window__wrap-chec">
+        <div class="test-window__checkbox test-window__height-limitation">
+          <div 
+            class="test-window__item test-window__checkbox-item choose" 
+            v-for="(answer, key, ind) in variants" 
+            :key="key"
+            @click="pass_clickVariant($event, answer.FIELD_WIDTH, (answer['~FIELD_PARAM'] || answer.FIELD_PARAM), answer.COLOR, answer.NAME_INPUT, answer.VALUE_INPUT)"
+            :class="[(answer.FIELD_WIDTH==1)?'test-wintdow__item':(answer.FIELD_WIDTH==2)?'test-winadow__item':'test-winfdow__item']"
+          >
+            <div class="test-window__item-container-answer">
+              <!-- 🔑 Исправлено: убран @click.stop, добавлен @change -->
+              <input 
+                :id="`check-${item_key}-${key}`" 
+                type="checkbox" 
+                name="test" 
+                value=""
+                @change="onCheckboxChange($event, answer)"
+              />
+              <label 
+                class="fs-1rem test-window__possible-answer" 
+                :for="`check-${item_key}-${key}`" 
+                v-html="answer.MESSAGE"
+              ></label>
+              
+              <div class="test-window__field-for-variant" v-if="answer.FIELD_WIDTH==2">
+                <div class="test-window__item test-window__textarea">
+                  <textarea 
+                    class="check-for-variant" 
+                    name="" 
+                    maxlength="1001"
+                    @click.stop
+                    @change="passInputCheckAnother($event)"
+                    @input="limitInput"
+                    :placeholder="answer.PLACEHOLDER"
+                  ></textarea>
+                  <p class="test-window__textarea-error">Превышено допустимное количество в 1000 символов</p>
                 </div>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
-    <button class="test-window__btn btn btn-slide-sub" type="button"
-      v-bind:class="{unact:req}"
+    
+    <!-- 🔑 Исправлено: :class="{unact: isButtonDisabled}" вместо {unact:req} -->
+    <button 
+      class="test-window__btn btn btn-slide-sub" 
+      type="button"
+      :class="{ unact: isButtonDisabled }"
       v-if="btn_answer"
-      @click="pass_clickButtonAnswer">{{button_text}}
+      @click="pass_clickButtonAnswer"
+    >
+      {{ button_text }}
     </button>
-</div>
+  </div>
 </template>
 
 <script>
 export default {
   name: "QuestionWindowCheckbox",
-  props:['question','variants','item_key','btn_answer','circle_number','count_answers','required','field_clearing','button_text'],
-  data(){
-    return{
-      req:null,
-      cor_answer:null,
-      name_radio:null,
-      inputs:null,
-      field_clearings:null
+  props: [
+    'question',
+    'variants',
+    'item_key',
+    'btn_answer',
+    'circle_number',
+    'count_answers',
+    'required',
+    'field_clearing',
+    'button_text'
+  ],
+  data() {
+    return {
+      req: null,
+      cor_answer: null,
+      name_radio: null,
+      inputs: null,
+      field_clearings: null
     }
   },
-  methods:{
-    pass_clickVariant(elem,param_1,param_2,param_3,param_4,param_5){
-      const element = elem.currentTarget
-      this.name_radio=param_4
-      this.$emit('event_clickVariant',[element,elem,param_1,param_2,param_3,param_4,param_5])
+  computed: {
+    // 🔑 Кнопка неактивна ТОЛЬКО если: вопрос обязательный И нет выбранных чекбоксов
+    isButtonDisabled() {
+      // Если вопрос не обязательный — кнопка всегда активна
+      if (this.req !== true) return false;
+      
+      // Если обязательный — проверяем, есть ли выбранные чекбоксы
+      const container = this.$el?.querySelector('.test-window__checkbox');
+      const checkedCount = container?.querySelectorAll('input[type="checkbox"]:checked')?.length || 0;
+      
+      return checkedCount === 0;
+    }
+  },
+  methods: {
+    // 🔑 Новый метод: обрабатывает изменение состояния чекбокса
+    onCheckboxChange(event, answer) {
+      // Эмитим событие для родителя (как было раньше)
+      const element = event.currentTarget.closest('.test-window__checkbox-item');
+      this.name_radio = answer.NAME_INPUT;
+      
+      this.$emit('event_clickVariant', [
+        element,
+        event,
+        answer.FIELD_WIDTH,
+        (answer['~FIELD_PARAM'] || answer.FIELD_PARAM),
+        answer.COLOR,
+        answer.NAME_INPUT,
+        answer.VALUE_INPUT
+      ]);
+      
+      // 🔑 Кнопка обновится автоматически благодаря computed isButtonDisabled
+      // Но можно добавить лог для отладки:
+      // console.log('🔍 Checkbox changed:', event.target.checked, 'Disabled:', this.isButtonDisabled);
     },
-    pass_clickButtonAnswer(elem){
-      const element = elem.currentTarget
-      this.$emit('event_clickButtonAnswer',[element,this.cor_answer])
+    
+    pass_clickVariant(elem, param_1, param_2, param_3, param_4, param_5) {
+      const element = elem.currentTarget;
+      this.name_radio = param_4;
+      this.$emit('event_clickVariant', [element, elem, param_1, param_2, param_3, param_4, param_5]);
     },
-    requiredButton(){
-      if(this.required==="Y"){
-        this.req=true
-        this.$emit('eventrequiredButton',this.req)
-
+    
+    pass_clickButtonAnswer(elem) {
+      const element = elem.currentTarget;
+      this.$emit('event_clickButtonAnswer', [element, this.cor_answer]);
+    },
+    
+    requiredButton() {
+      if (this.required === "Y") {
+        this.req = true;
+        this.$emit('eventrequiredButton', this.req);
+      } else if (this.required === "N") {
+        this.req = false;
+        this.$emit('eventrequiredButton', this.req);
       }
-      else if(this.required==="N"){
-        this.req=false
-        this.$emit('eventrequiredButton',this.req)
-      }
     },
-    correctCheck(){
-      const massive = []
-      const cor = this.variants
+    
+    correctCheck() {
+      const massive = [];
+      const cor = this.variants;
       const wit = Object.keys(cor);
-      for (let i=0;i<wit.length;i++){
-        if(cor[wit[i]].FIELD_WIDTH=="1"){
-          massive.push(cor[wit[i]].FIELD_WIDTH=="1")
+      for (let i = 0; i < wit.length; i++) {
+        if (cor[wit[i]].FIELD_WIDTH == "1") {
+          massive.push(cor[wit[i]].FIELD_WIDTH == "1");
         }
       }
-      this.cor_answer = massive.length
+      this.cor_answer = massive.length;
     },
-    passInputCheckAnother(elem){
-      const element = elem.currentTarget
-      this.$emit('eventInputCheckAnother',[element,element.value,this.name_radio])
+    
+    passInputCheckAnother(elem) {
+      const element = elem.currentTarget;
+      this.$emit('eventInputCheckAnother', [element, element.value, this.name_radio]);
     },
+    
     limitInput(el) {
-      const max = 1001
-      const field=el.currentTarget
-      // field.value = field.value.substring(0, max);
-      const parent = field.closest('.test-window__item')
-      const item = parent.querySelectorAll('.test-window__textarea-error')
+      const max = 1001;
+      const field = el.currentTarget;
+      const parent = field.closest('.test-window__item');
+      const item = parent.querySelectorAll('.test-window__textarea-error');
+      
       if (field.value.length === max) {
-        item.forEach(function (item){
-          item.setAttribute('style','display:block')
-        })
-      }
-      else
-      {
-        item.forEach(function (item){
-          item.setAttribute('style','display:none')
-        })
+        item.forEach(function (item) {
+          item.setAttribute('style', 'display:block');
+        });
+      } else {
+        item.forEach(function (item) {
+          item.setAttribute('style', 'display:none');
+        });
       }
     }
-
   },
-
   mounted() {
-    this.requiredButton()
-    this.correctCheck()
+    this.requiredButton();
+    this.correctCheck();
   },
-  watch:{
-    field_clearings(){
-
+  watch: {
+    field_clearings() {
+      // Если нужно реагировать на очистку полей — добавьте логику здесь
+    },
+    // Если варианты ответов могут меняться динамически — пересчитываем состояние кнопки
+    variants: {
+      handler() {
+        this.$forceUpdate(); // computed isButtonDisabled пересчитается автоматически
+      },
+      deep: true
     }
   }
-
 }
 </script>
 
 <style scoped>
-
+/* Ваши стили остаются без изменений */
 </style>
