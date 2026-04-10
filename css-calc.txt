@@ -1,58 +1,19 @@
-lastSlide(){
-      const element_slide = document.querySelectorAll('.test-window .swiper-slide-active')
-      var nodes = Array.prototype.slice.call(document.querySelector('.swiper-wrapper').children),
-        liRef = document.getElementsByClassName('swiper-slide-active')[0];
-
-      const num_slide = nodes.indexOf(liRef);
-      if(num_slide+1===this.count_slide){
-        this.btn_result=true
-      }
-    },
-
-
-<slider-button
-      v-show="btn_slider"
-      v-on:event_clickBtnPrev="clickBtnPrev($event)"
-      v-on:event_clickBtnNext="clickBtnNext"
-      v-on:event_clickResulted="clickResulted($event)"
-      :btn_result ="btn_result"
-    />
-
-<template>
-  <div class="test-window__slider-btn">
-    <div class="btn btn_gray-bor-black test-button-prev" @click="pass_clickBtnPrev($event)">Назад</div>
-    <div class="btn test-button-next" v-show="!btn_result" @click="pass_clickBtnNext">Дальше</div>
-    <div class="button btn btn_green-n-white test-button-resultt" v-show="btn_result" @click="pass_clickResulted">Результаты</div>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'SliderButton',
-  data(){
-    return {
-      // buton_result:this.btn_result
-    }
-  },
-  props:['btn_result'],
-  methods:{
-    pass_clickBtnPrev(el){
-      const element = el.currentTarget
-      this.$emit('event_clickBtnPrev',element)
-    },
-    pass_clickBtnNext(){
-      this.$emit('event_clickBtnNext')
-    },
-    pass_clickResulted(el){
-      const element = el.currentTarget
-      this.$emit('event_clickResulted',element)
-    }
-
+// Метод в родительском компоненте
+lastSlide() {
+  // 🔑 Самый надёжный способ: isEnd = true, если это последний слайд
+  if (this.mySwiper?.isEnd) {
+    this.btn_result = true;
+  } else {
+    this.btn_result = false;
   }
-};
-</script>
+  
+  // Альтернатива (если нужно больше контроля):
+  // const currentIndex = this.mySwiper?.activeIndex ?? 0;
+  // const totalSlides = this.mySwiper?.slides?.length ?? 0;
+  // this.btn_result = (currentIndex + 1 === totalSlides);
+},
 
-<style scoped>
-
-</style>
-
+slideChange: () => {
+        // 🔑 Ключевое: проверяем, последний ли слайд, после каждого перехода
+        this.lastSlide();
+      },
