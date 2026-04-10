@@ -1,4 +1,3 @@
-Uncaught TypeError: _this$mySwiper4.updateAutoHeight is not a function
 <template>
   <div class="test-window wrap-test-list swiper-container polls__wr-slider js-slider-test-vue" ref="SlideTestWindow">
     <window-plug v-show="plug"/>
@@ -205,7 +204,7 @@ export default {
             }
 
             const slide_calculator = document.querySelectorAll('.test-slide-calculator')
-            slide_calculator.forEach(function (item){
+            slide_calculator.forEach((item) => {
               item.querySelector('p:first-child').textContent = this.mySwiper.realIndex+1
             })
 
@@ -232,7 +231,7 @@ export default {
       let count_correct_answers =0
       const len = this.QUESTIONS
       const keys = Object.values(len)
-      keys.forEach(function (item){
+      keys.forEach((item) => {
         if(item.FIELD_TYPE=="2"){
           const keys_2 = Object.values(item.ANSWERS)
           for(let i=0;i<keys_2.length;i+=1){
@@ -288,9 +287,6 @@ export default {
         container_answer.forEach(function (item){
           let test_window = item.closest('.test-window')
           const btn = test_window.querySelectorAll('.test-window__slider-btn')
-          for(let i=0;i<btn.length;i++){
-            // btn[i].setAttribute('style','margin-top:-44px')
-          }
         })
       }
       else{
@@ -1122,152 +1118,3 @@ export default {
   },
 }
 </script>
-----------------
-
-радиокнопка
-<template>
-  <div class="test-cotainer-answer" v-bind:class="{mandatory:req}">
-    <div class="test-window__number" v-if="circle_number" v-bind:data-color="[`${item_key}`]">
-      <p>
-        <span>{{ item_key }}</span>/<span>{{ count_answers }}</span>
-      </p>
-    </div>
-    <p class="test-window__question" v-html="question"></p>
-    <div class="test-item">
-      <div class="test-window__wrap-chec">
-        <div class="test-window__radio test-window__height-limitation">
-          <div class="test-window__item test-window__radio-item choose" v-for="(answer,key,ind) in variants"
-               @click="pass_clickVariant($event,answer.FIELD_WIDTH,(answer['~FIELD_PARAM'] || answer.FIELD_PARAM),answer.COLOR,answer.NAME_INPUT,answer.VALUE_INPUT)"
-               v-bind:class="[(answer.FIELD_WIDTH==1)?'test-wintdow__item':(answer.FIELD_WIDTH==2)?'test-winadow__item':'test-winfdow__item' ]">
-            <div class="test-window__item-container-answer">
-              <input type="radio" value=""
-                v-bind:id="[`radio-${item_key}-${key}`]"
-                 v-on:click.stop=""
-                 v-bind:name="[`radio-${item_key}`]"
-                 />
-              <label class="fs-1rem test-window__possible-answer"
-                     v-bind:for="[`radio-${item_key}-${key}`]"
-                     v-html="answer.MESSAGE">
-              </label>
-              <div class="test-window__field-for-variant" v-if="answer.FIELD_WIDTH==2">
-                <div class="test-window__item test-window__textarea">
-                  <textarea class="radio-for-variant"
-                     @change="pass_input_radio_another($event)"
-                     @input="limitInput"
-                     v-bind:placeholder="answer.PLACEHOLDER"
-                     name="" maxlength="1001">
-                  </textarea>
-                  <p class="test-window__textarea-error">Превышено допустимое количество в 1000 символов</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <button class="test-window__btn btn btn-slide-sub" type="button"
-      v-bind:class="{unact:req}" v-if="btn_answer"
-      @click="pass_clickButtonAnswer">Кнопка Радио
-    </button>
-  </div>
-</template>
-
-<script>
-export default {
-  name: "QuestionWindowRadio",
-  props:['question','variants','item_key','btn_answer','circle_number','count_answers','required','current_answer','button_text'],
-
-  data(){
-    return{
-      true_answer:0,
-      req:null,
-      top:0,
-      name_radio:null,
-      input:null
-    }
-  },
-  methods:{
-    pass_clickVariant(elem,param_1,param_2,param_3,param_4,param_5){
-      const element = elem.currentTarget
-      this.name_radio=param_4
-      this.$emit('event_clickVariant',[element,elem,param_1,param_2,param_3,param_4,param_5])
-    },
-    pass_clickButtonAnswer(elem){
-      const element = elem.currentTarget
-      this.$emit('event_clickButtonAnswer',[element])
-    },
-    trueAnswer(item){
-      const countTru = this.countTrueAnswer
-      const variant = this.variants
-      const keys = Object.values(variant)
-      let el = this.true_answer
-      let true_answer=0
-      keys.forEach(function (item){
-        if(item.FIELD_PARAM==='Y'){
-          countTru()
-        }
-      })
-      this.true_answer = true_answer
-    },
-    requiredButton(){
-      if(this.required==="Y"){
-        this.req=true
-      }
-      else if(this.required==="N"){
-        this.req=false
-      }
-    },
-    pass_input_radio_another(elem){
-      const element = elem.currentTarget
-      this.$emit('event_input_radio_another',[element,element.value,this.name_radio])
-    },
-    limitInput(el) {
-      const max = 1001
-      const field=el.currentTarget
-      // field.value = field.value.substring(0, max);
-      const parent = field.closest('.test-window__item')
-      const item = parent.querySelectorAll('.test-window__textarea-error')
-      if (field.value.length === max) {
-        item.forEach(function (item){
-          item.setAttribute('style','display:block')
-        })
-      }
-      else
-      {
-        item.forEach(function (item){
-          item.setAttribute('style','display:none')
-        })
-      }
-    }
-  },
-  mounted() {
-    this.requiredButton()
-  },
-  watch:{
-    current_answer(){
-      if(this.current_answer===true){
-
-        const er = document.querySelectorAll('.test-window')
-        er.forEach(function (item){
-          const coor = item.getBoundingClientRect()
-          const height = item.clientHeight
-
-          const btn = item.querySelectorAll('.test-window__btn');
-          for (let i=0;i<btn.length;i++){
-            btn[i].setAttribute('style',`top:600px`)
-          }
-        })
-      }
-
-    }
-  },
-
-
-}
-</script>
-
-<style scoped>
-
-</style>
-
-
