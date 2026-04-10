@@ -1,59 +1,1095 @@
 <template>
-  <div class="polls__component-question js--polls-component-radio"
-       :class="required === 'Y' ? 'required' : 'optional'">
-    <p class="polls__question" v-html="question"></p>
-    <div class="polls__list-answers js--list-answers">
-      <div class="checkbox-stylized polls__list-answers-item polls__list-checkbox js--list-variant"
-           v-for="(answer, key, ind) in variants"
-           :key="answer.ID || key"
-           :data-sort="answer.ID"
-           @click="pass_clickVariant($event, answer.FIELD_WIDTH, (answer['~FIELD_PARAM'] || answer.FIELD_PARAM), answer.COLOR, answer.NAME_INPUT, answer.VALUE_INPUT, answer.ID, id_question)">
-        
-        <input
-          :id="`${id_question}-${item_key}-${key}`"
-          :name="`${id_question}-${item_key}`"
-          type="checkbox"
-          value=""
-          @click.stop
-          @change="pass_click($event, answer.FIELD_WIDTH, (answer['~FIELD_PARAM'] || answer.FIELD_PARAM), answer.COLOR, answer.NAME_INPUT, answer.VALUE_INPUT, answer.ID, id_question)"
+  <div class="test-window wrap-test-list swiper-container polls__wr-slider js-slider-test-vue" ref="SlideTestWindow">
+    <window-plug v-show="plug"/>
+    <div class="test-pagination"></div>
+    <slide-calculator
+      :count_slide="count_slide"
+      :current_slide="current_slide"
+      :for_insruction="for_insruction"
+    />
+
+    <div class="swiper-wrapper">
+      <div class="swiper-slide slide-question-js" v-for="(slide,key,ind) in QUESTIONS">
+        <question-window-radio
+          v-if="slide.FIELD_TYPE==='0'"
+          v-show="current_answer"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key+1)"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          :current_answer="current_answer"
+          :field_clearing="field_clearing"
+          :button_text="button_text"
+          v-on:event_clickButtonAnswer ="clickButtonAnswer($event)"
+          v-on:event_clickVariant ="clickVariant($event)"
+          v-on:event_input_radio_another="inputRadioAnother($event)"
         />
-        <label :for="`${id_question}-${item_key}-${key}`" v-html="answer.MESSAGE"></label>
-        
-        <p class="polls__answer-to-question js--answer-to-question" 
-           v-if="answer.COLOR == 1 && views_test == 'Test2'">
-          {{ (answer['~FIELD_PARAM'] || answer.FIELD_PARAM) }}
-        </p>
+        <question-window-block
+          v-if="slide.FIELD_TYPE==='2'"
+          v-show="current_answer"
+          :question="slide.QUESTION"
+          :variants="slide.ANSWERS"
+          :item_key="parseInt(key+1)"
+          :btn_answer="btn_answer"
+          :circle_number="circle_number"
+          :count_answers="count_answers"
+          :required="slide.REQUIRED"
+          :current_answer="current_answer"
+          :button_text="button_text"
+          v-on:event_clickButtonAnswer ="clickButtonAnswer($event)"
+          v-on:event_clickVariant ="clickVariant($event)"
+        />
       </div>
     </div>
   </div>
-</template>
 
+
+
+
+
+
+
+
+</template>
 <script>
+import Swiper, {Navigation, Pagination} from 'swiper';
+import WindowPlug from './view-slider/WindowPlug.vue'
+import SlideCalculator from './view-slider/SlideCalculator.vue'
+import QuestionWindowRadio from './view-slider/QuestionWindowRadio.vue'
+import QuestionWindowBlock from './view-slider/QuestionWindowBlock.vue'
+import SliderButton from './view-slider/SliderButton.vue'
+
+// import QuestionWindowCheckbox from './QuestionWindowCheckbox.vue'
+// import QuestionTextField from './QuestionTextField.vue'
+// import AnswerButton from './AnswerButton.vue'
+
+// import StatusAnswer from './StatusAnswer.vue'
+// import FinishWindow from './FinishWindow.vue'
+import axios from 'axios';
+Swiper.use([Navigation, Pagination]);
+let mySwiper;
+
+
+const api = 'https://sprosidomrf-test.dev.alamics.ru/local/api/tests/?id_tests=1';
 export default {
-  name: 'v-conponent-checkbox',
-  props: ['question', 'variants', 'item_key', 'required', 'current_answer', 'id_question', 'views_test'],
-  methods: {
-    pass_click(elem, param_1, param_2, param_3, param_4, param_5, param_6, param_7) {
-      const element = elem.currentTarget;
-      const data = [param_4, param_5, param_6, param_7, element];
-      if (element.closest('.js--polls-component-radio').classList.contains('required')) {
-        this.$emit('event_SelectCheckForButton', data);
+  name:'SliderTest',
+  props:['idTest','QUESTIONS','id_correct_answers','massive_required','sessid','idTest','VOTE_ID','button_text','title_text','views_test'],
+  //У радиокнопок NAME_INPUT должны быть обязательно разные у зазных вопросов
+  data(){
+    return {
+      "SESSID":"",
+      class:'true',
+      current_answer:true,//будет или нет отображаться окно с вопросом
+      finalResult:false, //переменная показывать окно с финальным результатом всего теста
+      //переменная показывать окно с ответом на конкретный вопрос, она пока не задествовавна
+      //и отключена в методах. В будущем окно с результатом ответа будет включаться, а окно с вопросом
+      //отключаться, когда будет меняться состояние current_answer
+      intermediate_window:null, //перменная которая показывает отображается или нет промежуточное окно
+      intermediate_window_secondary:null, //для фермерования переменной intermediate_window
+      count_slide:0,//количество слайдов
+      btn_slider:true,// параметр отвечающий за видимость кнопок слайдера
+      btn_result:false,// параметр отвечающий за видимость кнопки "показать результат на финальном слайде"
+      btn_answer:true,// параметр отвечающий за видимость кнопки "Ответить"
+      circle_number:false,// наличие или отсутствие цветного круга с номеров
+      count_answers:0,//общее количество вопросов
+      count_correct_answers:0,// изначальное количество правильных ответов
+      sum_of_points:0,//количество набранных балов, отправляется в конце на сервак
+      correct:null, //true если ответ правильный, в зависимомти от ответа будет формироваться содержание промежуточного окна
+      result:0,
+      smile:null,
+      smile_1:null,
+      smile_2:null,
+      smile_3:null,
+      smile_4:null,
+      smile_5:null,
+      final_text:"",
+      interim_des:[],//для описания к ответу промежуточного экрана
+      answers_all_questions:[],// массив ответов пользователей на все вопросы
+      massive_checkbox:[], //массив с чекбоксами, которые отправляю на сервер
+      object_questions:[],// массив, который будет содержать объекты ключ - значение для массива answers_all_questions
+      object_checkbox:[],// массив, который будет содержать объекты ключ - значение для массива answers_all_questions
+      response_object:{},//на основе переменной формируется переменная object_questions
+      field_text:"",
+      current_slide:1,
+      plug:false,
+      count_radio_btn:false,
+      config_header: {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        }
+      },
+      btn_verify:true,
+      required_button:null,
+      field_clearing:null,
+      repeat_test:false,
+      for_insruction:false
+    }
+  },
+  methods:{
+
+    //инициализация слайдера
+    initSlider() {
+      let current_slide = this.current_slide;
+      let place_use = this.for_insruction
+      mySwiper = new Swiper('.js-slider-test-vue', {
+        loop: false,
+        simulateTouch: false,
+        allowTouchMove: false,
+        spaceBetween: 35,
+        autoHeight:true,
+        observer:true,
+
+        navigation: {
+          nextEl: '.test-button-next',
+          prevEl: ''
+        },
+        pagination: {
+
+          el: '.test-pagination',
+          clickable: true
+        },
+        on: {
+          init:  ()=> {
+            // this.countSlideTest()
+            // this.countTrueAnswer()
+            // this.countQuestion()
+            this.activeSlideButton()
+          },
+          transitionEnd: (el)=>{
+            const parent = el.$el[0];
+            if (parent.closest('.content-block-new') && el.$el[0].querySelector('.js--calculator-insruction')) {
+              el.$el[0].querySelector('.js--calculator-insruction p span').textContent = mySwiper.realIndex+1;
+            }
+
+            const slide_calculator = document.querySelectorAll('.test-slide-calculator')
+            slide_calculator.forEach(function (item){
+              item.querySelector('p:first-child').textContent = mySwiper.realIndex+1
+            })
+          },
+        },
+      });
+
+      this.current_slide = current_slide
+    },
+
+    //Подсчет общего количества вопросов
+    countQuestion(item){
+      let length_el
+      const len = this.QUESTIONS
+      const withoutSymbolLength = Object.keys(len);
+      this.count_answers =withoutSymbolLength.length
+    },
+
+    //Подсчет общего количества правильных ответов
+    countTrueAnswer() {
+      let count_correct_answers =0
+      const len = this.QUESTIONS
+      const keys = Object.values(len)
+      keys.forEach(function (item){
+        if(item.FIELD_TYPE=="2"){
+          const keys_2 = Object.values(item.ANSWERS)
+          for(let i=0;i<keys_2.length;i+=1){
+            const mas = keys_2[i].DROPDOWN;
+            let massive_2=[]
+            for(let i=0;i<mas.length;i+=1){
+              if(mas[i].FIELD_WIDTH=="1"){
+                massive_2.push(i)
+              }
+            }
+            if(massive_2.length>0){
+              count_correct_answers+=1
+            }
+          }
+        }
+        else if(item.FIELD_TYPE=="1"){
+          const keys_2 = Object.values(item.ANSWERS)
+          for(let i=0;i<keys_2.length;i+=1){
+            if(keys_2[i].FIELD_WIDTH=="1"){
+              count_correct_answers+=1
+            }
+          }
+        }
+        else {
+          const keys_2 = Object.values(item.ANSWERS)
+          let massive=[]
+          for(let i=0;i<keys_2.length;i+=1){
+            if(keys_2[i].FIELD_WIDTH=="1"){
+              massive.push(i)
+              // count_correct_answers+=1
+            }
+          }
+          if(massive.length>0){
+            count_correct_answers+=1
+          }
+        }
+      })
+      this.count_correct_answers = count_correct_answers
+    },
+
+    //Подсчет количества слайдов
+    countSlideTest(){
+      const slide_parent = this.$refs.SlideTestWindow
+        this.count_slide = slide_parent.querySelectorAll('.slide-question-js').length
+    },
+    //-----------------------------------------------------
+
+    //---------------функции для кнопок-------------
+
+    buttonsContainer(){
+      const container_answer = document.querySelectorAll('.test-cotainer-answer')
+      if(this.intermediate_window===false){
+        container_answer.forEach(function (item){
+          let test_window = item.closest('.test-window')
+          const btn = test_window.querySelectorAll('.test-window__slider-btn')
+          for(let i=0;i<btn.length;i++){
+            // btn[i].setAttribute('style','margin-top:-44px')
+          }
+        })
+      }
+      else{
+        container_answer.forEach(function (item){
+          let test_window = item.closest('.test-window')
+          const btn = test_window.querySelectorAll('.test-window__slider-btn')
+          for(let i=0;i<btn.length;i++){
+            btn[i].setAttribute('style','margin-top:auto')
+          }
+        })
+      }
+
+    },
+    removeEmpty(obj) {
+      Object.keys(obj).forEach(k => {
+        if (obj[k] && typeof obj[k] === 'object' && this.removeEmpty(obj[k]) === null) {
+          delete obj[k];
+        }
+      });
+
+      if (!Object.keys(obj).length) {
+        return null;
       }
     },
-    pass_clickVariant(elem, param_1, param_2, param_3, param_4, param_5, param_6, param_7) {
-      const element = elem.currentTarget;
-      const status = !element.querySelector('input').checked;
-      const data = [param_4, param_5, param_6, param_7, element];
-      
-      if (status === true) {
-        this.$emit('event_SelectCheckboxAdd', data);
-      } else {
-        this.$emit('event_SelectCheckboxDelete', data);
+    //окно-заглушка перед финальным окном
+    appearancEmptyWindow(){
+      this.plug=true
+      let plug = this.plug
+      const promice = new Promise(function (res,rej){
+        setTimeout(function (){
+          plug=false
+          res()
+        },1000)
+      }).then(()=>{
+        this.plug=plug
+      })
+    },
+
+    //клик по кнопке Узнать итоговые результаты
+    clickResulted(el){
+      const element = el
+      this.repeat_test=true
+      this.answers_all_questions = this.answers_all_questions.concat(this.object_questions)
+      this.massive_checkbox = this.massive_checkbox.concat(this.object_checkbox)
+      this.removeEmpty(this.answers_all_questions)
+      this.appearancEmptyWindow()
+      const sessid = this.SESSID
+      var res = sessid.split('=').pop();
+      res = res.replace(/[^a-zа-яё0-9\s]/gi, ' ');
+      const required_data = [
+        { vote: "Y" },
+        { PUBLIC_VOTE_ID: this.idTest},
+        { VOTE_ID: this.idTest},
+        { sessid: `${res}` },
+        {sum_vote:this.sum_of_points}
+      ]
+      const array_to_send = {}
+      this.answers_all_questions = this.answers_all_questions.concat(required_data)
+      const an_all_que = this.answers_all_questions
+      const keys_2 = Object.keys(this.answers_all_questions)
+      keys_2.forEach(function (item,ind){
+        const keys = Object.keys(an_all_que[ind])
+        Object.assign(array_to_send, an_all_que[ind]);
+      })
+      const sending_data_server = {}
+      sending_data_server.stats=array_to_send
+      sending_data_server.checBox = this.massive_checkbox
+      let final_text = this.final_text
+      axios({
+        method:'post',
+        url:'/local/api/tests/',
+
+        headers: {
+          "Content-type": "text/html; charset=UTF-8"
+        },
+        data:sending_data_server,//превращаем собранные данные в json
+      })
+        // Если запрос успешен
+        .then(function (res) {
+          final_text = res.data.UF_TEXT
+          const container = document.querySelectorAll('.test-cotainer-final-result')
+          container.forEach(function (item){
+            const promice = new Promise(function (resolve) {
+              item.querySelector('.final-result__des').innerHTML=final_text
+              resolve()
+            }).then(()=>{
+              return new Promise(function (resolve) {
+                const height_el = item.offsetHeight
+                item.closest('.test-window').setAttribute('style',`height:${height_el+147}px`)
+                resolve()
+              })
+            });
+          })
+        })
+        // Если запрос с ошибкой
+        .catch(function (error) {
+          const container = document.querySelectorAll('.test-cotainer-final-result')
+          container.forEach(function (item) {
+            const height_el = item.offsetHeight
+            item.closest('.test-window').setAttribute('style', `height:${height_el + 147}px`)
+          })
+          console.log(error);
+        });
+
+      this.finalResult=true//добавил
+      this.intermediate_window=false//добавил
+      const container = document.querySelectorAll('.test-cotainer-result-answers')
+      container.forEach(function (item){
+        item.setAttribute('style','display:none')
+      })
+
+      const parent = document.querySelector('.test-window');
+      if(parent.clientHeight>655){
+        this.scrollBeginningTest()
       }
-      this.$emit('event_clickVariant', [element, status]);
+      this.current_answer=false
+      this.btn_slider=false
+      this.btn_verify=false
+      this.interim_des = []
+
+      const percentage_responses = (parseInt(this.sum_of_points)*100)/this.count_answers
+      if(percentage_responses<=20){
+        this.smile_1=true
+      }
+      if(percentage_responses>20&&percentage_responses<=40){
+        this.smile_2=true
+      }
+      if(percentage_responses>40&&percentage_responses<=60){
+        this.smile_3=true
+      }
+      if(percentage_responses>60&&percentage_responses<=80){
+        this.smile_4=true
+      }
+      if(percentage_responses>80&&percentage_responses<100){
+        this.smile_5=true
+      }
+      if(percentage_responses===100){
+        this.smile=true
+      }
+      if(el.closest('.common-test-pop-up')){
+        const pop_up = document.querySelector('.offer-test-pop-up-js');
+        const common_pop_up = document.querySelector('.common-test-pop-up');
+        const btn = pop_up.querySelector('.offer-test-pop-up__btn');
+        common_pop_up.querySelector('.modal__closer').setAttribute('style','display:none')
+        common_pop_up.querySelector('.common-test-pop-up__wrapper').setAttribute('style','padding-top: 1rem;padding-bottom: 1rem;transition-duration: .6s;')
+
+        const promice = new Promise(((resolve) => {
+          setTimeout(() => {
+            common_pop_up.querySelector('.common-test-pop-up__wrapper').classList.remove('zoomIn');
+            common_pop_up.querySelector('.common-test-pop-up__wrapper').classList.add('zoomOut');
+            resolve();
+          }, 4000);
+        })).then(() => new Promise(((resolve) => {
+          setTimeout(() => {
+            common_pop_up.classList.remove('open');
+            pop_up.setAttribute('style', 'display:none');
+            resolve();
+          }, 500);
+        }))).then(() => new Promise(((resolve) => {
+          setTimeout(() => {
+            this.sum_of_points=0
+            this.result=0
+            this.btn_result=false
+            this.btn_slider=false
+            this.btn_answer=true
+            this.smile=null
+            this.smile_1=null
+            this.smile_2=null
+            this.smile_3=null
+            this.smile_4=null
+            this.smile_5=null
+            this.final_text=""
+            this.interim_des=[]
+            this.answers_all_questions=[]
+            this.response_object={}
+            this.object_questions=[]
+            this.object_checkbox=[]
+            this.massive_checkbox=[]
+            this.correct=null
+            resolve();
+          }, 3000);
+        })));
+      }
+    },
+
+    unActiveButtonRepeatTest(){
+      const sub_but = document.querySelectorAll('.btn-slide-sub')
+      sub_but.forEach((item) => {
+        item.classList.remove('act')
+      })
+
+    },
+    //СЮДА ВЕРНУТЬСЯ!!!!!!!! чТОБЫ ПОЧИНИТЬ НЕАКТИВНОСТЬ КНОПКИ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    ActiveButton(elem) {
+
+      const parent = elem.closest('.test-cotainer-answer')
+      if (parent.querySelector('.test-window__btn').classList.contains('unact')) {
+        parent.querySelector('.test-window__btn').classList.add('act')
+        // this.required_button = false
+      }
+    },
+
+    unActiveButton(elem){
+      const parent = elem.closest('.test-cotainer-answer')
+      if(parent.querySelector('.test-window__btn').classList.contains('act')){
+        parent.querySelector('.test-window__btn').classList.remove('act')
+      }
+    },
+
+    //клик по кнопке слайдера "Назад"
+    clickBtnPrev(el){
+      const element = el
+      this.intermediate_window=false
+
+      const parent = element.closest('.test-window');
+      const active_slide = parent.querySelector('.swiper-slide-active')
+      const field_for_variant=active_slide.querySelectorAll('.test-window__field-for-variant')
+      for(let item of field_for_variant) {
+        item.querySelector('textarea').value = "";
+        item.classList.remove('active');
+      }
+
+
+
+      const container = document.querySelectorAll('.test-cotainer-result-answers')
+      container.forEach(function (item){
+        item.closest('.test-window').setAttribute('style','height:100%')
+        item.setAttribute('style','display:none')
+      })
+
+      this.current_answer=true
+      this.activeSlideButton()
+      const child = document.querySelectorAll('.test-window__item')
+      child.forEach(function (item){
+        item.classList.remove('active')
+        item.setAttribute('style','pointer-events:auto')
+      })
+      const answer_child = document.querySelectorAll('.test-cotainer-answer')
+      answer_child.forEach(function (item){
+        item.classList.remove('answered')
+      })
+      this.btn_answer=true
+
+      const swiper_active = parent.querySelector('.swiper-slide-active')
+      const test_window_item = swiper_active.querySelectorAll('.test-window__item.active-all')
+      let sum_points = this.sum_of_points
+      if(this.correct===true){
+        this.sum_of_points = this.sum_of_points - 1
+      }
+      const test_item = swiper_active.querySelectorAll('.test-item.answer-selected')
+      test_item.forEach(function (item){
+        item.classList.remove('answer-selected')
+      })
+
+      const active_this = element.closest('.test-item')
+      const active_all = document.querySelectorAll('.test-window__item.active-all')
+      const test_win_item = document.querySelectorAll('.test-window__item')
+      test_win_item.forEach(function (item){
+        item.classList.remove('false')
+      })
+
+      active_all.forEach(function (item) {
+        if (item.classList.contains('false')) {
+          item.classList.remove('false');
+        }
+        item.classList.remove('active-all');
+        if(item.classList.contains('false')){
+          item.classList.remove('false');
+        }
+
+        item.classList.remove('true');
+
+        if (item.classList.contains('test-window__radio-item') || item.classList.contains('test-window__checkbox-item')) {
+          item.querySelector('input').checked = false;
+        }
+      })
+
+      const pagination = document.querySelector('.test-pagination')
+      const bullet = pagination.querySelectorAll('.swiper-pagination-bullet.active')
+      for(let i =0;i<bullet.length;i++){
+        if(i===bullet.length-1){
+          bullet[i].classList.remove('active')
+        }
+      }
+
+      //Остановился тут, далее в watch и когда переменная меняетсчя формируем новый commit и передаём его в компонент с полем
+      this.field_clearing = true
+
+      this.count_radio_btn=false
+      this.interim_des=[]
+      this.response_object={}
+      this.object_questions=[]
+      this.object_checkbox=[]
+      this.correct=null
+      mySwiper.updateAutoHeight(500)
+
+    },
+    //клик по кнопке слайдера "Вперёд"
+    clickBtnNext(elem){
+      const child = document.querySelectorAll('.test-window__item')
+      child.forEach(function (item){
+        item.classList.remove('active')
+        item.setAttribute('style','pointer-events:auto')
+      })
+      this.intermediate_window=false
+      const container = document.querySelectorAll('.test-cotainer-result-answers')
+      container.forEach(function (item){
+        item.closest('.test-window').setAttribute('style','height:auto')
+        item.setAttribute('style','display:none')
+
+
+      })
+      this.current_answer=true
+      this.activeSlideButton()
+
+      //формирую массив ответов для отправки на сервер
+      this.answers_all_questions = this.answers_all_questions.concat(this.object_questions)
+      this.massive_checkbox = this.massive_checkbox .concat(this.object_checkbox)
+
+      const parent = document.querySelector('.test-window');
+      if(parent.clientHeight>655){
+        this.scrollBeginningTest()
+      }
+      this.count_radio_btn=false
+      this.interim_des = []
+      this.object_questions = []
+      this.object_checkbox=[]
+      this.response_object=[]
+      this.btn_answer=true
+      this.correct=null
+
+    },
+
+    //повторить тест
+    repeatTest(){ //пройти тест ещё раз по нажатию на кнопку "Повторить тест"
+      this.finalResult=false
+      this.current_answer=true
+      document.querySelector('.test-window').classList.remove('result')
+      const variant_testdocument = document.querySelectorAll('.test-window__col-variant-item')
+      const radio = document.querySelectorAll('.test-window__radio-item')
+      const check = document.querySelectorAll('.test-window__checkbox-item')
+      const textarea = document.querySelectorAll('.test-window__textarea textarea')
+      radio.forEach((item) => {
+        item.classList.remove('active')
+        item.classList.remove('true')
+        item.classList.remove('false')
+        item.closest('.test-item').classList.remove('answer-selected')
+        item.setAttribute('style','pointer-events: auto;')
+        item.querySelector('input').checked = false;
+      })
+      variant_testdocument.forEach((item) => {
+        item.classList.remove('active')
+        item.classList.remove('true')
+        item.classList.remove('false')
+        item.classList.remove('active-all')
+        item.closest('.test-item').classList.remove('answer-selected')
+        item.setAttribute('style','pointer-events: auto;')
+      })
+      check.forEach((item) => {
+        item.classList.remove('active')
+        item.classList.remove('true')
+        item.classList.remove('false')
+        item.closest('.test-item').classList.remove('answer-selected')
+        item.setAttribute('style','pointer-events: auto;')
+        item.querySelector('input').checked = false;
+      })
+      textarea.forEach((item) => {
+        item.classList.remove('active')
+        item.classList.remove('true')
+        item.classList.remove('false')
+        item.closest('.test-item').classList.remove('answer-selected')
+        item.setAttribute('style','pointer-events: auto;')
+        item.value = ""
+      })
+      const but_sub = document.querySelectorAll('.btn-slide-sub')
+
+      const bullet = document.querySelectorAll('.swiper-pagination-bullet')
+      bullet.forEach((item)=>{
+        item.classList.remove('active')
+      })
+      const but = document.querySelectorAll('.test-window__slider-btn')
+      this.btn_slider=false
+      but.forEach((item) => {
+        item.querySelector('.test-button-next').setAttribute('style', 'display:block')
+        item.querySelector('.test-button-resultt').setAttribute('style','display:none')
+
+      })
+
+      const container_final = document.querySelectorAll('.test-cotainer-final-result')
+      container_final.forEach(function (item){
+        item.querySelector('.final-result__des').textContent=""
+      })
+      const container_test_win = document.querySelectorAll('.test-window')
+      if(this.current_answer===true){
+        container_test_win.forEach(function (item){
+          item.setAttribute('style','height:auto')
+        })
+      }
+      const parent = document.querySelector('.test-window');
+      if(parent){
+        const field_for_variant = parent.querySelectorAll('.test-window__field-for-variant');
+        for (let item of field_for_variant) {
+          item.classList.remove('active');
+          item.querySelector('textarea').value = '';
+        }
+      }
+      const yOffset = -50;
+      const element = document.querySelector('.wrap-test-list');
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({top: y, behavior: 'smooth'});
+
+      this.unActiveButtonRepeatTest()
+      this.sum_of_points=0
+      this.result=0
+      this.btn_result=false
+      this.btn_slider=false
+      this.btn_answer=true
+      this.btn_verify=true
+      this.smile=null
+      this.smile_1=null
+      this.smile_2=null
+      this.smile_3=null
+      this.smile_4=null
+      this.smile_5=null
+      this.final_text=""
+      this.interim_des=[]
+      this.answers_all_questions=[]
+      this.response_object={}
+      this.object_questions=[]
+      this.object_checkbox=[]
+      this.massive_checkbox=[]
+      this.correct=null
+      mySwiper.slideTo(0)
+      this.repeat_test=false
+      const answer_child = document.querySelectorAll('.test-cotainer-answer')
+      answer_child.forEach(function (item){
+        item.classList.remove('answered')
+      })
+    },
+
+    activeButton (item) {
+      this.btn_slider = true
+      this.btn_verify=false
+      this.btn_answer=false
+    },
+
+    //открытие промежуточного окна после отвта на вопрос
+    show_intermediate_window(){
+      const container = document.querySelectorAll('.test-cotainer-result-answers')
+      if(this.intermediate_window_secondary=="1"){
+        container.forEach(function (item){
+          item.setAttribute('style','display:flex')
+          const height = item.clientHeight
+          item.closest('.test-window').setAttribute('style',`height:${height+85}px`)
+        })
+        this.intermediate_window=true
+      }
+      else if(this.intermediate_window_secondary=="0"){
+        container.forEach(function (item){
+          item.setAttribute('style','display:none')
+        })
+        this.intermediate_window=false
+        this.btn_answer=false
+      }
+    },
+    result_answer(item){
+      const but_parent = item.closest('.test-window')
+      const child = but_parent.querySelectorAll('.test-window__item')
+      child.forEach(function (item){
+        item.classList.remove('active')
+        item.setAttribute('style','pointer-events:none')
+      })
+    },
+    //функция последнего слайда
+    lastSlide(){
+      const element_slide = document.querySelectorAll('.test-window .swiper-slide-active')
+      var nodes = Array.prototype.slice.call(document.querySelector('.swiper-wrapper').children),
+        liRef = document.getElementsByClassName('swiper-slide-active')[0];
+
+      const num_slide = nodes.indexOf(liRef);
+      if(num_slide+1===this.count_slide){
+        this.btn_result=true
+      }
+    },
+    //полоса прохождения теста
+    activeBullet(item) {
+      const butParent = item.closest('.test-window');
+      const activeBullet = butParent.querySelector('.test-pagination .swiper-pagination-bullet-active');
+      activeBullet.classList.add('active');
+    },
+    //клик по кнопке ответить на вопрс  ПРОВЕРИТЬ НА ЧЕКБОКСАХ!!!!!!!
+    clickButtonAnswer(elem) {
+      this.activeButton(elem[0]);
+      this.activeBullet(elem[0]);
+      this.windowTrueAnswer(elem[0]);
+      this.lastSlide();
+      this.result_answer(elem[0]); //остановился тут
+      this.show_intermediate_window();
+      const parent = elem[0].closest('.test-window')
+      elem[0].closest('.test-cotainer-answer').classList.add('answered')
+      const active_slide = parent.querySelectorAll('.swiper-slide')
+      for(let item of active_slide){
+        const parent_check = item.querySelector('.test-container-answer')
+        if(item.classList.contains('swiper-slide-active')){
+          const checkbox = item.querySelectorAll('.test-window__checkbox-item').length
+
+          if(checkbox>0){
+            const checkbox_another = item.querySelectorAll('.test-winadow__item input:checked')
+            const count_checkbox_another = checkbox_another.length
+            const count_true = item.querySelectorAll('.test-wintdow__item').length
+            this.number_correct_answers(elem,count_true,item,count_checkbox_another)
+          }
+        }
+      }
+      mySwiper.updateAutoHeight(500)
+
+      this.buttonsContainer()
+
+
+    },
+
+    //------------------------------------------------клик по ответу
+
+    //собираю объект из данных выбранного пользователем варианта ответа для будущей отправки на сервер и пушу в переменную this.object_questions
+    selectedAnswerObject(element,el1,el2){
+      const object = this.object_questions
+      const object_checkbox = this.object_checkbox
+      if(element.classList.contains('test-window__checkbox-item')&&element.querySelector('input').checked){
+
+
+        const index = object_checkbox.findIndex(function (item){
+          return item[el1] === el2
+        });
+        if (index > -1) {
+          object_checkbox.splice(index, 1);
+        }
+
+      }
+      else if(element.classList.contains('test-window__checkbox-item')&&!element.querySelector('input').checked&&el2!==""&&el2!==undefined){
+        this.response_object={}
+        this.response_object[el1]=el2
+        this.object_checkbox.push(this.response_object)
+      }
+      else if(element.classList.contains('check-for-variant')&&el2!==""){
+        this.response_object={}
+        this.response_object[el1]=el2
+        this.object_checkbox.push(this.response_object)
+      }
+      else if (element.classList.contains('test-window__radio-item')||element.classList.contains('radio-for-variant')) {
+        this.response_object={}
+        this.object_questions=[]
+        this.response_object[el1] = el2;
+        this.object_questions.push(this.response_object);
+      }
+
+
+    },
+
+    inputAnswerObject(element,el1,el2,el3){
+
+      const object = this.object_questions
+      this.response_object={}
+      this.object_questions=[]
+      this.response_object[el1] = el3;
+      this.object_questions.push(this.response_object);
+
+    },
+
+    //воод текста в поле радиокнопки другое
+    inputRadioAnother(event){
+      this.selectedAnswerObject(event[0],event[2],event[1])
+    },
+    InputCheckAnother(event){
+      this.selectedAnswerObject(event[0],event[2],event[1])
+    },
+
+    //функция клика по варианту ответа
+    clickVariant(ev_1) {
+      if (typeof ev_1[1] == 'object') {
+        ev_1.splice(1, 1);
+      }
+
+      const element = ev_1[0]//элемент по которому произошел клик
+      const main_container = element.closest('.swiper-wrapper')
+      const element_parent = element.closest('.test-item') //родитель элемента по которому произошел клик
+      const elements__window_item = element_parent.querySelectorAll('.test-window__item') //все элемнты с классом test-window__item в выборке
+      const variant_answer = element.querySelector('label')
+      const field_for_variant = element_parent.querySelectorAll('.test-window__field-for-variant.active')
+      const question_type =parseInt(ev_1[1])
+      if(question_type != 2){
+        this.selectedAnswerObject(element,ev_1[4],ev_1[5])
+      }
+      const setElemt = element_parent.querySelectorAll('.test-window__item')
+      setElemt.forEach((item)=>{
+        if(!item.classList.contains('test-window__checkbox-item')){
+          item.classList.remove('active')
+          item.classList.remove('true')
+          item.classList.remove('false')
+        }
+      })
+      element.classList.add('active')
+
+      //Нажатие на кнопку Иное
+      //Количество полей с возможность добавтить собственный вариант
+      const count_field_another = element_parent.querySelectorAll('.test-winadow__item').length
+      if(question_type == 2){
+        if(!element.classList.contains('test-window__checkbox-item')){
+          for(let item of field_for_variant){
+            item.classList.remove('active')
+          }
+        }
+
+        element.querySelector('.test-window__field-for-variant').classList.add('active')
+        mySwiper.updateAutoHeight(500)
+      }
+
+      if(!element.classList.contains('test-window__checkbox-item')&&question_type != 2&&count_field_another!=0){
+
+        for(let item of field_for_variant){
+          item.classList.remove('active')
+        }
+        mySwiper.updateAutoHeight(500)
+      }
+      //Вернуться, скрывать через for(let item of field_for_variant)
+      // клик по ответу, когда он выбран ужу
+      if(question_type == 2&&element.classList.contains('test-window__checkbox-item')&&element.querySelector('input').checked){
+        // alert()
+        element.querySelector('.test-window__field-for-variant').classList.remove('active')
+        element.querySelector('.test-window__field-for-variant textarea').value=""
+        mySwiper.updateAutoHeight(500)
+      }
+
+      if(question_type == 1&&!element.classList.contains('test-window__checkbox-item')&&this.count_radio_btn===false){
+        this.correct=true
+        element.classList.add('true')
+        this.sum_of_points=this.sum_of_points+parseFloat(question_type)
+        element_parent.classList.add('answer-selected')
+        this.count_radio_btn=true
+      }
+      if(question_type == 2&&!element.classList.contains('test-window__checkbox-item')&&this.count_radio_btn===false){
+        this.correct=true
+        element.classList.add('true')
+        this.sum_of_points=this.sum_of_points+(parseFloat(question_type-1))
+        element_parent.classList.add('answer-selected')
+        this.count_radio_btn=true
+      }
+      if(question_type == 1&&!element.classList.contains('test-window__checkbox-item')){
+        element.classList.add('true')
+      }
+      if(question_type == 2&&!element.classList.contains('test-window__checkbox-item')){
+        element.classList.add('true')
+      }
+      else if(question_type ==0||question_type === "") {
+        this.correct=false
+        element.classList.add('false')
+      }
+
+      if((question_type ==0||question_type === "")&&element_parent.classList.contains('answer-selected')&&!element.classList.contains('test-window__checkbox-item')&&!variant_answer==="Иное"){
+
+        this.sum_of_points=this.sum_of_points-1
+        this.count_radio_btn=false
+        element_parent.classList.remove('answer-selected')
+        for(let item of field_for_variant){
+          item.classList.remove('active')
+        }
+        mySwiper.updateAutoHeight(500)
+      }
+
+      if((question_type ==0||question_type === "")&&element_parent.classList.contains('answer-selected')&&!element.classList.contains('test-window__checkbox-item')){
+
+        this.sum_of_points=this.sum_of_points-1
+        this.count_radio_btn=false
+        element_parent.classList.remove('answer-selected')
+      }
+
+      if(question_type == 1&&element.classList.contains('test-window__checkbox-item')){
+        this.correct=true
+        element_parent.classList.add('answer-selected')
+      }
+
+      if(question_type == 1&&element.classList.contains('test-window__checkbox-item')&&!element.querySelector('input').checked){
+        element.classList.add('true')
+      }
+      else if(question_type == 1&&element.classList.contains('test-window__checkbox-item')&&element.querySelector('input').checked){
+        element.classList.remove('true')
+      }
+
+
+      //прохожу по всем элементам и блокирую клик с помощью css
+      elements__window_item.forEach(function (item){
+        item.setAttribute('style','pointer-events: auto')
+      })
+      //Если элемент не чекбокс блокирую клик по нему и зидаю к класс, чтобы в будущем посчитать кол-во выбранных ответов
+      if(!element.classList.contains('test-window__checkbox-item')){
+        const neighbors_element = element_parent.querySelectorAll('.test-window__item')
+        neighbors_element.forEach(function (item){
+          item.classList.remove('active-all')
+        })
+        element.setAttribute('style','pointer-events: none')
+        element.classList.add('active-all')
+      }
+
+      if(element.classList.contains('test-window__checkbox-item')&&element.querySelector('input').checked){
+        element.classList.remove('active-all')
+        const index = this.interim_des.indexOf(ev_1[2]);
+        if (index > -1) {
+          this.interim_des.splice(index, 1);
+        }
+      }
+      else if(element.classList.contains('test-window__checkbox-item')&&!element.querySelector('input').checked){
+        element.classList.add('active-all')
+        this.interim_des.push(ev_1[2])
+      }
+      else if(!element.classList.contains('test-window__checkbox-item')){
+        this.interim_des = []
+        this.interim_des.push(ev_1[2])
+      }
+      if(element.classList.contains('test-window__checkbox-item')){
+        const parent_el = element.parentNode
+        const active_check = parent_el.querySelectorAll('.test-window__item.active-all')
+        const count_active_check = active_check.length
+        //закоментировал!!!!!!!!!!!!!!!!!!!!!!!!!!!! АХТУНГ!!!!!!!!!!!!
+        //когда снял чекбокс
+        if(count_active_check===0){
+          this.unActiveButton(element)
+        }
+      }
+      if (ev_1[3]==""){
+        ev_1[3]="0"
+      }
+      this.intermediate_window_secondary=ev_1[3]
+      if(element.classList.contains('active-all')){
+        this.ActiveButton(element)
+      }
+    },
+
+    inputAnswer(ev_1){
+      // console.log(ev_1);
+      const element = ev_1[0]
+      this.inputAnswerObject(element,ev_1[2],ev_1[3],ev_1[4])
+      if(ev_1[1] === "Y"){
+        // this.correct=true
+        element.classList.add('true')
+      }
+      else {
+        element.classList.add('false')
+      }
+      this.sum_of_points=this.sum_of_points+1
+      this.ActiveButton(element)
+    },
+
+    activeSlideButton(){
+      let slideBtn = document.querySelectorAll('.test-window__slider-btn');
+      this.btn_slider=false
+      this.btn_verify=true
+      // eslint-disable-next-line no-unused-vars
+      let but = document.querySelectorAll('.btn-slide-sub');
+      but = Array.prototype.slice.call(but);
+      const container = document.querySelector('.test-window .swiper-wrapper')
+      const slide = container.querySelectorAll('.swiper-slide')
+    },
+    windowTrueAnswer(item){//промежуточное окно
+      if(this.intermediate_window_secondary=="1"){
+        this.current_answer=false
+      }
+      else if(this.intermediate_window_secondary=="0"){
+        this.current_answer=true
+      }
+    },
+    number_correct_answers(el,count_true_answer,parent,count_another){
+      const el_true = parent.querySelectorAll('.test-window__item.true').length;
+      const el_all_choose = parent.querySelectorAll('.test-window__item.active-all').length;
+      if (count_true_answer === el_true && count_true_answer == el_all_choose - count_another) {
+        this.correct = true;
+        this.sum_of_points=this.sum_of_points+1
+      }
+      else {
+        this.correct = false;
+      }
+    },
+
+    scrollBeginningTest(){
+      const yOffset = -50;
+      const element = document.querySelector('.wrap-test-list');
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({top: y, behavior: 'smooth'});
     }
-  }
-};
+  },
+  mounted() {
+
+    this.$nextTick(()=>{
+      this.initSlider()
+      this.countSlideTest()
+      this.countTrueAnswer()
+      this.countQuestion()
+      if (this.$el.closest('.content-block-new')) {
+        this.for_insruction=true;
+      }
+    })
+
+
+  },
+  watch:{
+  },
+  components:{
+    WindowPlug,
+    SlideCalculator,
+    QuestionWindowRadio,
+    QuestionWindowBlock,
+    SliderButton,
+
+    
+    // QuestionWindowCheckbox,
+    // QuestionTextField,
+
+    // AnswerButton,
+    // StatusAnswer,
+    // FinishWindow,
+
+
+  },
+}
 </script>
 
-<style scoped></style>
+
+-------------------------
+
+count_slide в countSlideTest()
+
+-------------------------
+
+Uncaught TypeError: mySwiper.updateAutoHeight is not a function
+    at Proxy.clickButtonAnswer (component-slider-polls.vue:751:16)
+    at slide.FIELD_TYPE.onEvent_clickButtonAnswer._cache.<computed>._cache.<computed> (component-slider-polls.vue:26:42)
+    at callWithErrorHandling (runtime-core.esm-bundler.js:188:1)
+    at callWithAsyncErrorHandling (runtime-core.esm-bundler.js:196:1)
+    at emit (runtime-core.esm-bundler.js:708:1)
+    at Proxy.pass_clickButtonAnswer (QuestionWindowRadio.vue:27:12)
+    at $props.btn_answer.onClick._cache.<computed>._cache.<computed> (QuestionWindowRadio.vue:43:15)
+    at callWithErrorHandling (runtime-core.esm-bundler.js:188:1)
+    at callWithAsyncErrorHandling (runtime-core.esm-bundler.js:196:1)
+    at HTMLButtonElement.invoker (runtime-dom.esm-bundler.js:663:31)
+
+clickButtonAnswer(elem)
