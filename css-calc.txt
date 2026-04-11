@@ -162,57 +162,18 @@ clickVariant(ev_1) {
       };
     },
 
-<input 
-  :id="`check-${item_key}-${key}`" 
-  type="checkbox" 
-  name="test" 
-  value=""
-  @change="onCheckboxChange($event, answer)"
-/>
+ActiveButton(elem) {
 
-onCheckboxChange(event, answer) {
-    // Нормализуем элемент: если клик был по инпуту, ищем ближайший .test-window__checkbox-item
-    const element = event.target.closest('.test-window__checkbox-item') || event.currentTarget;
-    
-    this.name_radio = answer.NAME_INPUT;
-    
-    // Эмитим то же событие, что и при клике по лейблу
-    this.$emit('event_clickVariant', [
-      element,
-      event,
-      answer.FIELD_WIDTH,
-      (answer['~FIELD_PARAM'] || answer.FIELD_PARAM),
-      answer.COLOR,
-      answer.NAME_INPUT,
-      answer.VALUE_INPUT
-    ]);
-  },
+      const parent = elem.closest('.test-cotainer-answer')
+      if (parent.querySelector('.test-window__btn').classList.contains('unact')) {
+        parent.querySelector('.test-window__btn').classList.add('act')
+        // this.required_button = false
+      }
+    },
 
-
-В методе clickVariant: добавьте пересчёт состояния кнопки для чекбоксов
-Найдите место в конце метода clickVariant (после this.updateSlideHeight();) и добавьте:
-if (element.classList.contains('test-window__checkbox-item')) {
-  this.$nextTick(() => {
-    const parent = element.closest('.test-window');
-    const activeSlide = parent?.querySelector('.swiper-slide-active');
-    if (!activeSlide) return;
-    
-    // Считаем выбранные чекбоксы в активном слайде
-    const checkedBoxes = activeSlide.querySelectorAll('.test-window__checkbox-item input[type="checkbox"]:checked');
-    const hasSelection = checkedBoxes.length > 0;
-    
-    // Находим кнопку в этом слайде
-    const btn = activeSlide.querySelector('.btn-slide-sub');
-    if (!btn) return;
-    
-    // Если вопрос обязательный (есть класс mandatory) и нет выбора — добавляем unact
-    const container = activeSlide.querySelector('.test-cotainer-answer');
-    const isRequired = container?.classList.contains('mandatory');
-    
-    if (isRequired && !hasSelection) {
-      btn.classList.add('unact');
-    } else {
-      btn.classList.remove('unact');
-    }
-  });
-}
+    unActiveButton(elem){
+      const parent = elem.closest('.test-cotainer-answer')
+      if(parent.querySelector('.test-window__btn').classList.contains('act')){
+        parent.querySelector('.test-window__btn').classList.remove('act')
+      }
+    },
