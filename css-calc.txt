@@ -1,208 +1,33 @@
-clickVariant(ev_1) {
-  // Нормализация массива параметров (убираем лишний объект, если есть)
-  if (typeof ev_1[1] == 'object') {
-    ev_1.splice(1, 1);
-  }
+<textarea
+              :placeholder="place_holder"
+              :name="nameTextarea"
+              v-model="textValue"
+              @blur="endFocus"
+              @input="textInput"
+              @keydown="textKeyDown"
+              @focus="beginFocus"
+              ref="textArea"
+            ></textarea>
 
-  const element = ev_1[0]; // элемент по которому произошел клик
-  const main_container = element.closest('.swiper-wrapper');
-  const element_parent = element.closest('.test-item'); // родитель элемента по которому произошел клик
-  const elements__window_item = element_parent.querySelectorAll('.test-window__item'); // все элемнты с классом test-window__item в выборке
-  const variant_answer = element.querySelector('label');
-  const field_for_variant = element_parent.querySelectorAll('.test-window__field-for-variant.active');
-  const question_type = parseInt(ev_1[1]);
+data() {
+    return {
+max_length: 10,
 
-  // Сбор объекта ответа (для не-чекбоксов)
-  if (question_type != 2) {
-    this.selectedAnswerObject(element, ev_1[4], ev_1[5]);
-  }
-
-  // Сброс стилей для НЕ-чекбоксов
-  const setElemt = element_parent.querySelectorAll('.test-window__item');
-  setElemt.forEach((item) => {
-    if (!item.classList.contains('test-window__checkbox-item')) {
-      item.classList.remove('active');
-      item.classList.remove('true');
-      item.classList.remove('false');
-    }
-  });
-  element.classList.add('active');
-
-  // Нажатие на кнопку Иное (FIELD_WIDTH == 2)
-  const count_field_another = element_parent.querySelectorAll('.test-winadow__item').length;
-  if (question_type == 2) {
-    if (!element.classList.contains('test-window__checkbox-item')) {
-      for (let item of field_for_variant) {
-        item.classList.remove('active');
+textKeyDown(event) {
+      this.show_error = false;
+      const element = event.currentTarget;
+      if (element.value.length === this.max_length) {
+        this.length_error = true;
       }
-    }
-    element.querySelector('.test-window__field-for-variant').classList.add('active');
-    this.callSwiperMethod('updateAutoHeight', 500);
-  }
-
-  if (!element.classList.contains('test-window__checkbox-item') && question_type != 2 && count_field_another != 0) {
-    for (let item of field_for_variant) {
-      item.classList.remove('active');
-    }
-    this.callSwiperMethod('updateAutoHeight', 500);
-  }
-
-  // Клик по ответу, когда он выбран уже (для чекбоксов с полем "Иное")
-  if (question_type == 2 && element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
-    element.querySelector('.test-window__field-for-variant').classList.remove('active');
-    element.querySelector('.test-window__field-for-variant textarea').value = "";
-    this.callSwiperMethod('updateAutoHeight', 500);
-  }
-
-  // --- ЛОГИКА ДЛЯ РАДИОКНОПОК И ДРУГИХ ТИПОВ (ОСТАЁТСЯ БЕЗ ИЗМЕНЕНИЙ) ---
-
-  if (question_type == 1 && !element.classList.contains('test-window__checkbox-item') && this.count_radio_btn === false) {
-    this.correct = true;
-    element.classList.add('true');
-    this.sum_of_points = this.sum_of_points + parseFloat(question_type);
-    element_parent.classList.add('answer-selected');
-    this.count_radio_btn = true;
-  }
-  if (question_type == 2 && !element.classList.contains('test-window__checkbox-item') && this.count_radio_btn === false) {
-    this.correct = true;
-    element.classList.add('true');
-    this.sum_of_points = this.sum_of_points + (parseFloat(question_type) - 1);
-    element_parent.classList.add('answer-selected');
-    this.count_radio_btn = true;
-  }
-  if (question_type == 1 && !element.classList.contains('test-window__checkbox-item')) {
-    element.classList.add('true');
-  }
-  if (question_type == 2 && !element.classList.contains('test-window__checkbox-item')) {
-    element.classList.add('true');
-  } else if (question_type == 0 || question_type === "") {
-    this.correct = false;
-    element.classList.add('false');
-  }
-
-  if ((question_type == 0 || question_type === "") && element_parent.classList.contains('answer-selected') && !element.classList.contains('test-window__checkbox-item') && !variant_answer === "Иное") {
-    this.sum_of_points = this.sum_of_points - 1;
-    this.count_radio_btn = false;
-    element_parent.classList.remove('answer-selected');
-    for (let item of field_for_variant) {
-      item.classList.remove('active');
-    }
-    this.callSwiperMethod('updateAutoHeight', 500);
-  }
-
-  if ((question_type == 0 || question_type === "") && element_parent.classList.contains('answer-selected') && !element.classList.contains('test-window__checkbox-item')) {
-    this.sum_of_points = this.sum_of_points - 1;
-    this.count_radio_btn = false;
-    element_parent.classList.remove('answer-selected');
-  }
-
-  if (question_type == 1 && element.classList.contains('test-window__checkbox-item')) {
-    this.correct = true;
-    element_parent.classList.add('answer-selected');
-  }
-
-  if (question_type == 1 && element.classList.contains('test-window__checkbox-item') && !element.querySelector('input').checked) {
-    element.classList.add('true');
-  } else if (question_type == 1 && element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
-    element.classList.remove('true');
-  }
-
-  // Прохожу по всем элементам и блокирую клик с помощью css
-  elements__window_item.forEach(function (item) {
-    item.setAttribute('style', 'pointer-events: auto');
-  });
-
-  // Если элемент не чекбокс блокирую клик по нему и задаю класс, чтобы в будущем посчитать кол-во выбранных ответов
-  if (!element.classList.contains('test-window__checkbox-item')) {
-    const neighbors_element = element_parent.querySelectorAll('.test-window__item');
-    neighbors_element.forEach(function (item) {
-      item.classList.remove('active-all');
-    });
-    element.setAttribute('style', 'pointer-events: none');
-    element.classList.add('active-all');
-  }
-
-  // Логика для промежуточного окна (interim_des) — ОСТАЁТСЯ БЕЗ ИЗМЕНЕНИЙ
-  this.$nextTick(() => {
-    if (element.classList.contains('test-window__checkbox-item') && element.querySelector('input').checked) {
-      element.classList.remove('active-all');
-      const index = this.interim_des.indexOf(ev_1[2]);
-      if (index > -1) {
-        this.interim_des.splice(index, 1);
-      }
-    } else if (element.classList.contains('test-window__checkbox-item') && !element.querySelector('input').checked) {
-      element.classList.add('active-all');
-      this.interim_des.push(ev_1[2]);
-    } else if (!element.classList.contains('test-window__checkbox-item')) {
-      this.interim_des = [];
-      this.interim_des.push(ev_1[2]);
-    }
-  });
-
-  // --- ❌ СТАРАЯ НЕПРАВИЛЬНАЯ ЛОГИКА ДЛЯ ЧЕКБОКСОВ — ЗАКОММЕНТИРОВАНА ---
-  /*
-  if(element.classList.contains('test-window__checkbox-item')){
-    const parent_el = element.parentNode
-    const active_check = parent_el.querySelectorAll('.test-window__item.active-all')
-    const count_active_check = active_check.length
-    //закоментировал!!!!!!!!!!!!!!!!!!!!!!!!!!!! АХТУНГ!!!!!!!!!!!!
-    //когда снял чекбокс
-    if(count_active_check===0){
-      this.unActiveButton(element)
-    }
-  }
-  */
-
-  // Обработка параметров для промежуточного окна
-  if (ev_1[3] == "") {
-    ev_1[3] = "0";
-  }
-  this.intermediate_window_secondary = ev_1[3];
-
-  // Активация кнопки для НЕ-чекбоксов (через класс active-all) — ОСТАЁТСЯ
-  if (element.classList.contains('active-all')) {
-    this.ActiveButton(element);
-  }
-
-  // Вызов обновления высоты (если используется в вашем коде)
-  if (typeof this.updateSlideHeight === 'function') {
-    this.updateSlideHeight();
-  }
-
-  // --- ✅ НОВАЯ ПРАВИЛЬНАЯ ЛОГИКА ДЛЯ ЧЕКБОКСОВ (ВСТАВЛЕНО В КОНЕЦ) ---
-  if (element.classList.contains('test-window__checkbox-item')) {
-    this.$nextTick(() => {
-      const slide = element.closest('.swiper-slide');
-      if (!slide) return;
-
-      // Считаем реально выбранные чекбоксы в этом слайде
-      const checkedBoxes = slide.querySelectorAll('.test-window__checkbox-item input[type="checkbox"]:checked');
-      const hasSelection = checkedBoxes.length > 0;
-
-      // Находим контейнер и кнопку
-      const container = slide.querySelector('.test-cotainer-answer');
-      const btn = slide.querySelector('.btn-slide-sub');
-      if (!container || !btn) return;
-
-      // Проверяем, обязательный ли вопрос (по классу mandatory)
-      const isRequired = container.classList.contains('mandatory');
-
-      // 🔑 Логика активации кнопки
-      if (isRequired) {
-        if (hasSelection) {
-          // Обязательный + есть выбор = кнопка активна
-          btn.classList.remove('unact');
-          btn.classList.add('act');
-        } else {
-          // Обязательный + нет выбора = кнопка неактивна
-          btn.classList.add('unact');
-          btn.classList.remove('act');
-        }
+    },
+textInput(event) {
+      const element = event.currentTarget;
+      if (element.value.trim().length > 0) {
+        this.btn_active = true;
       } else {
-        // Не обязательный = кнопка всегда активна
-        btn.classList.remove('unact');
-        btn.classList.add('act');
+        this.btn_active = false;
       }
-    });
-  }
-},
+      if (element.value.length <= this.max_length) {
+        this.length_error = false;
+      }
+    },
