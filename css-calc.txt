@@ -1,33 +1,10 @@
-<textarea
-              :placeholder="place_holder"
-              :name="nameTextarea"
-              v-model="textValue"
-              @blur="endFocus"
-              @input="textInput"
-              @keydown="textKeyDown"
-              @focus="beginFocus"
-              ref="textArea"
-            ></textarea>
+onPaste(event) {
+      // Получаем текст из буфера
+      const pastedText = event.clipboardData?.getData('text/plain') || '';
+      const currentLength = event.target.value.length;
 
-data() {
-    return {
-max_length: 10,
-
-textKeyDown(event) {
-      this.show_error = false;
-      const element = event.currentTarget;
-      if (element.value.length === this.max_length) {
+      // Если вставка превысит лимит → показываем ошибку
+      if (currentLength + pastedText.length > this.max_length) {
         this.length_error = true;
-      }
-    },
-textInput(event) {
-      const element = event.currentTarget;
-      if (element.value.trim().length > 0) {
-        this.btn_active = true;
-      } else {
-        this.btn_active = false;
-      }
-      if (element.value.length <= this.max_length) {
-        this.length_error = false;
       }
     },
