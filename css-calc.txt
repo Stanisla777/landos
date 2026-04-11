@@ -1,56 +1,59 @@
-sanitizeSpaces(value) {
-      // 1. Убираем все двойные+ пробелы → один пробел
-      let result = value.replace(/\s{2,}/g, ' ');
-      
-      // 2. Если поле было пустым и пользователь ввёл пробел — убираем его
-      // (это работает и для вставки текста, начинающегося с пробела)
-      if (result.startsWith(' ') && !value.trim().length) {
-        result = result.trimStart();
-      }
-      
-      return result;
-    },
+const _success = document.querySelector('#success_was_useful');
 
+onsuccess: (result) => {
 
- onInput(event) {
-      let val = event.target.value;
-      
-      // Применяем санитизацию пробелов
-      const sanitized = this.sanitizeSpaces(val);
-      
-      // Если санитизация изменила значение — обновляем v-model
-      // Vue автоматически поставит курсор в конец, но для textarea это обычно ОК
-      if (sanitized !== val) {
-        this.textValue = sanitized;
-        val = sanitized;
-      }
-      
-      // Проверка на превышение длины (страховка для paste)
-      if (val.length > this.max_length) {
-        this.length_error = true;
-        this.textValue = val.slice(0, this.max_length);
-      } else {
-        // Ошибку скрываем, только если текст строго меньше лимита
-        // Если ровно 10 символов — ошибка остаётся (индикация "лимит достигнут")
-        if (val.length < this.max_length) {
-          this.length_error = false;
-        }
-      }
-      
-      // Логика кнопки
-      this.btn_active = val.trim().length > 0;
-      this.show_error = false;
-    },
+if (_success) {
+                this.localStorageClick();
+                this.form_show = false;
+                _success.classList.add('show');
+                document.body.classList.add('modal-opened');
+                document.body.classList.add('body-modal');
+                document.body.classList.add('body-modal-modals');
 
-    // === НОВЫЙ: Обработка вставки (показ ошибки, если вставка превысит лимит) ===
-    onPaste(event) {
-      const pastedText = event.clipboardData?.getData('text/plain') || '';
-      const currentLength = this.textValue.length;
-      
-      // Проверяем, превысит ли вставка лимит (до применения санитизации)
-      if (currentLength + pastedText.length > this.max_length) {
-        this.length_error = true;
-      }
-      // Не вызываем preventDefault — браузер сам обрежет по maxlength,
-      // а onInput потом санитизирует пробелы
-    },
+                setTimeout(() => {
+                  _success.classList.remove('show');
+                  document.body.classList.remove('modal-opened');
+                  document.body.classList.remove('body-modal');
+                  document.body.classList.remove('body-modal-modals');
+                }, 10000);
+
+                _success.addEventListener('click', function handler() {
+                  _success.classList.remove('show');
+                  document.body.classList.remove('modal-opened');
+                  document.body.classList.remove('body-modal-modals');
+                  setTimeout(() => {
+                    document.body.classList.remove('body-modal');
+                  }, 500);
+                  _success.removeEventListener('click', handler);
+                });
+              }
+            } else {
+              if (result['errors']) {
+                console.warn(result['errors']);
+                return;
+              }
+            }
+
+Окно
+<div class="modal js--webform-success" id="success_was_useful">
+            <div class="modal__wrapper new js--modal bg-grey">
+                <div class="modal__closer outside js--modal-closer">
+                    <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            fill-rule="evenodd"
+                            clip-rule="evenodd"
+                            d="M0.357542 15.3637C-0.0329827 15.7543 -0.0329827 16.3874 0.357542 16.778C0.748066 17.1685 1.38123 17.1685 1.77176 16.778L8.13551 10.4142L14.4995 16.7782C14.89 17.1687 15.5232 17.1687 15.9137 16.7782C16.3042 16.3876 16.3042 15.7545 15.9137 15.364L9.54972 8.99999L15.9139 2.63582C16.3044 2.24529 16.3044 1.61213 15.9139 1.2216C15.5234 0.83108 14.8902 0.83108 14.4997 1.2216L8.13551 7.58577L1.77156 1.22182C1.38104 0.8313 0.747871 0.8313 0.357346 1.22182C-0.0331781 1.61235 -0.0331778 2.24551 0.357346 2.63604L6.7213 8.99999L0.357542 15.3637Z"
+                        ></path>
+                    </svg>
+                </div
+                ><!--окно появляется после отправки добавлением класса .active-->
+                <div class="modal__sending-result success active">
+                    <div class="modal__sending-result-icon">
+                    </div>
+                    <p class="modal__sending-result-title">
+                        <span class="highlighting">Спасибо</span> за&nbsp;отзыв!
+                    </p>
+                    <div class="btn_s black js--modal-closer">Закрыть</div>
+                </div>
+            </div>
+        </div>
