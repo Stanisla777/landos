@@ -1,3 +1,125 @@
+Исправленный apiConnect (часть с обработкой ответа):
+// Внутри .then() ответа от localaxios.get
+if (response.data !== null && response.status === 200 && response.data.result !== null) {
+  this.resetData();
+  
+  const result = response.data.result;
+  const stats = result.stats || {};
+  const bld = result.bld || {};
+  
+  // === 1. Заполняем bullet (с безопасными fallback) ===
+  this.bullet.address = result.address || '';
+  
+  // priceMin: используем median/average вместо отсутствующего min
+  this.bullet.priceMin = stats.median ?? stats.average ?? stats.min ?? 0;
+  this.bullet.price = stats.price ?? 0;
+  this.bullet.price_range = Array.isArray(stats.priceRange) ? stats.priceRange : [0, 0];
+  
+  // === 2. Валидация: проверяем реальные данные, а не отсутствующий 'min' ===
+  if (!this.bullet.price || !this.bullet.price_range.length) {
+    this.ocenkaMobiErrorText = 'Недостаточно данных о цене. Попробуйте изменить запрос';
+    this.showError();
+    return; // ← Критично: прерываем выполнение, если данных нет
+  }
+  
+  // === 3. Станции (если есть) ===
+  if (bld.stations && Array.isArray(bld.stations)) {
+    this.bullet.stations = bld.stations;
+  }
+  
+  // === 4. Показываем плашку и заполняем детали ===
+  this.bullet.showBullet = true;
+  this.setData(result); // ← Передаём весь result, а не только части
+}
+
+--------------------
+
+setData(data) {
+  // Сохраняем координаты
+  this.bldPos = data.bld?.pos || {};
+  
+  // === Безопасная инициализация карты ===
+  const pos = data.bld?.pos;
+  if (pos && typeof pos.lat === 'number' && typeof pos.lng === 'number') {
+    const coords = [pos.lat, pos.lng];
+    
+    if (typeof window.ymaps !== 'undefined' && window.ymaps.ready) {
+      // Карта уже загружена — инициализируем сразу
+      window.ymaps.ready(() => {
+        this.initMap(coords);
+      });
+    } else {
+      // Карта ещё не готова — пробуем позже
+      setTimeout(() => {
+        if (typeof window.ymaps !== 'undefined' && window.ymaps.ready) {
+          window.ymaps.ready(() => {
+            this.initMap(coords);
+          });
+        }
+      }, 1000);
+    }
+  }
+  
+  // === Остальные данные ===
+  this.bldPhotos = data.bld?.photos || null;
+  
+  // Вкладка "О доме" (id: 0)
+  const aboutBld = this.tabs[0]?.content || [];
+  if (aboutBld.length) {
+    aboutBld[0].data = data.bld?.cadNum || '';
+    aboutBld[0].linkUrl = data.bld?.linkPKK || '';
+    aboutBld[1].data = data.stats?.price ?? '';
+    aboutBld[2].data = data.stats?.median ?? data.stats?.average ?? data.stats?.min ?? '';
+    aboutBld[3].data = data.stats?.median ?? data.stats?.average ?? data.stats?.min ?? '';
+    aboutBld[4].data = data.bld?.bldYear || '';
+    aboutBld[5].data = data.bld?.maxFloor || '';
+    aboutBld[6].data = data.bld?.entranceCount || '';
+    aboutBld[7].data = data.bld?.elevatorCount || '';
+    aboutBld[8].data = data.bld?.uFloors || '';
+    aboutBld[9].data = data.bld?.bldType || '';
+    aboutBld[10].data = data.bld?.wallMaterial || '';
+    aboutBld[11].data = data.bld?.wearout || '';
+    aboutBld[12].data = data.bld?.bldProject || '';
+    aboutBld[13].data = data.bld?.floorMaterial || '';
+    aboutBld[14].data = data.bld?.supplyTypeGas || '';
+  }
+  
+  // Вкладка "О квартире" (id: 1) — если есть данные
+  if (data.flat) {
+    this.flat = true;
+    const aboutFlat = this.tabs[1]?.content || [];
+    if (aboutFlat.length) {
+      aboutFlat[0].data = data.flat.premisesId || '';
+      aboutFlat[1].data = data.flat.parcelId || '';
+      aboutFlat[2].data = data.flat.cadNum || '';
+      aboutFlat[3].data = data.flat.cadCost || '';
+      aboutFlat[4].data = data.flat.dateCost || '';
+      aboutFlat[5].data = data.flat.area || '';
+      aboutFlat[6].data = data.flat.floor || '';
+      aboutFlat[7].data = data.flat.rooms || '';
+      if (data.flat.rights?.[0]?.desc) {
+        aboutFlat[8].data = data.flat.rights[0].desc;
+      }
+      if (data.flat.rights?.[0]?.encum?.[0]?.desc) {
+        aboutFlat[9].data = data.flat.rights[0].encum[0].desc;
+      }
+    }
+  }
+},
+
+------------------
+
+
+
+
+
+
+
+
+
+
+
+
 result:{
     "requestId": "f5a32108-c3ba-4807-979e-ef3f4b0e2d5e",
     "flat": {
