@@ -1,5 +1,1323 @@
-cookie_key: was_useful_rating_/news/v-moskve-zarabotali-belye-spiski-saytov/_form-rating-0
- cookie value: 5 | type: string
- [DEBUG] parsed rating: 5
- found .js--grade-item elements: 0
- no star elements found
+<template>
+  <div id="app" v-cloak>
+    <div class="container">
+      <div class="block-container form-ocenka__block">
+        <form class="form-ocenka" id="form">
+          <div class="form-ocenka__row" ref="ocenkaRow">
+            <div class="form-ocenka__col" v-for="inp in inputs" :key="inp.id" :data-id="inp.id">
+              <p class="form-ocenka__col_label">{{ inp.label }}</p>
+              <div class="select" v-if="inp.type === 'select'" :class="{open: openSelect}">
+                <div class="select__background" @click="handlerToggleSelect(false)"></div>
+                <div class="select__choosen" @click="handlerToggleSelect(true)">
+                  {{ inp.plh }}
+                </div>
+                <input type="hidden" v-model="inp.value"/>
+                <div class="select__list-wrapper" ref="SelectList">
+                  <ul class="select__list">
+                    <li
+                      class="select__list-item"
+                      v-for="option in inp.lists"
+                      :data-value="option.value"
+                      :key="option.id"
+                      @click="setSelectItem(option.value, option.title)"
+                    >
+                      {{ option.title }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <label class="input" v-else :class="{'input_error': inp.isNotValid}">
+                <template v-if="inp.mark === 'adress'">
+                  <div class="select select_hidden" :class="{open: showSearchList}">
+                    <div
+                      class="select__background"
+                      @click="handlerSelectAddress(false)"
+                    ></div>
+                    <input :placeholder="inp.plh" v-model="inp.value" @input="set"/>
+                    <div class="select__list-wrapper" ref="searchResults">
+                      <ul class="select__list">
+                        <li
+                          class="select__list-item"
+                          v-for="(item, idx) in searchList"
+                          :data-value="item"
+                          :key="idx"
+                          @click="setAddress(item)"
+                        >
+                          {{ item }}
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <span class="input__error_search" v-show="showErrorSearch">Ничего не найдено</span>
+                </template>
+                <template v-else-if="inp.mark === 'area'">
+                  <input
+                    @input="firstZero"
+                    :placeholder="inp.plh"
+                    v-model="inp.value"
+                    :type="inp.type"
+                    inputmode="numeric"
+                  />
+                  <!--                                <span class="input__error" v-show="inp.isNotValid"-->
+                  <!--                                >Заполните поле</span>-->
+                </template>
+                <input
+                  v-else
+                  :placeholder="inp.plh"
+                  v-model="inp.value"
+                  :type="inp.type"
+                /><span class="input__error" v-show="inp.isNotValid"
+              >Заполните поле</span
+              ></label
+              >
+            </div>
+            <div class="form-ocenka__col">
+              <p class="form-ocenka__col_label media"></p>
+              <p class="form-ocenka__clear" @click="clearField">Очистить все</p>
+            </div>
+            <div class="form-ocenka__col">
+              <p class="form-ocenka__col_label media"></p>
+              <button class="btn full" @click.prevent="handlerSendForm(false)">Оценить</button>
+            </div>
+          </div>
+          <p class="form-ocenka__error" v-if="isShowError">
+            {{ ocenkaMobiErrorText }}
+          </p>
+          <div class="captcha-element" id="yandex-captcha-housing-appraisal"></div>
+
+        </form>
+      </div>
+    </div>
+    <template v-if="showBuildInfo">
+      <div class="container">
+        <div class="block-container">
+          <div class="appraisal__back" @click="goBack" v-if="bulletInfraShow">
+            <div class="appraisal__back-arrow">
+              <svg
+                width="20"
+                height="20"
+                viewbox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  d="M1.91058 10.5601C1.58514 10.2507 1.58514 9.74918 1.91058 9.43983L7.21388 4.39864C7.53932 4.08929 8.06696 4.08929 8.39239 4.39864C8.71783 4.70799 8.71783 5.20955 8.39239 5.5189L4.51168 9.20781H17.4998C17.9601 9.20781 18.3332 9.56247 18.3332 9.99996C18.3332 10.4374 17.9601 10.7921 17.4998 10.7921H4.51168L8.39239 14.481C8.71783 14.7904 8.71783 15.2919 8.39239 15.6013C8.06696 15.9106 7.53932 15.9106 7.21388 15.6013L1.91058 10.5601Z"
+                  fill="#252628"
+                ></path>
+              </svg>
+            </div>
+            <p>Назад</p>
+          </div>
+          <div class="white-back">
+            <div class="appraisal__block">
+              <div class="appraisal">
+                <div class="appraisal__headline-row">
+                  <h2 class="bullet__title">{{ bullet.address }}</h2>
+                </div>
+                <div class="appraisal__wrap">
+                  <div class="appraisal__header">
+                    <div class="appraisal__tabs tab">
+                      <div class="tab__nav">
+                        <button
+                          class="tab__nav-item"
+                          v-for="tab in tabs"
+                          :key="tab.id"
+                          @click="handlerTab(tab.id)"
+                          :class="{ 'is-active': tabs[tab.id].isActive }"
+                          v-show="tab.id !== 1 || (tab.id === 1 && flat)"
+                        >
+                          {{ tabs[tab.id].title }}
+                        </button>
+                      </div>
+                      <div class="tab__content is-show">
+                        <div
+                          class="appraisal__info"
+                          v-for="item in filteredContent"
+                          :key="item?.id"
+                        >
+                          <span class="appraisal__desc" v-html="item.desc"></span>
+                          <a class="appraisal__data"
+                          v-if="item.link"
+                          :href="item.linkUrl"
+                        ><span>{{ item.linkLabel || item.data }}</span
+                        ><span
+                          class="appraisal__icon"
+                          v-show="item.linkUrl"
+                          :class="item.additionalClass"
+                        ></span></a
+                        ><span class="appraisal__data" v-else-if="item.isCost"
+                        >{{ format_spase(item.data) }} ₽</span
+                        ><span class="appraisal__data" v-else-if="item.isArea"
+                        >{{ format_point_comma(item.data) }} м²</span
+                        ><span class="appraisal__data" v-else-if="item.isWearIndex"
+                        >{{ format_point_comma(item.data) }}</span
+                        ><span class="appraisal__data" v-else-if="item.isDateCost"
+                        >{{ format_date(item.data) }}</span
+                        ><span class="appraisal__data" v-else>{{ item.data }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="appraisal__body">
+                    <template v-if="bldPhotos"
+                    ><img
+                      class="appraisal__img"
+                      :src="bldPhotos[0]"
+                      v-if="bldPhotos && bldPhotos.length < 2"/>
+                      <div class="swiper-container" id="swiper-appraisal" v-else>
+                        <div class="swiper-wrapper">
+                          <div
+                            class="swiper-slide"
+                            v-for="(photo, idx) in bldPhotos"
+                            :key="idx"
+                          >
+                            <img class="appraisal__img" :src="photo"/>
+                          </div>
+                        </div>
+                        <div class="swiper-footer">
+                          <div class="swiper-pagination"></div>
+                        </div>
+                        <div class="swiper-button-prev"></div>
+                        <div class="swiper-button-next"></div>
+                      </div>
+                    </template
+                    >
+                    <template v-else
+                    ><img class="appraisal__img" src="/dist/img/ocenka-temp.png"
+                    /></template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bullet__infrastructure-block">
+            <h3 class="bullet__infrastructure-title">Инфраструктура для&nbsp;жизни</h3>
+            <div class="map-filter__wr-container">
+              <div class="map-filter__container">
+                <div class="map-filter" v-if="showFilter && showSocial">
+                  <div
+                    class="map-filter__item"
+                    v-for="(item, idx) in social"
+                    :key="idx"
+                    :class="{'is-active': idx === idActiveFilter}"
+                    v-show="item.items.length"
+                    @click.capture="handlerFilter(idx,$event)"
+                  >
+                    <p>{{ item.category }}</p>
+                    <div class="map-filter__item-icon" @click="clearFilter">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewbox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          clip-rule="evenodd"
+                          d="M3.52876 3.5286C3.78911 3.26825 4.21122 3.26825 4.47157 3.5286L8.00016 7.05719L11.5288 3.5286C11.7891 3.26825 12.2112 3.26825 12.4716 3.5286C12.7319 3.78895 12.7319 4.21106 12.4716 4.47141L8.94297 8L12.4716 11.5286C12.7319 11.7889 12.7319 12.2111 12.4716 12.4714C12.2112 12.7318 11.7891 12.7318 11.5288 12.4714L8.00016 8.94281L4.47157 12.4714C4.21122 12.7318 3.78911 12.7318 3.52876 12.4714C3.26841 12.2111 3.26841 11.7889 3.52876 11.5286L7.05735 8L3.52876 4.47141C3.26841 4.21106 3.26841 3.78895 3.52876 3.5286Z"
+                          fill="white"
+                        ></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div
+        >
+      </div>
+    </template>
+    <div class="container">
+      <div class="map">
+        <div class="map__wrap" id="map" :class="showPreloader?'preloader_container':''">
+          <div class="preloader" v-show="showPreloader"></div>
+        </div>
+        <div class="bullet" v-if="bullet.showBullet">
+          <button class="bullet__close" @click.prevent="closeBullet()"></button>
+          <h3 class="bullet__title">{{ bullet.address }}</h3>
+          <div class="bullet__body">
+            <div class="bullet__info">
+              <div class="bullet__col">
+                                            <span class="bullet__lbl">Цена за м²</span
+                                            ><span class="bullet__data">{{ format(bullet.priceMin) }} ₽</span>
+              </div>
+              <div class="bullet__col">
+                <span class="bullet__lbl">ДИАПАЗОН ЦЕН</span>
+                <div class="bullet__row">
+                                                <span class="bullet__data">{{ format(bullet.price_range[0]) }} -</span
+                                                ><span class="bullet__data"
+                >{{ format(bullet.price_range[1]) }} ₽</span
+                >
+                </div>
+              </div>
+              <div class="bullet__col">
+                                            <span class="bullet__lbl">Цена</span
+                                            ><span class="bullet__data">{{ format(bullet.price) }} ₽</span>
+              </div>
+
+              <div class="bullet__col bullet__col_xl" v-if="bullet.stations.length">
+                                            <span class="bullet__lbl" v-if="bullet.stations[0].type === 'метро'"
+                                            >Ближайшее {{ bullet.stations[0].type }}</span
+                                            ><span class="bullet__lbl" v-else
+              >Ближайший {{ bullet.stations[0].type }}</span
+              >
+                <div class="bullet__station-container">
+                  <div
+                    class="bullet__data bullet__station-wr"
+                    v-for="item in bullet.stations"
+                  >
+                    <div class="bullet__distance-wr">
+                      <span>{{ item.distance }}&nbsp;м</span>
+                    </div>
+                    <span class="bullet__name-station">{{ item.name }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bullet__more">
+            <p class="bullet__link-more" @click.prevent="handlerSendForm(true)">
+              подробнее о доме
+            </p>
+          </div>
+        </div>
+        <div class="bullet bullet_infrastructure" v-if="bulletInfraShow">
+          <button class="bullet__close" @Click.prevent="handlerInfraBullet(false)"></button>
+          <div class="bullet__header" v-if="bulletInfra.photos">
+            <img :src="bulletInfra.photos[0]" :alt="bulletInfra.title"/>
+          </div>
+          <div class="bullet__body">
+            <div class="bullet__info">
+              <div class="bullet__col bullet__col_alone">
+                <h3 class="bullet__title">{{ bulletInfra.title }}</h3>
+                <p class="bullet__desc">{{ bulletInfra.subtitle }}</p>
+                <p class="bullet__desc-time" v-if="bulletInfra.duration">
+                  {{ bulletInfra.duration }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="bullet__more">
+            <a class="bullet__link-more" :href="bulletInfra.link" target="_blank"
+            >посмотреть на карте</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="block-container">
+        <div class="bullet__info-block">
+          <p>Информация носит справочный характер и&nbsp;не&nbsp;является публичной офертой</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from 'axios-jsonp-pro';
+import localaxios from 'axios';
+import scrollIt from '../../modules/scroll-it';
+import Swiper, { Navigation, Pagination } from 'swiper';
+Swiper.use([Navigation, Pagination]);
+
+let map = null;
+const centerPos = [55.7558, 37.6173];
+let myCollection;
+let multiRoute;
+let myPlacemark
+const localApiUrl = '/api/local/ocenka-mobi/';
+
+export default {
+  name: 'HousingAppraisal',
+  props: {
+    instanceId: {
+      type: String,
+      required: true
+    }
+  },
+  data() {
+    return {
+      streetApi: 'https://kladr-api.ru/api.php?oneString=1&limit=8&query=',
+      API_KEY: 'c998c65b39bb6bc3a3cd2d8b070f04bc3410b62f',
+      apiUrl: '/api/local/suggestions/address/',
+      localApiUrl: '/api/local/ocenka-mobi/',
+      config: {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+          Accept: 'application/json',
+        }
+      },
+      inputs: [
+        {
+          id: 0,
+          plh: 'Введите адрес',
+          type: 'text',
+          value: '',
+          isNotValid: false,
+          validate: true,
+          mark: 'adress',
+          label: 'Адрес здания',
+        },
+        {
+          id: 1,
+          type: 'text',
+          plh: 'Введите площадь',
+          value: '',
+          isNotValid: false,
+          validate: true,
+          mark: 'area',
+          label: 'Площадь, м2',
+        },
+        {
+          id: 2,
+          plh: 'Студия',
+          value: '',
+          type: 'select',
+          lists: [
+            { id: 0, title: 'Студия', value: '1' },
+            { id: 1, title: '1 комнатная', value: '1' },
+            { id: 2, title: '2 комнатная', value: '2' },
+            { id: 3, title: '3 комнатная', value: '3' },
+            { id: 4, title: '4 комнатная', value: '4' }
+          ],
+          mark: 'type',
+          label: 'Количество комнат',
+        },
+      ],
+      openSelect: false,
+      btnSendPress: false,
+      bullet: {
+        showBullet: false,
+        address: '',
+        priceMin: 0,
+        price: 0,
+        price_range: [0, 0],
+        stations: []
+      },
+      bldPos: {},
+      bldPhotos: null,
+      flat: null,
+      showBuildInfo: false,
+      showPreloader: false,
+      showSocial: false,
+      isShowError: false,
+      ocenkaMobiErrorText: '',
+      ocenkaMobiErrorTextDefault: 'Произошла неизвестная ошибка, попробуйте изменить запрос',
+      tabs: [
+        {
+          id: 0,
+          title: 'О доме',
+          isActive: false,
+          content: [
+            { id: 0, desc: 'Кадастровый номер', data: '', link: true, linkUrl: '', additionalClass: 'appraisal__icon_download' },
+            { id: 1, desc: 'Цена', data: '', isCost: true },
+            { id: 2, desc: 'Цена за м²', data: '', isCost: true },
+            { id: 3, desc: 'Минимальная цена за м²', data: '', isCost: true },
+            { id: 4, desc: 'Год постройки', data: '' },
+            { id: 5, desc: 'Этажность дома', data: '' },
+            { id: 6, desc: 'Количество подъездов', data: '' },
+            { id: 7, desc: 'Количество лифтов', data: '' },
+            { id: 8, desc: 'Количество подземных этажей', data: '' },
+            { id: 9, desc: 'Тип здания', data: '' },
+            { id: 10, desc: 'Материалы стен', data: '' },
+            { id: 11, desc: 'Индекс износа здания', data: '', isWearIndex: true },
+            { id: 12, desc: 'Проект здания', data: '' },
+            { id: 13, desc: 'Материал перекрытий', data: '' },
+            { id: 14, desc: 'Наличие газоснабжения', data: '' },
+          ]
+        },
+        {
+          id: 1,
+          title: 'О квартире',
+          isActive: true,
+          content: [
+            { id: 0, desc: 'Идентификатор записи в&nbsp;ЕГРН', data: '' },
+            { id: 1, desc: 'Идентификатор записи в&nbsp;ГКН', data: '' },
+            { id: 2, desc: 'Кадастровый номер', data: '' },
+            { id: 3, desc: 'Кадастровая стоимость', data: '', isCost: true },
+            { id: 4, desc: 'Дата установления кадастровой стоимости', data: '', isDateCost: true },
+            { id: 5, desc: 'Площадь', data: '', isArea: true },
+            { id: 6, desc: 'Этаж', data: '' },
+            { id: 7, desc: 'Количество комнат', data: '' },
+            { id: 8, desc: 'Информация о&nbsp;зарегистрированных правах', data: '' },
+            { id: 9, desc: 'Информация об&nbsp;обременении права', data: '' },
+          ]
+        }
+      ],
+      activeTab: 0,
+      social: [],
+      idActiveFilter: 0,
+      bulletInfraShow: false,
+      bulletInfra: {},
+      searchList: [],
+      showSearchList: false,
+      showErrorSearch: false,
+      captcha_id: null,
+      send_argument: null,
+      timeout: null,
+      map: null,
+      myCollection: null,
+      multiRoute: null,
+      centerPos: [55.7558, 37.6173],
+    };
+  },
+  filters: {
+
+  },
+  computed: {
+    filteredContent() {
+      const content = this.tabs[this.activeTab]?.content || [];
+      // Фильтруем: элемент должен существовать, data не null/undefined и не пустая строка
+      return content.filter(item => {
+        return item && item.data != null && String(item.data).trim() !== '';
+      });
+    },
+    isValid() {
+      for (let i = 0; i < this.inputs.length; i += 1) {
+        if (this.inputs[i].validate && this.inputs[i].isNotValid) {
+          return false;
+        }
+      }
+      return true;
+    },
+    showFilter() {
+      return !!this.social.length;
+    }
+  },
+  watch: {
+    inputs: {
+      handler() {
+        if (this.btnSendPress) {
+          this.validateAllInputs();
+        }
+      },
+      deep: true
+    },
+    searchList(newVal) {
+      this.showSearchList = !!newVal.length;
+    },
+  },
+  mounted() {
+    this.$nextTick(() => {
+      //
+      if (!this.tabs[this.activeTab]) {
+        this.activeTab = 0;
+      }
+      setTimeout(this.initMap, 1000);
+    });
+  },
+  methods: {
+    //фильтры
+    format (val) {
+      const sign = Math.sign(Number(val));
+      // Nine Zeroes for Billions
+      return Math.abs(Number(val)) >= 1.0e9
+        ? (sign * (Math.abs(Number(val)) / 1.0e9).toFixed(3) + " блн").replace('.', ',')
+        : // Six Zeroes for Millions
+        Math.abs(Number(val)) >= 1.0e6
+          ? (sign * (Math.abs(Number(val)) / 1.0e6).toFixed(3) + " млн").replace('.', ',')
+          : // Three Zeroes for Thousands
+          Math.abs(Number(val)) >= 1.0e3
+            ? (sign * (Math.abs(Number(val)) / 1.0e3).toFixed(1) + " тыс").replace('.', ',')
+            : Math.abs(Number(val));
+    },
+    format_spase(val)  {//правка
+      return `${val}`.replace(/(\d)(?=(\d{3})+([^\d]|$))/g, '$1 ').replace('.', ',')
+    },
+    format_date(val)  { //правка
+      return `${val}`.split('-').reverse().join('.');
+    },
+    format_point_comma(val)  { //правка
+      return `${val}`.replace('.', ',');
+    },
+
+    //яндекс капча
+    captchaInit() {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-housing-appraisal', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (!this.send_argument){
+            this.apiConnect(token);
+            this.handlerBuildInfo(false);
+          }
+          else {
+            this.handlerBuildInfo(true,token);
+          }
+        },
+      });
+    },
+
+    handlerSendForm(argument) {
+      this.captchaInit();
+      this.send_argument=argument
+      this.btnSendPress = true;
+      this.validateAllInputs();
+      if (this.isValid) {
+        // this.apiConnect();
+        const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
+        let recaptchaKey = null;
+        if(typeof conf !== 'undefined'){
+          recaptchaKey = conf.smartcaptcha_key
+        }
+
+        if ((typeof recaptchaKey !== 'undefined') && recaptchaKey!==null) {
+          window.smartCaptcha.execute(this.captcha_id,argument);
+
+        }
+
+        // this.handlerBuildInfo(false);
+      }
+    },
+    apiConnect(token) {
+      this.showPreloader = true;
+
+      const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
+      // if (grecaptchaInput && grecaptchaInput.dataset.key) {
+      //   window.smartCaptcha.execute(this.captcha_id);
+      //   console.log('сработала рекапчка');
+
+
+      // window.grecaptcha.ready(() => {
+      //   window.grecaptcha.execute(grecaptchaInput.dataset.key).then((token) => {
+      // grecaptchaInput.value = token;
+      localaxios.get(localApiUrl, {
+        params: {
+          method: 'appraise/flat',
+          address: this.inputs[0].value,
+          area: this.inputs[1].value,
+          rooms: this.inputs[2].value,
+          // forceFlat: true,
+          'smart-token': token
+        },
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        }
+      })
+        .then((response) => {
+
+
+          if (response.data !== null && response.status === 200 && response.data.result === null) {
+            this.ocenkaMobiErrorText = 'Недостаточно данных, попробуйте изменить запрос';
+            this.showError();
+            return false;
+          }
+          if (response.data === null || response.status !== 200) {
+            if (response.data.description) {
+              this.ocenkaMobiErrorText = response.data.description;
+            }
+            this.showError();
+            return false;
+          }
+          if (response.data !== null && response.status === 200 && response.data.result !== null) {
+            if (!(Object.prototype.hasOwnProperty.call(response.data, 'result') && Object.prototype.hasOwnProperty.call(response.data.result, 'address'))) {
+              if (response.data.description) {
+                this.ocenkaMobiErrorText = response.data.description;
+              }
+              this.showError();
+
+              return false;
+            }
+          }
+          //похоже это сломалось
+          // if (response.data !== null && response.status === 200 && response.data.result !== null){
+          //   this.resetData();
+          //   this.bullet.address = response.data.result.address;
+          //
+          //   if (response.data.result.stats.min) {
+          //     this.bullet.priceMin = response.data.result.stats.min;
+          //   }
+          //   if (response.data.result.stats.price) {
+          //     this.bullet.price = response.data.result.stats.price;
+          //   }
+          //   if (response.data.result.stats.priceRange) {
+          //     this.bullet.price_range = response.data.result.stats.priceRange;
+          //   }
+          //
+          //   if (!response.data.result.stats.min || !response.data.result.stats.price || !response.data.result.stats.priceRange) {
+          //     this.ocenkaMobiErrorText = 'Недостаточно данных. Попробуйте изменить запрос';
+          //     this.showError();
+          //   }
+          //
+          //   if (response.data.result.bld.stations) {
+          //     this.bullet.stations = response.data.result.bld.stations;
+          //   }
+          //   this.bullet.showBullet = true;
+          //   this.setData(response.data.result);
+          // }
+
+          if (response.data !== null && response.status === 200 && response.data.result !== null) {
+            this.resetData();
+
+            const result = response.data.result;
+            const stats = result.stats || {};
+            const bld = result.bld || {};
+
+            // === 1. Адрес: берём из bld.address или flat.address ===
+            this.bullet.address = result.bld?.address || result.flat?.address || result.address || '';
+            console.log('Установлен адрес:', this.bullet.address); // для отладки
+
+            // === 2. Цены ===
+            this.bullet.priceMin = stats.median ?? stats.average ?? stats.min ?? 0;
+            this.bullet.price = stats.price ?? 0;
+            this.bullet.price_range = Array.isArray(stats.priceRange) ? stats.priceRange : [0, 0];
+
+            // === 3. Валидация ===
+            if (!this.bullet.price || !this.bullet.price_range.length) {
+              this.ocenkaMobiErrorText = 'Недостаточно данных о цене. Попробуйте изменить запрос';
+              this.showError();
+              return;
+            }
+
+            // === 4. Станции ===
+            if (bld.stations && Array.isArray(bld.stations)) {
+              this.bullet.stations = bld.stations;
+            }
+
+            // === 5. Показываем и заполняем ===
+            console.log('Показываем bullet, адрес:', this.bullet.address);
+            this.bullet.showBullet = true;
+            this.setData(result);
+          }
+
+        })
+        .catch((error) => {
+          console.log(error);
+          if(error&&(error.request.status===403 || error.request.status===405)){
+            this.ocenkaMobiErrorText = 'Сервер не отвечает, попробуйте перезагрузить страницу';
+            this.showErrorSearch=false
+            setTimeout(()=>{
+              this.showError();
+            },500)
+
+          }
+          // else {
+          this.ocenkaMobiErrorText = this.ocenkaMobiErrorTextDefault;
+          this.showError();
+          // }
+          // handle error
+        })
+        .then(() => {
+          this.showPreloader = false;
+        });
+      // });
+      // });
+      // } else {
+      //   // console.log(grecaptchaInput);
+      //   // console.log(grecaptchaInput.dataset.key);
+      //   // console.log(window.grecaptcha);
+      // }
+    },
+
+    handlerBuildInfo(data,token) {
+      this.showBuildInfo = data;
+      this.showSocial = data;
+      if (data) {
+        setTimeout(this.appraisalSlider, 300);
+        // запрос к инфраструктуре
+        this.getInfraApi(token);
+        this.closeBullet();
+        scrollIt(document.querySelector('#form'), 400, 'linear');
+      }
+    },
+
+    getInfraApi(token) {
+      this.showPreloader = true;
+      this.ocenkaMobiErrorText = this.ocenkaMobiErrorTextDefault;
+      const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
+      // if (grecaptchaInput && grecaptchaInput.dataset.key && typeof window.grecaptcha !== 'undefined') {
+      //   window.grecaptcha.ready(() => {
+      //     window.grecaptcha.execute(grecaptchaInput.dataset.key).then((token) => {
+      grecaptchaInput.value = token;
+      localaxios.get(localApiUrl, {
+        params: {
+          method: 'search/infra',
+          lat: this.bldPos.lat,
+          lng: this.bldPos.lng,
+          'smart-token': token
+        },
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        }
+      })
+        .then((response) => {
+          // console.log(response);
+          // handle success
+          // if (response.data === null || response.data.bld.quality === 'warning') {
+          if ((response.data === null) || (response.status !== 200) || (!(Object.prototype.hasOwnProperty.call(response.data, 'result') && Object.prototype.hasOwnProperty.call(response.data.result, 'social')))) {
+            if (response.data.description) {
+              this.ocenkaMobiErrorText = response.data.description;
+            }
+            this.showError();
+            return false;
+          }
+          this.social = response.data.result.social;
+          this.setInfraBulletData(response.data.result.social[0].items[0]);
+          this.handlerInfraBullet(true);
+          this.setObjectToMap();
+        })
+        .catch((error) => {
+          this.ocenkaMobiErrorText = this.ocenkaMobiErrorTextDefault;
+          this.showError();
+          // handle error
+          console.log(error);
+        })
+        .then(() => {
+          this.showPreloader = false;
+        });
+      // });
+      // });
+      // } else {
+      //   // console.log(grecaptchaInput);
+      //   // console.log(grecaptchaInput.dataset.key);
+      //   // console.log(window.grecaptcha);
+      // }
+    },
+
+    //похоже это сломалось
+
+    // setData(data) {
+    //   this.bldPos = data.bld.pos;
+    //   this.initMap([data.bld.pos.lat, data.bld.pos.lng]);
+    //   this.bldPhotos = data.bld.photos;
+    //   this.tabs[0].content[0].data = data.bld.cadNum;
+    //   this.tabs[0].content[0].linkUrl = data.bld.linkPKK;
+    //   this.tabs[0].content[1].data = data.stats.price;
+    //   this.tabs[0].content[2].data = data.stats.min;
+    //   this.tabs[0].content[3].data = data.stats.min;
+    //   this.tabs[0].content[4].data = data.bld.bldYear;
+    //   this.tabs[0].content[5].data = data.bld.maxFloor;
+    //   this.tabs[0].content[6].data = data.bld.entranceCount;
+    //   this.tabs[0].content[7].data = data.bld.elevatorCount;
+    //   this.tabs[0].content[8].data = data.bld.uFloors;
+    //   this.tabs[0].content[9].data = data.bld.bldType;
+    //   this.tabs[0].content[10].data = data.bld.wallMaterial;
+    //   this.tabs[0].content[11].data = data.bld.wearout;
+    //   this.tabs[0].content[12].data = data.bld.bldProject;
+    //   this.tabs[0].content[13].data = data.bld.floorMaterial;
+    //   this.tabs[0].content[14].data = data.bld.supplyTypeGas;
+    //   if (data.flat) {
+    //     this.flat = true;
+    //     this.tabs[1].content[0].data = data.flat.premisesId;
+    //     this.tabs[1].content[1].data = data.flat.parcelId;
+    //     this.tabs[1].content[2].data = data.flat.cadNum;
+    //     this.tabs[1].content[3].data = data.flat.cadCost;
+    //     this.tabs[1].content[4].data = data.flat.dateCost;
+    //     this.tabs[1].content[5].data = data.flat.area;
+    //     this.tabs[1].content[6].data = data.flat.floor;
+    //     this.tabs[1].content[7].data = data.flat.rooms;
+    //     if (data.flat.rights) {
+    //       this.tabs[1].content[8].data = data.flat.rights[0].desc;
+    //     }
+    //     if (data.flat.rights&&data.flat.rights!=null&&data.flat.rights[0].encum) {
+    //       this.tabs[1].content[9].data = data.flat.rights[0].encum[0].desc;
+    //     }
+    //   }
+    // },
+
+    setData(data) {
+      // Сохраняем координаты
+      this.bldPos = data.bld?.pos || {};
+
+      // === Безопасная инициализация карты ===
+      const pos = data.bld?.pos;
+      if (pos && typeof pos.lat === 'number' && typeof pos.lng === 'number') {
+        const coords = [pos.lat, pos.lng];
+
+        if (typeof window.ymaps !== 'undefined' && window.ymaps.ready) {
+          // Карта уже загружена — инициализируем сразу
+          window.ymaps.ready(() => {
+            this.initMap(coords);
+          });
+        } else {
+          // Карта ещё не готова — пробуем позже
+          setTimeout(() => {
+            if (typeof window.ymaps !== 'undefined' && window.ymaps.ready) {
+              window.ymaps.ready(() => {
+                this.initMap(coords);
+              });
+            }
+          }, 1000);
+        }
+      }
+
+      // === Остальные данные ===
+      this.bldPhotos = data.bld?.photos || null;
+
+      // Вкладка "О доме" (id: 0)
+      const aboutBld = this.tabs[0]?.content || [];
+      if (aboutBld.length) {
+        aboutBld[0].data = data.bld?.cadNum || '';
+        aboutBld[0].linkUrl = data.bld?.linkPKK || '';
+        aboutBld[1].data = data.stats?.price ?? '';
+        aboutBld[2].data = data.stats?.median ?? data.stats?.average ?? data.stats?.min ?? '';
+        aboutBld[3].data = data.stats?.median ?? data.stats?.average ?? data.stats?.min ?? '';
+        aboutBld[4].data = data.bld?.bldYear || '';
+        aboutBld[5].data = data.bld?.maxFloor || '';
+        aboutBld[6].data = data.bld?.entranceCount || '';
+        aboutBld[7].data = data.bld?.elevatorCount || '';
+        aboutBld[8].data = data.bld?.uFloors || '';
+        aboutBld[9].data = data.bld?.bldType || '';
+        aboutBld[10].data = data.bld?.wallMaterial || '';
+        aboutBld[11].data = data.bld?.wearout || '';
+        aboutBld[12].data = data.bld?.bldProject || '';
+        aboutBld[13].data = data.bld?.floorMaterial || '';
+        aboutBld[14].data = data.bld?.supplyTypeGas || '';
+      }
+
+      // Вкладка "О квартире" (id: 1) — если есть данные
+      if (data.flat) {
+        this.flat = true;
+        const aboutFlat = this.tabs[1]?.content || [];
+        if (aboutFlat.length) {
+          aboutFlat[0].data = data.flat.premisesId || '';
+          aboutFlat[1].data = data.flat.parcelId || '';
+          aboutFlat[2].data = data.flat.cadNum || '';
+          aboutFlat[3].data = data.flat.cadCost || '';
+          aboutFlat[4].data = data.flat.dateCost || '';
+          aboutFlat[5].data = data.flat.area || '';
+          aboutFlat[6].data = data.flat.floor || '';
+          aboutFlat[7].data = data.flat.rooms || '';
+          if (data.flat.rights?.[0]?.desc) {
+            aboutFlat[8].data = data.flat.rights[0].desc;
+          }
+          if (data.flat.rights?.[0]?.encum?.[0]?.desc) {
+            aboutFlat[9].data = data.flat.rights[0].encum[0].desc;
+          }
+        }
+      }
+    },
+
+
+
+
+    handlerToggleSelect(data) {
+      this.openSelect = data;
+    },
+    setSelectItem(val, title) {
+      this.inputs[2].value = val;
+      this.inputs[2].plh = title;
+      this.handlerToggleSelect(false);
+    },
+    validateAllInputs() {
+      for (let i = 0; i < this.inputs.length; i += 1) {
+        if (this.inputs[i].validate) {
+          this.validInput(this.inputs[i]);
+        }
+      }
+    },
+    validInput(curInp) {
+      // eslint-disable-next-line no-param-reassign,no-unused-expressions
+      curInp.value !== '' ? curInp.isNotValid = false : curInp.isNotValid = true;
+    },
+
+    closeBullet() {
+      this.bullet.showBullet = false;
+    },
+
+    handlerTab(activeId) {
+      if (activeId < 0 || activeId >= this.tabs.length) {
+        activeId = 0;
+      }
+
+      for (let i = 0; i < this.tabs.length; i += 1) {
+        this.tabs[i].isActive = false;
+      }
+      this.tabs[activeId].isActive = true;
+      this.activeTab = activeId;
+    },
+
+    appraisalSlider() {
+      // eslint-disable-next-line no-unused-vars
+      const mySwiper = new Swiper('#swiper-appraisal', {
+        slidesPerView: 1,
+        spaceBetween: 80,
+        loop: true,
+        observer: true,
+        observeParents: true,
+        pagination: {
+          el: '.swiper-pagination',
+          clickable: true,
+        },
+        navigation: {
+          nextEl: '.swiper-button-next',
+          prevEl: '.swiper-button-prev',
+        }
+      });
+    },
+    resetData() {
+      if (map !== null) {
+        map.destroy();
+      }
+      this.bullet.showBullet = false;
+      this.bullet.address = '';
+      this.bullet.priceMin = 0;
+      this.bullet.price = 0;
+      this.bullet.stations = [];
+      this.bldPos = {};
+      this.bldPhotos = null;
+      this.handlerTab(0);
+      for (let i = 0; i < this.tabs.length; i += 1) {
+        const contentArr = this.tabs[i].content;
+        for (let j = 0; j < contentArr.length; j += 1) {
+          contentArr[j].data = '';
+          if (contentArr[j].link) {
+            contentArr[j].linkUrl = '';
+          }
+        }
+      }
+      this.social = [];
+      this.isShowError = false;
+      this.idActiveFilter = 0;
+      this.flat = null;
+      this.bulletInfra = {};
+      this.bulletInfraShow = false;
+      this.showSearchList = false;
+    },
+    getNewAdress(elem) {
+      this.inputs[0].value = elem;
+    },
+    initMap(dataPos) {
+      if (typeof window.ymaps === 'undefined' || !window.ymaps.ready) {
+        console.warn('️ Яндекс.Карты не загружены, карта недоступна');
+        return;
+      }
+      // eslint-disable-next-line no-unused-vars
+      const newAdress = this.getNewAdress;
+      // eslint-disable-next-line no-undef
+      let pos = dataPos;
+      let zoomData = 16;
+      let showObj = true;
+      if (!pos) {
+        pos = centerPos;
+        zoomData = 12;
+        showObj = false;
+      }
+      // eslint-disable-next-line no-unused-vars
+      const newBullet = this.bullet;
+      // eslint-disable-next-line no-undef,no-unused-vars
+      const socialE = this.social;
+      const ActiveFilter = this.idActiveFilter;
+      // eslint-disable-next-line no-undef,no-unused-vars
+      let inputValue = this.inputs[0].value;
+      // eslint-disable-next-line no-undef
+      ymaps.ready(function () {
+        // eslint-disable-next-line no-undef,no-unused-vars
+        myPlacemark = {
+          geometry: {
+            type: 'Point',
+            coordinates: pos
+          },
+          properties: {
+            // iconContent: this.bullet.address
+            iconContent: newBullet.address
+          }
+        }, {
+          preset: 'islands#blackStretchyIcon',
+          iconColor: 'green'
+        }
+        // eslint-disable-next-line no-shadow,no-undef,no-const-assign
+        map = new ymaps.Map('map', {
+          center: pos,
+          controls: ['smallMapDefaultSet'],
+          zoom: zoomData
+        });
+        if (showObj) {
+          // eslint-disable-next-line no-undef
+          map.geoObjects.add(new ymaps.GeoObject({
+            geometry: {
+              type: 'Point',
+              coordinates: pos
+            },
+            properties: {
+              // iconContent: this.bullet.address
+              iconContent: newBullet.address
+            }
+          }, {
+            preset: 'islands#blackStretchyIcon',
+            iconColor: 'green'
+          }));
+        }
+        map.container.fitToViewport();
+        // map.behaviors.disable('scrollZoom');
+        // это потом исправить и вернуть функцию clickToBullet()
+        map.geoObjects.events.add('click', (e) => {
+          if (typeof socialE[ActiveFilter] !== 'undefined') {
+            const objectsArr = socialE[ActiveFilter].items;
+            const thisPlacemark = e.get('target');
+            // eslint-disable-next-line no-underscore-dangle
+            let ballonNumber = thisPlacemark.properties._data.balloonContentHeader;
+            if (!ballonNumber) {
+              ballonNumber = 0;
+            }
+            const bulletContent = objectsArr[ballonNumber];
+            this.bulletInfra = bulletContent;
+            this.setRoute(objectsArr[ballonNumber].pos);
+          }
+        });
+        // this.clickToBullet();
+        // eslint-disable-next-line no-unused-vars
+        map.events.add('click', (e) => {
+          const coords = e.get('coords');
+          map.geoObjects.removeAll();
+          // eslint-disable-next-line no-undef
+          ymaps.geocode(coords)
+            .then((res) => {
+              // eslint-disable-next-line no-unused-vars
+              const firstGeoObject = res.geoObjects.get(0);
+              // eslint-disable-next-line no-undef
+              map.geoObjects.add(new ymaps.GeoObject({
+                geometry: {
+                  type: 'Point',
+                  coordinates: coords
+                },
+                properties: {
+                  // iconContent: this.bullet.address
+                  iconContent: firstGeoObject.getAddressLine()
+                }
+              }, {
+                preset: 'islands#blackStretchyIcon',
+                iconColor: 'green'
+              }));
+              newAdress(firstGeoObject.getAddressLine());
+              // eslint-disable-next-line no-const-assign
+              inputValue = firstGeoObject.getAddressLine();
+            });
+        });
+      });
+    },
+
+    handlerFilter(id,el) {
+      const element = el.currentTarget;
+      if(!element.classList.contains('is-active')){
+        this.idActiveFilter = id;
+        this.setObjectToMap();
+      }
+    },
+    clearFilter(){
+      this.idActiveFilter=null
+      this.bulletInfraShow=false
+      this.removingBullets()
+    },
+    removingBullets(){
+      map.geoObjects.remove(myCollection);
+      map.geoObjects.remove(multiRoute);
+    },
+    handlerInfraBullet(data) {
+      this.bulletInfraShow = data;
+    },
+    setInfraBulletData(data) {
+      this.bulletInfra = data;
+    },
+    setObjectToMap() {
+      this.bulletInfraShow = false;
+      if (myCollection) {
+        myCollection.removeAll();
+      }
+      const objectsArr = this.social[this.idActiveFilter].items;
+
+      // eslint-disable-next-line no-undef
+      myCollection = new ymaps.GeoObjectCollection();
+
+      for (let i = 0; i < objectsArr.length; i += 1) {
+        // eslint-disable-next-line no-undef
+        myCollection.add(new ymaps.Placemark([objectsArr[i].pos.lat,
+          objectsArr[i].pos.lng], {
+          balloonContentHeader: i
+        }, {
+          preset: 'islands#darkBlueCircleDotIcon',
+          openBalloonOnClick: false
+        }));
+      }
+      this.setRoute(objectsArr[0].pos);
+      // eslint-disable-next-line prefer-destructuring
+      this.bulletInfra = objectsArr[0];
+      map.geoObjects.add(myCollection);
+    },
+    clickToBullet() {
+      map.geoObjects.events.add('click', (e) => {
+        const objectsArr = this.social[this.idActiveFilter].items;
+        const thisPlacemark = e.get('target');
+        // eslint-disable-next-line no-underscore-dangle
+        let ballonNumber = thisPlacemark.properties._data.balloonContentHeader;
+        if (!ballonNumber) {
+          ballonNumber = 0;
+        }
+        const bulletContent = objectsArr[ballonNumber];
+        this.bulletInfra = bulletContent;
+        this.setRoute(objectsArr[ballonNumber].pos);
+      });
+    },
+    async setRoute(objectsPos) {
+      this.bulletInfraShow = false;
+      map.geoObjects.remove(multiRoute);
+      // eslint-disable-next-line no-undef
+      multiRoute = new ymaps.multiRouter.MultiRoute({
+        referencePoints: [
+          [this.bldPos.lat, this.bldPos.lng],
+          [objectsPos.lat, objectsPos.lng]
+        ],
+        params: {
+          routingMode: 'pedestrian',
+          reverseGeocoding: false
+        }
+      }, {
+        wayPointVisible: false,
+        routeActiveStrokeWidth: 6,
+        routeActiveStrokeStyle: 'dot',
+        routeActiveStrokeColor: '#FED141'
+        // boundsAutoApply: true
+      });
+      map.geoObjects.add(multiRoute);
+      this.bulletInfra.link = `https://yandex.ru/maps/?ll=${objectsPos.lng},${objectsPos.lat}&z=16&l=map`;
+      this.getRouteData();
+      setTimeout(this.getRouteData, 600);
+    },
+    getRouteData() {
+      const activeRoute = multiRoute.getActiveRoute();
+      if (activeRoute) {
+        this.bulletInfra.duration = activeRoute.properties.get('duration').text;
+        this.bulletInfraShow = true;
+      } else {
+        setTimeout(this.getRouteData, 400);
+      }
+    },
+    showError() {
+      this.isShowError = true;
+    },
+    compare(a, b) {
+      if (a.type === b.type) {
+        return 0;
+      }
+      if (b.type === 'Город') {
+        return 1;
+      }
+      if (a.type === 'Город') {
+        return -1;
+      }
+      return 0;
+    },
+    handlerAddress() {
+      if (this.inputs[0].value.length > 2) {
+        axios.jsonp(this.streetApi + this.inputs[0].value)
+          .then((res) => {
+            this.searchList = [];
+            if (res.result) {
+              res.result.sort(this.compare);
+              for (let i = 0; i < res.result.length; i += 1) {
+                let { fullName } = res.result[i];
+                if (fullName) {
+                  fullName = fullName.split(',');
+                  fullName.shift();
+                  for (let j = 0; j < fullName.length; j += 1) {
+                    fullName[j] = fullName[j].trim();
+                  }
+                  this.searchList.push(fullName.join(', '));
+                  if (this.searchList.length) {
+                    this.handlerSelectAddress(true);
+                  }
+                }
+              }
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
+    },
+
+    set() {
+      if (this.timeout) clearTimeout(this.timeout)
+      this.timeout = setTimeout(() => {
+        this.dadaTa()
+      }, 500)
+    },
+    dadaTa() {
+      if (this.inputs[0].value.length > 2) {
+        this.isShowError = false;
+        // eslint-disable-next-line no-undef
+        axios.post(this.apiUrl, {
+          query: `${this.inputs[0].value}`, count: 8
+          // eslint-disable-next-line no-undef
+        }, this.config)
+          .then((response) => {
+            this.searchList = [];
+            if (response.data.result.suggestions) {
+              for (let i = 0; i < response.data.result.suggestions.length; i += 1) {
+                const fullName = response.data.result.suggestions[i].value;
+                if (fullName) {
+                  this.searchList.push(fullName);
+                  if (this.searchList.length) {
+                    this.handlerSelectAddress(true);
+                  }
+                }
+              }
+            }
+          })
+          .then((response) => {
+            this.searchError()
+          })
+          .catch((error) => {
+            console.log(error);
+            if(error&&(error.request.status===403 || error.request.status===405)){
+              this.ocenkaMobiErrorText = 'Сервер не отвечает. Попробуйте перезагрузите страницу';
+              this.showErrorSearch=false
+              this.showError();
+            }
+          });
+      }
+    },
+    setAddress(data) {
+      this.inputs[0].value = data;
+      this.handlerSelectAddress(false);
+    },
+    handlerSelectAddress(data) {
+      this.showSearchList = data;
+    },
+    clearField(el){ //по нажатию на кнопку Очистить всё
+      this.inputs[0].value=''
+      this.inputs[1].value=''
+      this.$refs.SelectList[0].querySelector('.select__list-item:first-child').click()
+      this.bullet.showBullet=false
+      this.bulletInfraShow=false
+      this.showBuildInfo=false
+      this.showSocial=false
+      this.inputs[0].isNotValid=false
+      this.inputs[1].isNotValid=false
+      map.geoObjects.removeAll();
+
+    },
+    goBack(){//по нажатию на кнопку вернуться
+      this.bulletInfraShow=false
+      this.showBuildInfo=false
+      this.bullet.showBullet=true
+      this.showSocial=false
+      this.removingBullets()
+    },
+    firstZero(el){
+      this.inputs[1].value = this.inputs[1].value.replace(/^0+/gi, '1').replace(',', '.').replace(/[^\d\.]/g, "").replace(/\./, "x").replace(/\./g, "").replace(/x/, ".")
+    },
+    searchError(el){
+      if(this.inputs[0].value.length>8){
+        if(this.$refs.searchResults[0].querySelectorAll('ul li').length===0 && this.isShowError !== true){
+          this.showErrorSearch=true
+        }
+        else {
+          this.showErrorSearch=false
+        }
+      }
+      else{
+        this.showErrorSearch=false
+      }
+    },
+  },
+};
+</script>
+
