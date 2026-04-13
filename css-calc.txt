@@ -1,111 +1,35 @@
-Полный ответ:
+apiConnect
 
-{
-    "result": {
-        "requestId": "cfc8b144-c8e0-4e48-845c-6f74ddd91662",
-        "flat": {
-            "cadNum": "40:13:031006:2213",
-            "area": 91.3,
-            "address": "Калужская обл., Малоярославецкий р-н, г. Малоярославец, ул. Г.Соколова, д. 34А, кв. 15",
-            "floor": 2
-        },
-        "bld": {
-            "pos": {
-                "lat": 55.006384,
-                "lng": 36.465751
-            },
-            "quality": "success",
-            "address": "Калужская обл., Малоярославецкий р-н, г. Малоярославец, ул. Г.Соколова, д. 34А",
-            "bldTitle": "многоквартирный жилой дом",
-            "maxFloor": 3,
-            "bldYear": 1994,
-            "bldProject": null,
-            "bldType": "кирпич",
-            "wallMaterial": "кирпич",
-            "floorMaterial": "железобетонные",
-            "basement": "ленточный",
-            "isAlarm": null,
-            "alarmLink": null,
-            "entranceCount": null,
-            "elevatorCount": null,
-            "flatsCount": null,
-            "livingCount": null,
-            "nonLivingCount": null,
-            "facadeType": null,
-            "roofType": null,
-            "bldArea": null,
-            "bldLivingArea": null,
-            "bldNonLivingArea": null,
-            "plotArea": null,
-            "linkReforma": null,
-            "linkPKK": null,
-            "cadNum": null,
-            "photos": null,
-            "stations": null,
-            "orgs": null
-        },
-        "stats": {
-            "quality": "A",
-            "price": 8417000,
-            "priceRange": [
-                8114000,
-                8938000
-            ],
-            "size": 6,
-            "median": 92191,
-            "average": 92191,
-            "spread": 9
-        }
-    },
-    "request_id": "a4c88f66-0a8e-2922-caec-47c2585da09b",
-    "code": 200,
-    "description": "OK"
-}
+if (response.data !== null && response.status === 200 && response.data.result !== null) {
+  this.resetData();
 
-result существует: true
-address: undefined
-stats:{
-    "quality": "A",
-    "price": 8417000,
-    "priceRange": [
-        8114000,
-        8938000
-    ],
-    "size": 6,
-    "median": 92191,
-    "average": 92191,
-    "spread": 9
+  const result = response.data.result;
+  const stats = result.stats || {};
+  const bld = result.bld || {};
+
+  // === 1. Адрес: берём из bld.address или flat.address ===
+  this.bullet.address = result.bld?.address || result.flat?.address || result.address || '';
+  console.log('🏠 Установлен адрес:', this.bullet.address); // для отладки
+
+  // === 2. Цены ===
+  this.bullet.priceMin = stats.median ?? stats.average ?? stats.min ?? 0;
+  this.bullet.price = stats.price ?? 0;
+  this.bullet.price_range = Array.isArray(stats.priceRange) ? stats.priceRange : [0, 0];
+
+  // === 3. Валидация ===
+  if (!this.bullet.price || !this.bullet.price_range.length) {
+    this.ocenkaMobiErrorText = 'Недостаточно данных о цене. Попробуйте изменить запрос';
+    this.showError();
+    return;
+  }
+
+  // === 4. Станции ===
+  if (bld.stations && Array.isArray(bld.stations)) {
+    this.bullet.stations = bld.stations;
+  }
+
+  // === 5. Показываем и заполняем ===
+  console.log('🎯 Показываем bullet, адрес:', this.bullet.address);
+  this.bullet.showBullet = true;
+  this.setData(result);
 }
-bld.pos: {lat: 55.006384, lng: 36.465751}
-bld keys: [
-    "pos",
-    "quality",
-    "address",
-    "bldTitle",
-    "maxFloor",
-    "bldYear",
-    "bldProject",
-    "bldType",
-    "wallMaterial",
-    "floorMaterial",
-    "basement",
-    "isAlarm",
-    "alarmLink",
-    "entranceCount",
-    "elevatorCount",
-    "flatsCount",
-    "livingCount",
-    "nonLivingCount",
-    "facadeType",
-    "roofType",
-    "bldArea",
-    "bldLivingArea",
-    "bldNonLivingArea",
-    "plotArea",
-    "linkReforma",
-    "linkPKK",
-    "cadNum",
-    "photos",
-    "stations",
-    "orgs"
-]
