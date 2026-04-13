@@ -1,1 +1,55 @@
-was_useful_rating_%2Fnews%2Fobzor-stavok-po-ipoteke-v-bankakh-na-16-marta-2026-goda%2F_form-rating-0
+localStorageLoading() {
+  console.log('🔍 [DEBUG] cookie_key:', this.cookie_key);
+  
+  const local_stage = Cookies.get(this.cookie_key);
+  console.log('🔍 [DEBUG] cookie value:', local_stage, '| type:', typeof local_stage);
+  
+  // Проверка: куки существует, не пустая и это валидное число
+  if (local_stage && !isNaN(parseInt(local_stage))) {
+    const rating = parseInt(local_stage);
+    console.log('🔍 [DEBUG] parsed rating:', rating);
+    
+    const parent = this.$refs.formRating;
+    if (!parent) {
+      console.log('❌ [DEBUG] $refs.formRating not found');
+      return;
+    }
+    
+    const array_star = parent.querySelectorAll('.js--grade-item');
+    console.log('🔍 [DEBUG] found .js--grade-item elements:', array_star.length);
+    
+    if (!array_star.length) {
+      console.log('❌ [DEBUG] no star elements found');
+      return;
+    }
+    
+    // Ограничиваем рейтинг количеством доступных звёзд
+    const starsToCheck = Math.min(rating, array_star.length);
+    console.log('🔍 [DEBUG] starsToCheck:', starsToCheck);
+    
+    for (let i = 0; i < starsToCheck; i++) {
+      const index = (array_star.length - 1) - i;
+      if (index >= 0 && array_star[index]) {
+        array_star[index].checked = true;
+        console.log('✅ [DEBUG] checked star at index', index);
+      }
+    }
+    
+    this.rate = rating;
+    this.form_show = false;
+    console.log('✅ [DEBUG] applied: rate=', this.rate, ', form_show=', this.form_show);
+  } else {
+    console.log('❌ [DEBUG] cookie not found or invalid value');
+  }
+}
+
+-----
+
+localStorageClick() {
+  console.log('💾 Setting cookie:', this.cookie_key, '=', this.rate); // отладка
+  Cookies.set(this.cookie_key, this.rate, { 
+    path: '/',           // доступно на всём сайте
+    expires: 365,        // хранить год
+    sameSite: 'Lax'      // защита от CSRF, но разрешает отправку при навигации
+  });
+},
