@@ -38,9 +38,12 @@ function iMaskReset(form = null){
   for (const input of inputs) {
     if (maskInstances.has(input)) {
       const mask = maskInstances.get(input);
-      // ✅ Корректный сброс через API маски
-      mask.updateValue(''); 
-      // Альтернатива: mask.value = '';
+      // Сначала пробуем синхронизировать с DOM (после form.reset())
+      mask.updateValue();
+      // Для надёжности можно дополнительно явно сбросить:
+      if (mask.value !== '') {
+        mask.value = '';
+      }
     }
   }
 }
