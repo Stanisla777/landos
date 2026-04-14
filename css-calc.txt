@@ -1,6 +1,845 @@
-apiConnect
+/* eslint-disable */
+// import IMask from 'imask';
+/**
+ * data-атрибуты для работы с элементами формы (input):
+ *     data-ok-placeholder - если указан у input, то при успешной отправке placeholder будет заменен на указанный текст (стандартное уведомление об отправке также будет показано)
+ *     data-maxlength - если указано, будет ограничение по длине вводимой строки
+ *     data-maxlength-hint - текст подсказки про максимально допустимую длину строки, по умолчанию
+ *     data-mask-hint - текст подсказки про неверный формат данных
+ *     data-required-hint - текст подсказки про обязательное поле
+ *
+ * Кнопка вызова модального окна вебформы может менять свой текст после успешной отправки формы:
+ *     data-ok-button-text="Текст успешной отправки"
+ *     id="button_opener_<?=$webFormSubscribeUid?>"
+ */
+//метод построения блока с ошибкой
+import {closeModal} from "../modals";
+import AddClassBody from '../redesign-site/disallow-body-scrolling';
 
-this.bullet.address = result.bld?.address || result.flat?.address || result.address || '';
+function createElementError (class_error, hint_mask, parent){
+  const element_error = document.createElement('p');
+  element_error.classList.add('input__error',class_error);
+  element_error.innerHTML += hint_mask
+  parent.append(element_error);
+}
+//метод подстановки ошибки
+function insertError(element,array_error,parent,data_hint,class_error) {
 
-на
-this.bullet.address = result.flat?.address || result.bld?.address || result.address || '';
+  parent.classList.add('input_error')
+  const error_ml = parent.querySelector('.js--error-ml')
+  if(array_error.length<1&&element.hasAttribute(data_hint)&&element.getAttribute(data_hint)!==''&&!error_ml){
+    const hint_mask = element.getAttribute(data_hint)
+    createElementError(class_error,hint_mask,parent)
+  }
+}
+//метод удаления ошибки маски
+function deleteError (element,array_error,parent){
+
+  if(element.closest('label')){
+    element.closest('label').classList.remove('input_error')
+  }
+  if(array_error.length===1){
+    parent.querySelector('.js--input__error').remove()
+  }
+}
+//метод удаления ошибки в футере при отправке вебформы
+function deleteFooterError (parent){
+  if (parent) {
+    const footer_error = parent.querySelector('.input__error.visible')
+    if (footer_error) {
+      footer_error.remove()
+    }
+  }
+}
+function deleteErrorSpase(element,parent,array_error_space){
+  if(element.closest('label')){
+    parent.classList.remove('input_error_space')
+  }
+  if(array_error_space.length===1&&parent.querySelector('.js--input__error_space')){
+    parent.querySelector('.js--input__error_space').remove()
+  }
+}
+//маска для телефона
+function iMaskTel(){
+  const array_input_tel = document.querySelectorAll('.js--validate-mask-tel');
+  const maskOptions = {
+    mask: '+{7} 000 000 00 00',
+    prepare: (appended, masked) => {
+      if (appended === '8' && masked.value === '') {
+        return '';
+      }
+      return appended;
+    },
+  };
+  for (const item of array_input_tel) {
+    IMask(item, maskOptions);
+  }
+}
+//маска для имени
+function iMaskName(){
+  const input_status = document.querySelectorAll('.js--validate-mask-name');
+  const maskOptions = {
+    mask: /^[а-яё-]+(?:\s[а-яё-]+)*\s?$/i
+  };
+  for (const item of input_status) {
+    IMask(item, maskOptions);
+  }
+}
+//маска для почты
+function iMaskMail(){
+  const input_status = document.querySelectorAll('.js--validate-mask-email');
+  const maskOptions = {
+    mask: /^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]*$/i
+    // enum: ' '
+  };
+  for (const item of input_status) {
+    IMask(item, maskOptions);
+  }
+}
+//маска для текстовых полей
+function iMaskTextField(){
+  const input_status = document.querySelectorAll('.js--validate-mask-message');
+  const maskOptions = {
+    mask: /\S\s?$/
+  };
+  for (const item of input_status) {
+    IMask(item, maskOptions);
+  }
+}
+//сброс Imask
+function iMaskReset(){
+  iMaskTextField();
+  iMaskTel();
+  iMaskName();
+  iMaskMail();
+}
+// на количество допустимых символов
+function inputMaxLength(parent,item){
+  const array_error_ml = parent.querySelectorAll('.js--error-ml')
+  if(item.hasAttribute('data-maxlength')&&item.getAttribute('data-maxlength')!=='') {
+    let error_value = item.getAttribute('data-maxlength')
+    error_value = parseInt(error_value)
+    if (item.value.length>=error_value+1){
+      const array_error_ml = parent.querySelectorAll('.js--error-ml')
+      if(array_error_ml.length<1&&item.hasAttribute('data-maxlength-hint')&&item.getAttribute('data-maxlength-hint')!==''){
+        let hint_mask = item.getAttribute('data-maxlength-hint')
+        hint_mask=`${hint_mask} - ${error_value}`
+        const element_error = document.createElement('p');
+        element_error.classList.add('input__error','d-block','js--error-ml');
+        element_error.innerHTML += hint_mask
+        parent.append(element_error);
+        parent.classList.add('error-ml')
+      }
+      item.value = item.value.substring(0, error_value);
+    }
+    else {
+      parent.classList.remove('error-ml')
+      if(array_error_ml.length===1){
+        parent.querySelector('.js--error-ml').remove()
+      }
+    }
+  }
+}
+
+//метод вывода ошибок
+function maskField () {
+  const input_s = document.querySelectorAll('.js--validate-mask, .js--validate-required');
+  let count=0;
+  for(let item of input_s){
+    item.oninput=(e)=>{
+      const element = e.target
+      const parent = element.closest('label')
+      const container = element.closest('.js--universal-form')
+      let _form_bottom
+      if (container) {
+        _form_bottom =  container.querySelector('.js--feedback-bottom')
+      }
+
+      if(_form_bottom){
+        deleteFooterError(_form_bottom)
+      }
+
+      if(parent&&parent.querySelector('.js--input__error_required')){
+        parent.querySelector('.js--input__error_required').remove()
+      }
+      if (parent) {
+        //ограничение по количеству символов
+        inputMaxLength(parent,item)
+
+
+        const array_error = parent.querySelectorAll('.js--input__error');
+        const array_error_space = parent.querySelectorAll('.js--input__error_space');
+        const reg = e.inputType!=='deleteContentBackward'&&e.inputType!=='deleteContentForward'&&e.inputType!=='insertFromPaste'&&e.inputType!=='historyUndo'
+        // let char = e.hasOwnProperty('key') ? e.key : e.target.value; // TODO надо додумать и доработать для автозаполнения - в этом случае e.key отсутствует, меняется только итоговое значение инпута.
+        let char = e.data
+
+        //Для поля required, если есть значение, убираем ошибку
+        if (element.classList.contains('js--validate-required') && !element.classList.contains('js--validate-mask') && (element.value.length !== 0)) {
+          deleteError(element, array_error, parent);
+        }
+
+        //Ошибка, когда первый сомвол пробел любого поля
+        const error_ml = parent.querySelector('.js--error-ml')
+        if (element.value.length===1&&char===' '&&!element.classList.contains('js--validate-mask-tel')&&!element.classList.contains('js--validate-mask-email')){
+          if(array_error_space.length<1&&element.hasAttribute('data-mask-hint')&&element.getAttribute('data-mask-hint')!==''&&!error_ml){
+            const hint_mask = element.getAttribute('data-mask-hint')
+            parent.classList.add('input_error_space')
+            createElementError('js--input__error_space',hint_mask,parent)
+          }
+        }
+        if (!element.classList.contains('js--validate-mask-tel')&&!element.classList.contains('js--validate-mask-email')&&char!==' '&&element.value.length===1){
+          deleteErrorSpase(element,parent,array_error_space)
+        }
+
+        //ошибка для почты
+        if (element.classList.contains('js--validate-mask-email')) {
+          if (typeof char != 'undefined' && !/^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]*$/i.test(char) && reg) {
+            //вызов метода подстановки ошибки
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+          }
+          else if(((char&&char!=null)&&typeof char != 'undefined' && /^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]*$/i.test(char))||e.inputType==='deleteContentBackward'||e.inputType==='deleteContentForward'){
+            deleteError(element, array_error, parent);
+          }
+        }
+        //ошибка для ФИО
+        if (element.classList.contains('js--validate-mask-name')) {
+          // alert(char)
+          if (typeof char != 'undefined' && !/^[а-яё\-\s]*$/i.test(char) && reg) {
+
+            // alert('Появилась ошибка 1')
+            //вызов метода подстановки ошибки
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+          }
+          else if((typeof char != 'undefined' && /^[а-яё\-\s]*$/i.test(char))||e.inputType==='deleteContentBackward'||e.inputType==='deleteContentForward'){
+
+            deleteError(element, array_error, parent);
+          }
+        }
+        //ошибка для телефона
+        if (element.classList.contains('js--validate-mask-tel')) {
+          if (typeof char != 'undefined' && !/^[0-9 +]/i.test(char) && reg) {
+            //вызов метода подстановки ошибки
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+          }
+          else if(((char&&char!=null)&&(typeof char != 'undefined') && /^[0-9 +]/i.test(char))||e.inputType==='deleteContentBackward'||e.inputType==='deleteContentForward'){
+            deleteError(element, array_error, parent);
+          }
+        }
+
+
+      }
+    }
+    item.onpaste=(eh)=>{
+      const element = eh.target
+      const parent = element.closest('label')
+      const container = element.closest('.js--universal-form')
+      const _form_bottom =  container.querySelector('.js--feedback-bottom')
+      if(_form_bottom){
+        deleteFooterError(_form_bottom)
+      }
+      if (parent) {
+        const array_error = parent.querySelectorAll('.js--input__error');
+        let char = (eh.clipboardData || window.clipboardData).getData('text');
+
+        //Для поля required, если есть значение, убираем ошибку
+        if (element.classList.contains('js--validate-required') && !element.classList.contains('js--validate-mask') && (element.value.length !== 0)) {
+          deleteError(element, array_error, parent);
+        }
+
+        //для почты
+        if (element.classList.contains('js--validate-mask-email')) {
+          if (!/^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]*$/i.test(char)) {
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+          } else {
+            deleteError(element, array_error, parent);
+          }
+        }
+        //имя
+        if (element.classList.contains('js--validate-mask-name')) {
+          if ( char.search(/^[а-яё\-\s]*$/i) == -1 ) {
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+          } else {
+            deleteError(element, array_error, parent);
+          }
+        }
+        //телефон
+        if (element.classList.contains('js--validate-mask-tel')) {
+          if (!char.match(/^[0-9()+\- ]/gi)) {
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+          } else {
+            deleteError(element, array_error, parent);
+          }
+        }
+      }
+    }
+    item.onblur = (e) => {
+      const element = e.target;
+      const parent = element.closest('label');
+      // const container = element.closest('.js--universal-form');
+      // const _form_bottom = container.querySelector('.js--feedback-bottom');
+
+      if(parent){
+        const array_error_required = parent.querySelectorAll('.js--input__error_required')
+        const array_error = parent.querySelectorAll('.js--input__error');
+        const array_error_space = parent.querySelectorAll('.js--input__error_space');
+
+        if(element.closest('label')&&element.closest('label').querySelector('.js--error-ml')){
+          element.closest('label').classList.remove('js--error-ml')
+          element.closest('label').querySelector('.js--error-ml').remove()
+        }
+
+        if (element.hasAttribute('required')) {
+          if (element.value.length === 0) {
+            deleteError(element, array_error, parent);
+            // alert('Появилась ошибка 2')
+            insertError(element, array_error_required, parent, 'data-required-hint', 'js--input__error_required');
+          }
+        }
+
+        if(element.classList.contains('js--validate-mask-email')){
+          if (!element.value.match(/^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+(?:\.[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i)
+            &&element.value.length!==0) {
+
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+
+          }
+        }
+        if(element.classList.contains('js--validate-mask-tel')){
+          if(element.value.length<16&&element.value.length!==0){
+            const array_error = parent.querySelectorAll('.js--input__error')
+            //вызов метода подстановки ошибки
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+          }
+        }
+        if(element.classList.contains('js--validate-mask-message')||element.classList.contains('js--validate-mask-name')){
+          if(parent.querySelector('.js--input__error')&&element.value.length>0){
+            parent.classList.remove('input_error')
+            parent.querySelector('.js--input__error').remove()
+          }
+
+          deleteErrorSpase(element,parent,array_error_space)
+        }
+
+      }
+    };
+    item.onfocus = (e) => {
+      // // alert('Ушла ошибка 4')
+      const element = e.target;
+      const parent = element.closest('label');
+
+      if (parent) {
+        const array_error = parent.querySelector('.js--input__error_required');
+        if (array_error){
+          array_error.remove()
+        }
+        parent.classList.remove('input_error');
+      }
+
+    }
+  }
+}
+//чекбокс
+function checBox(){
+  const form = document.querySelectorAll('.js--universal-form')
+  for (let item of form){
+    const check_box = item.querySelectorAll('.js--feedback-check')
+    for(let item_check of check_box){
+      item.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          const container = e.target.closest('.js--universal-form')
+          if (container) {
+            const _form_bottom = container.querySelector('.js--feedback-bottom')
+            if (_form_bottom) {
+              deleteFooterError(_form_bottom)
+            }
+          }
+          const parent = e.target.closest('.js--checkbox_wrapper')
+          if(parent){
+            parent.classList.remove('input_error')
+            if(parent.querySelector('.js--input__error_required')){
+              parent.querySelector('.js--input__error_required').remove()
+            }
+          }
+
+          const parent_group = e.target.closest('.js--validate-checkbox-group')
+          if (parent_group) {
+            parent_group.classList.remove('input_error')
+            if(parent_group.querySelector('.js--input__error_radio-group')){
+              parent_group.querySelector('.js--input__error_radio-group').remove()
+            }
+          }
+        }
+      });
+    }
+  }
+}
+
+//радиокнопки
+function radioBox(){
+  const form = document.querySelectorAll('.js--universal-form')
+  for (let item of form){
+    const check_box = item.querySelectorAll('.js--feedback-check')
+    for(let item_check of check_box){
+      item.addEventListener('click', (e) => {
+
+          const container = e.target.closest('.js--universal-form')
+          // if (container) {
+          //   const _form_bottom = container.querySelector('.js--feedback-bottom')
+          //   if (_form_bottom) {
+          //     deleteFooterError(_form_bottom)
+          //   }
+          // }
+          const parent = e.target.closest('.js--validate-radio-group')
+          if(parent){
+            parent.classList.remove('input_error')
+            if(parent.querySelector('.js--input__error_required')){
+              parent.querySelector('.js--input__error_required').remove()
+            }
+          }
+      });
+    }
+  }
+}
+
+
+//--------------------------------------------------------------------------
+
+
+//капча
+
+function captchaInit(parent,index) {
+  if (!parent.querySelector('.captcha-element')){
+    const el = document.createElement('div')
+    el.classList.add('captcha-element')
+    el.setAttribute('id',`yandex-smart-captcha-${index}`)
+    parent.append(el);
+  }
+
+  if (parent.querySelector('.captcha-element')) {
+    const id_i = parent.querySelector('.captcha-element').id
+    return window.smartCaptcha.render(id_i, {
+      sitekey: conf.smartcaptcha_key,
+      invisible: true,
+      callback: (token) => {
+        submitForm(parent);
+      },
+    });
+  }
+}
+
+// ---функция отправки формы, пока на  событие click, потом будет на submit ?? -----
+
+//событие click - либо её
+function formSubmission() {
+  const btn = document.querySelectorAll('.js--btn-universal-form');
+  for(let item_btn = 0; item_btn<btn.length; item_btn++){
+
+    const parent_form = btn[item_btn].closest('.js--universal-form');
+
+    // const captcha_id =  captchaInit(parent_form,item_btn)
+
+
+    btn[item_btn].onclick=(e)=>{
+      const captcha_id =  captchaInit(parent_form,item_btn)
+      e.preventDefault();
+      e.stopPropagation();
+      let count_required = 0
+      const element = e.target
+      // const parent_form = element.closest('.js--universal-form')
+      if(parent_form){
+        const _input_page_from = parent_form.querySelector('input.js-webform-pagefrom');
+        if (_input_page_from) {
+          _input_page_from.value = window.location.pathname;
+        }
+        const array_error_mask = parent_form.querySelectorAll('.js--input__error')
+        for(let item of array_error_mask){
+          if(item.closest('label')){
+            item.closest('label').classList.remove('input_error')
+          }
+          item.remove()
+        }
+        const array_error_mask_ml = parent_form.querySelectorAll('.js--error-ml')
+        for(let item of array_error_mask_ml){
+          if(item.closest('label')){
+            item.closest('label').classList.remove('input_error')
+          }
+          item.remove()
+        }
+
+        const array_input = parent_form.querySelectorAll('.js--validate-mask, .js--validate-required')
+
+        for(let element of array_input){
+          //проверка заполненности поля select
+          if(element.hasAttribute('required')&&element.classList.contains('js--validate-mask-select')){
+            if(element.value.length===0){
+              count_required+=1
+              const parent = element.closest('.js--select')
+              if(parent){
+                const array_error = parent.querySelectorAll('.js--input__error_required')
+                //вызов метода подстановки ошибки
+                insertError(element, array_error, parent,'data-required-hint', 'js--input__error_required');
+              }
+
+            }
+          }
+
+          //проверка заполненности поля mail
+          if(element.hasAttribute('required')&&element.classList.contains('js--validate-mask-email')){
+            if(element.value.length===0){
+              count_required+=1
+              const parent = element.closest('label')
+              if (parent){
+                const array_error = parent.querySelectorAll('.js--input__error_required')
+                insertError(element, array_error, parent,'data-required-hint', 'js--input__error_required');
+              }
+            }
+            else if (!element.value.match(/^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+(?:\.[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i)){
+              count_required+=1
+              const parent = element.closest('label')
+              if (parent){
+                const array_error = parent.querySelectorAll('.js--input__error_required')
+                insertError(element, array_error, parent,'data-mask-hint', 'js--input__error_required');
+              }
+            }
+          }
+
+          //проверка заполненности поля имя
+          if(element.hasAttribute('required')&&(element.classList.contains('js--validate-mask-name')||element.classList.contains('js--validate-mask-message'))){
+
+            const isVisible = element.offsetParent !==null &&
+              getComputedStyle(element).display !== 'none' &&
+              getComputedStyle(element).visibility !== 'hidden';
+
+            if (isVisible){
+              if(element.value.length===0){
+                count_required+=1
+                const parent = element.closest('label')
+                if (parent) {
+                  const array_error = parent.querySelectorAll('.js--input__error_required')
+                  //вызов метода подстановки ошибки
+                  insertError(element, array_error, parent,'data-required-hint', 'js--input__error_required');
+                }
+              }
+            }
+          }
+
+          //проверка на минимальное количество символов в textarea
+          if(element.hasAttribute('data-minlength')&&element.getAttribute('data-minlength')!==''){
+            let error_value = element.getAttribute('data-minlength')
+            error_value = parseInt(error_value)
+            if(element.value.length < error_value){
+              count_required+=1
+              const parent = element.closest('label')
+              if (parent){
+                const array_error = parent.querySelectorAll('.js--input__error_required')
+                //insertError(element, array_error, parent,'data-minlength-hint', 'js--input__error_required');
+                const data_hint = 'data-minlength-hint'
+                const class_error = 'js--input__error_required'
+                parent.classList.add('input_error')
+                const error_ml = parent.querySelector('.js--error-ml')
+                if(array_error.length<1&&element.hasAttribute(data_hint)&&element.getAttribute(data_hint)!==''&&!error_ml){
+                  let hint_mask = element.getAttribute(data_hint)
+                  hint_mask=`${hint_mask} - ${error_value}`
+                  createElementError(class_error,hint_mask,parent)
+                }
+              }
+            }
+          }
+
+
+
+
+
+          //проверка заполненности поля телефон
+          if(element.hasAttribute('required')&&element.classList.contains('js--validate-mask-tel')){
+            if(element.value.length===0){
+              count_required+=1
+              const parent = element.closest('label')
+              if (parent) {
+                const array_error = parent.querySelectorAll('.js--input__error_required')
+                //вызов метода подстановки ошибки
+                insertError(element, array_error, parent, 'data-required-hint', 'js--input__error_required');
+              }
+            } else if(element.value.length<16){
+              count_required+=1
+              const parent = element.closest('label')
+              if (parent) {
+                const array_error = parent.querySelectorAll('.js--input__error_required')
+                //вызов метода подстановки ошибки
+                insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error_required');
+              }
+            }
+          }
+
+          //проверка заполненности чекбокса
+          if(element.hasAttribute('required')&&element.classList.contains('js--validate-mask--check')){
+            if(!element.checked){
+              count_required+=1
+              const parent = element.closest('.js--checkbox_wrapper')
+              if (parent) {
+                const array_error = parent.querySelectorAll('.js--input__error_required')
+                insertError(element, array_error, parent, 'data-required-hint', 'js--input__error_required');
+              }
+            }
+          }
+
+          // Проверка остальных элементов формы без валидации
+          if(element.hasAttribute('required') && element.classList.contains('js--validate-required')){
+            if(element.value.length===0){
+              count_required+=1
+              const parent = element.closest('.js--select, label')
+              if(parent){
+                const array_error = parent.querySelectorAll('.js--input__error_required')
+                //вызов метода подстановки ошибки
+                insertError(element, array_error, parent,'data-required-hint', 'js--input__error_required');
+              }
+            }
+          }
+
+          //проверка заполненности группы с радиокнопками
+          if(element.classList.contains('js--validate-radio-group')){
+            if (element.classList.contains('input_error')) {
+              element.classList.remove('input_error')
+              if (element.querySelector('.js--input__error_radio-group')) {
+                element.querySelector('.js--input__error_radio-group').remove()
+              }
+            }
+            const isChecked = element.querySelectorAll('input[type="radio"]:checked').length > 0
+            if(!isChecked){
+              count_required+=1
+              element.classList.add('input_error')
+              const data = element.getAttribute('data-required-hint')
+              createElementError ('js--input__error_radio-group', data, element)
+            }
+
+          }
+
+          //проверка заполненности группы с чекбоксами
+          if(element.classList.contains('js--validate-checkbox-group')){
+            if (element.classList.contains('input_error')) {
+              element.classList.remove('input_error')
+              if (element.querySelector('.js--input__error_radio-group')) {
+                element.querySelector('.js--input__error_radio-group').remove()
+              }
+            }
+            const isChecked = element.querySelectorAll('input[type="checkbox"]:checked').length > 0
+            if(!isChecked){
+              count_required+=1
+              element.classList.add('input_error')
+              const data = element.getAttribute('data-required-hint')
+              createElementError ('js--input__error_radio-group', data, element)
+            }
+
+          }
+        }
+
+
+        if(count_required===0){
+          //вот тут команды в случае если всё хорошо
+          btn[item_btn].classList.add('submitting')
+          const _form_button =  parent_form.querySelector('.js--btn-universal-form')
+          if (_form_button){
+            _form_button.setAttribute('disabled','disabled')
+          }
+          try {
+            let recaptchaKey = null;
+            if(typeof conf !== 'undefined'){
+              recaptchaKey = conf.smartcaptcha_key
+            }
+
+
+            if (typeof recaptchaKey !== 'undefined' && recaptchaKey) {
+              window.smartCaptcha.execute(captcha_id);
+            } else {
+              // Отправка формы без капчи
+              // console.log('Отправка формы без капчи...');
+              submitForm(parent_form);
+            }
+          } catch (e) {
+            if (_form_button){
+              _form_button.removeAttribute('disabled')
+            }
+            console.warn('!! Webform exception', e);
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+          }
+          return true;
+        }
+        else {
+          //а тут не отправлять, появляется ошибка
+          const parent =  btn[item_btn].closest('.js--feedback-bottom')
+          if (parent){
+            const array_error = parent.querySelectorAll('.input__error.visible')
+            if(array_error.length===0){
+              createElementError ('visible','Не все поля заполнены корректно',parent)
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function submitForm(form){
+  if (!form) return false;
+  let formData = new URLSearchParams(Array.from(new FormData(form))).toString()
+  const form_uid = form.hasAttribute('data-uid') ? form.getAttribute('data-uid') : null;
+  const form_dmpkit_event_uid = form.hasAttribute('data-dmpkit-event-uid') ? form.getAttribute('data-dmpkit-event-uid') : null;
+
+  let _success = null;
+  let _button_opener = null
+  let _form_modal_wrapper = null;
+  if (form_uid !== null) {
+    _form_modal_wrapper = document.querySelector(`.modal.open[data-uid="${form_uid}"]`)
+    _success = document.getElementById(`success_${form_uid}`)
+    _button_opener =  document.getElementById(`button_opener_${form_uid}`)
+  }
+  const _form_bottom =  form.querySelector('.js--feedback-bottom')
+  const _form_button =  form.querySelector('.js--btn-universal-form')
+  const _success_input_with_placeholder =  form.querySelector(`input[data-ok-placeholder]`)
+  if (_form_bottom){
+    deleteFooterError(_form_bottom);
+  }
+  if (_form_button){
+    _form_button.setAttribute('disabled','disabled')
+    // _form_button.classList.add('submitting')
+  }
+  BX.ajax({
+    url: '/local/ajax/form.result.new.php',
+    data: formData,
+    method: 'POST',
+    dataType: 'json',
+    timeout: 30,
+    async: true,
+    processData: true,
+    scriptsRunFirst: true,
+    emulateOnload: true,
+    start: true,
+    cache: false,
+    onsuccess: function(result){
+      _form_button.removeAttribute('disabled')
+      _form_button.classList.remove('submitting')
+      if (!!result) {
+        if (result['debug'])
+          console.log(result);
+        // если форма успешно отправлена
+        if (result['result']) {
+          formReset(form)
+          const _errors = form.querySelectorAll('.js--input__error')
+          if (_errors) {
+            for (const _error of _errors) {
+              _error.remove()
+            }
+          }
+
+        //если при отправке модальное окно не закрывается, а в неё появляется контент об успешной отправке
+        if (form.closest('.js--modal-sending-without-closing')) {
+            if (form.closest('.js--modal-main-content') && form.closest('.js--modal-sending-without-closing').querySelector('.js--modal-wr-success')) {
+              form.closest('.js--modal-main-content').classList.add('unactive');
+              form.closest('.js--modal-sending-without-closing').querySelector('.js--modal-wr-success').classList.add('active')
+            }
+          } else {
+          // закрываем модальное окно, если форма модальная
+          if (_form_modal_wrapper){
+            //_form_modal_wrapper.classList.remove('open');
+            closeModal(_form_modal_wrapper.id);
+            _form_modal_wrapper.setAttribute('data-formsubmit', 'success');
+          }
+          // отображаем окно с сообщением об успешной отправке, если есть
+          if (_success) {
+            _success.classList.add('show');
+            AddClassBody();
+            //----убрал, чтобы окно закрывал только пользователь
+            // setTimeout(() => {
+            //   _success.classList.remove('show');
+            // }, 10000);
+            //-----убрал, чтобы закрытие было только по кнопкам
+            // _success.addEventListener('click', function (e) {
+            //   _success.classList.remove('show');
+            // });
+          }
+        }
+          // блокируем input с вставкой текста об успешной отправке, если указан
+          if (_success_input_with_placeholder && _success_input_with_placeholder.getAttribute('data-ok-placeholder')){
+            _success_input_with_placeholder.value = ''
+            _success_input_with_placeholder.setAttribute('placeholder',_success_input_with_placeholder.getAttribute('data-ok-placeholder'))
+            _success_input_with_placeholder.setAttribute('disabled','disabled')
+            // кнопку отправки тоже блокируем вместе с input
+            if (_form_button) {
+              _form_button.setAttribute('disabled', 'disabled')
+            }
+          }
+          // блокируем кнопку вызова модальной формы с вставкой текста об успешной отправке, если указан
+          if (_button_opener && _button_opener.getAttribute('data-ok-button-text')){
+            _button_opener.innerHTML = _button_opener.getAttribute('data-ok-button-text')
+            _button_opener.setAttribute('disabled','disabled')
+          }
+          // отправляем метку-цель DmpKit
+          if (form_dmpkit_event_uid && typeof window.dmpkitdl !== "undefined" && window.dmpkitdl !== null) {
+            window.dmpkitdl.push({event: form_dmpkit_event_uid});
+          }
+          return;
+        }
+        else {
+          if (result['errors']) {
+            console.warn(result['errors']);
+            // отображаем ошибки с backend в футере формы, если есть
+            if (_form_bottom){
+              createElementError ('visible',result['errors'],_form_bottom)
+            }
+            return;
+          }
+        }
+      }
+      if (_form_bottom){
+        createElementError ('visible','Ошибка при отправке',_form_bottom)
+      }
+    },
+    onfailure: function(){
+      _form_button.removeAttribute('disabled')
+      _form_button.classList.remove('submitting')
+      if (_form_bottom){
+        createElementError ('visible','Ошибка при отправке',_form_bottom)
+      }
+    }
+  });
+}
+
+/**
+ * Очистка формы с учетом стилизованных select'ов
+ * @param form
+ */
+function formReset(form){
+  if (form) {
+    form.reset();
+    iMaskReset();
+    const _selects = form.querySelectorAll('.js--select')
+    if (_selects) {
+      for (const _select of _selects) {
+        const _select_el = _select.querySelector('.js--openlist-btn');
+        if (_select_el && _select_el.querySelector('.select__substituted-text')) {
+          _select_el.querySelector('.select__substituted-text').classList.add('input-emty')
+          _select_el.querySelector('.select__substituted-text').textContent = _select_el.getAttribute('data-placeholder');
+        }
+        const _select_input = _select.querySelector('input[type="hidden"]');
+        if (_select_input) {
+          _select_input.value = '';
+        }
+      }
+    }
+  }
+}
+
+
+export default function universalForm() {
+  maskField();
+  iMaskTel();
+  iMaskName();
+  iMaskMail();
+  iMaskTextField()
+  checBox();
+  radioBox();
+  formSubmission();
+}
+
