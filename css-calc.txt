@@ -1,51 +1,73 @@
-<button 
-  class="btn full" 
-  :class="{ disabled: !isFormValid }" 
-  @click.prevent="handlerSendForm(false)"
->
-  Оценить
-</button>
------------------------------
+clearFieldError(inputId) {
+    const field = this.inputs.find(inp => inp.id === inputId);
+    if (field) {
+      field.isNotValid = false;
+    }
+  },
+
+----------------
+@input="set; clearFieldError(inp.id)"
+
+------
+searchError() {
+  if (this.inputs[0].value.length > 8) {
+    if (this.$refs.searchResults[0]?.querySelectorAll('ul li').length === 0 && this.isShowError !== true) {
+      this.showErrorSearch = true;
+      // ✅ Если Dadata ничего не нашла, скрываем "Заполните поле" — поле-то заполнено!
+      this.inputs[0].isNotValid = false;
+    } else {
+      this.showErrorSearch = false;
+    }
+  } else {
+    this.showErrorSearch = false;
+  }
+},
+
+----------------------
 computed: {
+  // === НОВОЕ: Адрес валиден, только если он точно есть в подсказках Dadata ===
+  isAddressValid() {
+    const address = this.inputs[0].value?.trim();
+    if (!address) return false;
+    
+    // Проверяем точное совпадение с одной из подсказок
+    return this.searchList.includes(address);
+  },
+  
+  // === Обновляем isFormValid ===
   isFormValid() {
     // 1. Все обязательные поля заполнены
     const allFilled = this.inputs.every(inp => !inp.validate || inp.value);
-    // 2. Адрес найден в Dadata
-    return allFilled && this.isAddressFromDadata;
+    
+    // 2. Адрес должен быть валидным (выбран из подсказок)
+    return allFilled && this.isAddressValid;
   },
-  // ... остальные computed
-}
--------------------------------
+  
+  // ... остальные computed ...
+},
+
+---------------------
 
 handlerSendForm(argument) {
+  // 1. Валидация полей
+  this.validateAllInputs();
+  
+  if (!this.isValid) {
+    return; // 🛑 Пустые поля
+  }
+  
+  // 2. Проверка адреса: должен точно совпадать с подсказкой
+  if (!this.isAddressValid) {
+    this.inputs[0].isNotValid = true;
+    this.ocenkaMobiErrorText = 'Выберите адрес из выпадающего списка';
+    this.showError();
+    return; // 🛑 Адрес не выбран → платный запрос НЕ уходит
+  }
+  
+  // ✅ Всё ок → отправляем
   this.captchaInit();
   this.send_argument = argument;
   this.btnSendPress = true;
   
-  // 1. Запускаем валидацию полей
-  this.validateAllInputs();
-  
-  // 2. Если поля пустые → показываем ошибки и останавливаем
-  if (!this.isValid) {
-    return; // 🛑 Запрос НЕ уходит
-  }
-  
-  // 3. Если адрес не выбран из подсказок → ошибка адреса
-  if (!this.isAddressFromDadata) {
-    this.inputs[0].isNotValid = true;
-    this.ocenkaMobiErrorText = 'Выберите адрес из выпадающего списка';
-    this.showError();
-    return; // 🛑 Запрос НЕ уходит
-  }
-  
-  // ✅ Всё ок → отправляем
-  const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
-  let recaptchaKey = null;
-  if (typeof conf !== 'undefined') recaptchaKey = conf.smartcaptcha_key;
-  
-  if ((typeof recaptchaKey !== 'undefined') && recaptchaKey !== null) {
-    window.smartCaptcha.execute(this.captcha_id, argument);
-  } else {
-    this.apiConnect('');
-  }
+  // ... остальной код отправки ...
 },
