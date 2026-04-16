@@ -1,37 +1,51 @@
-<button class="btn full" @click.prevent="handlerSendForm(false)">Оценить</button>
+<button 
+  class="btn full" 
+  :class="{ disabled: !isFormValid }" 
+  @click.prevent="handlerSendForm(false)"
+>
+  Оценить
+</button>
+-----------------------------
+computed: {
+  isFormValid() {
+    // 1. Все обязательные поля заполнены
+    const allFilled = this.inputs.every(inp => !inp.validate || inp.value);
+    // 2. Адрес найден в Dadata
+    return allFilled && this.isAddressFromDadata;
+  },
+  // ... остальные computed
+}
+-------------------------------
 
 handlerSendForm(argument) {
   this.captchaInit();
   this.send_argument = argument;
   this.btnSendPress = true;
-
-  // 1. Запускаем валидацию полей (покажет красные рамки и "Заполните поле")
+  
+  // 1. Запускаем валидацию полей
   this.validateAllInputs();
-
-  // 2. Если какое-то обязательное поле пустое → останавливаемся
+  
+  // 2. Если поля пустые → показываем ошибки и останавливаем
   if (!this.isValid) {
-    return; // Запрос НЕ уходит, пользователь видит ошибки на полях
+    return; // 🛑 Запрос НЕ уходит
   }
-
-  // 3. Если адрес не найден в Dadata → подсвечиваем поле и показываем ошибку
+  
+  // 3. Если адрес не выбран из подсказок → ошибка адреса
   if (!this.isAddressFromDadata) {
-    this.inputs[0].isNotValid = true; // Красная рамка на поле адреса
+    this.inputs[0].isNotValid = true;
     this.ocenkaMobiErrorText = 'Выберите адрес из выпадающего списка';
     this.showError();
-    return; // Запрос НЕ уходит
+    return; // 🛑 Запрос НЕ уходит
   }
-
-  // Всё валидно
+  
+  // ✅ Всё ок → отправляем
   const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
   let recaptchaKey = null;
-  if (typeof conf !== 'undefined') {
-    recaptchaKey = conf.smartcaptcha_key;
-  }
-
+  if (typeof conf !== 'undefined') recaptchaKey = conf.smartcaptcha_key;
+  
   if ((typeof recaptchaKey !== 'undefined') && recaptchaKey !== null) {
     window.smartCaptcha.execute(this.captcha_id, argument);
   } else {
-    // Для локальной разработки без капчи
     this.apiConnect('');
   }
 },
