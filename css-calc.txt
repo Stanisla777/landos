@@ -1,118 +1,37 @@
-isAddressFromDadata: false, // Новый флаг: адрес выбран из подсказок
-
-methods: {
-  // === ИЗМЕНИТЕ: Когда пользователь выбирает адрес из списка ===
-  setAddress(data) {
-    this.inputs[0].value = data;
-    this.isAddressFromDadata = true; // ✅ Адрес валидный, из подсказок
-    this.handlerSelectAddress(false);
-  },
-
-  // === ИЗМЕНИТЕ: Когда пользователь печатает вручную ===
-  set() {
-    this.isAddressFromDadata = false; // ❌ Пользователь правит адрес → сбрасываем валидность
-    if (this.timeout) clearTimeout(this.timeout);
-    this.timeout = setTimeout(() => {
-      this.dadaTa();
-    }, 500);
-  },
-
-  // === ИЗМЕНИТЕ: Обработка ответа от Dadata ===
-  dadaTa() {
-    if (this.inputs[0].value.length > 2) {
-      this.isShowError = false;
-      axios.post(this.apiUrl, {
-        query: `${this.inputs[0].value}`, count: 8
-      }, this.config)
-        .then((response) => {
-          this.searchList = [];
-          if (response.data.result?.suggestions) {
-            for (let i = 0; i < response.data.result.suggestions.length; i += 1) {
-              const fullName = response.data.result.suggestions[i].value;
-              if (fullName) {
-                this.searchList.push(fullName);
-                if (this.searchList.length) {
-                  this.handlerSelectAddress(true);
-                }
-              }
-            }
-            // ✅ КЛЮЧЕВОЕ: проверяем, нашёл ли Dadata хоть что-то
-            this.isAddressFromDadata = response.data.result.suggestions.length > 0;
-          } else {
-            this.isAddressFromDadata = false;
-          }
-        })
-        .then(() => {
-          this.searchError();
-        })
-        .catch((error) => {
-          console.log(error);
-          this.isAddressFromDadata = false;
-          if (error && (error.request.status === 403 || error.request.status === 405)) {
-            this.ocenkaMobiErrorText = 'Сервер не отвечает. Попробуйте перезагрузить страницу';
-            this.showErrorSearch = false;
-            this.showError();
-          }
-        });
-    }
-  },
-
-computed: {
-  // === НОВОЕ: Определяет, можно ли нажать кнопку "Оценить" ===
-  isFormValid() {
-    // 1. Все обязательные поля должны быть заполнены (ваша существующая логика)
-    for (let i = 0; i < this.inputs.length; i += 1) {
-      if (this.inputs[i].validate && !this.inputs[i].value) {
-        return false;
-      }
-    }
-    
-    // 2. Адрес должен быть найден в Dadata (есть хотя бы одна подсказка)
-    // Это гарантирует, что запрос уйдёт только на валидный адрес
-    if (!this.isAddressFromDadata) {
-      return false;
-    }
-    
-    return true;
-  },
-  
-  // ... ваши существующие computed (isValid, showFilter, filteredContent) ...
-},
-
-<button 
-  class="btn full" 
-  :class="{ disabled: !isFormValid }" 
-  :disabled="!isFormValid"
-  @click.prevent="isFormValid ? handlerSendForm(false) : null"
->
-  Оценить
-</button>
+<button class="btn full" @click.prevent="handlerSendForm(false)">Оценить</button>
 
 handlerSendForm(argument) {
-  // ✅ Дополнительная защита: если вдруг кнопка была разблокирована программно
-  if (!this.isFormValid) {
-    this.ocenkaMobiErrorText = 'Заполните все поля и выберите адрес из подсказок';
-    this.showError();
-    return;
-  }
-
   this.captchaInit();
   this.send_argument = argument;
   this.btnSendPress = true;
-  this.validateAllInputs();
-  
-  if (this.isValid) {
-    const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
-    let recaptchaKey = null;
-    if (typeof conf !== 'undefined') {
-      recaptchaKey = conf.smartcaptcha_key;
-    }
 
-    if ((typeof recaptchaKey !== 'undefined') && recaptchaKey !== null) {
-      window.smartCaptcha.execute(this.captcha_id, argument);
-    } else {
-      // Для локальной разработки, если капча не настроена
-      this.apiConnect('');
-    }
+  // 1. Запускаем валидацию полей (покажет красные рамки и "Заполните поле")
+  this.validateAllInputs();
+
+  // 2. Если какое-то обязательное поле пустое → останавливаемся
+  if (!this.isValid) {
+    return; // Запрос НЕ уходит, пользователь видит ошибки на полях
+  }
+
+  // 3. Если адрес не найден в Dadata → подсвечиваем поле и показываем ошибку
+  if (!this.isAddressFromDadata) {
+    this.inputs[0].isNotValid = true; // Красная рамка на поле адреса
+    this.ocenkaMobiErrorText = 'Выберите адрес из выпадающего списка';
+    this.showError();
+    return; // Запрос НЕ уходит
+  }
+
+  // Всё валидно
+  const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
+  let recaptchaKey = null;
+  if (typeof conf !== 'undefined') {
+    recaptchaKey = conf.smartcaptcha_key;
+  }
+
+  if ((typeof recaptchaKey !== 'undefined') && recaptchaKey !== null) {
+    window.smartCaptcha.execute(this.captcha_id, argument);
+  } else {
+    // Для локальной разработки без капчи
+    this.apiConnect('');
   }
 },
