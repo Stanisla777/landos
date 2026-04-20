@@ -1,50 +1,21 @@
-methods: {
-  dropdownAreaMobileShedule(e) {
-    const element = e.currentTarget;
-    const parent = element.closest('.js-accordion-parent-calc');
+dropdownAreaMobileSheduleEarly(e) {
+      const target = e.target
+      const element = e.currentTarget;
+      const parent = element.closest('.js-accordion-parent-calc-early');
+      if (parent) {
+        if (this.isAnimatingMobileEarly) return
+        this.isAnimatingMobileEarly = true
 
-    if (!parent) return;
-    if (this.isAnimatingMobile) return;
-
-    this.isAnimatingMobile = true;
-
-    if (parent.classList.contains('active')) {
-      // 🔽 ЗАКРЫТИЕ
-      parent.classList.remove('active-overflow');
-      setTimeout(() => {
-        parent.classList.remove('active');
-        this.isAnimatingMobile = false;
-      }, 300);
-    } else {
-      // 🔼 ОТКРЫТИЕ
-      parent.classList.add('active');
-      
-      // Ждём окончания CSS-анимации (0.5s) + небольшой запас для применения layout
-      setTimeout(() => {
-        parent.classList.add('active-overflow');
-        this.scrollToOpenedItem(parent);
-        this.isAnimatingMobile = false;
-      }, 550);
-    }
-  },
-
-  scrollToOpenedItem(itemEl) {
-    const container = this.$refs.mobileShedule;
-    if (!container) return;
-
-    // Получаем точные координаты относительно viewport
-    const containerRect = container.getBoundingClientRect();
-    const itemRect = itemEl.getBoundingClientRect();
-
-    // Вычисляем, сколько пикселей элемента скрыто за нижней границей контейнера
-    const hiddenBottom = itemRect.bottom - containerRect.bottom;
-
-    // Скроллим только если элемент действительно ушёл за видимую область
-    if (hiddenBottom > 0) {
-      container.scrollTo({
-        top: container.scrollTop + hiddenBottom + 16, // +16px отступ для визуального комфорта
-        behavior: 'smooth'
-      });
-    }
-  }
-}
+        if (parent.classList.contains('active-early')) {
+          parent.classList.remove('active-overflow')
+          setTimeout(() => {
+            parent.classList.remove('active-early')
+          }, 300)
+        } else {
+          parent.classList.add('active-early')
+          setTimeout(() => {
+            parent.classList.add('active-overflow')
+          }, 500)
+        }
+      }
+    },
