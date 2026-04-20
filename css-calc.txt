@@ -1,21 +1,26 @@
 dropdownAreaMobileSheduleEarly(e) {
-      const target = e.target
-      const element = e.currentTarget;
-      const parent = element.closest('.js-accordion-parent-calc-early');
-      if (parent) {
-        if (this.isAnimatingMobileEarly) return
-        this.isAnimatingMobileEarly = true
+  const element = e.currentTarget;
+  const parent = element.closest('.js-accordion-parent-calc-early');
 
-        if (parent.classList.contains('active-early')) {
-          parent.classList.remove('active-overflow')
-          setTimeout(() => {
-            parent.classList.remove('active-early')
-          }, 300)
-        } else {
-          parent.classList.add('active-early')
-          setTimeout(() => {
-            parent.classList.add('active-overflow')
-          }, 500)
-        }
-      }
-    },
+  if (!parent) return;
+  if (this.isAnimatingMobileEarly) return;
+
+  this.isAnimatingMobileEarly = true;
+
+  if (parent.classList.contains('active-early')) {
+    // 🔽 ЗАКРЫТИЕ
+    parent.classList.remove('active-overflow');
+    setTimeout(() => {
+      parent.classList.remove('active-early');
+      this.isAnimatingMobileEarly = false; // ← Добавил сброс флага для стабильности
+    }, 300);
+  } else {
+    // 🔼 ОТКРЫТИЕ
+    parent.classList.add('active-early');
+    setTimeout(() => {
+      parent.classList.add('active-overflow');
+      this.scrollToOpenedItem(parent); // ← Переиспользуем тот же метод
+      this.isAnimatingMobileEarly = false;
+    }, 550);
+  }
+}
