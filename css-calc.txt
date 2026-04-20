@@ -1,55 +1,31 @@
-computed: {
-  // === УПРОЩЁННО: Адрес валиден, если Dadata нашла хотя бы одну подсказку ===
-  isAddressValid() {
-    return this.isAddressFromDadata;
-  },
+<div class="mor-rep-calculators__cal-mobile-item-container">
+      <div class="calc-tax-deduc-new__area mor-rep-calculators__shedule-calendar-mobile-container" ref="mobileShedule">
+        <div class="mor-rep-calculators__shedule-calendar-mobile-item calc-tax-deduc-new__area js-accordion-parent-calc"
+             v-for="(item,index) in shedule" :key="index" :data-date="`${item.year}-${item.month}`"
+             :ref="`scheduleItem-${item.year}-${item.month}`">
+          <div class="mor-rep-calculators__shedule-calendar-mobile-wr-row" @click="dropdownAreaMobileShedule">
+            <div class="mor-rep-calculators__shedule-calendar-mobile-row">
 
-  isFormValid() {
-    // 1. Все обязательные поля заполнены
-    const allFilled = this.inputs.every(inp => !inp.validate || inp.value);
-    
-    // 2. Адрес "похож на валидный" (Dadata что-то нашла)
-    return allFilled && this.isAddressValid;
-  },
-  
-  // ... остальные computed без изменений ...
-},
 
------------------
-handlerSendForm(argument) {
-  // 1. Валидация полей (пустые поля)
-  this.validateAllInputs();
-  
-  if (!this.isValid) {
-    return; // 🛑 Пустые поля
-  }
-  
-  // 2. Проверка: нашла ли Dadata хоть что-то по этому адресу?
-  if (!this.isAddressValid) {
-    this.inputs[0].isNotValid = true;
-    this.ocenkaMobiErrorText = 'Введите корректный адрес (город, улица, дом)';
-    this.showError();
-    return; // 🛑 Адрес не похож на валидный
-  }
-  
-  // ✅ Всё ок → отправляем (даже если пользователь не выбрал подсказку явно)
-  this.captchaInit();
-  this.send_argument = argument;
-  this.btnSendPress = true;
-  
-  const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
-  let recaptchaKey = null;
-  if (typeof conf !== 'undefined') recaptchaKey = conf.smartcaptcha_key;
-  
-  if ((typeof recaptchaKey !== 'undefined') && recaptchaKey !== null) {
-    window.smartCaptcha.execute(this.captcha_id, argument);
-  } else {
-    this.apiConnect('');
-  }
-},
---------------
-setAddress(data) {
-  this.inputs[0].value = data;
-  // this.isAddressFromDadata = true; // ← Можно убрать, флаг и так обновится в dadaTa()
-  this.handlerSelectAddress(false);
-},
+dropdownAreaMobileShedule(e){
+      const target = e.target;
+      const element = e.currentTarget;
+      const parent = element.closest('.js-accordion-parent-calc');
+
+      if (parent) {
+        if (this.isAnimatingMobile) return;
+        this.isAnimatingMobile = true;
+
+        if(parent.classList.contains('active')){
+          parent.classList.remove('active-overflow');
+          setTimeout(() => {
+            parent.classList.remove('active');
+          }, 300);
+        } else {
+          parent.classList.add('active');
+          setTimeout(() => {
+            parent.classList.add('active-overflow');
+          }, 500);
+        }
+      }
+    },
