@@ -1,32 +1,35 @@
-// 1. Единый список исключений (меняете только здесь)
+// 📦 Единый список исключений
 $editor-exclude-blocks: '.test-n', '.own-styles';
 
-// 2. Функция, которая возвращает цепочку :not() для конкретного тега
+// 🛠️ Функция (одна на весь проект)
 @function get-exclude-chain($tag) {
   $chain: '';
   @each $block in $editor-exclude-blocks {
     $chain: $chain + ":not(#{$block} #{$tag})";
   }
-  @return unquote($chain); // убираем кавычки, чтобы SCSS подставил как чистый CSS
+  @return unquote($chain);
 }
 
-// 3. Ваша исходная конструкция + автоматические исключения
+
+h2#{get-exclude-chain('h2')} {
+  margin-bottom: 24px;
+  font-family: $ff-semi-bold;
+  font-size: 32px;
+  line-height: 36px;
+  color: $color-text-new;
+  &:last-child { margin-bottom: 0; }
+}
+
 .common-content {
   &:not(.advanced-editor__picture-description):not(.advanced-editor__accordion):not(.advanced-editor__table) {
     
-    // Обратите внимание на #{get-exclude-chain('тег')} в конце каждой части
     p:not(.btn_s):not(.advanced-editor__formula-symbols p)#{get-exclude-chain('p')},
     li#{get-exclude-chain('li')},
     a:not(.btn_s)#{get-exclude-chain('a')} {
       font-size: 16px;
       font-family: $ff-medium;
       line-height: 24px;
-      
-      @include respondTo(small) {
-        font-size: 14px;
-        line-height: 20px;
-      }
-      
+      @include respondTo(small) { font-size: 14px; line-height: 20px; }
       a {
         font-size: inherit;
         font-family: inherit;
