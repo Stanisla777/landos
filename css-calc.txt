@@ -1,20 +1,38 @@
-.common-content{
-  &:not(.advanced-editor__picture-description):not(.advanced-editor__accordion):not(.advanced-editor__table){
-    p:not(.btn_s):not(.advanced-editor__formula-symbols p),li,a:not(.btn_s){
+// 1. Единый список исключений (меняете только здесь)
+$editor-exclude-blocks: '.test-n', '.own-styles';
+
+// 2. Функция, которая возвращает цепочку :not() для конкретного тега
+@function get-exclude-chain($tag) {
+  $chain: '';
+  @each $block in $editor-exclude-blocks {
+    $chain: $chain + ":not(#{$block} #{$tag})";
+  }
+  @return unquote($chain); // убираем кавычки, чтобы SCSS подставил как чистый CSS
+}
+
+// 3. Ваша исходная конструкция + автоматические исключения
+.common-content {
+  &:not(.advanced-editor__picture-description):not(.advanced-editor__accordion):not(.advanced-editor__table) {
+    
+    // Обратите внимание на #{get-exclude-chain('тег')} в конце каждой части
+    p:not(.btn_s):not(.advanced-editor__formula-symbols p)#{get-exclude-chain('p')},
+    li#{get-exclude-chain('li')},
+    a:not(.btn_s)#{get-exclude-chain('a')} {
       font-size: 16px;
       font-family: $ff-medium;
       line-height: 24px;
+      
       @include respondTo(small) {
         font-size: 14px;
         line-height: 20px;
       }
-      a{
+      
+      a {
         font-size: inherit;
         font-family: inherit;
         color: inherit;
         line-height: inherit;
       }
     }
-
   }
 }
