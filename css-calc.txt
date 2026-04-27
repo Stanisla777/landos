@@ -1,34 +1,3 @@
-// Вынесите шаблон в отдельную константу или модуль
-const REPLY_FORM_TEMPLATE = `
-  <form class="comments__item-form-answer js--comments__item-form-answer js--comments__item-form-answer-init" novalidate>
-    <div id="captcha-element-comment-{captchaId}" data-captcha-element="1"></div>
-    <div class="form-comments__container">
-      <input type="hidden" name="elementId" value="{captchaId}">
-      <input class="form-comments__input js--form-comments-title" maxlength="40" type="text" name="name" placeholder="Введите имя и фамилию" value="" required>
-      <span class="input-text"></span>
-      <span class="textarea">Максимальное количество символов 40</span>
-      <div class="form-comments__wr-textarea js--wr-form-comments-text">
-        <textarea class="form-comments__textarea js--form-comments-text" maxlength="300" name="text" placeholder="Напишите комментарий..." required>{authorName},</textarea>
-      </div>
-      <span class="textarea">Максимальное количество символов 300</span>
-      <div class="form-comments__checkbox-container">
-        <label class="form-comments__checkbox-label">
-          <input class="form-comments__checkbox js--form-comments-check" type="checkbox" required>
-          <div></div>
-          <span class="form-comments__checkbox-span">
-            Согласен с <a href="/user-agreement/#moderationrule" target="_blank">правилами модерации</a> на сайте
-          </span>
-        </label>
-        <span class="checkbox">Согласитесь с условиями</span>
-      </div>
-      <input type="hidden" name="parent_id" value="{parentId}">
-      <button class="form-comments__button btn form-comments__button_disabled" disabled>Отправить</button>
-    </div>
-  </form>
-`;
-
--------------------------------------
-
 function commentsAnswer() {
   const buttons = document.querySelectorAll('.comments__item-button-answer');
   
@@ -44,11 +13,14 @@ function commentsAnswer() {
       
       const commentItem = button.closest('.comments__item');
       const parentId = commentItem.dataset.id;
-      const authorName = commentItem.querySelector('.comments__item-title')?.textContent?.trim() || '';
       
-      // Получаем captchaId из существующей формы на странице (если она есть)
-      // Или берём из data-атрибута, если бэкенд будет его передавать
-      const captchaId = document.querySelector('.js--form-comments .form-comments__container input[name="elementId"]')?.value || `S${Date.now()}`;
+      // Заменяем ?. на классическую проверку для authorName
+      const titleEl = commentItem.querySelector('.comments__item-title');
+      const authorName = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
+      
+      // Заменяем ?. на классическую проверку для captchaId
+      const elementIdInput = document.querySelector('.js--form-comments .form-comments__container input[name="elementId"]');
+      const captchaId = elementIdInput && elementIdInput.value ? elementIdInput.value : `S${Date.now()}`;
       
       // 1. Закрываем все открытые формы ответов
       document.querySelectorAll('.comments__item-form-answer_active').forEach((form) => {
@@ -76,8 +48,9 @@ function commentsAnswer() {
         }
         
         // 4. Инициализируем капчу, если нужно
-        if (window.initCaptcha && replyForm.querySelector('[data-captcha-element]')) {
-          window.initCaptcha(replyForm.querySelector('[data-captcha-element]'));
+        const captchaEl = replyForm.querySelector('[data-captcha-element]');
+        if (window.initCaptcha && captchaEl) {
+          window.initCaptcha(captchaEl);
         }
         
         // 5. Инициализируем валидацию/поведение формы, если есть отдельный метод
