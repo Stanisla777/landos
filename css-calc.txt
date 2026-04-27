@@ -1,173 +1,31 @@
-function CommentsFormValidationAnswer() {
-  const form = document.querySelectorAll('.js--comments__item-form-answer:not(.js--comments__item-form-answer-init)')
-  if (form) {
-    form.forEach((item) => {
-      item.classList.add('js--comments__item-form-answer-init');
-      const name = item.querySelector('.js--form-comments-title')
-      const text = item.querySelector('.js--form-comments-text')
-      const check = item.querySelector('.js--form-comments-check')
-
-      let errors = {
-        name: false,
-        text: false,
-        check: false
-      };
-
-      function checkValidName(name, errors){
-        let maxLength = name.maxLength;
-        name.value = name.value.replace(/[a-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/gi,'');
-        if (name.value.length > maxLength) {
-          errors.name = false;
-
-        } else if (name.value.length === 0) {
-          errors.name = false;
-        } else {
-          errors.name = true;
-        }
-
-        return errors;
-      }
-
-      function checkButton(){
-        checkValidName(name, errors);
-
-        name.addEventListener('input', () => {
-          checkValidName(name, errors);
-          const button = item.querySelector('.form-comments__button');
-          if (errors.name && errors.check && errors.text) {
-            button.classList.remove('form-comments__button_disabled');
-            button.removeAttribute('disabled');
-          } else {
-            button.classList.add('form-comments__button_disabled');
-            button.setAttribute('disabled', 'disabled');
-          }
-        })
-        function auto_layout_keyboard( str ) {
-			 replacer = {
-				"q":"й", "w":"ц", "e":"у", "r":"к", "t":"е", "y":"н", "u":"г",
-				"i":"ш", "o":"щ", "p":"з", "[":"х", "]":"ъ", "a":"ф", "s":"ы",
-				"d":"в", "f":"а", "g":"п", "h":"р", "j":"о", "k":"л", "l":"д",
-				";":"ж", "'":"э", "z":"я", "x":"ч", "c":"с", "v":"м", "b":"и",
-				"n":"т", "m":"ь", ",":",", ".":".", "/":"."
-			};
-
-          return str.replace(/[A-z/,.;\'\]\[]/g, function ( x ){
-            const string = x.toLowerCase() ? replacer[ x ] : replacer[ x.toLowerCase() ].toUpperCase();
-			return string !== undefined ? string : x;
-          });
-        }
-        text.addEventListener('keyup', () => {
-          let maxLength = text.maxLength;
-          text.value = auto_layout_keyboard(text.value)
-          if (text.value.length > maxLength) {
-            errors.text = false;
-
-          } else if (text.value.length === 0) {
-            errors.text = false;
-          } else {
-            errors.text = true;
-          }
-          const button = item.querySelector('.form-comments__button');
-          if (errors.name && errors.check && errors.text) {
-            button.classList.remove('form-comments__button_disabled');
-            button.removeAttribute('disabled');
-          } else {
-            button.classList.add('form-comments__button_disabled');
-            button.setAttribute('disabled', 'disabled');
-          }
-        })
-        check.addEventListener('change', () => {
-          if (!(check.checked)) {
-            errors.check = false;
-
-          } else {
-            errors.check = true;
-          }
-          const button = item.querySelector('.form-comments__button');
-          if (errors.name && errors.check && errors.text) {
-            button.classList.remove('form-comments__button_disabled');
-            button.removeAttribute('disabled');
-          } else {
-            button.classList.add('form-comments__button_disabled');
-            button.setAttribute('disabled', 'disabled');
-          }
-        })
-
-      }
-      checkButton();
-      textValidator(text);
-      item.addEventListener('submit', (event) => {
-        event.preventDefault();
-        if (item.querySelector('.form-comments__button')) {
-          item.querySelector('.form-comments__button').classList.add('submitting')
-          item.querySelector('.form-comments__button').setAttribute('disabled','disabled')
-        }
-
-
-        errors = {
-          name: false,
-          text: false,
-          check: false
-        };
-
-        let nameMaxLength = name.maxLength;
-        let textMaxLength = text.maxLength;
-
-        if (text.value.length > textMaxLength) {
-          errors.text = true;
-          text.nextElementSibling.innerHTML = 'Максимальное количество символов' + textMaxLength;
-          text.nextElementSibling.classList.add('textarea_error');
-        } else if (text.value.length === 0) {
-          errors.text = true;
-          text.nextElementSibling.innerHTML = 'Это поле обязательно для заполнения';
-          text.nextElementSibling.classList.add('textarea_error');
-        } else {
-          // text.nextElementSibling.classList.remove('textarea_error');
-          if (text.nextElementSibling !== null) {
-            text.nextElementSibling.classList.remove('textarea_error');
-          }
-        }
-
-        if (name.value.length > nameMaxLength) {
-          errors.name = true;
-          name.nextElementSibling.innerHTML = 'Максимальное количество символов ' + nameMaxLength;
-          name.nextElementSibling.classList.add('input-text_error');
-        } else if (name.value.length === 0) {
-          errors.name = true;
-          name.nextElementSibling.innerHTML = 'Это поле обязательно для заполнения';
-          name.nextElementSibling.classList.add('input-text_error');
-        } else {
-          name.nextElementSibling.classList.remove('input-text_error');
-        }
-
-        if (!(check.checked)) {
-          errors.check = true;
-          item.querySelector('.checkbox').classList.add('checkbox_error');
-        } else {
-          item.querySelector('.checkbox').classList.remove('checkbox_error');
-        }
-
-        if (!errors.name && !errors.check && !errors.text) {
-          const captchaBlock = item.querySelector('[data-captcha-element="1"]');
-          const captchaId = window.smartCaptcha.render(captchaBlock, {
-            sitekey: conf.smartcaptcha_key,
-            invisible: true,
-            callback: (token) => {
-              let formData = new FormData(item);
-              sendReply(item, formData, errors);
-            },
-            hideShield: true
-          })
-          window.smartCaptcha.execute(captchaId)
-        }
-      })
-
-------------------------------------------
 function sendReply(item, formData, errors) {
   let request = BX.ajax.runComponentAction('local:comments.form', 'save', {
     mode:'class',
     data: formData
   });
-    })
-  }
+
+  request.then(function(responce){
+    commentsPopupShow(responce.data.title, responce.data.message,  responce.status);
+    item.reset();
+    item.querySelector('.form-comments__button').classList.add('form-comments__button_disabled')
+    item.querySelector('.form-comments__button').classList.remove('submitting')
+    item.querySelector('.form-comments__button').removeAttribute('disabled')
+    errors = {
+      name: false,
+      text: false,
+      check: false
+    };
+    updateCountComments(responce);
+    updateCommentsList(responce.data.id, formData.get('parent_id'));
+  }, function (responce) {
+    commentsPopupShow('Ошибка',  responce.errors, responce.status);
+  })
+}
+
+function commentsAnswer() {
+// 1. Закрываем все открытые формы ответов
+      document.querySelectorAll('.comments__item-form-answer_active').forEach((form) => {
+        form.classList.remove('comments__item-form-answer_active');
+      });
+
 }
