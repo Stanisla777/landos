@@ -1,72 +1,41 @@
-function commentsAnswer() {
-  const buttons = document.querySelectorAll('.comments__item-button-answer');
+// ... (начало функции то же самое)
+
+if (!replyForm) {
+  // 3. Создаём форму из шаблона
+  let formHTML = '';
+  if (typeof REPLY_FORM_TEMPLATE === 'string') {
+    // Вариант со строкой-шаблоном
+    formHTML = REPLY_FORM_TEMPLATE
+      .replace(/{captchaId}/g, captchaId)
+      .replace(/{parentId}/g, parentId)
+      .replace(/{authorName}/g, authorName);
+  }
   
-  buttons.forEach((button) => {
-    // Убираем старые обработчики, если они есть (защита от дублей)
-    button.replaceWith(button.cloneNode(true));
-  });
+  // ищем .comments__item-info и вставляем туда
+  const itemInfo = commentItem.querySelector('.comments__item-info');
   
-  // Навешиваем обработчики заново
-  document.querySelectorAll('.comments__item-button-answer').forEach((button) => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-      
-      const commentItem = button.closest('.comments__item');
-      const parentId = commentItem.dataset.id;
-      
-      // Заменяем ?. на классическую проверку для authorName
-      const titleEl = commentItem.querySelector('.comments__item-title');
-      const authorName = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
-      
-      // Заменяем ?. на классическую проверку для captchaId
-      const elementIdInput = document.querySelector('.js--form-comments .form-comments__container input[name="elementId"]');
-      const captchaId = elementIdInput && elementIdInput.value ? elementIdInput.value : `S${Date.now()}`;
-      
-      // 1. Закрываем все открытые формы ответов
-      document.querySelectorAll('.comments__item-form-answer_active').forEach((form) => {
-        form.classList.remove('comments__item-form-answer_active');
-      });
-      
-      // 2. Проверяем, есть ли уже форма внутри этого комментария
-      let replyForm = commentItem.querySelector('.comments__item-form-answer');
-      
-      if (!replyForm) {
-        // 3. Создаём форму из шаблона
-        if (typeof REPLY_FORM_TEMPLATE === 'string') {
-          // Вариант со строкой-шаблоном
-          const formHTML = REPLY_FORM_TEMPLATE
-            .replace(/{captchaId}/g, captchaId)
-            .replace(/{parentId}/g, parentId)
-            .replace(/{authorName}/g, authorName);
-          
-          commentItem.insertAdjacentHTML('beforeend', formHTML);
-          replyForm = commentItem.querySelector('.comments__item-form-answer');
-        } else {
-          // Вариант с <template>
-          replyForm = getReplyFormTemplate(captchaId, parentId, authorName);
-          commentItem.appendChild(replyForm);
-        }
-        
-        // 4. Инициализируем капчу, если нужно
-        const captchaEl = replyForm.querySelector('[data-captcha-element]');
-        if (window.initCaptcha && captchaEl) {
-          window.initCaptcha(captchaEl);
-        }
-        
-        // 5. Инициализируем валидацию/поведение формы, если есть отдельный метод
-        if (typeof window.initCommentForm === 'function') {
-          window.initCommentForm(replyForm);
-        }
-      }
-      
-      // 6. Показываем форму
-      replyForm.classList.add('comments__item-form-answer_active');
-      
-      // 7. Фокус на поле ввода (опционально, для удобства)
-      const textarea = replyForm.querySelector('.js--form-comments-text');
-      if (textarea) {
-        setTimeout(() => textarea.focus(), 100);
-      }
-    }, { once: false }); // Убираем {once: true}, чтобы можно было открыть/закрыть форму повторно
-  });
+  if (itemInfo) {
+    if (typeof REPLY_FORM_TEMPLATE === 'string') {
+      // Вставляем строку-шаблон внутрь .comments__item-info
+      itemInfo.insertAdjacentHTML('beforeend', formHTML);
+      replyForm = itemInfo.querySelector('.comments__item-form-answer');
+    } else {
+      // Вариант с <template>
+      replyForm = getReplyFormTemplate(captchaId, parentId, authorName);
+      itemInfo.appendChild(replyForm);
+    }
+    
+    // 4. Инициализируем капчу, если нужно
+    const captchaEl = replyForm.querySelector('[data-captcha-element]');
+    if (window.initCaptcha && captchaEl) {
+      window.initCaptcha(captchaEl);
+    }
+    
+    // 5. Инициализируем валидацию/поведение формы, если есть отдельный метод
+    if (typeof window.initCommentForm === 'function') {
+      window.initCommentForm(replyForm);
+    }
+  }
 }
+
+// ... (остальная часть функции без изменений)
