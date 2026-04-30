@@ -22,72 +22,10 @@ export default function catalogNewSendFormNativeJs() {
   const btnSendStep2Black = modal.querySelector('.js--step-2 .btn_s.black.js--btn-universal-form');
   const btnBackStep2 = modal.querySelector('.js--step-2 .btn_s.transparent_black_border');
 
-  // === HELPERS ===
-  
-  // Универсальная проверка: все ли поля с required заполнены
-  function checkAllRequiredFilled(container) {
-    const requiredFields = container.querySelectorAll('[required]');
-    for (let field of requiredFields) {
-      if (field.type === 'checkbox' || field.type === 'radio') {
-        if (!field.checked) return false;
-      } else if (field.tagName === 'SELECT') {
-        if (!field.value.trim()) return false;
-      } else {
-        // input, textarea
-        if (!field.value.trim()) return false;
-      }
-    }
-    return true;
-  }
+  // Точная регулярка из вашего Vue-кода
+  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
 
-  // Обновление кнопок для любого шага
-  function updateStepButtons(stepContainer, errorStateKey, continueBtn, submitOrNextBtn) {
-    if (!stepContainer || !continueBtn || !submitOrNextBtn) return;
-    
-    const allFilled = checkAllRequiredFilled(stepContainer);
-    state[errorStateKey] = !allFilled;
-    
-    continueBtn.style.display = state[errorStateKey] ? 'inline-flex' : 'none';
-    submitOrNextBtn.style.display = state[errorStateKey] ? 'none' : 'inline-flex';
-  }
-
-  function updateStep1Buttons() {
-    updateStepButtons(step1, 'error_step_1', btnContinueStep1, btnNextStep1);
-  }
-
-  function updateStep2Buttons() {
-    updateStepButtons(step2, 'error_step_2', btnSendStep2, btnSendStep2Black);
-  }
-
-  // === HANDLERS ===
-  
-  // Делегирование событий: автоматически ловит изменения в любых полях шага
-  function setupInputListeners(container, updateFn) {
-    container.addEventListener('keyup', (e) => {
-      if (e.target.matches('input:not([type="checkbox"]), textarea, select')) {
-        updateFn();
-      }
-    });
-    container.addEventListener('change', (e) => {
-      if (e.target.matches('input, textarea, select')) {
-        updateFn();
-      }
-    });
-  }
-
-  // === NAVIGATION ===
-  function nextSlide() {
-    state.step_1 = false;
-    updateStepVisibility();
-    updateStep2Buttons(); // Пересчитываем кнопки второго шага сразу после перехода
-  }
-
-  function prevSlide() {
-    state.step_1 = true;
-    updateStepVisibility();
-    updateStep1Buttons();
-  }
-
+  // === UI UPDATERS ===
   function updateStepVisibility() {
     if (step1 && step2) {
       step1.style.display = state.step_1 ? 'block' : 'none';
@@ -95,13 +33,74 @@ export default function catalogNewSendFormNativeJs() {
     }
   }
 
-  // === VALIDATION ON CLICK (для кнопки "Продолжить" с подсветкой ошибок) ===
+  function updateStep1Buttons() {
+    if (btnContinueStep1 && btnNextStep1) {
+      btnContinueStep1.style.display = state.error_step_1 ? 'inline-flex' : 'none';
+      btnNextStep1.style.display = state.error_step_1 ? 'none' : 'inline-flex';
+    }
+  }
+
+  function updateStep2Buttons() {
+    if (btnSendStep2 && btnSendStep2Black) {
+      btnSendStep2.style.display = state.error_step_2 ? 'inline-flex' : 'none';
+      btnSendStep2Black.style.display = state.error_step_2 ? 'none' : 'inline-flex';
+    }
+  }
+
+  // === VALIDATION LOGIC (точная копия логики из Vue) ===
+  function validateStep1() {
+    const name = step1.querySelector('.js--validate-mask-name');
+    const email = step1.querySelector('.js--validate-mask-email');
+    const tel = step1.querySelector('.js--validate-mask-tel');
+    const msgs = step1.querySelectorAll('.js--validate-mask-message');
+    const program = msgs[0];
+    const doc = msgs[1];
+
+    // Проверки точно как в buttonActivationName / Email / Tel / Program / Doc
+    const isNameValid = name && name.value.length > 0;
+    const isEmailValid = email && email.value.length > 0 && emailRegex.test(email.value);
+    const isTelValid = tel && tel.value.length >= 16;
+    const isProgramValid = program && program.value.length > 0;
+    const isDocValid = doc && doc.value.length > 0;
+
+    const allValid = isNameValid && isEmailValid && isTelValid && isProgramValid && isDocValid;
+    state.error_step_1 = !allValid;
+    updateStep1Buttons();
+  }
+
+  function validateStep2(changedElement) {
+    // Точная логика из buttonActivitySecondStep
+    if (changedElement.type === 'checkbox') {
+      changedElement.classList.toggle('js-filled', changedElement.checked);
+    } else {
+      changedElement.classList.toggle('js-filled', changedElement.value.length > 0);
+    }
+
+    const allFields = step2.querySelectorAll('.js--validate-mask');
+    const filledFields = step2.querySelectorAll('.js--validate-mask.js-filled');
+    
+    state.error_step_2 = filledFields.length !== allFields.length;
+    updateStep2Buttons();
+  }
+
+  // === NAVIGATION & ACTIONS ===
+  function nextSlide() {
+    state.step_1 = false;
+    updateStepVisibility();
+    validateStep2(null); // Пересчитать кнопки второго шага сразу
+  }
+
+  function prevSlide() {
+    state.step_1 = true;
+    updateStepVisibility();
+    validateStep1();
+  }
+
   function sendingRequestFirstStep(element) {
     const parent = element.closest('.js--step-1');
     if (!parent) return;
     
     const inputs = parent.querySelectorAll('.js--validate-mask');
-    
     inputs.forEach(item => {
       if (item.classList.contains('js--validate-mask-select')) {
         if (!item.value) item.closest('.js--izhs-select')?.classList.add('input_error');
@@ -110,10 +109,10 @@ export default function catalogNewSendFormNativeJs() {
           const label = item.closest('label');
           label?.classList.add('input_error');
           if (label && !label.querySelector('.js--input__error_required')) {
-            const errorEl = document.createElement('p');
-            errorEl.classList.add('input__error', 'js--input__error_required');
-            errorEl.textContent = 'Поле обязательно для заполнения';
-            label.appendChild(errorEl);
+            const err = document.createElement('p');
+            err.classList.add('input__error', 'js--input__error_required');
+            err.textContent = 'Поле обязательно для заполнения';
+            label.appendChild(err);
           }
         }
       }
@@ -131,7 +130,7 @@ export default function catalogNewSendFormNativeJs() {
           const right1 = modal.querySelector('#right_1');
           if (right1) right1.checked = true;
           
-          // Сброс состояния
+          // Сброс state
           state.step_1 = true;
           state.error_step_1 = true;
           state.error_step_2 = true;
@@ -156,7 +155,7 @@ export default function catalogNewSendFormNativeJs() {
     return () => observer.disconnect();
   }
 
-  // === INIT ===
+  // === INIT & EVENT DELEGATION ===
   const listeners = [];
   function addListener(el, event, handler) {
     if (el) {
@@ -166,16 +165,24 @@ export default function catalogNewSendFormNativeJs() {
   }
 
   function init() {
-    // Начальное состояние кнопок
-    updateStep1Buttons();
-    updateStep2Buttons();
+    // Начальное состояние
     updateStepVisibility();
-    
-    // Автоматическое отслеживание ввода в полях
-    setupInputListeners(step1, updateStep1Buttons);
-    setupInputListeners(step2, updateStep2Buttons);
-    
-    // Кнопки навигации и валидации
+    validateStep1();
+    validateStep2(null);
+
+    // Делегирование событий: один слушатель на весь шаг
+    step1.addEventListener('keyup', (e) => {
+      if (e.target.matches('input, textarea, select')) validateStep1();
+    });
+
+    step2.addEventListener('keyup', (e) => {
+      if (e.target.matches('input:not([type="checkbox"]), textarea')) validateStep2(e.target);
+    });
+    step2.addEventListener('change', (e) => {
+      if (e.target.matches('input[type="checkbox"]')) validateStep2(e.target);
+    });
+
+    // Кнопки
     addListener(btnNextStep1, 'click', nextSlide);
     addListener(btnBackStep2, 'click', prevSlide);
     if (btnContinueStep1) addListener(btnContinueStep1, 'click', (e) => sendingRequestFirstStep(e.currentTarget));
