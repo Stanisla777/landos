@@ -1,26 +1,52 @@
-Uncaught (in promise) TypeError: Cannot read properties of null (reading 'type')
-    at validateStep2 (catalog-new-send-form-native-js.js:73:24)
-    at init (catalog-new-send-form-native-js.js:171:5)
-    at catalogNewSendFormNativeJs (catalog-new-send-form-native-js.js:205:10)
-    at index.js:437:29
-    at Generator.<anonymous> (index.js:2:1)
-    at Generator.next (index.js:2:1)
-    at asyncGeneratorStep (index.js:2:1)
-    at _next (index.js:2:1)
-    at index.js:2:1
-    at new Promise (<anonymous>)
-
 function validateStep2(changedElement) {
-    // Точная логика из buttonActivitySecondStep
+  // Точная логика из buttonActivitySecondStep
+  // Сначала проверяем, что элемент существует
+  if (changedElement) {
     if (changedElement.type === 'checkbox') {
       changedElement.classList.toggle('js-filled', changedElement.checked);
     } else {
       changedElement.classList.toggle('js-filled', changedElement.value.length > 0);
     }
-
-    const allFields = step2.querySelectorAll('.js--validate-mask');
-    const filledFields = step2.querySelectorAll('.js--validate-mask.js-filled');
-
-    state.error_step_2 = filledFields.length !== allFields.length;
-    updateStep2Buttons();
   }
+
+  const allFields = step2.querySelectorAll('.js--validate-mask');
+  const filledFields = step2.querySelectorAll('.js--validate-mask.js-filled');
+  
+  state.error_step_2 = filledFields.length !== allFields.length;
+  updateStep2Buttons();
+}
+
+--------
+function validateStep1() {
+  const name = step1.querySelector('.js--validate-mask-name');
+  const email = step1.querySelector('.js--validate-mask-email');
+  const tel = step1.querySelector('.js--validate-mask-tel');
+  const msgs = step1.querySelectorAll('.js--validate-mask-message');
+  const program = msgs[0];
+  const doc = msgs[1];
+
+  // === ОТЛАДОЧНЫЙ ЛОГ ===
+  console.log('Step1 validation debug:', {
+    name: !!name,
+    email: !!email,
+    tel: !!tel,
+    program: !!program,
+    doc: !!doc,
+    nameVal: name?.value,
+    emailVal: email?.value,
+    telVal: tel?.value,
+    emailRegex: email?.value ? emailRegex.test(email.value) : null,
+    telLen: tel?.value?.length
+  });
+  // ===================
+
+  const isNameValid = name && name.value.length > 0;
+  const isEmailValid = email && email.value.length > 0 && emailRegex.test(email.value);
+  const isTelValid = tel && tel.value.length >= 16;
+  const isProgramValid = program && program.value.length > 0;
+  const isDocValid = doc && doc.value.length > 0;
+
+  const allValid = isNameValid && isEmailValid && isTelValid && isProgramValid && isDocValid;
+  state.error_step_1 = !allValid;
+  updateStep1Buttons();
+}
