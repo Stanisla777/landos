@@ -1,18 +1,354 @@
+.modal#modal-catalog-new-request(v-cloak)
+    //Добавил метод
+    .modal__wrapper.modal-form-izhs(@click="closeItemList")
+        button.modal__closer.outside.js--modal-closer
+            svg(width='17' height='18' viewBox='0 0 17 18' fill='none' xmlns='http://www.w3.org/2000/svg')
+                path(fill-rule='evenodd' clip-rule='evenodd' d='M0.357542 15.3637C-0.0329827 15.7543 -0.0329827 16.3874 0.357542 16.778C0.748066 17.1685 1.38123 17.1685 1.77176 16.778L8.13551 10.4142L14.4995 16.7782C14.89 17.1687 15.5232 17.1687 15.9137 16.7782C16.3042 16.3876 16.3042 15.7545 15.9137 15.364L9.54972 8.99999L15.9139 2.63582C16.3044 2.24529 16.3044 1.61213 15.9139 1.2216C15.5234 0.83108 14.8902 0.83108 14.4997 1.2216L8.13551 7.58577L1.77156 1.22182C1.38104 0.8313 0.747871 0.8313 0.357346 1.22182C-0.0331781 1.61235 -0.0331778 2.24551 0.357346 2.63604L6.7213 8.99999L0.357542 15.3637Z')
+        //Добавил блок .modal-form-izhs__title-row
+        .modal-form-izhs__title-row.up
+            p.modal-form-catalog__title Заявка на добавление новой региональной программы
+            p.modal-form-izhs__step(v-if="step_1") Шаг <span>1</span> из <span>2</span>
+            p.modal-form-izhs__step(v-else) Шаг <span>2</span> из <span>2</span>
 
-<div class="marathon-new-last__wr-rating" id="marathon-rating" data-vue-app="marathon-rating" data-year=""></div>
 
-props: {
-instanceId: {
-      type: String,
-      default: '',
+        form(action="" novalidate ref="formParent" ).without-sending.js--housing-cooperative-request.js--universal-form
+            .modal-form-izhs__step-1.js--step-1(v-show="step_1")
+                .modal-form-izhs__title-des
+                    p.
+                        Перед тем, как подавать заявку, важно внимательно ознакомиться с инструкцией. Инструкция содержит
+                        необходимую информацию о требованиях, процедуре подачи заявки, необходимых документах и других важных деталях.
+                        Чтение инструкции поможет избежать ошибок при заполнении заявки и повысит шансы на успешное рассмотрение
+                        вашего запроса.
+                    a(href="#" download).modal-form-izhs__download Скачать инструкцию
+                .modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .modal-form-izhs__col
+                        p.modal-form-izhs__label Фамилия Имя Отчество
+                        label.modal-form-izhs__input
+                            input(type="text" placeholder="Введите ФИО", data-mask-hint="Не допустимый формат" data-maxlength="50" data-maxlength-hint="Допустимое количество символов" data-required-hint="Поле обязательно для заполнения" required @keyup="buttonActivationName($event.target)" ).js--validate-mask.js--validate-mask-name
+                .modal-form-izhs__row.modal-form-izhs__row-col-2
+                    .modal-form-izhs__col
+                        p.modal-form-izhs__label Электронный адрес
+                        label.modal-form-izhs__input
+                            input(type="text" inputmode="email" placeholder="Введите E-mail", data-mask-hint="Не допустимый формат" data-maxlength="20" data-maxlength-hint="Допустимое количество символов" data-required-hint="Поле обязательно для заполнения" required @keyup="buttonActivationEmail($event.target)" ).js--validate-mask.js--validate-mask-email
+                    .modal-form-izhs__col
+                        p.modal-form-izhs__label Номер телефона
+                        label.modal-form-izhs__input
+                            input(type="tel", autocomplete="on", placeholder="+7" data-mask-hint="Не допустимый формат" data-required-hint="Поле обязательно для заполнения" required @keyup="buttonActivationTel($event.target)").js--validate-mask.js--validate-mask-tel
+
+
+                .modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .modal-form-izhs__col
+                        p.modal-form-izhs__label Название программы
+                        label.feed_back__textarea
+                            .feed_back__wr-textarea.small-textarea
+                                textarea(name="" cols="30" rows="10" placeholder="Введите текст" data-maxlength="30000" data-mask-hint="Латиницу вбивать нельзя" data-maxlength-hint="Допустимое количество символов" data-required-hint="Поле обязательно для заполнения" required @keyup="buttonActivationNameProgram($event.target)").js--validate-mask.js--validate-mask-message
+
+                .modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .modal-form-izhs__col
+                        p.modal-form-izhs__label Регламентирующие документы
+                        label.feed_back__textarea
+                            .feed_back__wr-textarea.small-textarea
+                                textarea(name="" cols="30" rows="10" placeholder="Введите текст" data-maxlength="30000" data-mask-hint="Латиницу вбивать нельзя" data-maxlength-hint="Допустимое количество символов" data-required-hint="Поле обязательно для заполнения" required @keyup="buttonActivationNameDoc($event.target)").js--validate-mask.js--validate-mask-message
+
+                .modal-form-izhs__wr-final-button.modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .btn_s.green_color_white.desabled(v-if="error_step_1" @click="sendingRequestFirstStep") Продолжить
+                    .btn_s.black(@click="nextSlide" v-else) Продолжить
+
+
+            .modal-form-izhs__step-2.js--step-2(v-show="!step_1")
+                .modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .modal-form-izhs__col
+                        p.modal-form-izhs__label Описание программы
+                        label.feed_back__textarea
+                            .feed_back__wr-textarea.small-textarea
+                                textarea(name="" cols="30" rows="10" placeholder="Введите текст" data-maxlength="30000" data-mask-hint="Латиницу вбивать нельзя" data-maxlength-hint="Допустимое количество символов" data-required-hint="Поле обязательно для заполнения" required @keyup="buttonActivitySecondStep").js--validate-mask.js--validate-mask-message
+
+                .modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .modal-form-izhs__col
+                        p.modal-form-izhs__label Требования к участникам
+                        label.feed_back__textarea
+                            .feed_back__wr-textarea.small-textarea
+                                textarea(name="" cols="30" rows="10" placeholder="Введите текст" data-maxlength="30000" data-mask-hint="Латиницу вбивать нельзя" data-maxlength-hint="Допустимое количество символов" data-required-hint="Поле обязательно для заполнения" required @keyup="buttonActivitySecondStep").js--validate-mask.js--validate-mask-message
+                .modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .modal-form-izhs__col
+                        p.modal-form-izhs__label Требования к недвижимости
+                        label.feed_back__textarea
+                            .feed_back__wr-textarea.small-textarea
+                                textarea(name="" cols="30" rows="10" placeholder="Введите текст" data-maxlength="30000" data-mask-hint="Латиницу вбивать нельзя" data-maxlength-hint="Допустимое количество символов" data-required-hint="Поле обязательно для заполнения" required @keyup="buttonActivitySecondStep").js--validate-mask.js--validate-mask-message
+                .modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .modal-form-izhs__col
+                        p.modal-form-izhs__label Как добавить программу
+                        label.feed_back__textarea
+                            .feed_back__wr-textarea.small-textarea
+                                textarea(name="" cols="30" rows="10" placeholder="Введите текст" data-maxlength="30000" data-mask-hint="Латиницу вбивать нельзя" data-maxlength-hint="Допустимое количество символов" data-required-hint="Поле обязательно для заполнения" required @keyup="buttonActivitySecondStep").js--validate-mask.js--validate-mask-message
+
+
+                .modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .modal-form-izhs__agreement.js--izhs-radio-group-step-2
+                        .feed_back__wr-checkbox
+                            .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
+                                .personal-office__user-form-subscription-em
+                                .feed_back__user-form-block
+                                    input(type="checkbox" data-required-hint="Согласитесь с условиями" required @change="buttonActivitySecondStep")#subscription.js--feedback-check.js--validate-mask.js--validate-mask--check.js-filled
+                                    label.feed_back__chek-label(for="subscription")
+                                        p Согласен (-на) на обработку
+                                        a(href='/user-agreement/#user-agreement-zhsk', target='_blank') персональных данных
+                                p(style="display:block;").input__error.js--input__error_required Согласитесь с условиями
+                            .checkbox-stylized.feed_back__user-form-subscription.js--checkbox_wrapper
+                                .personal-office__user-form-subscription-em
+                                .feed_back__user-form-block
+                                    input(type="checkbox" data-required-hint="Согласитесь с условиями" required @change="buttonActivitySecondStep")#subscription2.js--feedback-check.js--validate-mask.js--validate-mask--check.js-filled
+                                    label.feed_back__chek-label(for="subscription2")
+                                        p Согласен (-на) на обработку
+                                        a(href='/user-agreement/#user-agreement-zhsk', target='_blank') персональных данных
+
+                .modal-form-izhs__row.modal-form-izhs__row-col-1
+                    .modal-form-izhs__wr-final-button
+                        .btn_s.transparent_black_border(@click="prevSlaide") Назад
+                        button(type="button").btn_s.green_color_white.desabled.js--btn-universal-form(v-if="error_step_2" @click="") Отправить
+                        button.btn_s.black.js--btn-universal-form(v-else type="submit") Отправить
+
+                .js--feedback-bottom.feedback-bottom
+                    // сюда вставлять ошибку с сервера
+
+
+
+
+.modal#modal-catalog-new-request
+    .modal__wrapper
+        button.modal__closer.icon-round.icon-round_white.icon-round_border.js--modal-closer
+            svg(width='17' height='18' viewBox='0 0 17 18' fill='none' xmlns='http://www.w3.org/2000/svg')
+                path(fill-rule='evenodd' clip-rule='evenodd' d='M0.357542 15.3637C-0.0329827 15.7543 -0.0329827 16.3874 0.357542 16.778C0.748066 17.1685 1.38123 17.1685 1.77176 16.778L8.13551 10.4142L14.4995 16.7782C14.89 17.1687 15.5232 17.1687 15.9137 16.7782C16.3042 16.3876 16.3042 15.7545 15.9137 15.364L9.54972 8.99999L15.9139 2.63582C16.3044 2.24529 16.3044 1.61213 15.9139 1.2216C15.5234 0.83108 14.8902 0.83108 14.4997 1.2216L8.13551 7.58577L1.77156 1.22182C1.38104 0.8313 0.747871 0.8313 0.357346 1.22182C-0.0331781 1.61235 -0.0331778 2.24551 0.357346 2.63604L6.7213 8.99999L0.357542 15.3637Z')
+        .housing-cooperative-success
+            h4.housing-cooperative-success__title Заявка успешно
+                br
+                span.svg-anima.svg-anima_to-background.js--svg-hand-writing отправлена!
+                    svg.svg-anima__desktop(width='308' height='86' viewBox='0 0 308 86' fill='none' xmlns='http://www.w3.org/2000/svg')
+                        path(d='M146.561 15.904C146.561 15.904 252.568 6.24102 301.059 41.525C353.886 79.9642 -6.48055 111.519 2.27695 46.2516C9.54809 -7.93801 227.001 -9.73087 285.043 27.9598' stroke='#8BC540' stroke-width='3' stroke-linecap='round' stroke-linejoin='round')
+                    svg.svg-anima__tablet(width='308' height='86' viewBox='0 0 308 86' fill='none' xmlns='http://www.w3.org/2000/svg')
+                        path(d='M146.561 15.904C146.561 15.904 252.568 6.24102 301.059 41.525C353.886 79.9642 -6.48055 111.519 2.27695 46.2516C9.54809 -7.93801 227.001 -9.73087 285.043 27.9598' stroke='#8BC540' stroke-width='3' stroke-linecap='round' stroke-linejoin='round')
+                    svg.svg-anima__mobile(width='180' height='50' viewBox='0 0 198 56' fill='none' xmlns='http://www.w3.org/2000/svg')
+                        path(d='M93.7804 10.7168C93.7804 10.7168 161.768 4.51944 192.867 27.1486C226.748 51.8015 -4.37186 72.0387 1.24472 30.1801C5.90803 -4.57421 145.371 -5.72406 182.596 18.4487' stroke='#8BC540' stroke-width='2' stroke-linecap='round' stroke-linejoin='round')
+            span.housing-cooperative-success__subtitle Мы&nbsp;получили ваш запрос
+            span.housing-cooperative-success__description Скоро вы&nbsp;получите ответ на&nbsp;указанный e-mail
+
+----------------------------------
+
+/* eslint-disable */
+import Vue from 'vue';
+
+export default function CatalogNewSendForm() {
+  const app = new Vue({
+    el: '#modal-catalog-new-request',
+    data: {
+      show_warn:true,
+      fullness_radio:0,
+      fullness_select:0,
+      fullness_input_radio:0,
+      all_checked:true,
     },
-year: {
-      type: String,
-      default:'0'
-    }
-}
+    methods: {
 
-sendRequest(){
-      console.log('this.year');
-      console.log(parseInt(this.year));
+      buttonActivitySecondStep(el){
+        const element = el.currentTarget
+
+        if (element.getAttribute('type')==='checkbox') {
+          if (element.checked) {
+            element.classList.add('js-filled')
+          }
+          else {
+            element.classList.remove('js-filled')
+          }
+        }
+        else {
+          if(element.value.length>0) {
+            element.classList.add('js-filled')
+          }
+          else {
+            element.classList.remove('js-filled')
+          }
+        }
+
+
+
+        const parent = element.closest('.js--step-2')
+        const array = parent.querySelectorAll('.js--validate-mask')
+        const array_input_filled = parent.querySelectorAll('.js--validate-mask.js-filled');
+        if(array_input_filled.length===array.length){
+          this.error_step_2 = false
+        }
+        else {
+          this.error_step_2 = true
+        }
+      },
+      callback(){
+        const beesenderchat = document.querySelector('#modal-catalog-new-request');
+        if (beesenderchat && beesenderchat.hasAttribute('data-formsubmit')
+          && beesenderchat.getAttribute('data-formsubmit') === 'success'
+          && !beesenderchat.classList.contains('open')) {
+          setTimeout(()=>{
+            if (beesenderchat.querySelector('#right_1')) {
+              beesenderchat.querySelector('#right_1').checked = true;
+            }
+            this.show_warn = true;
+            this.step_1=true;
+            this.error_step_1=true;
+            this.error_step_2=true;
+            this.fullness_input=0;
+            this.fullness_radio=0;
+            this.hiddenInput='';
+            this.all_checked=true;
+            this.InputSearhPlace='';
+            this.fullness_input_name=0;
+            this.fullness_input_mail=0;
+            this.fullness_input_tel=0;
+            this.fullness_select=0;
+            this.fullness_input_radio=0;
+            this.show_warn=true;
+            this.fullness_radio=0;
+            this.fullness_select=0;
+            this.fullness_input_radio=0;
+            this.all_checked=true
+            beesenderchat.setAttribute('data-formsubmit','')
+          },1000)
+        }
+      },
+      successfulSubmission(){
+        const beesenderchat = document.querySelector('#modal-catalog-new-request');
+        const observerOptions = {
+          attributes: true,
+        };
+        const observer = new MutationObserver(this.callback);
+        if (beesenderchat) {
+          observer.observe(beesenderchat, observerOptions);
+        }
+      },
+
+      nextSlide(){
+        this.step_1=false
+      },
+      prevSlaide(){
+        this.step_1=true
+      },
+
+      buttonActivationName(element){
+        if (element.value.length > 0&&this.fullness_input_name!==1) {
+          this.fullness_input_name = 1;
+        }
+        if (element.value.length < 1) {
+          this.fullness_input_name = 0;
+        }
+        this.fullness_input = this.fullness_input_name+this.fullness_input_tel+this.fullness_input_mail+
+          this.fullness_input_radio+this.fullness_select+this.fullness_texarea_program+this.fullness_texarea_doc
+
+      },
+
+      buttonActivationEmail(element){
+        if(element.value.match(/^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i)&&element.value.length>0){
+          if(this.fullness_input_mail!==1) {
+            this.fullness_input_mail=1
+          }
+        }
+        if (!element.value.match(/^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i)) {
+          this.fullness_input_mail=0
+        }
+        if (element.value.length<1) {
+          this.fullness_input_mail=0
+        }
+        this.fullness_input = this.fullness_input_name+this.fullness_input_tel+this.fullness_input_mail+
+          this.fullness_input_radio+this.fullness_select+this.fullness_texarea_program+this.fullness_texarea_doc
+
+      },
+
+      buttonActivationTel(element){
+        if(element.value.length>=16&&this.fullness_input_tel!==1){
+          this.fullness_input_tel=1
+        }
+        if (element.value.length < 16) {
+          this.fullness_input_tel=0
+        }
+        this.fullness_input = this.fullness_input_name+this.fullness_input_tel+this.fullness_input_mail+
+          this.fullness_input_radio+this.fullness_select+this.fullness_texarea_program+this.fullness_texarea_doc
+
+      },
+
+      buttonActivation(element){
+        const parent = element.closest('.js--housing-cooperative-request')
+        if(parent){
+          const array = parent.querySelectorAll('.js--validate-mask')
+          const array_length = array.length
+          for (let item of array){
+            const inp_val = element.value.length
+            if(item.classList.contains('js--validate-mask-name')&&item.value.length>0){
+            }
+            if(item.classList.contains('js--validate-mask-email')&&item.value.match(/^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i)&&item.value.length>0){
+            }
+            if(item.classList.contains('js--validate-mask-tel')&&item.value.length>=16){
+            }
+          }
+        }
+      },
+
+      buttonActivationNameProgram(element) {
+        if (element.value.length > 0&&this.fullness_texarea_program!==1) {
+          this.fullness_texarea_program = 1;
+        }
+        if (element.value.length < 1) {
+          this.fullness_texarea_program = 0;
+        }
+
+        this.fullness_input = this.fullness_input_name+this.fullness_input_tel+this.fullness_input_mail+
+          this.fullness_input_radio+this.fullness_select+this.fullness_texarea_program+this.fullness_texarea_doc
+      },
+
+      buttonActivationNameDoc(element) {
+        if (element.value.length > 0&&this.fullness_texarea_doc!==1) {
+          this.fullness_texarea_doc = 1;
+        }
+        if (element.value.length < 1) {
+          this.fullness_texarea_doc = 0;
+        }
+
+        this.fullness_input = this.fullness_input_name+this.fullness_input_tel+this.fullness_input_mail+
+          this.fullness_input_radio+this.fullness_select+this.fullness_texarea_program+this.fullness_texarea_doc
+      },
+
+      sendingRequestFirstStep(el){
+        const element = el.currentTarget
+        const parent = element.closest('.js--step-1')
+        const array_input = parent.querySelectorAll('.js--validate-mask')
+        for(let item of array_input){
+          if(item.classList.contains('js--validate-mask-select')){
+            if(item.value===''){
+              item.closest('.js--izhs-select').classList.add('input_error')
+            }
+          }
+          else if (item.classList.contains('js--validate-mask')) {
+            if(item.value===''){
+              item.closest('label').classList.add('input_error')
+              const array_error = item.closest('label').querySelectorAll('.js--input__error_required')
+              if(array_error.length===0){
+                const element_error = document.createElement('p');
+                element_error.classList.add('input__error','js--input__error_required');
+                element_error.innerHTML += 'Поле обязательно для заполнения'
+                item.closest('label').append(element_error);
+              }
+            }
+          }
+        }
+      },
+    },
+    filters: {
+    },
+    updated() {
+    },
+    computed: {
+    },
+    watch: {
+
+    },
+    mounted() {
+      this.successfulSubmission()
+    }
+  });
 }
