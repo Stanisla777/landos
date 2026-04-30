@@ -1,74 +1,16 @@
-/* eslint-disable */
+Uncaught (in promise) TypeError: Cannot read properties of null (reading 'type')
+    at validateStep2 (catalog-new-send-form-native-js.js:73:24)
+    at init (catalog-new-send-form-native-js.js:171:5)
+    at catalogNewSendFormNativeJs (catalog-new-send-form-native-js.js:205:10)
+    at index.js:437:29
+    at Generator.<anonymous> (index.js:2:1)
+    at Generator.next (index.js:2:1)
+    at asyncGeneratorStep (index.js:2:1)
+    at _next (index.js:2:1)
+    at index.js:2:1
+    at new Promise (<anonymous>)
 
-export default function catalogNewSendFormNativeJs() {
-  // === STATE ===
-  const state = {
-    step_1: true,
-    error_step_1: true,
-    error_step_2: true
-  };
-
-  // === DOM REFERENCES ===
-  const modal = document.querySelector('#modal-catalog-new-request');
-  if (!modal) return { destroy: () => {} };
-
-  const step1 = modal.querySelector('.js--step-1');
-  const step2 = modal.querySelector('.js--step-2');
-  
-  const btnContinueStep1 = modal.querySelector('.js--step-1 .btn_s.green_color_white.desabled');
-  const btnNextStep1 = modal.querySelector('.js--step-1 .btn_s.black');
-  
-  const btnSendStep2 = modal.querySelector('.js--step-2 .btn_s.green_color_white.desabled');
-  const btnSendStep2Black = modal.querySelector('.js--step-2 .btn_s.black.js--btn-universal-form');
-  const btnBackStep2 = modal.querySelector('.js--step-2 .btn_s.transparent_black_border');
-
-  // Точная регулярка из вашего Vue-кода
-  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
-
-  // === UI UPDATERS ===
-  function updateStepVisibility() {
-    if (step1 && step2) {
-      step1.style.display = state.step_1 ? 'block' : 'none';
-      step2.style.display = state.step_1 ? 'none' : 'block';
-    }
-  }
-
-  function updateStep1Buttons() {
-    if (btnContinueStep1 && btnNextStep1) {
-      btnContinueStep1.style.display = state.error_step_1 ? 'inline-flex' : 'none';
-      btnNextStep1.style.display = state.error_step_1 ? 'none' : 'inline-flex';
-    }
-  }
-
-  function updateStep2Buttons() {
-    if (btnSendStep2 && btnSendStep2Black) {
-      btnSendStep2.style.display = state.error_step_2 ? 'inline-flex' : 'none';
-      btnSendStep2Black.style.display = state.error_step_2 ? 'none' : 'inline-flex';
-    }
-  }
-
-  // === VALIDATION LOGIC (точная копия логики из Vue) ===
-  function validateStep1() {
-    const name = step1.querySelector('.js--validate-mask-name');
-    const email = step1.querySelector('.js--validate-mask-email');
-    const tel = step1.querySelector('.js--validate-mask-tel');
-    const msgs = step1.querySelectorAll('.js--validate-mask-message');
-    const program = msgs[0];
-    const doc = msgs[1];
-
-    // Проверки точно как в buttonActivationName / Email / Tel / Program / Doc
-    const isNameValid = name && name.value.length > 0;
-    const isEmailValid = email && email.value.length > 0 && emailRegex.test(email.value);
-    const isTelValid = tel && tel.value.length >= 16;
-    const isProgramValid = program && program.value.length > 0;
-    const isDocValid = doc && doc.value.length > 0;
-
-    const allValid = isNameValid && isEmailValid && isTelValid && isProgramValid && isDocValid;
-    state.error_step_1 = !allValid;
-    updateStep1Buttons();
-  }
-
-  function validateStep2(changedElement) {
+function validateStep2(changedElement) {
     // Точная логика из buttonActivitySecondStep
     if (changedElement.type === 'checkbox') {
       changedElement.classList.toggle('js-filled', changedElement.checked);
@@ -78,129 +20,7 @@ export default function catalogNewSendFormNativeJs() {
 
     const allFields = step2.querySelectorAll('.js--validate-mask');
     const filledFields = step2.querySelectorAll('.js--validate-mask.js-filled');
-    
+
     state.error_step_2 = filledFields.length !== allFields.length;
     updateStep2Buttons();
   }
-
-  // === NAVIGATION & ACTIONS ===
-  function nextSlide() {
-    state.step_1 = false;
-    updateStepVisibility();
-    validateStep2(null); // Пересчитать кнопки второго шага сразу
-  }
-
-  function prevSlide() {
-    state.step_1 = true;
-    updateStepVisibility();
-    validateStep1();
-  }
-
-  function sendingRequestFirstStep(element) {
-    const parent = element.closest('.js--step-1');
-    if (!parent) return;
-    
-    const inputs = parent.querySelectorAll('.js--validate-mask');
-    inputs.forEach(item => {
-      if (item.classList.contains('js--validate-mask-select')) {
-        if (!item.value) item.closest('.js--izhs-select')?.classList.add('input_error');
-      } else if (item.classList.contains('js--validate-mask')) {
-        if (!item.value.trim()) {
-          const label = item.closest('label');
-          label?.classList.add('input_error');
-          if (label && !label.querySelector('.js--input__error_required')) {
-            const err = document.createElement('p');
-            err.classList.add('input__error', 'js--input__error_required');
-            err.textContent = 'Поле обязательно для заполнения';
-            label.appendChild(err);
-          }
-        }
-      }
-    });
-  }
-
-  // === FORM SUBMIT CALLBACK (MutationObserver) ===
-  function onFormSubmitSuccess() {
-    const observer = new MutationObserver(() => {
-      if (modal.hasAttribute('data-formsubmit') && 
-          modal.getAttribute('data-formsubmit') === 'success' && 
-          !modal.classList.contains('open')) {
-        
-        setTimeout(() => {
-          const right1 = modal.querySelector('#right_1');
-          if (right1) right1.checked = true;
-          
-          // Сброс state
-          state.step_1 = true;
-          state.error_step_1 = true;
-          state.error_step_2 = true;
-          
-          // Сброс UI
-          updateStepVisibility();
-          updateStep1Buttons();
-          updateStep2Buttons();
-          
-          // Очистка классов и значений
-          modal.querySelectorAll('.js-filled').forEach(el => el.classList.remove('js-filled'));
-          modal.querySelectorAll('.input_error').forEach(el => el.classList.remove('input_error'));
-          modal.querySelectorAll('.js--input__error_required').forEach(el => el.remove());
-          modal.querySelectorAll('input:not([type="checkbox"]), textarea, select').forEach(el => el.value = '');
-          
-          modal.setAttribute('data-formsubmit', '');
-        }, 1000);
-      }
-    });
-    
-    observer.observe(modal, { attributes: true });
-    return () => observer.disconnect();
-  }
-
-  // === INIT & EVENT DELEGATION ===
-  const listeners = [];
-  function addListener(el, event, handler) {
-    if (el) {
-      el.addEventListener(event, handler);
-      listeners.push({ el, event, handler });
-    }
-  }
-
-  function init() {
-    // Начальное состояние
-    updateStepVisibility();
-    validateStep1();
-    validateStep2(null);
-
-    // Делегирование событий: один слушатель на весь шаг
-    step1.addEventListener('keyup', (e) => {
-      if (e.target.matches('input, textarea, select')) validateStep1();
-    });
-
-    step2.addEventListener('keyup', (e) => {
-      if (e.target.matches('input:not([type="checkbox"]), textarea')) validateStep2(e.target);
-    });
-    step2.addEventListener('change', (e) => {
-      if (e.target.matches('input[type="checkbox"]')) validateStep2(e.target);
-    });
-
-    // Кнопки
-    addListener(btnNextStep1, 'click', nextSlide);
-    addListener(btnBackStep2, 'click', prevSlide);
-    if (btnContinueStep1) addListener(btnContinueStep1, 'click', (e) => sendingRequestFirstStep(e.currentTarget));
-    
-    // Форма
-    const form = modal.querySelector('.js--housing-cooperative-request');
-    if (form) addListener(form, 'submit', (e) => e.preventDefault());
-    
-    // Наблюдатель за успешной отправкой
-    const destroyObserver = onFormSubmitSuccess();
-    
-    return {
-      destroy: () => {
-        listeners.forEach(({ el, event, handler }) => el.removeEventListener(event, handler));
-        destroyObserver?.();
-      }
-    };
-  }
-
-  return init();
-}
