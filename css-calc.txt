@@ -1,32 +1,93 @@
-form.without-sending.js--housing-cooperative-request.js--universal-form{
-      padding-right: 5px;
-      overflow:auto;
-      @-moz-document url-prefix() {
-        scrollbar-color: #8bc540 #caccdf;
-        scrollbar-width: thin;
-      }
-      &::-webkit-scrollbar {
-        width: 8px;
-        height: 2px;
-        @include respondTo(small) {
-          width: 1px;
-        }
-      }
-      &::-webkit-scrollbar-button {
-        width: 0;
-        height: 0;
-      }
-      &::-webkit-scrollbar-thumb {
-        background: #8bc540;
-        border: 0 #fff;
-        border-radius: 50px;
-      }
-      &::-webkit-scrollbar-track {
-        background: #caccdf;
-        border: 0 #fff;
-        border-radius: 50px;
-      }
-      &::-webkit-scrollbar-corner {
-        background: transparent;
-      }
+// Форма со скроллом
+const form = modal.querySelector('.js--housing-cooperative-request');
+
+// === SCROLL HELPERS ===
+function isIOS() {
+  // Надёжная проверка iOS
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function scrollFormToTop() {
+  if (!form) return Promise.resolve();
+  
+  // Если уже наверху — ничего не делаем
+  if (form.scrollTop === 0) return Promise.resolve();
+  
+  // iOS иногда игнорирует behavior: 'smooth' на не-body элементах
+  // Используем мгновенный скролл для надёжности
+  if (isIOS()) {
+    form.scrollTop = 0;
+    return Promise.resolve();
+  }
+  
+  // Для десктопа и Android — плавный скролл
+  return new Promise((resolve) => {
+    // Если браузер не поддерживает smooth, просто скроллим
+    try {
+      form.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      form.scrollTop = 0;
+      resolve();
+      return;
     }
+    
+    // Разрешаем промис либо по событию scroll, либо по таймауту (фолбэк)
+    const onScrollEnd = () => {
+      form.removeEventListener('scroll', onScrollEnd);
+      resolve();
+    };
+    form.addEventListener('scroll', onScrollEnd, { once: true });
+    setTimeout(resolve, 300); // фолбэк, если событие не сработает
+  });
+}
+
+--------------
+
+async function nextSlide() {
+  // Сначала скроллим вверх (незаметно для пользователя)
+  await scrollFormToTop();
+  
+  // Потом переключаем шаг
+  state.step_1 = false;
+  updateStepVisibility();
+  updateStep2Buttons();
+}
+
+--------------
+
+function onFormSubmitSuccess() {
+  const observer = new MutationObserver(() => {
+    if (modal.hasAttribute('data-formsubmit') && 
+        modal.getAttribute('data-formsubmit') === 'success' && 
+        !modal.classList.contains('open')) {
+      
+      setTimeout(() => {
+        // Сбрасываем скролл формы вверх
+        scrollFormToTop();
+        
+        const right1 = modal.querySelector('#right_1');
+        if (right1) right1.checked = true;
+        
+        // Сброс state
+        state.step_1 = true;
+        state.error_step_1 = true;
+        state.error_step_2 = true;
+        
+        // Обновляем UI
+        updateStepVisibility();
+        updateStep1Buttons();
+        updateStep2Buttons();
+        
+        // Сброс классов
+        modal.querySelectorAll('.js-filled').forEach(el => el.classList.remove('js-filled'));
+        modal.querySelectorAll('.input_error').forEach(el => el.classList.remove('input_error'));
+        modal.querySelectorAll('.js--input__error_required').forEach(el => el.remove());
+        
+        modal.setAttribute('data-formsubmit', '');
+      }, 1000);
+    }
+  });
+  
+  observer.observe(modal, { attributes: true });
+  return () => observer.disconnect();
+}
