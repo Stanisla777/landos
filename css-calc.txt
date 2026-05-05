@@ -1,5 +1,36 @@
-[
-  {"id": "279", "name": "Республика Адыгея (Адыгея)"},
-  {"id": "513", "name": "Город Санкт-Петербург"},
-  {"id": "285", "name": "Республика Башкортостан"}
-]
+parseJsonToArray(st) {
+  if (typeof st === 'string') {
+    try {
+      const parsed = JSON.parse(st);
+      
+      // Если это объект с ключами — извлекаем значения в порядке появления в строке
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        // Простой и надёжный способ для плоских объектов {"key":"value"}
+        // Регулярка ищет пары "ключ":"значение" в исходной строке
+        const regex = /"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+        const values = [];
+        let match;
+        
+        while ((match = regex.exec(st)) !== null) {
+          // match[2] — это значение (строка), которое было в исходном порядке
+          values.push(match[2]);
+        }
+        
+        // Если нашли значения через регексп — возвращаем их
+        if (values.length > 0) return values;
+        
+        // Фоллбэк: если регексп не сработал, берём Object.values (будет отсортирован)
+        return Object.values(parsed);
+      }
+      
+      // Если уже массив или примитив — возвращаем как есть
+      return Array.isArray(parsed) ? parsed : [parsed];
+    }
+    catch (e) {
+      console.warn('Ошибка парсинга JSON в parseJsonToArray:', e);
+      return Array.isArray(st) ? st : [st];
+    }
+  }
+  // Если пришла не строка — возвращаем как есть
+  return Array.isArray(st) ? st : [st];
+}
