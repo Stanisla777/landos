@@ -3,27 +3,28 @@ parseJsonToArray(st) {
     try {
       const parsed = JSON.parse(st);
       
-      // Если это объект с ключами — извлекаем значения в порядке появления в строке
+      // Если это объект с ключами — извлекаем пары ключ-значение в порядке появления в строке
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        // Простой и надёжный способ для плоских объектов {"key":"value"}
         // Регулярка ищет пары "ключ":"значение" в исходной строке
+        // Поддерживает экранированные кавычки внутри значений
         const regex = /"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
-        const values = [];
+        const result = [];
         let match;
         
         while ((match = regex.exec(st)) !== null) {
-          // match[2] — это значение (строка), которое было в исходном порядке
-          values.push(match[2]);
+          const key = match[1];    // ID региона, например "279"
+          const value = match[2];  // Название региона
+          result.push({ id: key, name: value });
         }
         
-        // Если нашли значения через регексп — возвращаем их
-        if (values.length > 0) return values;
+        // Если нашли пары через регексп — возвращаем массив объектов
+        if (result.length > 0) return result;
         
-        // Фоллбэк: если регексп не сработал, берём Object.values (будет отсортирован)
-        return Object.values(parsed);
+        // Фоллбэк: если регексп не сработал, возвращаем массив значений (но порядок может быть нарушен)
+        return Object.values(parsed).map(name => ({ id: null, name }));
       }
       
-      // Если уже массив или примитив — возвращаем как есть
+      // Если уже массив — возвращаем как есть
       return Array.isArray(parsed) ? parsed : [parsed];
     }
     catch (e) {
@@ -34,3 +35,17 @@ parseJsonToArray(st) {
   // Если пришла не строка — возвращаем как есть
   return Array.isArray(st) ? st : [st];
 }
+
+-------------
+
+<ul class="select__list js--select-list">
+  <li
+    v-for="(option, idx) in inputRegionOptions_array"
+    :key="option.id"
+    class="select__list-item js--select-item js--searh-item"
+    :data-value="option.id"
+    @click="selectItem"
+  >
+    {{ option.name }}
+  </li>
+</ul>
