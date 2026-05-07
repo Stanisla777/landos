@@ -1,51 +1,22 @@
-parseJsonToArray(st) {
-  if (typeof st === 'string') {
-    try {
-      const parsed = JSON.parse(st);
-      
-      // Если это объект с ключами — извлекаем пары ключ-значение в порядке появления в строке
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        // Регулярка ищет пары "ключ":"значение" в исходной строке
-        // Поддерживает экранированные кавычки внутри значений
-        const regex = /"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
-        const result = [];
-        let match;
-        
-        while ((match = regex.exec(st)) !== null) {
-          const key = match[1];    // ID региона, например "279"
-          const value = match[2];  // Название региона
-          result.push({ id: key, name: value });
-        }
-        
-        // Если нашли пары через регексп — возвращаем массив объектов
-        if (result.length > 0) return result;
-        
-        // Фоллбэк: если регексп не сработал, возвращаем массив значений (но порядок может быть нарушен)
-        return Object.values(parsed).map(name => ({ id: null, name }));
-      }
-      
-      // Если уже массив — возвращаем как есть
-      return Array.isArray(parsed) ? parsed : [parsed];
-    }
-    catch (e) {
-      console.warn('Ошибка парсинга JSON в parseJsonToArray:', e);
-      return Array.isArray(st) ? st : [st];
-    }
-  }
-  // Если пришла не строка — возвращаем как есть
-  return Array.isArray(st) ? st : [st];
+<img 
+  loading="lazy" 
+  class="banner-block__image" 
+  src="1243.600.webp" 
+  alt=""
+  style="--pos-1020: 14% 11%; --pos-767: 20% 30%; --pos-480: 30% 40%;"
+>
+
+.banner-block__image {
+  /* Fallback, если переменная не задана */
+  object-position: var(--pos-1020, center);
 }
 
--------------
-
-<ul class="select__list js--select-list">
-  <li
-    v-for="(option, idx) in inputRegionOptions_array"
-    :key="option.id"
-    class="select__list-item js--select-item js--searh-item"
-    :data-value="option.id"
-    @click="selectItem"
-  >
-    {{ option.name }}
-  </li>
-</ul>
+@media (max-width: 1020px) {
+  .banner-block__image { object-position: var(--pos-1020, var(--pos-767, center)); }
+}
+@media (max-width: 767px) {
+  .banner-block__image { object-position: var(--pos-767, var(--pos-480, center)); }
+}
+@media (max-width: 480px) {
+  .banner-block__image { object-position: var(--pos-480, center); }
+}
