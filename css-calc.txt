@@ -37,95 +37,97 @@ export function anotherThingPrizes() {
     breakpoints: {},
 
     on: {
-      beforeInit: () => {
-        // ничего не делаем
-      },
+      beforeInit: () => {},
 
-      afterInit: function (el) {
-        // После инициализации сразу скрываем все стрелки, 
-        // кроме тех, что относятся к активному слайду
-        const parent = el.el.closest('.js--prizes-container');
+      afterInit: function () {
+        const parent = this.el.closest('.js--prizes-container');
         if (!parent) return;
 
         // Скрываем все контейнеры стрелок
-        parent.querySelectorAll('.js--swiper-arrow-prise-container').forEach(container => {
+        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
+        arrowContainers.forEach(container => {
           container.classList.add('display-none');
         });
 
         // Показываем только стрелки для текущего слайда
-        const activeIndex = el.activeIndex;
+        const activeIndex = this.activeIndex;
         const activeArrows = parent.querySelector(
           `.js--swiper-arrow-prise-container[data-swiper-slide-index="${activeIndex}"]`
         );
         if (activeArrows) {
           activeArrows.classList.remove('display-none');
-          // Обновляем состояние стрелок вложенного слайдера, если он уже инициализирован
-          const nestedSwiperEl = el.slides[activeIndex]?.querySelector('.js--slider-construtor');
-          if (nestedSwiperEl?.swiper) {
-            nestedSwiperEl.swiper.update();
+
+          // Обновляем вложенный слайдер, если он уже инициализирован
+          const currentSlide = this.slides[activeIndex];
+          if (currentSlide) {
+            const nestedSwiperEl = currentSlide.querySelector('.js--slider-construtor');
+            if (nestedSwiperEl && nestedSwiperEl.swiper) {
+              nestedSwiperEl.swiper.update();
+            }
           }
         }
       },
 
-      resize: function (el) {
-        // можно добавить el.update(), если нужно
-      },
+      resize: function () {},
 
-      slideChange: function (el) {
-        const parent = el.el.closest('.js--prizes-container');
+      slideChange: function () {
+        const parent = this.el.closest('.js--prizes-container');
         if (!parent) return;
 
         // Скрываем все стрелки
-        parent.querySelectorAll('.js--swiper-arrow-prise-container').forEach(container => {
+        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
+        arrowContainers.forEach(container => {
           container.classList.add('display-none');
         });
 
         // Показываем стрелки для активного слайда
-        const activeIndex = el.activeIndex;
+        const activeIndex = this.activeIndex;
         const activeArrows = parent.querySelector(
           `.js--swiper-arrow-prise-container[data-swiper-slide-index="${activeIndex}"]`
         );
         if (activeArrows) {
           activeArrows.classList.remove('display-none');
-          
-          // Важно: обновляем вложенный слайдер, чтобы он пересчитал disabled-состояние стрелок
-          const nestedSwiperEl = el.slides[activeIndex]?.querySelector('.js--slider-construtor');
-          if (nestedSwiperEl?.swiper) {
-            // Небольшая задержка, чтобы вложенный слайдер успел отрендериться
-            setTimeout(() => {
-              nestedSwiperEl.swiper.update();
-              if (nestedSwiperEl.swiper.params.autoHeight) {
-                nestedSwiperEl.swiper.updateAutoHeight();
-              }
-            }, 50);
+
+          // Обновляем вложенный слайдер, чтобы он пересчитал состояние стрелок
+          const currentSlide = this.slides[activeIndex];
+          if (currentSlide) {
+            const nestedSwiperEl = currentSlide.querySelector('.js--slider-construtor');
+            if (nestedSwiperEl && nestedSwiperEl.swiper) {
+              const swiperInstance = nestedSwiperEl.swiper;
+              setTimeout(() => {
+                swiperInstance.update();
+                if (swiperInstance.params.autoHeight) {
+                  swiperInstance.updateAutoHeight();
+                }
+              }, 50);
+            }
           }
         }
       }
     }
   });
 
-  // === Обработчики пагинации (ваша логика, без изменений) ===
+  // === Обработчики пагинации ===
   const controls = document.querySelectorAll('.js--anotgher-thing-prizes-pag');
-  
+
   controls.forEach(control => {
     control.addEventListener('click', () => {
       const slideIndex = parseInt(control.dataset.index, 10);
       console.log(slideIndex);
-      
-      // Переход на слайд
+
       swiper.slideTo(slideIndex);
-      
-      // Обновляем активный класс на кнопках пагинации
+
       controls.forEach(c => c.classList.remove('active'));
       control.classList.add('active');
 
-      // Логика для мобильной пагинации
-      if (control.closest('.js--pagination-parent-mobile')) {
-        const mobileBtn = control.closest('.js--pagination-parent-mobile').querySelector('.js--pagination-btn-mobile p');
-        if (mobileBtn) {
-          mobileBtn.textContent = control.querySelector('p')?.textContent || '';
+      const mobileParent = control.closest('.js--pagination-parent-mobile');
+      if (mobileParent) {
+        const mobileBtn = mobileParent.querySelector('.js--pagination-btn-mobile p');
+        const controlText = control.querySelector('p');
+        if (mobileBtn && controlText) {
+          mobileBtn.textContent = controlText.textContent;
         }
-        control.closest('.js--pagination-parent-mobile').classList.remove('active');
+        mobileParent.classList.remove('active');
         if (typeof RemoveClassBody === 'function') {
           RemoveClassBody();
         }
