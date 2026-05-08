@@ -1,6 +1,5 @@
 /**
- * Вспомогательная функция: показывает стрелки для активного слайда
- * и управляет классом .unactive + свайпом в зависимости от количества слайдов
+ * Управляет видимостью контейнера стрелок и состоянием вложенного слайдера
  */
 function updateActiveArrows(parent, mainSwiper, activeIndex) {
   const currentSlide = mainSwiper.slides[activeIndex];
@@ -29,60 +28,60 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
   const activeArrows = targetArrow.closest('.js--swiper-arrow-prise-container');
   if (!activeArrows) return;
 
-  // 1. Сбрасываем ВСЕ скрытия и залипания ДО любых вычислений
+  // 1. Скрываем все контейнеры, сбрасываем залипания
+  parent.querySelectorAll('.js--swiper-arrow-prise-container').forEach(container => {
+    container.classList.add('display-none');
+    container.classList.remove('unactive');
+  });
   activeArrows.classList.remove('display-none');
-  activeArrows.classList.remove('unactive');
 
-  // 2. Ждём отрисовки DOM, чтобы элемент стал видимым и измеримым
-  requestAnimationFrame(() => {
-    // Если вложенный слайдер ещё не инициализирован, пробуем через 100мс (один раз)
-    if (!nestedSwiperEl.swiper) {
-      setTimeout(() => {
-        if (nestedSwiperEl.swiper) {
-          finalizeArrows(activeArrows, nestedSwiperEl.swiper);
-        }
-      }, 100);
+  // 2. Ждём, пока конструктор инициализирует вложенный Swiper
+  let attempts = 0;
+  const checkAndSetup = () => {
+    attempts++;
+    if (nestedSwiperEl.swiper) {
+      applyNestedSliderLogic(nestedSwiperEl.swiper, activeArrows);
       return;
     }
-
-    finalizeArrows(activeArrows, nestedSwiperEl.swiper);
-  });
+    if (attempts < 40) { // Ждём до 4 секунд (40 * 100ms)
+      setTimeout(checkAndSetup, 100);
+    }
+  };
+  checkAndSetup();
 }
 
 /**
- * Отдельная функция финальной проверки, вызывается только когда слайдер готов И видим
+ * Применяет логику вложенного слайдера: включает свайп, ставит nested, управляет .unactive
  */
-function finalizeArrows(activeArrows, swiper) {
-  // Принудительно сбрасываем свайп в true перед проверкой (чтобы не застрять в false)
-  swiper.allowTouchMove = true;
+function applyNestedSliderLogic(swiper, activeArrows) {
+  // 🔑 КРИТИЧЕСКИ ВАЖНО для вложенных слайдеров:
+  swiper.params.nested = true;
+  swiper.enable(); // Перезапускаем обработчики мыши/тача (без этого свайп часто ломается)
+  swiper.update(); // Корректно пересчитываем размеры после показа
 
-  // Обновляем размеры (теперь элемент точно видим, update сработает корректно)
-  swiper.update();
-  if (swiper.params.autoHeight) swiper.updateAutoHeight();
-
-  // Даём браузеру применить классы disabled после update()
+  // Даём браузеру применить стили и проставить disabled-классы
   setTimeout(() => {
-    const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
-    let disabledCount = 0;
+    const slides = swiper.slides;
+    const spv = swiper.params.slidesPerView || 1;
+    const total = slides ? slides.length : 0;
 
-    arrowButtons.forEach(btn => {
-      if (btn.classList.contains('swiper-button-disabled') ||
-          btn.classList.contains('disabled-non-disappear') ||
+    // Считаем неактивные стрелки
+    let disabledCount = 0;
+    activeArrows.querySelectorAll('.swiper-slide-arrow').forEach(btn => {
+      if (btn.classList.contains('swiper-button-disabled') || 
+          btn.classList.contains('disabled-non-disappear') || 
           btn.disabled) {
         disabledCount++;
       }
     });
 
-    const slidesPerView = swiper.params.slidesPerView || 1;
-    const totalSlides = swiper.slides ? swiper.slides.length : 0;
-
-    // Логика скрытия: 1 слайд ИЛИ все помещаются на экран ИЛИ обе стрелки disabled
-    if (totalSlides <= 1 || totalSlides <= slidesPerView || disabledCount >= 2) {
+    // Логика скрытия: 1 слайд / всё помещается / обе стрелки отключены
+    if (total <= 1 || total <= spv || disabledCount >= 2) {
       activeArrows.classList.add('unactive');
       swiper.allowTouchMove = false;
     } else {
       activeArrows.classList.remove('unactive');
       swiper.allowTouchMove = true;
     }
-  }, 10);
+  }, 60);
 }
