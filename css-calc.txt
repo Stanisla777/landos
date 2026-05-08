@@ -3,14 +3,12 @@
  * и добавляет/удаляет класс .unactive в зависимости от количества слайдов
  */
 function updateActiveArrows(parent, mainSwiper, activeIndex) {
-  // 1. Находим вложенный слайдер в активном слайде главного
   const currentSlide = mainSwiper.slides[activeIndex];
   if (!currentSlide) return;
 
   const nestedSwiperEl = currentSlide.querySelector('.js--slider-construtor');
   if (!nestedSwiperEl) return;
 
-  // 2. Читаем data-arrows, чтобы узнать классы стрелок
   const dataArrowsAttr = nestedSwiperEl.getAttribute('data-arrows');
   if (!dataArrowsAttr) return;
 
@@ -22,145 +20,87 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
     return;
   }
 
-  // 3. Берём класс левой или правой стрелки (любой, чтобы найти контейнер)
   const arrowClass = arrowConfig.arrow_left || arrowConfig.arrow_right;
   if (!arrowClass) return;
 
-  // Убираем точку в начале, если она есть (например, ".js--arrow-123" → "js--arrow-123")
   const className = arrowClass.replace(/^\./, '');
-  
-  // 4. Находим стрелку по классу и поднимаемся к контейнеру
   const targetArrow = parent.querySelector(`.${className}`);
   if (!targetArrow) return;
 
   const activeArrows = targetArrow.closest('.js--swiper-arrow-prise-container');
   if (!activeArrows) return;
 
-  // 5. Скрываем все контейнеры стрелок, показываем только активный
+  // ▼▼▼ Скрываем все контейнеры, показываем активный ▼▼▼
   const allContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
   allContainers.forEach(container => {
     container.classList.add('display-none');
+    // Важно: убираем unactive со всех, чтобы не осталось "залипших" состояний
+    container.classList.remove('unactive');
   });
   activeArrows.classList.remove('display-none');
 
-  // 6. Если вложенный слайдер ещё не инициализирован — выходим (он инициализируется позже)
-  if (!nestedSwiperEl.swiper) return;
-  const nestedSwiper = nestedSwiperEl.swiper;
+  // ▼▼▼ Функция проверки с повторными попытками ▼▼▼
+  let attempts = 0;
+  const maxAttempts = 20; // 20 * 100ms = 2 секунды максимум
+  
+  const checkAndUpdateArrows = () => {
+    attempts++;
+    
+    // Если вложенный слайдер ещё не инициализирован — пробуем позже
+    if (!nestedSwiperEl.swiper) {
+      if (attempts < maxAttempts) {
+        setTimeout(checkAndUpdateArrows, 100);
+      } else {
+        console.warn('Не удалось дождаться инициализации вложенного слайдера для слайда', activeIndex);
+      }
+      return;
+    }
 
-  // 7. Небольшая задержка, чтобы вложенный слайдер успел отрендериться
-  setTimeout(() => {
+    const nestedSwiper = nestedSwiperEl.swiper;
+
+    // Принудительно обновляем слайдер и его размеры
     nestedSwiper.update();
+    nestedSwiper.updateSize();
     if (nestedSwiper.params.autoHeight) {
       nestedSwiper.updateAutoHeight();
     }
 
-    // === ЛОГИКА .unactive (как в paginationSlider) ===
-    const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
-    let disabledCount = 0;
-    
-    arrowButtons.forEach(btn => {
-      if (btn.classList.contains('swiper-button-disabled')) {
-        disabledCount++;
-      }
-    });
-
-    if (nestedSwiper.slides.length <= 1 || disabledCount >= 2) {
-      activeArrows.classList.add('unactive');
-      nestedSwiper.allowTouchMove = false;
-      nestedSwiper.params.simulateTouch = false;
-    } else {
-      activeArrows.classList.remove('unactive');
-      nestedSwiper.allowTouchMove = true;
-      nestedSwiper.params.simulateTouch = true;
-    }
-  }, 50);
-}
-
-export function anotherThingPrizes() {
-  const swiper = new Swiper('.js--another-thing-2025-prizes', {
-    init: true,
-    loop: false,
-    slidesPerView: 1,
-    spaceBetween: 16,
-    simulateTouch: false,
-    allowTouchMove: false,
-    autoHeight: true,
-    resizeObserver: true,
-    observeParents: true,
-    observer: true,
-    observeSlideChildren: true,
-
-    pagination: { /* ... */ },
-    navigation: { /* ... */ },
-    breakpoints: {},
-
-    on: {
-      beforeInit: () => {},
-
-      afterInit: function () {
-        const parent = this.el.closest('.js--prizes-container');
-        if (!parent) return;
-
-        // Скрываем все контейнеры стрелок
-        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
-        arrowContainers.forEach(container => {
-          container.classList.add('display-none');
-        });
-
-        // Показываем и обновляем стрелки для текущего слайда
-        updateActiveArrows(parent, this, this.activeIndex);
-      },
-
-      resize: function () {},
-
-      slideChange: function () {
-        const parent = this.el.closest('.js--prizes-container');
-        if (!parent) return;
-
-        // Скрываем все стрелки
-        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
-        arrowContainers.forEach(container => {
-          container.classList.add('display-none');
-        });
-
-        // Показываем и обновляем стрелки для активного слайда
-        updateActiveArrows(parent, this, this.activeIndex);
-      }
-    }
-  });
-
-  // === Обработчики пагинации (без изменений) ===
-  const controls = document.querySelectorAll('.js--anotgher-thing-prizes-pag');
-  controls.forEach(control => {
-    control.addEventListener('click', () => {
-      const slideIndex = parseInt(control.dataset.index, 10);
-      console.log(slideIndex);
-      swiper.slideTo(slideIndex);
-      controls.forEach(c => c.classList.remove('active'));
-      control.classList.add('active');
-      const mobileParent = control.closest('.js--pagination-parent-mobile');
-      if (mobileParent) {
-        const mobileBtn = mobileParent.querySelector('.js--pagination-btn-mobile p');
-        const controlText = control.querySelector('p');
-        if (mobileBtn && controlText) {
-          mobileBtn.textContent = controlText.textContent;
+    // Даём браузеру время на перерисовку перед проверкой классов
+    requestAnimationFrame(() => {
+      // Проверяем состояние стрелок
+      const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
+      let disabledCount = 0;
+      
+      arrowButtons.forEach(btn => {
+        // Проверяем все возможные классы/состояния disabled
+        if (btn.classList.contains('swiper-button-disabled') || 
+            btn.classList.contains('disabled-non-disappear') ||
+            btn.hasAttribute('disabled')) {
+          disabledCount++;
         }
-        mobileParent.classList.remove('active');
-        if (typeof RemoveClassBody === 'function') {
-          RemoveClassBody();
-        }
-      }
-    });
-  });
+      });
 
-  swiper.on('afterInit', () => {
-    const realIndex = swiper.realIndex;
-    controls.forEach((control, index) => {
-      if (index === realIndex) {
-        control.classList.add('active');
+      // Также проверяем, сколько слайдов реально видно
+      const slidesPerView = nestedSwiper.params.slidesPerView || 1;
+      const totalSlides = nestedSwiper.slides ? nestedSwiper.slides.length : 0;
+      
+      // Логика .unactive: скрываем стрелки, если некуда крутить
+      if (totalSlides <= 1 || totalSlides <= slidesPerView || disabledCount >= 2) {
+        activeArrows.classList.add('unactive');
+        nestedSwiper.allowTouchMove = false;
+        if (nestedSwiper.params.simulateTouch !== undefined) {
+          nestedSwiper.params.simulateTouch = false;
+        }
       } else {
-        control.classList.remove('active');
+        activeArrows.classList.remove('unactive');
+        nestedSwiper.allowTouchMove = true;
+        if (nestedSwiper.params.simulateTouch !== undefined) {
+          nestedSwiper.params.simulateTouch = true;
+        }
       }
     });
-  });
+  };
+
+  // Запускаем проверку
+  checkAndUpdateArrows();
 }
