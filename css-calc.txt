@@ -105,10 +105,12 @@ export function anotherThingPrizes() {
  * и добавляет/удаляет класс .unactive в зависимости от количества слайдов
  */
 function updateActiveArrows(parent, mainSwiper, activeIndex) {
-  // Находим контейнер стрелок для текущего слайда
-  const activeArrows = parent.querySelector(
-    `.js--swiper-arrow-prise-container[data-swiper-slide-index="${activeIndex}"]`
-  );
+  // === НАХОДИМ контейнер стрелок по классу стрелки (без data-атрибутов!) ===
+  // Ищем левую стрелку с индексом активного слайда, затем поднимаемся к контейнеру
+  const targetArrow = parent.querySelector(`.js--swiper-arrow-prise-left-${activeIndex}`);
+  if (!targetArrow) return;
+
+  const activeArrows = targetArrow.closest('.js--swiper-arrow-prise-container');
   if (!activeArrows) return;
 
   // Показываем контейнер
@@ -132,15 +134,12 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
     }
 
     // === ЛОГИКА ДОБАВЛЕНИЯ .unactive (как в paginationSlider) ===
-    // Ищем кнопки стрелок внутри этого конкретного контейнера
+    // Считаем, сколько стрелок внутри этого контейнера имеют класс disabled
     const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
-    
-    // Считаем, сколько из них имеют класс disabled (аналог .swiper-button-disabled)
-    // Используем ваш класс .disabled-non-disappear или стандартный .swiper-button-disabled
     let disabledCount = 0;
+    
     arrowButtons.forEach(btn => {
-      if (btn.classList.contains('swiper-button-disabled') || 
-          btn.classList.contains('disabled-non-disappear') && btn.disabled) {
+      if (btn.classList.contains('swiper-button-disabled')) {
         disabledCount++;
       }
     });
@@ -148,12 +147,10 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
     // Если обе стрелки "неактивны" (или слайд всего один) — скрываем контейнер через .unactive
     if (nestedSwiper.slides.length <= 1 || disabledCount >= 2) {
       activeArrows.classList.add('unactive');
-      // Дополнительно отключаем свайп, как в оригинальном плагине
       nestedSwiper.allowTouchMove = false;
       nestedSwiper.params.simulateTouch = false;
     } else {
       activeArrows.classList.remove('unactive');
-      // Включаем свайп обратно, если он был отключён
       nestedSwiper.allowTouchMove = true;
       nestedSwiper.params.simulateTouch = true;
     }
