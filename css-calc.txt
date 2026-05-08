@@ -1,3 +1,81 @@
+/**
+ * Вспомогательная функция: показывает стрелки для активного слайда
+ * и добавляет/удаляет класс .unactive в зависимости от количества слайдов
+ */
+function updateActiveArrows(parent, mainSwiper, activeIndex) {
+  // 1. Находим вложенный слайдер в активном слайде главного
+  const currentSlide = mainSwiper.slides[activeIndex];
+  if (!currentSlide) return;
+
+  const nestedSwiperEl = currentSlide.querySelector('.js--slider-construtor');
+  if (!nestedSwiperEl) return;
+
+  // 2. Читаем data-arrows, чтобы узнать классы стрелок
+  const dataArrowsAttr = nestedSwiperEl.getAttribute('data-arrows');
+  if (!dataArrowsAttr) return;
+
+  let arrowConfig;
+  try {
+    arrowConfig = JSON.parse(dataArrowsAttr);
+  } catch (e) {
+    console.warn('Не удалось распарсить data-arrows:', dataArrowsAttr);
+    return;
+  }
+
+  // 3. Берём класс левой или правой стрелки (любой, чтобы найти контейнер)
+  const arrowClass = arrowConfig.arrow_left || arrowConfig.arrow_right;
+  if (!arrowClass) return;
+
+  // Убираем точку в начале, если она есть (например, ".js--arrow-123" → "js--arrow-123")
+  const className = arrowClass.replace(/^\./, '');
+  
+  // 4. Находим стрелку по классу и поднимаемся к контейнеру
+  const targetArrow = parent.querySelector(`.${className}`);
+  if (!targetArrow) return;
+
+  const activeArrows = targetArrow.closest('.js--swiper-arrow-prise-container');
+  if (!activeArrows) return;
+
+  // 5. Скрываем все контейнеры стрелок, показываем только активный
+  const allContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
+  allContainers.forEach(container => {
+    container.classList.add('display-none');
+  });
+  activeArrows.classList.remove('display-none');
+
+  // 6. Если вложенный слайдер ещё не инициализирован — выходим (он инициализируется позже)
+  if (!nestedSwiperEl.swiper) return;
+  const nestedSwiper = nestedSwiperEl.swiper;
+
+  // 7. Небольшая задержка, чтобы вложенный слайдер успел отрендериться
+  setTimeout(() => {
+    nestedSwiper.update();
+    if (nestedSwiper.params.autoHeight) {
+      nestedSwiper.updateAutoHeight();
+    }
+
+    // === ЛОГИКА .unactive (как в paginationSlider) ===
+    const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
+    let disabledCount = 0;
+    
+    arrowButtons.forEach(btn => {
+      if (btn.classList.contains('swiper-button-disabled')) {
+        disabledCount++;
+      }
+    });
+
+    if (nestedSwiper.slides.length <= 1 || disabledCount >= 2) {
+      activeArrows.classList.add('unactive');
+      nestedSwiper.allowTouchMove = false;
+      nestedSwiper.params.simulateTouch = false;
+    } else {
+      activeArrows.classList.remove('unactive');
+      nestedSwiper.allowTouchMove = true;
+      nestedSwiper.params.simulateTouch = true;
+    }
+  }, 50);
+}
+
 export function anotherThingPrizes() {
   const swiper = new Swiper('.js--another-thing-2025-prizes', {
     init: true,
