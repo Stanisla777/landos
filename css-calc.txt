@@ -1,6 +1,6 @@
 /**
  * Вспомогательная функция: показывает стрелки для активного слайда
- * и добавляет/удаляет класс .unactive в зависимости от количества слайдов
+ * и управляет классом .unactive + свайпом в зависимости от количества слайдов
  */
 function updateActiveArrows(parent, mainSwiper, activeIndex) {
   const currentSlide = mainSwiper.slides[activeIndex];
@@ -16,7 +16,6 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
   try {
     arrowConfig = JSON.parse(dataArrowsAttr);
   } catch (e) {
-    console.warn('Не удалось распарсить data-arrows:', dataArrowsAttr);
     return;
   }
 
@@ -30,77 +29,60 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
   const activeArrows = targetArrow.closest('.js--swiper-arrow-prise-container');
   if (!activeArrows) return;
 
-  // ▼▼▼ Скрываем все контейнеры, показываем активный ▼▼▼
-  const allContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
-  allContainers.forEach(container => {
-    container.classList.add('display-none');
-    // Важно: убираем unactive со всех, чтобы не осталось "залипших" состояний
-    container.classList.remove('unactive');
-  });
+  // 1. Сбрасываем ВСЕ скрытия и залипания ДО любых вычислений
   activeArrows.classList.remove('display-none');
+  activeArrows.classList.remove('unactive');
 
-  // ▼▼▼ Функция проверки с повторными попытками ▼▼▼
-  let attempts = 0;
-  const maxAttempts = 20; // 20 * 100ms = 2 секунды максимум
-  
-  const checkAndUpdateArrows = () => {
-    attempts++;
-    
-    // Если вложенный слайдер ещё не инициализирован — пробуем позже
+  // 2. Ждём отрисовки DOM, чтобы элемент стал видимым и измеримым
+  requestAnimationFrame(() => {
+    // Если вложенный слайдер ещё не инициализирован, пробуем через 100мс (один раз)
     if (!nestedSwiperEl.swiper) {
-      if (attempts < maxAttempts) {
-        setTimeout(checkAndUpdateArrows, 100);
-      } else {
-        console.warn('Не удалось дождаться инициализации вложенного слайдера для слайда', activeIndex);
-      }
+      setTimeout(() => {
+        if (nestedSwiperEl.swiper) {
+          finalizeArrows(activeArrows, nestedSwiperEl.swiper);
+        }
+      }, 100);
       return;
     }
 
-    const nestedSwiper = nestedSwiperEl.swiper;
+    finalizeArrows(activeArrows, nestedSwiperEl.swiper);
+  });
+}
 
-    // Принудительно обновляем слайдер и его размеры
-    nestedSwiper.update();
-    nestedSwiper.updateSize();
-    if (nestedSwiper.params.autoHeight) {
-      nestedSwiper.updateAutoHeight();
-    }
+/**
+ * Отдельная функция финальной проверки, вызывается только когда слайдер готов И видим
+ */
+function finalizeArrows(activeArrows, swiper) {
+  // Принудительно сбрасываем свайп в true перед проверкой (чтобы не застрять в false)
+  swiper.allowTouchMove = true;
 
-    // Даём браузеру время на перерисовку перед проверкой классов
-    requestAnimationFrame(() => {
-      // Проверяем состояние стрелок
-      const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
-      let disabledCount = 0;
-      
-      arrowButtons.forEach(btn => {
-        // Проверяем все возможные классы/состояния disabled
-        if (btn.classList.contains('swiper-button-disabled') || 
-            btn.classList.contains('disabled-non-disappear') ||
-            btn.hasAttribute('disabled')) {
-          disabledCount++;
-        }
-      });
+  // Обновляем размеры (теперь элемент точно видим, update сработает корректно)
+  swiper.update();
+  if (swiper.params.autoHeight) swiper.updateAutoHeight();
 
-      // Также проверяем, сколько слайдов реально видно
-      const slidesPerView = nestedSwiper.params.slidesPerView || 1;
-      const totalSlides = nestedSwiper.slides ? nestedSwiper.slides.length : 0;
-      
-      // Логика .unactive: скрываем стрелки, если некуда крутить
-      if (totalSlides <= 1 || totalSlides <= slidesPerView || disabledCount >= 2) {
-        activeArrows.classList.add('unactive');
-        nestedSwiper.allowTouchMove = false;
-        if (nestedSwiper.params.simulateTouch !== undefined) {
-          nestedSwiper.params.simulateTouch = false;
-        }
-      } else {
-        activeArrows.classList.remove('unactive');
-        nestedSwiper.allowTouchMove = true;
-        if (nestedSwiper.params.simulateTouch !== undefined) {
-          nestedSwiper.params.simulateTouch = true;
-        }
+  // Даём браузеру применить классы disabled после update()
+  setTimeout(() => {
+    const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
+    let disabledCount = 0;
+
+    arrowButtons.forEach(btn => {
+      if (btn.classList.contains('swiper-button-disabled') ||
+          btn.classList.contains('disabled-non-disappear') ||
+          btn.disabled) {
+        disabledCount++;
       }
     });
-  };
 
-  // Запускаем проверку
-  checkAndUpdateArrows();
+    const slidesPerView = swiper.params.slidesPerView || 1;
+    const totalSlides = swiper.slides ? swiper.slides.length : 0;
+
+    // Логика скрытия: 1 слайд ИЛИ все помещаются на экран ИЛИ обе стрелки disabled
+    if (totalSlides <= 1 || totalSlides <= slidesPerView || disabledCount >= 2) {
+      activeArrows.classList.add('unactive');
+      swiper.allowTouchMove = false;
+    } else {
+      activeArrows.classList.remove('unactive');
+      swiper.allowTouchMove = true;
+    }
+  }, 10);
 }
