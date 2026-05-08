@@ -1,91 +1,3 @@
-export function anotherThingPrizes() {
-  const swiper = new Swiper('.js--another-thing-2025-prizes', {
-    init: true,
-    loop: false,
-    slidesPerView: 1,
-    spaceBetween: 16,
-    simulateTouch: false,
-    allowTouchMove: false,
-    autoHeight: true,
-    resizeObserver: true,
-    observeParents: true,
-    observer: true,
-    observeSlideChildren: true,
-
-    pagination: { },
-    navigation: { },
-    breakpoints: {},
-
-    on: {
-      beforeInit: () => {},
-
-      afterInit: function () {
-        const parent = this.el.closest('.js--prizes-container');
-        if (!parent) return;
-
-        // Скрываем все контейнеры стрелок
-        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
-        arrowContainers.forEach(container => {
-          container.classList.add('display-none');
-        });
-
-        // Показываем и обновляем стрелки для текущего слайда
-        updateActiveArrows(parent, this, this.activeIndex);
-      },
-
-      resize: function () {},
-
-      slideChange: function () {
-        const parent = this.el.closest('.js--prizes-container');
-        if (!parent) return;
-
-        // Скрываем все стрелки
-        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
-        arrowContainers.forEach(container => {
-          container.classList.add('display-none');
-        });
-
-        // Показываем и обновляем стрелки для активного слайда
-        updateActiveArrows(parent, this, this.activeIndex);
-      }
-    }
-  });
-
-  // === Обработчики пагинации (без изменений) ===
-  const controls = document.querySelectorAll('.js--anotgher-thing-prizes-pag');
-  controls.forEach(control => {
-    control.addEventListener('click', () => {
-      const slideIndex = parseInt(control.dataset.index, 10);
-      swiper.slideTo(slideIndex);
-      controls.forEach(c => c.classList.remove('active'));
-      control.classList.add('active');
-      const mobileParent = control.closest('.js--pagination-parent-mobile');
-      if (mobileParent) {
-        const mobileBtn = mobileParent.querySelector('.js--pagination-btn-mobile p');
-        const controlText = control.querySelector('p');
-        if (mobileBtn && controlText) {
-          mobileBtn.textContent = controlText.textContent;
-        }
-        mobileParent.classList.remove('active');
-        if (typeof RemoveClassBody === 'function') {
-          RemoveClassBody();
-        }
-      }
-    });
-  });
-
-  swiper.on('afterInit', () => {
-    const realIndex = swiper.realIndex;
-    controls.forEach((control, index) => {
-      if (index === realIndex) {
-        control.classList.add('active');
-      } else {
-        control.classList.remove('active');
-      }
-    });
-  });
-}
-
 /**
  * Вспомогательная функция: показывает стрелки для активного слайда
  * и добавляет/удаляет класс .unactive в зависимости от количества слайдов
@@ -114,7 +26,7 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
   const arrowClass = arrowConfig.arrow_left || arrowConfig.arrow_right;
   if (!arrowClass) return;
 
-  // Убираем точку в начале, если она есть (например, ".js--arrow-123" → "js--arrow-123")
+  // Убираем точку в начале, если она есть
   const className = arrowClass.replace(/^\./, '');
 
   // 4. Находим стрелку по классу и поднимаемся к контейнеру
@@ -131,18 +43,38 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
   });
   activeArrows.classList.remove('display-none');
 
-  // 6. Если вложенный слайдер ещё не инициализирован — выходим (он инициализируется позже)
-  if (!nestedSwiperEl.swiper) return;
-  const nestedSwiper = nestedSwiperEl.swiper;
+  // 6. ▼▼▼ КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: не выходим, если слайдер не готов, а ждём его ▼▼▼
+  if (!nestedSwiperEl.swiper) {
+    // Пробуем ещё раз через 150мс (одна попытка — достаточно для вашего кейса)
+    setTimeout(() => {
+      if (nestedSwiperEl.swiper) {
+        finalizeArrows(nestedSwiperEl.swiper, activeArrows);
+      }
+    }, 150);
+    return;
+  }
 
-  // 7. Небольшая задержка, чтобы вложенный слайдер успел отрендериться
+  // Если слайдер уже готов — обрабатываем сразу
+  finalizeArrows(nestedSwiperEl.swiper, activeArrows);
+}
+
+/**
+ * Отдельная функция: финальная настройка стрелок и свайпа
+ * (вынесена, чтобы не дублировать код для основного и отложенного вызова)
+ */
+function finalizeArrows(swiper, activeArrows) {
+  // 🔑 Важно: сбрасываем allowTouchMove в true перед проверкой
+  // Это чинит свайп, если он был отключён ранее (например, paginationSlider)
+  swiper.allowTouchMove = true;
+  
+  // Обновляем слайдер (теперь он точно видим и инициализирован)
+  swiper.update();
+  if (swiper.params.autoHeight) {
+    swiper.updateAutoHeight();
+  }
+
+  // Небольшая задержка, чтобы браузер успел проставить классы disabled
   setTimeout(() => {
-    nestedSwiper.update();
-    if (nestedSwiper.params.autoHeight) {
-      nestedSwiper.updateAutoHeight();
-    }
-
-    // === ЛОГИКА .unactive (как в paginationSlider) ===
     const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
     let disabledCount = 0;
 
@@ -152,14 +84,29 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
       }
     });
 
-    if (nestedSwiper.slides.length <= 1 || disabledCount >= 2) {
+    // Логика .unactive: скрываем стрелки, если некуда крутить
+    if (swiper.slides.length <= 1 || disabledCount >= 2) {
       activeArrows.classList.add('unactive');
-      nestedSwiper.allowTouchMove = false;
-      nestedSwiper.params.simulateTouch = false;
+      swiper.allowTouchMove = false;
     } else {
       activeArrows.classList.remove('unactive');
-      nestedSwiper.allowTouchMove = true;
-      nestedSwiper.params.simulateTouch = true;
+      swiper.allowTouchMove = true;
     }
   }, 50);
 }
+
+--------------------------------------
+
+// Вместо одного setTimeout — цикл с 3 попытками
+let attempts = 0;
+const tryInit = () => {
+  attempts++;
+  if (nestedSwiperEl.swiper) {
+    finalizeArrows(nestedSwiperEl.swiper, activeArrows);
+    return;
+  }
+  if (attempts < 3) {
+    setTimeout(tryInit, 100);
+  }
+};
+tryInit();
