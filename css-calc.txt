@@ -1,3 +1,89 @@
-if (window.innerWidth > 480 && mobileContainer && mobileContainer.classList.contains('active')) {
-    closeMobileMenu();
+/* eslint-disable */
+import AddClassBody from '../redesign-site/disallow-body-scrolling';
+import RemoveClassBody from '../redesign-site/allow-body-scrolling';
+
+export default function mobilePrize(el) {
+  const btn = document.querySelector('.js--pagination-btn-mobile');
+  const background = document.querySelector('.js--another-thing-background');
+
+  // ▼▼▼ Функция закрытия меню ▼▼▼
+  // Принимает clickedElement (при клике) или null (при resize)
+  const closeMobileMenu = function(clickedElement) {
+    let container, block;
+
+    if (clickedElement) {
+      // Ищем относительно элемента, по которому кликнули
+      container = clickedElement.closest('.js--pagination-parent-mobile');
+      block = clickedElement.closest('.another-thing-2025__block');
+    } else {
+      // При изменении размера ищем уже открытый контейнер
+      container = document.querySelector('.js--pagination-parent-mobile.active');
+      if (container) {
+        block = container.closest('.another-thing-2025__block');
+      }
+    }
+
+    if (!container) return;
+
+    container.classList.remove('active');
+    if (block) {
+      block.setAttribute('style', 'z-index:6;');
+    }
+    RemoveClassBody();
+  };
+
+  // ▼▼▼ Функция открытия меню ▼▼▼
+  const openMobileMenu = function(clickedElement) {
+    const container = clickedElement.closest('.js--pagination-parent-mobile');
+    const block = clickedElement.closest('.another-thing-2025__block');
+
+    if (!container) return;
+
+    container.classList.add('active');
+    if (block) {
+      block.setAttribute('style', 'z-index:10;');
+    }
+    AddClassBody();
+  };
+
+  // ▼▼▼ Обработчик клика по кнопке ▼▼▼
+  if (btn) {
+    btn.onclick = function(e) {
+      const element = e.currentTarget;
+      const container = element.closest('.js--pagination-parent-mobile');
+      if (!container) return;
+
+      if (container.classList.contains('active')) {
+        closeMobileMenu(element);
+      } else {
+        openMobileMenu(element);
+      }
+    };
+  }
+
+  // ▼▼▼ Обработчик клика по фону ▼▼▼
+  if (background) {
+    background.onclick = function(e) {
+      const element = e.currentTarget;
+      const container = element.closest('.js--pagination-parent-mobile');
+      if (container) {
+        closeMobileMenu(element);
+      }
+    };
+  }
+
+  // ▼▼▼ Обработчик изменения размера / ориентации ▼▼▼
+  const handleResize = function() {
+    if (window.innerWidth > 480) {
+      closeMobileMenu(null); // null заставит функцию найти активный контейнер сама
+    }
+  };
+
+  window.addEventListener('resize', handleResize, { passive: true });
+  window.addEventListener('orientationchange', handleResize, { passive: true });
+
+  // ▼▼▼ Проверка при загрузке страницы ▼▼▼
+  if (window.innerWidth > 480) {
+    closeMobileMenu(null);
+  }
 }
