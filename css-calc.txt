@@ -1,6 +1,12 @@
 <template>
   <div class="select-list__wr-search">
-    <div class="select-list__search-item" v-if="answerLink.hasOwnProperty('link')" :data-link="answerLink.link!==''?answerLink.link:''" @click="handleCopyClick">
+    <!-- Копировать ссылку -->
+    <div 
+      class="select-list__search-item" 
+      v-if="links.hasOwnProperty('link')" 
+      :data-link="links.link !== '' ? links.link : ''" 
+      @click="handleCopyClick"
+    >
       <div class="select-list__search-item-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g clip-path="url(#clip0_2191_3622)">
@@ -22,7 +28,13 @@
       <p>Скопировать ссылку</p>
     </div>
 
-    <a class="select-list__search-item" v-if="answerLink.hasOwnProperty('vk')" :href="answerLink.vk!==''?answerLink.vk:''" @click.prevent="handleLinkClick('vk')">
+    <!-- ВКонтакте -->
+    <a 
+      class="select-list__search-item" 
+      v-if="links.hasOwnProperty('vk')" 
+      :href="links.vk !== '' ? links.vk : ''" 
+      @click.prevent="handleLinkClick('vk')"
+    >
       <div class="select-list__search-item-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -33,8 +45,13 @@
       <p>ВКонтакте</p>
     </a>
 
-    <a class="select-list__search-item" v-if="answerLink.hasOwnProperty('tg')"
-       :href="answerLink.tg!==''?answerLink.tg:''" @click.prevent="handleLinkClick('tg')">
+    <!-- Telegram -->
+    <a 
+      class="select-list__search-item" 
+      v-if="links.hasOwnProperty('tg')"
+      :href="links.tg !== '' ? links.tg : ''" 
+      @click.prevent="handleLinkClick('tg')"
+    >
       <div class="select-list__search-item-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -48,8 +65,13 @@
       <p>Telegram</p>
     </a>
 
-    <a class="select-list__search-item" v-if="answerLink.hasOwnProperty('max')"
-       :href="answerLink.max!==''?answerLink.max:''" @click.prevent="handleLinkClick('max')">
+    <!-- MAX (название соцсети, не переменная) -->
+    <a 
+      class="select-list__search-item" 
+      v-if="links.hasOwnProperty('max')"
+      :href="links.max !== '' ? links.max : ''" 
+      @click.prevent="handleLinkClick('max')"
+    >
       <div class="select-list__search-item-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -63,7 +85,13 @@
       <p>MAX</p>
     </a>
 
-    <a class="select-list__search-item" v-if="answerLink.hasOwnProperty('ok')" :href="answerLink.ok!==''?answerLink.ok:''" @click.prevent="handleLinkClick('ok')">
+    <!-- Одноклассники -->
+    <a 
+      class="select-list__search-item" 
+      v-if="links.hasOwnProperty('ok')" 
+      :href="links.ok !== '' ? links.ok : ''" 
+      @click.prevent="handleLinkClick('ok')"
+    >
       <div class="select-list__search-item-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -77,15 +105,25 @@
       <p>Одноклассники</p>
     </a>
 
-    <a class="select-list__search-item" v-if="answerLink.hasOwnProperty('wp')"
-       :href="answerLink.wp!==''?answerLink.wp:''" @click.prevent="handleLinkClick('wp')">
+    <!-- WhatsApp -->
+    <a 
+      class="select-list__search-item" 
+      v-if="links.hasOwnProperty('wp')"
+      :href="links.wp !== '' ? links.wp : ''" 
+      @click.prevent="handleLinkClick('wp')"
+    >
       <div class="select-list__search-item-icon">
         <img src="/dist/img/WhatsApp.svg"/>
       </div>
       <p>WhatsApp</p>
     </a>
 
-    <div class="select-list__search-item" @click="openModalMail" v-if="answerLink.hasOwnProperty('link')">
+    <!-- Email -->
+    <div 
+      class="select-list__search-item" 
+      @click="openModalMail" 
+      v-if="links.hasOwnProperty('link')"
+    >
       <div class="select-list__search-item-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect width="24" height="24" rx="12" fill="#82BF00"></rect>
@@ -98,3 +136,349 @@
     </div>
   </div>
 </template>
+
+<script>
+import store from '@/store' // ← Проверьте путь к вашему store
+import axios from 'axios'
+
+export default {
+  name: 'ShareButtons',
+
+  props: {
+    links: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    },
+    answersToSand: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    },
+    calculatorId: {
+      type: [String, Number],
+      required: true
+    },
+    answersId: {
+      type: [String, Number],
+      default: null
+    },
+    // Для модального окна email (опционально)
+    modalMailRef: {
+      type: Object,
+      default: null
+    }
+  },
+
+  data() {
+    return {
+      isSending: false,
+      lastSentAnswers: null,
+      captcha_id: null,
+      answer_code: null,
+      // Для email-формы, если используются в sendingMailToApi
+      mask_mail: { value: '' },
+      check_agree_advertisement: false,
+      description_after_sand_mail: null
+    }
+  },
+
+  computed: {
+    answerLink() {
+      return store.getters.ANSWERSLINK
+    }
+  },
+
+  methods: {
+    // ===== ПРОВЕРКА ИЗМЕНЕНИЙ =====
+    hasAnswersChanged() {
+      if (!this.lastSentAnswers) return true
+      return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers)
+    },
+
+    // ===== КОПИРОВАНИЕ =====
+    copyLinkManually(link, element) {
+      try {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(link).then(() => {
+            this._updateCopyText(element, 'Скопировано')
+          }).catch(() => {
+            this._fallbackCopy(link, element)
+          })
+        } else {
+          this._fallbackCopy(link, element)
+        }
+      } catch {
+        this._fallbackCopy(link, element)
+      }
+    },
+
+    _fallbackCopy(link, element) {
+      const textarea = document.createElement('textarea')
+      textarea.value = link
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.focus()
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      this._updateCopyText(element, 'Скопировано')
+    },
+
+    _updateCopyText(element, text) {
+      const p = element?.querySelector?.('p')
+      if (p) {
+        const original = p.textContent
+        p.textContent = text
+        setTimeout(() => { p.textContent = original }, 3000)
+      }
+    },
+
+    // ===== ОЖИДАНИЕ ОБНОВЛЕНИЯ ССЫЛКИ =====
+    async waitForAnswerLinkUpdate(oldLink, timeout = 5000) {
+      const start = Date.now()
+      return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+          const currentLink = this.answerLink?.link
+          if (currentLink && currentLink !== oldLink) {
+            clearInterval(interval)
+            resolve()
+          }
+          if (Date.now() - start > timeout) {
+            clearInterval(interval)
+            reject(new Error('Таймаут ожидания обновления answerLink'))
+          }
+        }, 50)
+      })
+    },
+
+    // ===== ОТПРАВКА ДАННЫХ =====
+    async sendResults() {
+      if (this.isSending) return
+      this.isSending = true
+
+      try {
+        const initialLink = this.answerLink?.link || null
+        await this.sendingResult('result')
+        this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand))
+        await this.waitForAnswerLinkUpdate(initialLink)
+      } catch (error) {
+        console.error('Ошибка при отправке результатов:', error)
+        throw error
+      } finally {
+        this.isSending = false
+      }
+    },
+
+    // ===== КАПЧА =====
+    captchaInit(flag) {
+      if (typeof conf === 'undefined' || !conf.smartcaptcha_key) return
+      
+      if (window.smartCaptcha?.render) {
+        this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
+          sitekey: conf.smartcaptcha_key,
+          invisible: true,
+          callback: (token) => {
+            if (flag === 'result') {
+              this.sendingResultToApi(token)
+            } else if (flag === 'mail') {
+              this.sendingMailToApi(token)
+            }
+          }
+        })
+      }
+    },
+
+    sendingResult(flag) {
+      this.captchaInit(flag)
+      if (typeof conf !== 'undefined' && conf.smartcaptcha_key && window.smartCaptcha?.execute) {
+        window.smartCaptcha.execute(this.captcha_id)
+      } else {
+        // Если капча не подключена — отправляем сразу
+        if (flag === 'result') {
+          this.sendingResultToApi(null)
+        }
+      }
+    },
+
+    // ===== API: РЕЗУЛЬТАТЫ =====
+    sendingResultToApi(token) {
+      const data = {
+        calculatorId: this.calculatorId,
+        answers: this.answersToSand,
+        'smart-token': token
+      }
+
+      return new Promise((resolve, reject) => {
+        axios({
+          method: 'post',
+          url: '/api/local/calculator/answers/',
+          headers: {
+            'Content-type': 'application/json; charset=UTF-8',
+            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.() || ''
+          },
+          data
+        })
+        .then((res) => {
+          if (res.data.code === 200 && res.data.result) {
+            store.dispatch('ActionAnswerLink', res.data.result.answerLink)
+            store.dispatch('ActionAnswersId', res.data.result.answersId)
+            store.dispatch('ActionAnswersExpired', 0)
+          }
+          if (res.data.code !== 200 && res.data.description) {
+            store.dispatch('ActionDescriptionAfterSand', res.data.description)
+          }
+          if (res.data.code) {
+            this.answer_code = res.data.code
+          }
+          resolve()
+        })
+        .catch((error) => {
+          if (error.response?.data?.description) {
+            store.dispatch('ActionDescriptionAfterSand', error.response.data.description)
+          }
+          console.error(error)
+          reject(error)
+        })
+      })
+    },
+
+    // ===== API: EMAIL =====
+    sendingMailToApi(token) {
+      // Используем переданный ref или ищем в компоненте
+      const modal = this.modalMailRef || this.$refs?.dataModalMail
+      const modal_main_content = modal?.querySelector?.('.js--modal-main-content')
+      const modal_success_content = modal?.querySelector?.('.js--modal-wr-success')
+      const modal_failed_content = modal?.querySelector?.('.js--modal-wr-failed')
+
+      const data = {
+        userEmail: this.mask_mail?.value || '',
+        'smart-token': token,
+        answersId: this.answersId,
+        agree: this.check_agree_advertisement || false
+      }
+
+      axios({
+        method: 'post',
+        url: '/api/local/calculator/answers/sendmail/',
+        headers: {
+          'Content-type': 'application/json; charset=UTF-8',
+          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.() || ''
+        },
+        data
+      })
+      .then(() => {
+        modal_main_content?.classList?.add('unactive')
+        modal_success_content?.classList?.add('active')
+      })
+      .catch((error) => {
+        if (error.response?.data?.description) {
+          this.description_after_sand_mail = error.response.data.description
+        }
+        console.error(error)
+        modal_main_content?.classList?.add('unactive')
+        modal_failed_content?.classList?.add('active')
+      })
+    },
+
+    // ===== ОБРАБОТЧИКИ КЛИКОВ (оригинальные названия) =====
+    async handleCopyClick(event) {
+      const element = event?.currentTarget
+      try {
+        if (this.hasAnswersChanged()) {
+          await this.sendResults()
+        }
+        if (this.answerLink?.link) {
+          this.copyLinkManually(this.answerLink.link, element)
+        }
+      } catch (error) {
+        console.error('Ошибка при копировании:', error)
+      }
+    },
+
+    async handleLinkClick(type) {
+      try {
+        if (this.hasAnswersChanged()) {
+          await this.sendResults()
+        }
+        const link = this.answerLink?.[type]
+        if (link) {
+          window.open(link, '_blank')
+        }
+      } catch (error) {
+        console.error('Ошибка при открытии ссылки:', error)
+      }
+    },
+
+    // ===== EMAIL МОДАЛКА =====
+    async openModalMail() {
+      try {
+        if (this.hasAnswersChanged()) {
+          await this.sendResults()
+        }
+        this.showModal()
+      } catch (error) {
+        console.error('Ошибка при открытии модального окна:', error)
+      }
+    },
+
+    showModal() {
+      store.dispatch('ActionOpenModalMailStatus', true)
+      // Блокировка скролла — базовая версия
+      document.body.classList.add('body-modal', 'js--open-modal')
+      // Если нужна сложная логика как в AddClassBody — вызовите из родителя через $emit
+    }
+  }
+}
+</script>
+
+<style scoped>
+</style>
+
+-------------------------
+
+<template>
+  <!-- ... ваш код ... -->
+  
+  <ShareButtons
+    :links="answerLink"
+    :answers-to-sand="answersToSand"
+    :calculator-id="calculatorId"
+    :answers-id="answersId"
+    :modal-mail-ref="$refs.dataModalMail"
+    ref="shareComponent"
+  />
+  
+  <!-- Модальное окно (если нужно) -->
+  <div ref="dataModalMail" class="modal-mail">
+    <!-- контент -->
+  </div>
+  
+  <!-- ... ваш код ... -->
+</template>
+
+<script>
+import ShareButtons from '@/components/share/ShareButtons.vue'
+import store from '@/store'
+
+export default {
+  components: { ShareButtons },
+  
+  computed: {
+    answerLink() {
+      return store.getters.ANSWERSLINK
+    },
+    answersToSand() {
+      return store.getters.ANSWERSTOSEND
+    },
+    calculatorId() {
+      return store.getters.CALCULATORID
+    },
+    answersId() {
+      return store.getters.ANSWERSID
+    }
+  }
+  // Всё. Никаких дублирующих методов.
+}
+</script>
