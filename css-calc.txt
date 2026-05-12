@@ -1,193 +1,39 @@
-// Глобальный «реестр» для отложенной инициализации (объявить вне функции)
-const pendingNestedSwipers = new Map();
-
-export function anotherThingPrizes() {
-  const swiper = new Swiper('.js--another-thing-2025-prizes', {
-    init: true,
-    loop: false,
-    slidesPerView: 1,
-    spaceBetween: 16,
-    simulateTouch: false,
-    allowTouchMove: false,
-    autoHeight: true,
-    resizeObserver: true,
-    observeParents: true,
-    observer: true,
-    observeSlideChildren: true,
-
-    pagination: {},
-    navigation: {},
-    breakpoints: {},
-
-    on: {
-      beforeInit: () => {},
-
-      afterInit: function () {
-        const parent = this.el.closest('.js--prizes-container');
-        if (!parent) return;
-
-        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
-        arrowContainers.forEach(container => {
-          container.classList.add('display-none');
-        });
-
-        updateActiveArrows(parent, this, this.activeIndex);
-      },
-
-      resize: function () {},
-
-      slideChange: function () {
-        const parent = this.el.closest('.js--prizes-container');
-        if (!parent) return;
-
-        // 1. Скрываем все стрелки
-        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
-        arrowContainers.forEach(container => {
-          container.classList.add('display-none');
-        });
-
-        // 2. ▼▼▼ ПОДСТРАХОВКА: проверяем, не «созрел» ли отложенный слайдер ▼▼▼
-        const activeIndex = this.activeIndex;
-        if (pendingNestedSwipers.has(activeIndex)) {
-          const pending = pendingNestedSwipers.get(activeIndex);
-          if (pending.nestedSwiperEl.swiper) {
-            finalizeArrows(pending.nestedSwiperEl.swiper, pending.activeArrows);
-            pendingNestedSwipers.delete(activeIndex);
-            return; // Успешно обработали, дальше не идём
+/* eslint-disable */
+import AddClassBody from '../redesign-site/disallow-body-scrolling';
+import RemoveClassBody from '../redesign-site/allow-body-scrolling';
+export default function mobilePrize(el) {
+  const btn = document.querySelector('.js--pagination-btn-mobile');
+  const background = document.querySelector('.js--another-thing-background');
+  if (btn) {
+    btn.onclick = (el) =>{
+      const element = el.currentTarget;
+      if (element.closest('.js--pagination-parent-mobile')) {
+        if (element.closest('.js--pagination-parent-mobile').classList.contains('active')) {
+          element.closest('.js--pagination-parent-mobile').classList.remove('active')
+          if (element.closest('.another-thing-2025__block')) {
+            element.closest('.another-thing-2025__block').setAttribute('style','z-index:6;')
           }
-        }
-
-        // 3. Обычная логика для нового слайда
-        updateActiveArrows(parent, this, activeIndex);
-      }
-    }
-  });
-
-  // === Обработчики пагинации (без изменений) ===
-  const controls = document.querySelectorAll('.js--anotgher-thing-prizes-pag');
-  controls.forEach(control => {
-    control.addEventListener('click', () => {
-      const slideIndex = parseInt(control.dataset.index, 10);
-      swiper.slideTo(slideIndex);
-      controls.forEach(c => c.classList.remove('active'));
-      control.classList.add('active');
-      const mobileParent = control.closest('.js--pagination-parent-mobile');
-      if (mobileParent) {
-        const mobileBtn = mobileParent.querySelector('.js--pagination-btn-mobile p');
-        const controlText = control.querySelector('p');
-        if (mobileBtn && controlText) {
-          mobileBtn.textContent = controlText.textContent;
-        }
-        mobileParent.classList.remove('active');
-        if (typeof RemoveClassBody === 'function') {
           RemoveClassBody();
         }
+        else {
+          element.closest('.js--pagination-parent-mobile').classList.add('active')
+          if (element.closest('.another-thing-2025__block')) {
+            element.closest('.another-thing-2025__block').setAttribute('style','z-index:10;')
+          }
+          AddClassBody();
+        }
       }
-    });
-  });
-
-  swiper.on('afterInit', () => {
-    const realIndex = swiper.realIndex;
-    controls.forEach((control, index) => {
-      if (index === realIndex) {
-        control.classList.add('active');
-      } else {
-        control.classList.remove('active');
-      }
-    });
-  });
-}
-
-/**
- * Вспомогательная функция: показывает стрелки для активного слайда
- */
-function updateActiveArrows(parent, mainSwiper, activeIndex) {
-  const currentSlide = mainSwiper.slides[activeIndex];
-  if (!currentSlide) return;
-
-  const nestedSwiperEl = currentSlide.querySelector('.js--slider-construtor');
-  if (!nestedSwiperEl) return;
-
-  const dataArrowsAttr = nestedSwiperEl.getAttribute('data-arrows');
-  if (!dataArrowsAttr) return;
-
-  let arrowConfig;
-  try {
-    arrowConfig = JSON.parse(dataArrowsAttr);
-  } catch (e) {
-    console.warn('Не удалось распарсить data-arrows:', dataArrowsAttr);
-    return;
+    }
   }
-
-  const arrowClass = arrowConfig.arrow_left || arrowConfig.arrow_right;
-  if (!arrowClass) return;
-
-  const className = arrowClass.replace(/^\./, '');
-  const targetArrow = parent.querySelector(`.${className}`);
-  if (!targetArrow) return;
-
-  const activeArrows = targetArrow.closest('.js--swiper-arrow-prise-container');
-  if (!activeArrows) return;
-
-  // Скрываем все, показываем активный
-  parent.querySelectorAll('.js--swiper-arrow-prise-container').forEach(container => {
-    container.classList.add('display-none');
-  });
-  activeArrows.classList.remove('display-none');
-
-  // ▼▼▼ АГРЕССИВНОЕ ОЖИДАНИЕ (до 5 секунд) ▼▼▼
-  let attempts = 0;
-  const maxAttempts = 25; // 25 * 200ms = 5000ms = 5 секунд
-  const tryInit = () => {
-    attempts++;
-    
-    if (nestedSwiperEl.swiper) {
-      finalizeArrows(nestedSwiperEl.swiper, activeArrows);
-      return;
-    }
-    
-    if (attempts < maxAttempts) {
-      setTimeout(tryInit, 200); // 200мс между попытками
-    } else {
-      // ▼▼▼ НЕ ВЫХОДИМ, А СОХРАНЯЕМ В «РЕЗЕРВ» ▼▼▼
-      console.warn(`[updateActiveArrows] Nested swiper not ready after ${maxAttempts} attempts for slide ${activeIndex}. Saved to pending.`);
-      pendingNestedSwipers.set(activeIndex, { nestedSwiperEl, activeArrows });
-    }
-  };
-  tryInit();
-}
-
-/**
- * Финальная настройка стрелок и свайпа
- */
-function finalizeArrows(swiper, activeArrows) {
-  // Сбрасываем allowTouchMove (чинит свайп после переключений)
-  swiper.allowTouchMove = true;
-  
-  // Обновляем слайдер
-  swiper.update();
-  if (swiper.params.autoHeight) {
-    swiper.updateAutoHeight();
-  }
-
-  // Ждём, пока браузер проставит классы disabled
-  setTimeout(() => {
-    const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
-    let disabledCount = 0;
-
-    arrowButtons.forEach(btn => {
-      if (btn.classList.contains('swiper-button-disabled')) {
-        disabledCount++;
+  if (background) {
+    background.onclick = (el) =>{
+      const element = el.currentTarget;
+      if (element.closest('.js--pagination-parent-mobile')) {
+        element.closest('.js--pagination-parent-mobile').classList.remove('active')
+        if (element.closest('.another-thing-2025__block')) {
+          element.closest('.another-thing-2025__block').setAttribute('style','z-index:6;')
+        }
+        RemoveClassBody();
       }
-    });
-
-    // Логика .unactive
-    if (swiper.slides.length <= 1 || disabledCount >= 2) {
-      activeArrows.classList.add('unactive');
-      swiper.allowTouchMove = false;
-    } else {
-      activeArrows.classList.remove('unactive');
-      swiper.allowTouchMove = true;
     }
-  }, 50);
-}
+  }
