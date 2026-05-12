@@ -1,39 +1,86 @@
 /* eslint-disable */
 import AddClassBody from '../redesign-site/disallow-body-scrolling';
 import RemoveClassBody from '../redesign-site/allow-body-scrolling';
+
 export default function mobilePrize(el) {
   const btn = document.querySelector('.js--pagination-btn-mobile');
   const background = document.querySelector('.js--another-thing-background');
+  const mobileContainer = document.querySelector('.js--pagination-parent-mobile');
+  const prizesBlock = document.querySelector('.another-thing-2025__block');
+
+  // ▼▼▼ ВЫНОСИМ ЛОГИКУ ЗАКРЫТИЯ МЕНЮ В ОТДЕЛЬНУЮ ФУНКЦИЮ ▼▼▼
+  const closeMobileMenu = () => {
+    if (!mobileContainer) return;
+    
+    // Убираем активный класс
+    mobileContainer.classList.remove('active');
+    
+    // Сбрасываем z-index у блока, если он есть
+    if (prizesBlock) {
+      prizesBlock.style.zIndex = '6';
+    }
+    
+    // Разблокируем скролл тела
+    RemoveClassBody();
+  };
+
+  // ▼▼▼ ЛОГИКА ОТКРЫТИЯ МЕНЮ (тоже выносим для чистоты) ▼▼▼
+  const openMobileMenu = () => {
+    if (!mobileContainer) return;
+    
+    mobileContainer.classList.add('active');
+    
+    if (prizesBlock) {
+      prizesBlock.style.zIndex = '10';
+    }
+    
+    AddClassBody();
+  };
+
+  // ▼▼▼ ОБРАБОТЧИК КЛИКА ПО КНОПКЕ ▼▼▼
   if (btn) {
-    btn.onclick = (el) =>{
-      const element = el.currentTarget;
-      if (element.closest('.js--pagination-parent-mobile')) {
-        if (element.closest('.js--pagination-parent-mobile').classList.contains('active')) {
-          element.closest('.js--pagination-parent-mobile').classList.remove('active')
-          if (element.closest('.another-thing-2025__block')) {
-            element.closest('.another-thing-2025__block').setAttribute('style','z-index:6;')
-          }
-          RemoveClassBody();
-        }
-        else {
-          element.closest('.js--pagination-parent-mobile').classList.add('active')
-          if (element.closest('.another-thing-2025__block')) {
-            element.closest('.another-thing-2025__block').setAttribute('style','z-index:10;')
-          }
-          AddClassBody();
-        }
+    btn.onclick = (e) => {
+      e.preventDefault(); // Защита от двойного срабатывания на некоторых устройствах
+      
+      if (!mobileContainer) return;
+      
+      if (mobileContainer.classList.contains('active')) {
+        closeMobileMenu();
+      } else {
+        openMobileMenu();
       }
-    }
+    };
   }
+
+  // ▼▼▼ ОБРАБОТЧИК КЛИКА ПО ЗАТЕМНЕНИЮ (фон) ▼▼▼
   if (background) {
-    background.onclick = (el) =>{
-      const element = el.currentTarget;
-      if (element.closest('.js--pagination-parent-mobile')) {
-        element.closest('.js--pagination-parent-mobile').classList.remove('active')
-        if (element.closest('.another-thing-2025__block')) {
-          element.closest('.another-thing-2025__block').setAttribute('style','z-index:6;')
-        }
-        RemoveClassBody();
-      }
-    }
+    background.onclick = (e) => {
+      e.preventDefault();
+      closeMobileMenu();
+    };
   }
+
+  // ▼▼▼ АВТОМАТИЧЕСКОЕ ЗАКРЫТИЕ ПРИ ИЗМЕНЕНИИ РАЗМЕРА ЭКРАНА ▼▼▼
+  const handleResize = () => {
+    // Если ширина экрана больше 480px И меню открыто — закрываем
+    if (window.innerWidth > 480 && mobileContainer?.classList.contains('active')) {
+      closeMobileMenu();
+    }
+  };
+
+  // Добавляем обработчики с учетом особенностей iOS
+  // resize — основной событие для изменения размера
+  // orientationchange — специфично для мобильных при повороте устройства
+  window.addEventListener('resize', handleResize, { passive: true });
+  window.addEventListener('orientationchange', handleResize, { passive: true });
+
+  // ▼▼▼ ОЧИСТКА СОБЫТИЙ ПРИ ПОВТОРНОМ ВЫЗОВЕ ФУНКЦИИ (опционально, для надёжности) ▼▼▼
+  // Если функция может вызываться несколько раз, лучше убрать старые обработчики
+  // Но для простоты можно оставить как есть, если мобильное меню инициализируется один раз
+
+  // ▼▼▼ ИНИЦИАЛИЗАЦИЯ: проверяем состояние при загрузке (если страница открылась сразу в ландшафте) ▼▼▼
+  // На случай, если пользователь обновил страницу уже в альбомной ориентации
+  if (window.innerWidth > 480 && mobileContainer?.classList.contains('active')) {
+    closeMobileMenu();
+  }
+}
