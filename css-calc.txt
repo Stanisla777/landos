@@ -1,52 +1,115 @@
-if (this.term==='year' && this.field_loan_term!==null) {
-      this.n_calculation = this.field_loan_term * 12
-    }
-    else if (this.term==='month' && this.field_loan_term!==null) {
-      this.n_calculation = this.field_loan_term
-    }
+<div
+                    class="calc-tax-deduc-new__col-input js--number-debt js--tex-deduc-input js--for-clear-field js-mor-required"
+                    ref="fieldTermWrapper">
+                    <input
+                      class="js--normal-field js--field-term"
+                      ref="fieldTerm"
+                      inputmode="numeric"
+                      placeholder="Введите количество"
+                      v-if="term==='year'"
+                      :value="n_calculation ? Math.round(n_calculation / 12) : ''"
+                      @keyup="fieldNotEmpty"
+                      @focus="inpFocus"
+                      @blur="inpBlur"
+                      @input="justNumber(40, $event)"
+                    />
 
-<!-- Годы -->
-<input 
-  class="js--normal-field js--field-term" 
-  ref="fieldTerm" 
-  inputmode="numeric" 
-  placeholder="Введите количество"
-  v-if="term==='year'"
-  :value="field_loan_term && term==='year' ? Math.round(field_loan_term / 12) : ''"
-  @keyup="fieldNotEmpty"
-  @focus="inpFocus" 
-  @blur="inpBlur"
-  @input="justNumber(40, $event)"
-/>
+                    <!-- Месяцы -->
+                    <input
+                      class="js--normal-field js--field-term"
+                      ref="fieldTerm"
+                      inputmode="numeric"
+                      placeholder="Введите количество"
+                      v-if="term==='month'"
+                      :value="n_calculation || ''"
+                      @keyup="fieldNotEmpty"
+                      @focus="inpFocus"
+                      @blur="inpBlur"
+                      @input="justNumber(480, $event)"
+                    />
+                    <div class="calc-tax-deduc-new__input-clear js--clear-calc-tax" @click="clearInputTermAmount"></div>
+                  </div>
 
-<!-- Месяцы -->
-<input 
-  class="js--normal-field js--field-term" 
-  ref="fieldTerm" 
-  inputmode="numeric" 
-  placeholder="Введите количество"
-  v-if="term==='month'"
-  :value="field_loan_term && term==='month' ? field_loan_term : ''"
-  @keyup="fieldNotEmpty"
-  @focus="inpFocus"
-  @blur="inpBlur"
-  @input="justNumber(480, $event)"
-/>
+clearInputTermAmount(e){
+      const element = e.currentTarget;
+      const parent = element.closest('.js--tex-deduc-input');
+      if (parent) {
+        parent.querySelector('input').value='';
+        parent.querySelector('input').classList.remove('active')
+        parent.classList.remove('js-filled')
+        element.classList.remove('active')
+      }
+      this.field_loan_term=null
+      this.field_loan_term_error=''
+      eventBus.emit('emitMonthlyPayment',0)
+      this.$emit('sendButtonResult')
+    },
 
--------------------
+<div data-vue-app="mortgage-repayment-calculator-early"
+                 data-limit-holidays="15000000"
+                 data-period-holidays="4"
+                 data-answers="[{&quot;loanAmount&quot;:&quot;500000&quot;,&quot;dateReceipt&quot;:&quot;[0,2026]&quot;,&quot;bet&quot;:&quot;5&quot;,&quot;term&quot;:&quot;month&quot;,&quot;loanTerm&quot;:&quot;36&quot;,&quot;paymentType&quot;:&quot;annuity&quot;},[]]"
 
-watch: {
-  term() {
-    // Просто пересчитываем n_calculation, без доступа к $refs и .value
-    if (this.field_loan_term !== null) {
-      // Если field_loan_term хранит месяцы (как предполагает :value выше):
-      this.n_calculation = this.term === 'year' 
-        ? this.field_loan_term * 12 
-        : this.field_loan_term;
-    } else {
-      this.n_calculation = 0;
-    }
-    // Если нужно — эмитим событие
-    eventBus.emit('emitMonthlyPayment', this.n_calculation);
+    mounted() {
+    this.$nextTick(() => {
+      // Сначала создаём маску для процентной ставки
+      this.inputRate();
+      // После создания маски — безопасно работать с answers
+      if (this.answers.length > 0 && Object.keys(this.answers[0]).length !== 0) {
+        // Подставляем сумму кредита
+        if (this.answers[0].loanAmount) {
+          this.$refs.inputLoanAmount.value = new Intl.NumberFormat("ru-RU").format(this.answers[0].loanAmount);
+          this.fieldNotEmpty(this.$refs.inputLoanAmount);
+          this.loanAmount(this.$refs.inputLoanAmount);
+        }
+        // Подставляем ставку
+        if (this.answers[0].bet) {
+          const betValue = this.answers[0].bet.toString().replace(/\./g, ',');
+          this.$refs.inputPersent.value = betValue;
+          if (this.mask_interest) {
+            this.mask_interest.value = betValue;
+          }
+          this.maxPercent(this.$refs.inputPersent);
+          this.fieldNotEmpty(this.$refs.inputPersent);
+          this.i_calculation = parseFloat(this.answers[0].bet);
+        }
+        // Подставляем срок кредита и переключаем радиокнопки
+        if (this.answers[0].loanTerm) {
+          if (this.answers[0].term === 'month') {
+            this.$refs.switchTermMonth.click();
+          } else {
+            this.$refs.switchTermYear.click();
+          }
+          const termInput = this.$refs.fieldTermWrapper.querySelector('.js--field-term');
+          if (termInput) {
+            if (this.answers[0].term === 'month') {
+              termInput.value = this.answers[0].loanTerm;
+              this.justNumber(480, termInput);
+            } else {
+              termInput.value = parseInt(this.answers[0].loanTerm, 10) / 12;
+              this.justNumber(40, termInput);
+            }
+            this.fieldNotEmpty(termInput);
+          }
+        }
+        // Подставляем тип платежа
+        if (this.answers[0].paymentType && this.answers[0].paymentType === 'differentiated') {
+          this.$refs.differentiatedCheck.click();
+        }
+        // Обрабатываем дату получения кредита
+        if (this.answers[0].dateReceipt) {
+          let dateReceipt;
+          try {
+            dateReceipt = JSON.parse(this.answers[0].dateReceipt);
+            const time_data_loan = parseInt(dateReceipt[1], 10) * 12 + parseInt(dateReceipt[0], 10) + 1;
+            eventBus.emit('emitTimeDataLoan', time_data_loan);
+            eventBus.emit('emitDateLoanReceipt', dateReceipt);
+          } catch (e) {
+            console.warn('Ошибка парсинга dateReceipt:', e);
+          }
+        }
+      }
+      // Обязательный emit при загрузке
+      eventBus.emit('emitMonthlyPayment', this.n_calculation);
+    });
   },
-},
