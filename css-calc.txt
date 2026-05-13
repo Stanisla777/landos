@@ -26,36 +26,31 @@
   @input="justNumber(480, $event)"
 />
 
+----
 changeMortgageTerm(el) {
   const element = el.currentTarget
-  const oldTerm = this.term; // запоминаем старое значение
   this.term = element.getAttribute('value')
 
+  // 🔁 Пересчитываем только n_calculation, field_loan_term НЕ меняем!
   if (this.field_loan_term !== null) {
-    // 🔁 Конвертируем отображаемое значение при смене единицы
-    if (oldTerm === 'year' && this.term === 'month') {
-      this.field_loan_term = this.field_loan_term * 12;
-    } else if (oldTerm === 'month' && this.term === 'year') {
-      this.field_loan_term = Math.round(this.field_loan_term / 12);
+    if (this.term === 'year') {
+      this.n_calculation = this.field_loan_term * 12
+    } else {
+      this.n_calculation = this.field_loan_term
     }
-    // Пересчитываем n_calculation (всегда в месяцах)
-    this.n_calculation = this.term === 'year' 
-      ? this.field_loan_term * 12 
-      : this.field_loan_term;
   } else {
-    this.n_calculation = 0;
+    this.n_calculation = 0
   }
-  eventBus.emit('emitMonthlyPayment', this.n_calculation);
+  eventBus.emit('emitMonthlyPayment', this.n_calculation)
 },
-
---------------
+------------
 watch: {
   term() {
-    // Пересчитываем n_calculation, но НЕ трогаем DOM
+    // Только пересчёт n_calculation, без доступа к $refs и .value
     if (this.term === 'year' && this.field_loan_term !== null) {
-      this.n_calculation = this.field_loan_term * 12;
+      this.n_calculation = this.field_loan_term * 12
     } else if (this.term === 'month' && this.field_loan_term !== null) {
-      this.n_calculation = this.field_loan_term;
+      this.n_calculation = this.field_loan_term
     }
   },
 },
