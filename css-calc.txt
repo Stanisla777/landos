@@ -1,157 +1,45 @@
-<div class="mor-rep-calculators__row-term">
-                  <div
-                    class="calc-tax-deduc-new__col-input js--number-debt js--tex-deduc-input js--for-clear-field js-mor-required"
-                    ref="fieldTermWrapper">
-                    <input class="js--normal-field js--field-term" ref="fieldTerm" inputmode="numeric" placeholder="Введите количество"
-                       v-if="term==='year'"
-                       @keyup="fieldNotEmpty"
-                       @focus="inpFocus" @blur="inpBlur"
-                       @input="justNumber(40,$event)"/>
-                    <input class="js--normal-field js--field-term" ref="fieldTerm" inputmode="numeric" placeholder="Введите количество"
-                       v-if="term==='month'"
-                       @keyup="fieldNotEmpty"
-                       @focus="inpFocus"
-                       @blur="inpBlur"
-                       @input="justNumber(480,$event)"/>
-                    <div class="calc-tax-deduc-new__input-clear js--clear-calc-tax" @click="clearInputTermAmount"></div>
-                  </div>
-                  <div
-                    class="radio-button-switch mor-rep-calculators__radio-button-switch js--for-clear-field js--for-clear-radio-term">
-                    <div class="radio-button-switch__item">
-                      <input class="js--radio-term" id="fid-1" ref="switchTermYear" type="radio" name="term" value="year" checked="checked"
-                         @change="changeMortgageTerm"/>
-                      <label for="fid-1">Годы</label>
-                    </div>
-                    <div class="radio-button-switch__item mor-rep-calculators__switch">
-                      <input class="js--radio-term"
-                        id="fid-2"
-                        ref="switchTermMonth"
-                        type="radio" name="term"
-                        value="month"
-                        @change="changeMortgageTerm"/>
-                      <label for="fid-2">Месяцы</label>
-                    </div>
-                  </div>
-                </div>
+<!-- Годы -->
+<input 
+  class="js--normal-field js--field-term" 
+  ref="fieldTerm" 
+  inputmode="numeric" 
+  placeholder="Введите количество"
+  v-if="term==='year'"
+  :value="field_loan_term && term==='year' ? Math.round(field_loan_term / 12) : ''"
+  @keyup="fieldNotEmpty"
+  @focus="inpFocus" 
+  @blur="inpBlur"
+  @input="justNumber(40, $event)"
+/>
 
-----------------------------
-methods: {
-fieldNotEmpty(e){
-      let element;
-      if (e instanceof Event) {
-        element = e.currentTarget;
-      }
-      else if(e instanceof HTMLElement ) {
-        element = e;
-      }
-      const parent = element.closest('.js--calc-row-input')
-      if (parent) {
-        if (element.value.length > 0) {
-          parent.querySelector('.js--clear-calc-tax').classList.add('active')
-        }
-        else {
-          parent.querySelector('.js--clear-calc-tax').classList.remove('active')
-        }
-      }
-    },
+<!-- Месяцы -->
+<input 
+  class="js--normal-field js--field-term" 
+  ref="fieldTerm" 
+  inputmode="numeric" 
+  placeholder="Введите количество"
+  v-if="term==='month'"
+  :value="field_loan_term && term==='month' ? field_loan_term : ''"
+  @keyup="fieldNotEmpty"
+  @focus="inpFocus"
+  @blur="inpBlur"
+  @input="justNumber(480, $event)"
+/>
 
+-------------------
 
-inpFocus(el){
-      const element = el.currentTarget;
-      // element.classList.add('active_inp')
-      element.closest('.js--tex-deduc-input').classList.add('input-focus')
-    },
-inpBlur(el){
-      const element = el.currentTarget;
-      element.closest('.js--tex-deduc-input').classList.remove('input-focus')
-    },
-
-justNumber(count,e){
-      let element;
-      if (e instanceof Event) {
-        element = e.currentTarget;
-      }
-      else if(e instanceof HTMLElement ) {
-        element = e;
-      }
-      element.value = element.value.replace(/[^\d]/g, '');
-
-      if (element.value.length > 0 && element.value[0] === '0'){
-        element.value = '1' +  element.value.slice(1)
-      }
-
-      if (parseInt(element.value) > count) {
-        element.value = count
-      }
-      this.field_loan_term_error=element.value
-
-      if (element.value.length===0) {
-        this.field_loan_term=null
-        if (element.closest('.js-mor-required')) {
-          element.closest('.js-mor-required').classList.remove('js-filled')
-          this.$emit('sendButtonResult')
-        }
-        if (element.closest('.js--for-clear-field')) {
-          element.closest('.js--for-clear-field').classList.remove('input_error')
-        }
-        eventBus.emit('emitMonthlyPayment',0)
-      }
-      else if(element.value.length>0) {
-        this.field_loan_term = parseInt(element.value)
-        if (this.term==='year') {
-          this.n_calculation = this.field_loan_term * 12
-        } else {
-          this.n_calculation = this.field_loan_term
-        }
-        if (element.closest('.js-mor-required').classList.contains('js-mor-required')) {
-          element.closest('.js-mor-required').classList.add('js-filled')
-          this.$emit('sendButtonResult')
-        }
-        if (element.closest('.js--container-block')
-          && element.closest('.js--container-block').querySelector('.js--required-error')) {
-          element.closest('.js--container-block').querySelector('.js--required-error').classList.add('display-none')
-        }
-        if (element.closest('.js--for-clear-field')) {
-          element.closest('.js--for-clear-field').classList.remove('input_error')
-        }
-        //передаю срок кредита в родитель и в компоненту Ипотечные каникулы и Досрочное погашение
-        eventBus.emit('emitMonthlyPayment',this.n_calculation)
-      }
-    },
-
-changeMortgageTerm(el) {
-      const element = el.currentTarget
-      this.term = element.getAttribute('value')
-
-      if (this.field_loan_term!==null){
-        if (this.term==='year') {
-          this.n_calculation = this.field_loan_term * 12
-        } else {
-          this.n_calculation = this.field_loan_term
-        }
-      } else {
-        this.n_calculation = 0
-      }
-      //передаю срок кредита в родитель и в компоненту Ипотечные каникулы
-      eventBus.emit('emitMonthlyPayment',this.n_calculation)
-
-    },
-},
-
-watch:{
-    //ошибка, если поле не заполнено воззвращает underfind
-    term() {
-      if (this.term==='year' && this.$refs.fieldTerm.value.length > 2) {
-        this.$refs.fieldTerm.value = parseInt(parseInt(this.$refs.fieldTerm.value) / 12);
-        this.field_loan_term = this.$refs.fieldTerm.value
-      }
-      if (this.term==='year' && this.field_loan_term!==null) {
-        this.n_calculation = this.field_loan_term * 12
-      }
-      else if (this.term==='month' && this.field_loan_term!==null) {
-        this.n_calculation = this.field_loan_term
-      }
-    },
+watch: {
+  term() {
+    // Просто пересчитываем n_calculation, без доступа к $refs и .value
+    if (this.field_loan_term !== null) {
+      // Если field_loan_term хранит месяцы (как предполагает :value выше):
+      this.n_calculation = this.term === 'year' 
+        ? this.field_loan_term * 12 
+        : this.field_loan_term;
+    } else {
+      this.n_calculation = 0;
+    }
+    // Если нужно — эмитим событие
+    eventBus.emit('emitMonthlyPayment', this.n_calculation);
   },
-
-
+},
