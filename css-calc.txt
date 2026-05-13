@@ -1,19 +1,249 @@
-const handleOrientationChange = () => {
-    // Небольшая задержка, чтобы браузер успел применить новые стили
+// Глобальный «реестр» для отложенной инициализации
+const pendingNestedSwipers = new Map();
+
+export function anotherThingPrizes() {
+  // ▼▼▼ ПРОВЕРКА: есть ли элемент для слайдера ▼▼▼
+  const swiperEl = document.querySelector('.js--another-thing-2025-prizes');
+  if (!swiperEl) {
+    // Если элемента нет — просто выходим, не создаём слайдер и не вешаем события
+    return;
+  }
+
+  const swiper = new Swiper('.js--another-thing-2025-prizes', {
+    init: true,
+    loop: false,
+    slidesPerView: 1,
+    spaceBetween: 16,
+    simulateTouch: false,
+    allowTouchMove: false,
+    autoHeight: true,
+    resizeObserver: true,
+    observeParents: true,
+    observer: true,
+    observeSlideChildren: true,
+
+    pagination: {},
+    navigation: {},
+    breakpoints: {},
+
+    on: {
+      beforeInit: () => {},
+
+      afterInit: function () {
+        // Используем this.el — гарантированно валидный элемент внутри колбэка Swiper
+        const parent = this.el && this.el.closest ? this.el.closest('.js--prizes-container') : null;
+        if (!parent) return;
+
+        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
+        arrowContainers.forEach(container => {
+          container.classList.add('display-none');
+        });
+
+        updateActiveArrows(parent, this, this.activeIndex);
+      },
+
+      resize: function () {
+        const parent = this.el && this.el.closest ? this.el.closest('.js--prizes-container') : null;
+        if (parent) {
+          updateActiveArrows(parent, this, this.activeIndex);
+        }
+      },
+
+      slideChange: function () {
+        const parent = this.el && this.el.closest ? this.el.closest('.js--prizes-container') : null;
+        if (!parent) return;
+
+        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
+        arrowContainers.forEach(container => {
+          container.classList.add('display-none');
+        });
+
+        const activeIndex = this.activeIndex;
+        if (pendingNestedSwipers.has(activeIndex)) {
+          const pending = pendingNestedSwipers.get(activeIndex);
+          if (pending.nestedSwiperEl && pending.nestedSwiperEl.swiper) {
+            finalizeArrows(pending.nestedSwiperEl.swiper, pending.activeArrows);
+            pendingNestedSwipers.delete(activeIndex);
+            return;
+          }
+        }
+
+        updateActiveArrows(parent, this, activeIndex);
+      }
+    }
+  });
+
+  // === Обработчики пагинации ===
+  const controls = document.querySelectorAll('.js--anotgher-thing-prizes-pag');
+  controls.forEach(control => {
+    control.addEventListener('click', () => {
+      const slideIndex = parseInt(control.dataset.index, 10);
+      const parent = control.closest('.js--another-thing-container-prizes');
+      swiper.slideTo(slideIndex);
+      controls.forEach(c => c.classList.remove('active'));
+      control.classList.add('active');
+      
+      const mobileParent = control.closest('.js--pagination-parent-mobile');
+      if (mobileParent) {
+        const mobileBtn = mobileParent.querySelector('.js--pagination-btn-mobile p');
+        const controlText = control.querySelector('p');
+        if (mobileBtn && controlText) {
+          mobileBtn.textContent = controlText.textContent;
+        }
+        mobileParent.classList.remove('active');
+        if (typeof RemoveClassBody === 'function') {
+          RemoveClassBody();
+        }
+        const block = control.closest('.another-thing-2025__block');
+        if (block) {
+          block.setAttribute('style', 'z-index:6;');
+        }
+
+        const desctopList = parent && parent.querySelector ? parent.querySelector('.js--pagination-parent-desctop') : null;
+        if (desctopList) {
+          const activeControl = desctopList.querySelector(`.js--anotgher-thing-prizes-pag[data-index="${slideIndex}"]`);
+          if (activeControl) activeControl.classList.add('active');
+        }
+      }
+      else {
+        const controlText = control.querySelector('p');
+        if (controlText && parent && parent.querySelector) {
+          const mobileBtn = parent.querySelector('.js--pagination-btn-mobile p');
+          if (mobileBtn) {
+            mobileBtn.textContent = controlText.textContent;
+          }
+          const mobileList = parent.querySelector('.js--pagination-body-mobile');
+          if (mobileList) {
+            const activeControl = mobileList.querySelector(`.js--anotgher-thing-prizes-pag[data-index="${slideIndex}"]`);
+            if (activeControl) activeControl.classList.add('active');
+          }
+        }
+      }
+    });
+  });
+
+  swiper.on('afterInit', () => {
+    const realIndex = swiper.realIndex;
+    controls.forEach((control, index) => {
+      if (index === realIndex) {
+        control.classList.add('active');
+      } else {
+        control.classList.remove('active');
+      }
+    });
+  });
+
+  // ▼▼▼ Обработчик поворота экрана — только если swiper валиден ▼▼▼
+  const handleOrientationChange = () => {
+    // Проверяем, что swiper и его элемент существуют и имеют нужные методы
+    if (!swiper || !swiper.el || typeof swiper.el.closest !== 'function') {
+      return;
+    }
+
     setTimeout(() => {
       const parent = swiper.el.closest('.js--prizes-container');
       if (!parent) return;
-
-      // Принудительно обновляем стрелки для текущего активного слайда
+      
       updateActiveArrows(parent, swiper, swiper.activeIndex);
-
-      // Также обновляем главный слайдер (на случай, если автовысота изменилась)
+      
       swiper.update();
-      if (swiper.params.autoHeight) {
+      if (swiper.params && swiper.params.autoHeight) {
         swiper.updateAutoHeight();
       }
     }, 100);
   };
 
-swiper-sliders.js:2166 Uncaught TypeError: swiper.el.closest is not a function
-    at swiper-sliders.js:2166:32
+  // Вешаем обработчики только если слайдер успешно создан
+  window.addEventListener('resize', handleOrientationChange, { passive: true });
+  window.addEventListener('orientationchange', handleOrientationChange, { passive: true });
+}
+
+/**
+ * Вспомогательная функция: показывает стрелки для активного слайда
+ */
+function updateActiveArrows(parent, mainSwiper, activeIndex) {
+  // Проверка на валидность mainSwiper
+  if (!mainSwiper || !mainSwiper.slides) return;
+
+  const currentSlide = mainSwiper.slides[activeIndex];
+  if (!currentSlide) return;
+
+  const nestedSwiperEl = currentSlide.querySelector('.js--slider-construtor');
+  if (!nestedSwiperEl) return;
+
+  const dataArrowsAttr = nestedSwiperEl.getAttribute('data-arrows');
+  if (!dataArrowsAttr) return;
+
+  let arrowConfig;
+  try {
+    arrowConfig = JSON.parse(dataArrowsAttr);
+  } catch (e) {
+    console.warn('Не удалось распарсить data-arrows:', dataArrowsAttr);
+    return;
+  }
+
+  const arrowClass = arrowConfig.arrow_left || arrowConfig.arrow_right;
+  if (!arrowClass) return;
+
+  const className = arrowClass.replace(/^\./, '');
+  const targetArrow = parent.querySelector(`.${className}`);
+  if (!targetArrow) return;
+
+  const activeArrows = targetArrow.closest('.js--swiper-arrow-prise-container');
+  if (!activeArrows) return;
+
+  parent.querySelectorAll('.js--swiper-arrow-prise-container').forEach(container => {
+    container.classList.add('display-none');
+  });
+  activeArrows.classList.remove('display-none');
+
+  let attempts = 0;
+  const maxAttempts = 25;
+  const tryInit = () => {
+    attempts++;
+
+    if (nestedSwiperEl && nestedSwiperEl.swiper) {
+      finalizeArrows(nestedSwiperEl.swiper, activeArrows);
+      return;
+    }
+
+    if (attempts < maxAttempts) {
+      setTimeout(tryInit, 200);
+    } else {
+      pendingNestedSwipers.set(activeIndex, { nestedSwiperEl, activeArrows });
+    }
+  };
+  tryInit();
+}
+
+/**
+ * Финальная настройка стрелок и свайпа
+ */
+function finalizeArrows(swiper, activeArrows) {
+  if (!swiper) return;
+
+  swiper.allowTouchMove = true;
+  swiper.update();
+  if (swiper.params && swiper.params.autoHeight) {
+    swiper.updateAutoHeight();
+  }
+
+  setTimeout(() => {
+    const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
+    let disabledCount = 0;
+
+    arrowButtons.forEach(btn => {
+      if (btn.classList.contains('swiper-button-disabled')) {
+        disabledCount++;
+      }
+    });
+
+    if (swiper.slides && (swiper.slides.length <= 1 || disabledCount >= 2)) {
+      activeArrows.classList.add('unactive');
+      swiper.allowTouchMove = false;
+    } else {
+      activeArrows.classList.remove('unactive');
+      swiper.allowTouchMove = true;
+    }
+  }, 50);
+}
