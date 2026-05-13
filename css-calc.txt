@@ -34,7 +34,13 @@ export function anotherThingPrizes() {
         updateActiveArrows(parent, this, this.activeIndex);
       },
 
-      resize: function () {},
+      resize: function () {
+        // При ресайзе главного слайдера тоже обновляем стрелки
+        const parent = this.el.closest('.js--prizes-container');
+        if (parent) {
+          updateActiveArrows(parent, this, this.activeIndex);
+        }
+      },
 
       slideChange: function () {
         const parent = this.el.closest('.js--prizes-container');
@@ -53,7 +59,7 @@ export function anotherThingPrizes() {
           if (pending.nestedSwiperEl.swiper) {
             finalizeArrows(pending.nestedSwiperEl.swiper, pending.activeArrows);
             pendingNestedSwipers.delete(activeIndex);
-            return; // Успешно обработали, дальше не идём
+            return;
           }
         }
 
@@ -68,11 +74,11 @@ export function anotherThingPrizes() {
   controls.forEach(control => {
     control.addEventListener('click', () => {
       const slideIndex = parseInt(control.dataset.index, 10);
-      const parent = control.closest('.js--another-thing-container-prizes')
+      const parent = control.closest('.js--another-thing-container-prizes');
       swiper.slideTo(slideIndex);
       controls.forEach(c => c.classList.remove('active'));
       control.classList.add('active');
-      //если кликанье в мобилке
+      
       const mobileParent = control.closest('.js--pagination-parent-mobile');
       if (mobileParent) {
         const mobileBtn = mobileParent.querySelector('.js--pagination-btn-mobile p');
@@ -91,24 +97,20 @@ export function anotherThingPrizes() {
 
         const desctopList = parent.querySelector('.js--pagination-parent-desctop');
         if (desctopList) {
-          desctopList.querySelector(`.js--anotgher-thing-prizes-pag[data-index="${slideIndex}"]`).classList.add('active')
+          desctopList.querySelector(`.js--anotgher-thing-prizes-pag[data-index="${slideIndex}"]`).classList.add('active');
         }
-
-
       }
       else {
         const controlText = control.querySelector('p');
-
-        if(controlText && parent) {
+        if (controlText && parent) {
           const mobileBtn = parent.querySelector('.js--pagination-btn-mobile p');
           if (mobileBtn) {
             mobileBtn.textContent = controlText.textContent;
           }
           const mobileList = parent.querySelector('.js--pagination-body-mobile');
           if (mobileList) {
-            mobileList.querySelector(`.js--anotgher-thing-prizes-pag[data-index="${slideIndex}"]`).classList.add('active')
+            mobileList.querySelector(`.js--anotgher-thing-prizes-pag[data-index="${slideIndex}"]`).classList.add('active');
           }
-
         }
       }
     });
@@ -124,6 +126,28 @@ export function anotherThingPrizes() {
       }
     });
   });
+
+  // ▼▼▼ НОВОЕ: Обработчик поворота экрана / изменения размера ▼▼▼
+  const handleOrientationChange = () => {
+    // Небольшая задержка, чтобы браузер успел применить новые стили
+    setTimeout(() => {
+      const parent = swiper.el.closest('.js--prizes-container');
+      if (!parent) return;
+      
+      // Принудительно обновляем стрелки для текущего активного слайда
+      updateActiveArrows(parent, swiper, swiper.activeIndex);
+      
+      // Также обновляем главный слайдер (на случай, если автовысота изменилась)
+      swiper.update();
+      if (swiper.params.autoHeight) {
+        swiper.updateAutoHeight();
+      }
+    }, 100);
+  };
+
+  // Добавляем обработчики с passive: true для производительности
+  window.addEventListener('resize', handleOrientationChange, { passive: true });
+  window.addEventListener('orientationchange', handleOrientationChange, { passive: true });
 }
 
 /**
@@ -163,9 +187,8 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
   });
   activeArrows.classList.remove('display-none');
 
-
   let attempts = 0;
-  const maxAttempts = 25; // 25 * 200ms = 5000ms = 5 секунд
+  const maxAttempts = 25;
   const tryInit = () => {
     attempts++;
 
@@ -175,7 +198,7 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
     }
 
     if (attempts < maxAttempts) {
-      setTimeout(tryInit, 200); // 200мс между попытками
+      setTimeout(tryInit, 200);
     } else {
       pendingNestedSwipers.set(activeIndex, { nestedSwiperEl, activeArrows });
     }
@@ -187,7 +210,7 @@ function updateActiveArrows(parent, mainSwiper, activeIndex) {
  * Финальная настройка стрелок и свайпа
  */
 function finalizeArrows(swiper, activeArrows) {
-  // Сбрасываем allowTouchMove (чинит свайп после переключений)
+  // Сбрасываем allowTouchMove
   swiper.allowTouchMove = true;
 
   // Обновляем слайдер
