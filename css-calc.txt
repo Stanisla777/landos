@@ -1,249 +1,157 @@
-// Глобальный «реестр» для отложенной инициализации
-const pendingNestedSwipers = new Map();
+<div class="mor-rep-calculators__row-term">
+                  <div
+                    class="calc-tax-deduc-new__col-input js--number-debt js--tex-deduc-input js--for-clear-field js-mor-required"
+                    ref="fieldTermWrapper">
+                    <input class="js--normal-field js--field-term" ref="fieldTerm" inputmode="numeric" placeholder="Введите количество"
+                       v-if="term==='year'"
+                       @keyup="fieldNotEmpty"
+                       @focus="inpFocus" @blur="inpBlur"
+                       @input="justNumber(40,$event)"/>
+                    <input class="js--normal-field js--field-term" ref="fieldTerm" inputmode="numeric" placeholder="Введите количество"
+                       v-if="term==='month'"
+                       @keyup="fieldNotEmpty"
+                       @focus="inpFocus"
+                       @blur="inpBlur"
+                       @input="justNumber(480,$event)"/>
+                    <div class="calc-tax-deduc-new__input-clear js--clear-calc-tax" @click="clearInputTermAmount"></div>
+                  </div>
+                  <div
+                    class="radio-button-switch mor-rep-calculators__radio-button-switch js--for-clear-field js--for-clear-radio-term">
+                    <div class="radio-button-switch__item">
+                      <input class="js--radio-term" id="fid-1" ref="switchTermYear" type="radio" name="term" value="year" checked="checked"
+                         @change="changeMortgageTerm"/>
+                      <label for="fid-1">Годы</label>
+                    </div>
+                    <div class="radio-button-switch__item mor-rep-calculators__switch">
+                      <input class="js--radio-term"
+                        id="fid-2"
+                        ref="switchTermMonth"
+                        type="radio" name="term"
+                        value="month"
+                        @change="changeMortgageTerm"/>
+                      <label for="fid-2">Месяцы</label>
+                    </div>
+                  </div>
+                </div>
 
-export function anotherThingPrizes() {
-  // ▼▼▼ ПРОВЕРКА: есть ли элемент для слайдера ▼▼▼
-  const swiperEl = document.querySelector('.js--another-thing-2025-prizes');
-  if (!swiperEl) {
-    // Если элемента нет — просто выходим, не создаём слайдер и не вешаем события
-    return;
-  }
-
-  const swiper = new Swiper('.js--another-thing-2025-prizes', {
-    init: true,
-    loop: false,
-    slidesPerView: 1,
-    spaceBetween: 16,
-    simulateTouch: false,
-    allowTouchMove: false,
-    autoHeight: true,
-    resizeObserver: true,
-    observeParents: true,
-    observer: true,
-    observeSlideChildren: true,
-
-    pagination: {},
-    navigation: {},
-    breakpoints: {},
-
-    on: {
-      beforeInit: () => {},
-
-      afterInit: function () {
-        // Используем this.el — гарантированно валидный элемент внутри колбэка Swiper
-        const parent = this.el && this.el.closest ? this.el.closest('.js--prizes-container') : null;
-        if (!parent) return;
-
-        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
-        arrowContainers.forEach(container => {
-          container.classList.add('display-none');
-        });
-
-        updateActiveArrows(parent, this, this.activeIndex);
-      },
-
-      resize: function () {
-        const parent = this.el && this.el.closest ? this.el.closest('.js--prizes-container') : null;
-        if (parent) {
-          updateActiveArrows(parent, this, this.activeIndex);
-        }
-      },
-
-      slideChange: function () {
-        const parent = this.el && this.el.closest ? this.el.closest('.js--prizes-container') : null;
-        if (!parent) return;
-
-        const arrowContainers = parent.querySelectorAll('.js--swiper-arrow-prise-container');
-        arrowContainers.forEach(container => {
-          container.classList.add('display-none');
-        });
-
-        const activeIndex = this.activeIndex;
-        if (pendingNestedSwipers.has(activeIndex)) {
-          const pending = pendingNestedSwipers.get(activeIndex);
-          if (pending.nestedSwiperEl && pending.nestedSwiperEl.swiper) {
-            finalizeArrows(pending.nestedSwiperEl.swiper, pending.activeArrows);
-            pendingNestedSwipers.delete(activeIndex);
-            return;
-          }
-        }
-
-        updateActiveArrows(parent, this, activeIndex);
+----------------------------
+methods: {
+fieldNotEmpty(e){
+      let element;
+      if (e instanceof Event) {
+        element = e.currentTarget;
       }
-    }
-  });
-
-  // === Обработчики пагинации ===
-  const controls = document.querySelectorAll('.js--anotgher-thing-prizes-pag');
-  controls.forEach(control => {
-    control.addEventListener('click', () => {
-      const slideIndex = parseInt(control.dataset.index, 10);
-      const parent = control.closest('.js--another-thing-container-prizes');
-      swiper.slideTo(slideIndex);
-      controls.forEach(c => c.classList.remove('active'));
-      control.classList.add('active');
-      
-      const mobileParent = control.closest('.js--pagination-parent-mobile');
-      if (mobileParent) {
-        const mobileBtn = mobileParent.querySelector('.js--pagination-btn-mobile p');
-        const controlText = control.querySelector('p');
-        if (mobileBtn && controlText) {
-          mobileBtn.textContent = controlText.textContent;
+      else if(e instanceof HTMLElement ) {
+        element = e;
+      }
+      const parent = element.closest('.js--calc-row-input')
+      if (parent) {
+        if (element.value.length > 0) {
+          parent.querySelector('.js--clear-calc-tax').classList.add('active')
         }
-        mobileParent.classList.remove('active');
-        if (typeof RemoveClassBody === 'function') {
-          RemoveClassBody();
-        }
-        const block = control.closest('.another-thing-2025__block');
-        if (block) {
-          block.setAttribute('style', 'z-index:6;');
-        }
-
-        const desctopList = parent && parent.querySelector ? parent.querySelector('.js--pagination-parent-desctop') : null;
-        if (desctopList) {
-          const activeControl = desctopList.querySelector(`.js--anotgher-thing-prizes-pag[data-index="${slideIndex}"]`);
-          if (activeControl) activeControl.classList.add('active');
+        else {
+          parent.querySelector('.js--clear-calc-tax').classList.remove('active')
         }
       }
-      else {
-        const controlText = control.querySelector('p');
-        if (controlText && parent && parent.querySelector) {
-          const mobileBtn = parent.querySelector('.js--pagination-btn-mobile p');
-          if (mobileBtn) {
-            mobileBtn.textContent = controlText.textContent;
-          }
-          const mobileList = parent.querySelector('.js--pagination-body-mobile');
-          if (mobileList) {
-            const activeControl = mobileList.querySelector(`.js--anotgher-thing-prizes-pag[data-index="${slideIndex}"]`);
-            if (activeControl) activeControl.classList.add('active');
-          }
-        }
-      }
-    });
-  });
+    },
 
-  swiper.on('afterInit', () => {
-    const realIndex = swiper.realIndex;
-    controls.forEach((control, index) => {
-      if (index === realIndex) {
-        control.classList.add('active');
+
+inpFocus(el){
+      const element = el.currentTarget;
+      // element.classList.add('active_inp')
+      element.closest('.js--tex-deduc-input').classList.add('input-focus')
+    },
+inpBlur(el){
+      const element = el.currentTarget;
+      element.closest('.js--tex-deduc-input').classList.remove('input-focus')
+    },
+
+justNumber(count,e){
+      let element;
+      if (e instanceof Event) {
+        element = e.currentTarget;
+      }
+      else if(e instanceof HTMLElement ) {
+        element = e;
+      }
+      element.value = element.value.replace(/[^\d]/g, '');
+
+      if (element.value.length > 0 && element.value[0] === '0'){
+        element.value = '1' +  element.value.slice(1)
+      }
+
+      if (parseInt(element.value) > count) {
+        element.value = count
+      }
+      this.field_loan_term_error=element.value
+
+      if (element.value.length===0) {
+        this.field_loan_term=null
+        if (element.closest('.js-mor-required')) {
+          element.closest('.js-mor-required').classList.remove('js-filled')
+          this.$emit('sendButtonResult')
+        }
+        if (element.closest('.js--for-clear-field')) {
+          element.closest('.js--for-clear-field').classList.remove('input_error')
+        }
+        eventBus.emit('emitMonthlyPayment',0)
+      }
+      else if(element.value.length>0) {
+        this.field_loan_term = parseInt(element.value)
+        if (this.term==='year') {
+          this.n_calculation = this.field_loan_term * 12
+        } else {
+          this.n_calculation = this.field_loan_term
+        }
+        if (element.closest('.js-mor-required').classList.contains('js-mor-required')) {
+          element.closest('.js-mor-required').classList.add('js-filled')
+          this.$emit('sendButtonResult')
+        }
+        if (element.closest('.js--container-block')
+          && element.closest('.js--container-block').querySelector('.js--required-error')) {
+          element.closest('.js--container-block').querySelector('.js--required-error').classList.add('display-none')
+        }
+        if (element.closest('.js--for-clear-field')) {
+          element.closest('.js--for-clear-field').classList.remove('input_error')
+        }
+        //передаю срок кредита в родитель и в компоненту Ипотечные каникулы и Досрочное погашение
+        eventBus.emit('emitMonthlyPayment',this.n_calculation)
+      }
+    },
+
+changeMortgageTerm(el) {
+      const element = el.currentTarget
+      this.term = element.getAttribute('value')
+
+      if (this.field_loan_term!==null){
+        if (this.term==='year') {
+          this.n_calculation = this.field_loan_term * 12
+        } else {
+          this.n_calculation = this.field_loan_term
+        }
       } else {
-        control.classList.remove('active');
+        this.n_calculation = 0
       }
-    });
-  });
+      //передаю срок кредита в родитель и в компоненту Ипотечные каникулы
+      eventBus.emit('emitMonthlyPayment',this.n_calculation)
 
-  // ▼▼▼ Обработчик поворота экрана — только если swiper валиден ▼▼▼
-  const handleOrientationChange = () => {
-    // Проверяем, что swiper и его элемент существуют и имеют нужные методы
-    if (!swiper || !swiper.el || typeof swiper.el.closest !== 'function') {
-      return;
-    }
+    },
+},
 
-    setTimeout(() => {
-      const parent = swiper.el.closest('.js--prizes-container');
-      if (!parent) return;
-      
-      updateActiveArrows(parent, swiper, swiper.activeIndex);
-      
-      swiper.update();
-      if (swiper.params && swiper.params.autoHeight) {
-        swiper.updateAutoHeight();
+watch:{
+    //ошибка, если поле не заполнено воззвращает underfind
+    term() {
+      if (this.term==='year' && this.$refs.fieldTerm.value.length > 2) {
+        this.$refs.fieldTerm.value = parseInt(parseInt(this.$refs.fieldTerm.value) / 12);
+        this.field_loan_term = this.$refs.fieldTerm.value
       }
-    }, 100);
-  };
-
-  // Вешаем обработчики только если слайдер успешно создан
-  window.addEventListener('resize', handleOrientationChange, { passive: true });
-  window.addEventListener('orientationchange', handleOrientationChange, { passive: true });
-}
-
-/**
- * Вспомогательная функция: показывает стрелки для активного слайда
- */
-function updateActiveArrows(parent, mainSwiper, activeIndex) {
-  // Проверка на валидность mainSwiper
-  if (!mainSwiper || !mainSwiper.slides) return;
-
-  const currentSlide = mainSwiper.slides[activeIndex];
-  if (!currentSlide) return;
-
-  const nestedSwiperEl = currentSlide.querySelector('.js--slider-construtor');
-  if (!nestedSwiperEl) return;
-
-  const dataArrowsAttr = nestedSwiperEl.getAttribute('data-arrows');
-  if (!dataArrowsAttr) return;
-
-  let arrowConfig;
-  try {
-    arrowConfig = JSON.parse(dataArrowsAttr);
-  } catch (e) {
-    console.warn('Не удалось распарсить data-arrows:', dataArrowsAttr);
-    return;
-  }
-
-  const arrowClass = arrowConfig.arrow_left || arrowConfig.arrow_right;
-  if (!arrowClass) return;
-
-  const className = arrowClass.replace(/^\./, '');
-  const targetArrow = parent.querySelector(`.${className}`);
-  if (!targetArrow) return;
-
-  const activeArrows = targetArrow.closest('.js--swiper-arrow-prise-container');
-  if (!activeArrows) return;
-
-  parent.querySelectorAll('.js--swiper-arrow-prise-container').forEach(container => {
-    container.classList.add('display-none');
-  });
-  activeArrows.classList.remove('display-none');
-
-  let attempts = 0;
-  const maxAttempts = 25;
-  const tryInit = () => {
-    attempts++;
-
-    if (nestedSwiperEl && nestedSwiperEl.swiper) {
-      finalizeArrows(nestedSwiperEl.swiper, activeArrows);
-      return;
-    }
-
-    if (attempts < maxAttempts) {
-      setTimeout(tryInit, 200);
-    } else {
-      pendingNestedSwipers.set(activeIndex, { nestedSwiperEl, activeArrows });
-    }
-  };
-  tryInit();
-}
-
-/**
- * Финальная настройка стрелок и свайпа
- */
-function finalizeArrows(swiper, activeArrows) {
-  if (!swiper) return;
-
-  swiper.allowTouchMove = true;
-  swiper.update();
-  if (swiper.params && swiper.params.autoHeight) {
-    swiper.updateAutoHeight();
-  }
-
-  setTimeout(() => {
-    const arrowButtons = activeArrows.querySelectorAll('.swiper-slide-arrow');
-    let disabledCount = 0;
-
-    arrowButtons.forEach(btn => {
-      if (btn.classList.contains('swiper-button-disabled')) {
-        disabledCount++;
+      if (this.term==='year' && this.field_loan_term!==null) {
+        this.n_calculation = this.field_loan_term * 12
       }
-    });
+      else if (this.term==='month' && this.field_loan_term!==null) {
+        this.n_calculation = this.field_loan_term
+      }
+    },
+  },
 
-    if (swiper.slides && (swiper.slides.length <= 1 || disabledCount >= 2)) {
-      activeArrows.classList.add('unactive');
-      swiper.allowTouchMove = false;
-    } else {
-      activeArrows.classList.remove('unactive');
-      swiper.allowTouchMove = true;
-    }
-  }, 50);
-}
+
