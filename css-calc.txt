@@ -1,56 +1,17 @@
-<!-- Годы -->
-<input 
-  class="js--normal-field js--field-term" 
-  ref="fieldTerm" 
-  inputmode="numeric" 
-  placeholder="Введите количество"
-  v-if="term==='year'"
-  :value="field_loan_term || ''"
-  @keyup="fieldNotEmpty"
-  @focus="inpFocus" 
-  @blur="inpBlur"
-  @input="justNumber(40, $event)"
-/>
-
-<!-- Месяцы -->
-<input 
-  class="js--normal-field js--field-term" 
-  ref="fieldTerm" 
-  inputmode="numeric" 
-  placeholder="Введите количество"
-  v-if="term==='month'"
-  :value="field_loan_term || ''"
-  @keyup="fieldNotEmpty"
-  @focus="inpFocus"
-  @blur="inpBlur"
-  @input="justNumber(480, $event)"
-/>
-
-----
-changeMortgageTerm(el) {
-  const element = el.currentTarget
-  this.term = element.getAttribute('value')
-
-  // 🔁 Пересчитываем только n_calculation, field_loan_term НЕ меняем!
-  if (this.field_loan_term !== null) {
-    if (this.term === 'year') {
-      this.n_calculation = this.field_loan_term * 12
-    } else {
-      this.n_calculation = this.field_loan_term
-    }
-  } else {
-    this.n_calculation = 0
-  }
-  eventBus.emit('emitMonthlyPayment', this.n_calculation)
-},
-------------
-watch: {
-  term() {
-    // Только пересчёт n_calculation, без доступа к $refs и .value
-    if (this.term === 'year' && this.field_loan_term !== null) {
-      this.n_calculation = this.field_loan_term * 12
-    } else if (this.term === 'month' && this.field_loan_term !== null) {
-      this.n_calculation = this.field_loan_term
-    }
-  },
-},
+.then((res) => {
+            if (res.data.code === 200 && res.data.result) {
+              // Сохраняем ссылки в Vuex
+              store.dispatch('ActionAnswerLink', res.data.result.answerLink);
+              store.dispatch('ActionAnswersId', res.data.result.answersId);
+              store.dispatch('ActionAnswersExpired',0)
+            }
+            if (res.data.code!==200) {
+              if (res.data.description) {
+                store.dispatch('ActionDescriptionAfterSand', res.data.description);
+              }
+            }
+            if (res.data.code) {
+              this.answer_code = res.data.code;
+            }
+            resolve();
+          })
