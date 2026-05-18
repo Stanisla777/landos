@@ -1,138 +1,177 @@
-<div
-                class="select-list__selection-window mor-rep-calculators__selection-window-share modal-special-styles">
-                <div class="select-list__wr-search">
-                  <div class="select-list__search-item"
-                     v-if="answerLink.link!==undefined&&answerLink.link!==''"
-                     :data-link="answerLink.link" @click="copyLink">
-                    <div class="select-list__search-item-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <g clip-path="url(#clip0_2191_3622)">
-                          <circle cx="12" cy="12" r="12" fill="#C8C8CB"></circle>
-                          <path fill-rule="evenodd" clip-rule="evenodd"
-                                d="M14.0455 7.5H8.95455C8.15122 7.5 7.5 8.05103 7.5 8.73077V14.2692C7.5 14.949 8.15122 15.5 8.95455 15.5H14.0455C14.8488 15.5 15.5 14.949 15.5 14.2692V8.73077C15.5 8.05103 14.8488 7.5 14.0455 7.5Z"
-                                fill="white"></path>
-                          <path fill-rule="evenodd" clip-rule="evenodd"
-                                d="M16.25 9.25V14.5909C16.25 15.4626 15.3665 16.25 14.1667 16.25H9.25V16.75H14.1667C15.5442 16.75 16.75 15.8279 16.75 14.5909V9.25H16.25Z"
-                                fill="white"></path>
-                        </g>
-                        <defs>
-                          <clippath id="clip0_2191_3622">
-                            <rect width="24" height="24" fill="white"></rect>
-                          </clippath>
-                        </defs>
-                      </svg>
-                    </div>
-                    <p>{{ socialLabels.copy }}</p>
-                  </div>
-                  <a class="select-list__search-item"
-                     target="_blank"
-                     :href="answerLink.vk"
-                     v-if="answerLink.vk!==undefined&&answerLink.vk!==''">
-                    <div class="select-list__search-item-icon"></div>
-                    <p>{{ socialLabels.vk }}</p>
-                  </a>
+<!-- 🔗 Копировать ссылку -->
+<div class="select-list__search-item"
+   v-if="answerLink.link!==undefined&&answerLink.link!==''"
+   :data-link="answerLink.link" 
+   @click="handleCopyClick($event)">
+  <div class="select-list__search-item-icon"></div>
+  <p>{{ socialLabels.copy }}</p>
+</div>
 
-                  <a class="select-list__search-item"
-                     target="_blank"
-                     :href="answerLink.tg"
-                     v-if="answerLink.tg!==undefined&&answerLink.tg!==''">
-                    <div class="select-list__search-item-icon"></div>
-                    <p>{{ socialLabels.tg }}</p>
-                  </a>
+<!-- 🔗 Соцсети: добавляем @click для закрытия тултипа на мобильном -->
+<!-- Важно: @click не мешает переходу по ссылке, т.к. не используем .prevent -->
 
-                  <a class="select-list__search-item"
-                     target="_blank"
-                     :href="answerLink.max"
-                     v-if="answerLink.max!==undefined&&answerLink.max!==''">
-                    <div class="select-list__search-item-icon">
-                    </div>
-                    <p>{{ socialLabels.max }}</p>
-                  </a>
+<a class="select-list__search-item"
+   target="_blank"
+   :href="answerLink.vk"
+   v-if="answerLink.vk!==undefined&&answerLink.vk!==''"
+   @click="handleSocialClick($event)">
+  <div class="select-list__search-item-icon"></div>
+  <p>{{ socialLabels.vk }}</p>
+</a>
 
-                  <a class="select-list__search-item"
-                     target="_blank"
-                     :href="answerLink.ok"
-                     v-if="answerLink.ok!==undefined&&answerLink.ok!==''">
-                    <div class="select-list__search-item-icon">
-                    </div>
-                    <p>{{ socialLabels.ok }}</p>
-                  </a>
+<a class="select-list__search-item"
+   target="_blank"
+   :href="answerLink.tg"
+   v-if="answerLink.tg!==undefined&&answerLink.tg!==''"
+   @click="handleSocialClick($event)">
+  <div class="select-list__search-item-icon"></div>
+  <p>{{ socialLabels.tg }}</p>
+</a>
 
-                  <a class="select-list__search-item"
-                     target="_blank"
-                     :href="answerLink.wp"
-                     v-if="answerLink.wp!==undefined&&answerLink.wp!==''">
-                    <div class="select-list__search-item-icon">
-                      <img src="/dist/img/WhatsApp.svg"/>
-                    </div>
-                    <p>{{ socialLabels.wp }}</p>
-                  </a>
+<a class="select-list__search-item"
+   target="_blank"
+   :href="answerLink.max"
+   v-if="answerLink.max!==undefined&&answerLink.max!==''"
+   @click="handleSocialClick($event)">
+  <div class="select-list__search-item-icon"></div>
+  <p>{{ socialLabels.max }}</p>
+</a>
 
-                  <div class="select-list__search-item" @click="openModal">
-                    <div class="select-list__search-item-icon">
-                    </div>
-                    <p>{{ socialLabels.email }}</p>
-                  </div>
-                </div>
-              </div>
+<a class="select-list__search-item"
+   target="_blank"
+   :href="answerLink.ok"
+   v-if="answerLink.ok!==undefined&&answerLink.ok!==''"
+   @click="handleSocialClick($event)">
+  <div class="select-list__search-item-icon"></div>
+  <p>{{ socialLabels.ok }}</p>
+</a>
 
---------------------------
-.js--tooltip-parent tooltip-active
+<a class="select-list__search-item"
+   target="_blank"
+   :href="answerLink.wp"
+   v-if="answerLink.wp!==undefined&&answerLink.wp!==''"
+   @click="handleSocialClick($event)">
+  <div class="select-list__search-item-icon">
+    <img src="/dist/img/WhatsApp.svg"/>
+  </div>
+  <p>{{ socialLabels.wp }}</p>
+</a>
 
------------------------------
-openTooltipMobile(el){
-      const element = el.currentTarget;
-      const parent = element.closest('.js--tooltip-parent')
-      if (parent) {
-        parent.classList.add('tooltip-active')
-        bodyLockMobileFilter(parent);
+<!-- ✉️ Email: добавляем класс js--sand-to-mail для точного таргетинга -->
+<div class="select-list__search-item js--sand-to-mail" @click="handleEmailClick($event)">
+  <div class="select-list__search-item-icon"></div>
+  <p>{{ socialLabels.email }}</p>
+</div>
+-------------------------
+
+methods: {
+  // ===== ВСПОМОГАТЕЛЬНЫЙ: Закрытие мобильного тултипа =====
+  closeMobileTooltip(element) {
+    const target = element || document.querySelector('.js--tooltip-parent.tooltip-active');
+    if (!target) return;
+    
+    const parent = target.closest?.('.js--tooltip-parent');
+    if (parent) {
+      parent.classList.remove('tooltip-active');
+      if (typeof bodyUnlockMobileFilter === 'function') {
+        bodyUnlockMobileFilter(parent);
       }
-    },
-    closeTooltipMobile(el){
-      const element = el.currentTarget;
-      const parent = element.closest('.js--tooltip-parent')
-      if (parent) {
-        parent.classList.remove('tooltip-active')
-        bodyUnlockMobileFilter(parent)
-      }
-    },
------------------
-openModal(el) {
-      const element = el.currentTarget
-      this.$refs.dataModalMail.classList.add('open')
-      this.AddClassBody()
-
-    },
-    closeModal(e) {
-      this.$refs.dataModalMail.classList.remove('open')
-      this.RemoveClassBody()
-    },
-
-------------------
-
-async copyLink(event) {
-      const link = event.currentTarget.dataset.link;
-      const element = event.currentTarget
-      try {
-        if (navigator.clipboard) {
-          await navigator.clipboard.writeText(link);
-          element.querySelector('p').textContent = 'Скопировано';
-          setTimeout(() => {
-            element.querySelector('p').textContent = 'Скопировать ссылку';
-          }, 3000)
-        } else {
-          throw new Error('not supported')
-        }
-      } catch (err) {
-        const texarea = document.createElement('textarea');
-        texarea.value = link;
-        texarea.style.position = 'fixed';
-        document.body.appendChild(texarea)
-        texarea.select();
-        document.execCommand('copy')
-        document.body.removeChild(texarea)
-        console.log('Ошибка копирования');
-        console.log(err);
-      }
-
     }
+  },
+
+  // ===== 🔗 Обработчик для соцсетей (ВК, ТГ, МАКС...) =====
+  handleSocialClick(event) {
+    // На мобильном: закрываем тултип с небольшой задержкой, чтобы ссылка успела открыться
+    setTimeout(() => {
+      this.closeMobileTooltip(event?.currentTarget);
+    }, 100);
+    // Ссылка открывается автоматически благодаря href + target="_blank"
+  },
+
+  // ===== 📋 Обработчик для "Скопировать ссылку" =====
+  async handleCopyClick(event) {
+    const element = event?.currentTarget;
+    try {
+      if (this.answerLink?.link) {
+        await this.copyLinkManually(this.answerLink.link, element, () => {
+          // 🔥 Закрываем тултип через 1 сек, когда пользователь увидел "Скопировано"
+          setTimeout(() => {
+            this.closeMobileTooltip(element);
+          }, 1000);
+        });
+      }
+    } catch (error) {
+      console.error('Ошибка при копировании:', error);
+    }
+  },
+
+  // ===== ✉️ Обработчик для Email (с проверкой класса) =====
+  handleEmailClick(event) {
+    // Проверяем, что клик был именно по кнопке из блока "поделиться"
+    const isFromShare = event?.target?.closest?.('.js--sand-to-mail');
+    
+    if (isFromShare) {
+      // Закрываем мобильный тултип перед открытием модального окна
+      this.closeMobileTooltip(event?.currentTarget);
+    }
+    
+    // Вызываем оригинальный openModal (который используется и в других местах)
+    this.openModal(event);
+  },
+
+  // ===== 📋 Копирование с поддержкой колбэка =====
+  async copyLinkManually(link, element, onAfterAnimation = null) {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(link);
+        this._updateCopyText(element, 'Скопировано');
+        
+        // Возврат текста через 3 секунды
+        setTimeout(() => {
+          this._updateCopyText(element, 'Скопировать ссылку');
+        }, 3000);
+        
+        // Вызов колбэка (для закрытия тултипа)
+        if (typeof onAfterAnimation === 'function') {
+          onAfterAnimation();
+        }
+      } else {
+        this._fallbackCopy(link, element, onAfterAnimation);
+      }
+    } catch {
+      this._fallbackCopy(link, element, onAfterAnimation);
+    }
+  },
+
+  _fallbackCopy(link, element, onAfterAnimation = null) {
+    const textarea = document.createElement('textarea');
+    textarea.value = link;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    
+    this._updateCopyText(element, 'Скопировано');
+    
+    setTimeout(() => {
+      this._updateCopyText(element, 'Скопировать ссылку');
+    }, 3000);
+    
+    if (typeof onAfterAnimation === 'function') {
+      onAfterAnimation();
+    }
+  },
+
+  _updateCopyText(element, text) {
+    const p = element?.querySelector?.('p');
+    if (p) {
+      p.textContent = text;
+    }
+  },
+
+  // ===== 📧 Ваш существующий openModal (не меняем, он используется в других местах) =====
+  // openModal(event) { ... ваш код ... }
+}
