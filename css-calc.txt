@@ -1,53 +1,3 @@
-@click.prevent="handleLinkClick('vk', $event)"
-
-
-// Добавьте в methods вашего factoryShareMixin:
-
-/**
- * Закрывает мобильную шторку шеринга
- * @param {HTMLElement} [element] - элемент, от которого искать родителя (опционально)
- */
-closeMobileTooltip(element) {
-  // Если элемент не передан, пробуем найти по глобальному селектору
-  const target = element || document.querySelector('.js--tooltip-parent.tooltip-active');
-  if (!target) return;
-  
-  const parent = target.closest?.('.js--tooltip-parent');
-  if (parent) {
-    parent.classList.remove('tooltip-active');
-    // Разблокируем скролл, если есть соответствующая функция
-    if (typeof bodyUnlockMobileFilter === 'function') {
-      bodyUnlockMobileFilter(parent);
-    }
-  }
-},
-
------------------------------
-async handleLinkClick(type, event) {
-  try {
-    const needSend = this.hasAnswersChanged();
-    
-    if (needSend) {
-      await this.sendResults();
-    }
-    
-    const link = this.answerLink?.[type];
-    if (link) {
-      window.open(link, '_blank');
-    }
-    
-    //Закрываем мобилку, если не отправляли данные (или после отправки)
-    // Передаём элемент, чтобы точно найти нужный родитель
-    if (event?.currentTarget) {
-      this.closeMobileTooltip(event.currentTarget);
-    }
-    
-  } catch (error) {
-    console.error('Ошибка при открытии ссылки:', error);
-  }
-},
-
-------------------------
 async handleCopyClick(event) {
   const element = event?.currentTarget;
   try {
@@ -56,50 +6,35 @@ async handleCopyClick(event) {
     }
     
     if (this.answerLink?.link) {
-      // Передаём элемент и колбэк для закрытия после анимации
+      //Колбэк просто закрывает шторку.
+      // Тайминг (1 сек для закрытия, 3 сек для текста) — внутри copyLinkManually
       this.copyLinkManually(this.answerLink.link, element, () => {
-        // Закрываем через 1 секунду, когда пользователь увидел "Скопировано"
-        setTimeout(() => {
-          this.closeMobileTooltip(element);
-        }, 1000);
+        this.closeMobileTooltip(element);
       });
     }
   } catch (error) {
     console.error('Ошибка при копировании:', error);
   }
 },
---------------------------------------------
-async openModalMail(event) {
-  try {
-    if (this.hasAnswersChanged()) {
-      await this.sendResults();
-    }
-    
-    // 🔥 Закрываем мобильную шторку перед открытием модального окна
-    if (event?.currentTarget) {
-      this.closeMobileTooltip(event.currentTarget);
-    }
-    
-    this.showModal();
-  } catch (error) {
-    console.error('Ошибка при открытии модального окна:', error);
-  }
-},
 
-----------------------------------
-// Унифицированная функция копирования
+-----------------------
 copyLinkManually(link, element, onAfterAnimation = null) {
   try {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(link).then(() => {
         this._updateCopyText(element, 'Скопировано');
+        
+        // Таймер 1: Возврат текста через 3 секунды
         setTimeout(() => {
           this._updateCopyText(element, 'Скопировать ссылку');
-          // 🔥 Вызываем колбэк, если передан
-          if (typeof onAfterAnimation === 'function') {
-            onAfterAnimation();
-          }
         }, 3000);
+        
+        // Таймер 2: Закрытие шторки через 1 секунду (если передан колбэк)
+        if (typeof onAfterAnimation === 'function') {
+          setTimeout(() => {
+            onAfterAnimation();
+          }, 1000);
+        }
       }).catch(() => {
         this._fallbackCopy(link, element, onAfterAnimation);
       });
@@ -111,7 +46,8 @@ copyLinkManually(link, element, onAfterAnimation = null) {
   }
 },
 
-// Резервный способ копирования
+--------------------------------
+
 _fallbackCopy(link, element, onAfterAnimation = null) {
   const textarea = document.createElement('textarea');
   textarea.value = link;
@@ -124,20 +60,16 @@ _fallbackCopy(link, element, onAfterAnimation = null) {
   document.body.removeChild(textarea);
   
   this._updateCopyText(element, 'Скопировано');
+  
+  // Таймер 1: Возврат текста через 3 секунды
   setTimeout(() => {
     this._updateCopyText(element, 'Скопировать ссылку');
-    // 🔥 Вызываем колбэк, если передан
-    if (typeof onAfterAnimation === 'function') {
-      onAfterAnimation();
-    }
   }, 3000);
-},
-
-// Вспомогательный метод для обновления текста (вынесите, если ещё нет)
-_updateCopyText(element, text) {
-  const p = element?.querySelector?.('p');
-  if (p) {
-    p.textContent = text;
+  
+  // Таймер 2: Закрытие шторки через 1 секунду
+  if (typeof onAfterAnimation === 'function') {
+    setTimeout(() => {
+      onAfterAnimation();
+    }, 1000);
   }
 },
-
