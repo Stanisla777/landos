@@ -19,31 +19,7 @@
 }
 
 --------------------------------
-
-<div class="advanced-editor__accordion-item js-accordion-parent active">
-    <div class="advanced-editor__accordion-item-wrapper own-styles js--dropDown-btn">
-        <p>Новые курсы</p>
-    </div>
-    <div class="advanced-editor__accordion-item-wrapper-body js-accordion-body">
-        <div class="common-content">
-            <p>Фильм фильм фильм Фильм фильм фильм Фильм фильм фильм</p>
-            <ul>
-                <li>Привет-пока</li>
-                <li>Привет-пока</li>
-            </ul>
-        </div>
-    </div>
-</div>
-.advanced-editor__accordion-item-wrapper-body {
-    overflow: hidden;
-    max-height: 0;
-    transition-duration: 0.5s;
-    will-change: max-height;
-    transform: translateY(-18px);
-}
-
--------------------------------
-
+collectionSmallFunctions.js
 function dropDownTags() {
   const btnTags = document.querySelectorAll('.js--dropDown-btn');
   // eslint-disable-next-line no-restricted-syntax
@@ -56,81 +32,14 @@ function dropDownTags() {
     };
   }
 }
-
-------------
-
-/* eslint-disable */
-
-// Функция для обработки завершения анимации
-function setupAnimationEnd(container, parent) {
-  let handled = false;
-
-  const complete = () => {
-    if (handled) return;
-    handled = true;
-    container.removeEventListener('transitionend', handler);
-    clearTimeout(timeout);
-    delete parent.dataset.animating; // Снимаем блокировку
-  };
-
-  const handler = (e) => {
-    if (e.propertyName === 'max-height') complete();
-  };
-
-  // Ждём завершения CSS-анимации
-  container.addEventListener('transitionend', handler);
-
-  // Защита на случай отсутствия transitionend
-  const timeout = setTimeout(complete, 500);
+export default function collectionSmallFunctions() {
+  dropDownTags();
 }
 
-export default function dropDown(btn, max_height) {
-
-  const parent = btn.closest('.js-accordion-parent');
-
-  // Проверяем флаг анимации
-  if (parent.dataset.animating === 'true') return;
-
-  const container = parent.querySelector('.js-accordion-body');
-
-  // Устанавливаем флаг блокировки
-  parent.dataset.animating = 'true';
-
-  if (parent.classList.contains('active')) {
-    container.classList.remove('not-overflow')
-    parent.classList.remove('active');
-    if (parent.classList.contains('scroll')) {
-      const elementPosition = parent.getBoundingClientRect().top;
-      window.scrollBy({
-        top: elementPosition - 20,
-        behavior: 'smooth'
-      });
-      setTimeout(() => {
-        container.setAttribute('style', `max-height:${max_height}px;`);
-      },300)
-    }
-    else {
-      container.setAttribute('style', `max-height:${max_height}px;`);
-      setupAnimationEnd(container, parent);
-    }
-
-  } else {
-    parent.classList.add('active');
-    container.style.maxHeight = `${container.scrollHeight}px`;
-    container.setAttribute('style', `max-height:${container.scrollHeight}px;`);
-    if (container.classList.contains('js--not-overflow')) {
-      setTimeout(()=>{
-        container.classList.add('not-overflow')
-      },600)
-      setTimeout(()=>{
-        setupAnimationEnd(container, parent);
-      },700)
-
-    }
-    else {
-      setupAnimationEnd(container, parent);
-    }
-
-  }
-}
+----
+index.js
+import collectionSmallFunctions from './modules/collection-small-functions';
+document.addEventListener('DOMContentLoaded', async () => {
+    collectionSmallFunctions();
+})
 
