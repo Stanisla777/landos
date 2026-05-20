@@ -3,4 +3,11 @@
 <e> ] {
 <e>   code: 'GenericFailure'
 <e> }
+
+ [webpack-dev-middleware] [Error:   × Rspack FS Error:IO error: Error: ENOTEMPTY: directory not empty, rmdir 'C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\dist'
+<e>   │
+<e> ] {
+<e>   code: 'GenericFailure'
+<e> }
+
             
