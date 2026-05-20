@@ -1,158 +1,25 @@
-/**
- * @param $selector      - основной тег/класс (например 'p', 'h2', '.btn')
- * @param $self-excludes - список классов/селекторов САМОГО элемента (опционально)
- */
-@function get-exclude-chain($selector, $self-excludes: ()) {
-  $chain: '';
-  
-  // 🟢 Исключения по родителю (автоматически добавляется пробел)
-  @each $block in $editor-exclude-blocks {
-    $chain: $chain + ":not(#{$block} #{$selector})";
-  }
-  
-  // 🟢 Исключения по самому элементу + переданные вручную
-  @each $self in $self-excludes {
-    $chain: $chain + ":not(#{$self})";
-  }
-  
-  @return unquote($chain);
-}
-
---------------------------------
-
-/**
- * Устанавливает начальное состояние для активных аккордеонов
- * (открывает их мгновенно, без анимации)
- */
-function initActiveAccordions() {
-  const activeParents = document.querySelectorAll('.js-accordion-parent.active');
-  
-  activeParents.forEach(parent => {
-    const container = parent.querySelector('.js-accordion-body');
-    if (!container) return;
-
-    // Временно отключаем анимацию
-    const originalTransition = container.style.transition;
-    container.style.transition = 'none';
-    
-    // Выставляем реальную высоту
-    container.style.maxHeight = `${container.scrollHeight}px`;
-    
-    // Форсируем reflow, чтобы браузер применил стили
-    void container.offsetHeight;
-    
-    // Возвращаем transition для будущих кликов
-    container.style.transition = originalTransition || '';
-    
-    // Помечаем, что аккордеон уже инициализирован (опционально)
-    parent.dataset.accordionReady = 'true';
-  });
-}
-
-/**
- * Навешивает обработчики кликов на кнопки аккордеона
- */
-function dropDownTags() {
-  const btnTags = document.querySelectorAll('.js--dropDown-btn');
-  
-  for (const item of btnTags) {
-    item.onclick = (el) => {
-      dropDown(el.target, 0);
-    };
-  }
-}
-
-/**
- * Основная функция dropDown (ваша логика + небольшая правка)
- */
-/* eslint-disable */
-function setupAnimationEnd(container, parent) {
-  let handled = false;
-
-  const complete = () => {
-    if (handled) return;
-    handled = true;
-    container.removeEventListener('transitionend', handler);
-    clearTimeout(timeout);
-    delete parent.dataset.animating;
-  };
-
-  const handler = (e) => {
-    if (e.propertyName === 'max-height') complete();
-  };
-
-  container.addEventListener('transitionend', handler);
-  const timeout = setTimeout(complete, 500);
-}
-
-export default function dropDown(btn, max_height, instant = false) {
-  const parent = btn.closest('.js-accordion-parent');
-  if (!parent) return;
-
-  // Блокировка повторных кликов во время анимации (если не мгновенный режим)
-  if (!instant && parent.dataset.animating === 'true') return;
-
-  const container = parent.querySelector('.js-accordion-body');
-  if (!container) return;
-
-  // Если instant === true, просто открываем без анимации и выходим
-  if (instant) {
-    parent.classList.add('active');
-    container.style.transition = 'none';
-    container.style.maxHeight = `${container.scrollHeight}px`;
-    void container.offsetHeight; // reflow
-    container.style.transition = ''; // возвращаем анимацию
-    parent.dataset.accordionReady = 'true';
-    return;
-  }
-
-  // === Ваша исходная логика ниже (без изменений, кроме установки флага) ===
-  parent.dataset.animating = 'true';
-
-  if (parent.classList.contains('active')) {
-    container.classList.remove('not-overflow');
-    parent.classList.remove('active');
-    
-    if (parent.classList.contains('scroll')) {
-      const elementPosition = parent.getBoundingClientRect().top;
-      window.scrollBy({
-        top: elementPosition - 20,
-        behavior: 'smooth'
-      });
-      setTimeout(() => {
-        container.setAttribute('style', `max-height:${max_height}px;`);
-        setupAnimationEnd(container, parent);
-      }, 300);
-    } else {
-      container.setAttribute('style', `max-height:${max_height}px;`);
-      setupAnimationEnd(container, parent);
+<div class="another-thing-2025__training-materials-tables up-row">
+    <div></div>
+    <div></div>
+</div>
+<div class="another-thing-2025__training-materials-tables">
+    <div></div>
+    <div></div>
+    <div></div>
+</div>
+another-thing-2025{
+  &__training-materials-tables{
+    display: grid;
+    grid-gap: 16px;
+    div{
+      border:1px solid;
+      height: 10px;
     }
-  } else {
-    parent.classList.add('active');
-    container.style.maxHeight = `${container.scrollHeight}px`;
-    container.setAttribute('style', `max-height:${container.scrollHeight}px;`);
-    
-    if (container.classList.contains('js--not-overflow')) {
-      setTimeout(() => {
-        container.classList.add('not-overflow');
-      }, 600);
-      setTimeout(() => {
-        setupAnimationEnd(container, parent);
-      }, 700);
-    } else {
-      setupAnimationEnd(container, parent);
+    &.up-row{
+      grid-template-columns: 2fr 1fr;
+    }
+    &:not(.up-row){
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 }
-
-/**
- * Точка входа модуля
- */
-export default function collectionSmallFunctions() {
-  // 1. Сначала инициализируем активные аккордеоны (без анимации)
-  initActiveAccordions();
-  
-  // 2. Затем вешаем обработчики кликов
-  dropDownTags();
-}
-
