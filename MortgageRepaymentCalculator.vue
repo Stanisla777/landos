@@ -1,4 +1,6 @@
-const indexArray = this.block_requared.find(obj => obj.id === array_data[1]);
-      if (indexArray) {
-        this.$set(indexArray,'date_end',true)
-      }
+ [webpack-dev-middleware] [Error:   × Rspack FS Error:IO error: Error: ENOTEMPTY: directory not empty, rmdir 'C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\dist\img\app-icon'
+<e>   │
+<e> ] {
+<e>   code: 'GenericFailure'
+<e> }
+            
