@@ -1,1 +1,19 @@
-Login denied. Acces denied by Security Policy
+/**
+ * @param $selector      - основной тег/класс (например 'p', 'h2', '.btn')
+ * @param $self-excludes - список классов/селекторов САМОГО элемента (опционально)
+ */
+@function get-exclude-chain($selector, $self-excludes: ()) {
+  $chain: '';
+  
+  // 🟢 Исключения по родителю (автоматически добавляется пробел)
+  @each $block in $editor-exclude-blocks {
+    $chain: $chain + ":not(#{$block} #{$selector})";
+  }
+  
+  // 🟢 Исключения по самому элементу + переданные вручную
+  @each $self in $self-excludes {
+    $chain: $chain + ":not(#{$self})";
+  }
+  
+  @return unquote($chain);
+}
