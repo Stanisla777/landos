@@ -1,311 +1,49 @@
-/* eslint-disable */
-import axios from 'axios';
-import store from "../../FamilyMortgageCalculator/store";
-import bodyUnlockMobileFilter from '../../../modules/redesign-site/body-unlock-mobile-filter';
+<div class="another-thing-2025__training-materials-item">
+                                            <div class="another-thing-2025__training-materials-item-first-col">
+                                                <div class="another-thing-2025__training-materials-data-wr">
+                                                    <p class="another-thing-2025__training-materials-data">26 мая 2026</p>
+                                                    <p class="another-thing-2025__training-materials-term own-styles-element">Новый</p>
+                                                </div>
+                                                <div class="another-thing-2025__training-materials-body">
+                                                    <h3>Покупка собственного жилья</h3>
+                                                    <p>
+                                                        Узнай всё об ипотеке и других инструментах покупки квартиры или дома.
+                                                        Разберись в доступных возможностях и выбери оптимальное для себя решение
+                                                    </p>
+                                                </div>
+                                                <a href="#" class="btn_s black btn-icon-arrow-forward-right arrow-turned mobile-100 another-thing-2025__training-materials-btn">
+                                                    Перейти
+                                                </a>
+                                            </div>
+                                            <div class="another-thing-2025__training-materials-item-second-col">
+                                                <picture>
+                                                    <source srcset="img/broadcasts-experts.webp" media="(max-width: 480px)">
+                                                    <source srcset="img/broadcasts-experts.webp" media="(max-width: 767px)">
+                                                    <img class="img-object-fit-cover" src="img/broadcasts-experts.webp" alt="" title="" loading="lazy" />
+                                                </picture>
+                                            </div>
 
-export function factoryShareMixin({store}) {
-  return {
-    data() {
-      return {
-        isAnimatingHolidays:false,
-        flag_send_results:true,
-        captcha_id:null,
-        answer_code:null,
-        lastSentAnswers: null,
-        isSending: false,
-        screenWidth : window.innerWidth,
-        screenHeight: window.innerHeight,
-      };
-    },
-    methods:{
-      AddClassBody() {
-        document.body.classList.add('body-modal');
-        document.body.classList.add('body-additional-class');
-        document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
-        document.ontouchmove = (e) => { e.preventDefault(); };
-      },
-      RemoveClassBody() {
-        if (!document.body.classList.contains('body-modal-modals')) {
-          document.body.classList.remove('body-modal');
-          document.body.classList.remove('body-additional-class');
-        }
-        const scrollY = document.body.style.top;
-        document.body.style.position = '';
-        document.body.style.top = '';
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      },
+                                        </div>
 
-      // ===== 🔥 ЗАКРЫТИЕ ТУЛТИПА (соцсети) =====
-      closeMobileTooltip() {
-        // Ищем ТОЛЬКО в актуальном DOM — не полагаемся на переданные элементы
-        const target = document.querySelector('.js--tooltip-parent.tooltip-active');
-        if (!target) return;
+-----------
+.another-thing-2025__training-materials-item {
+    background-color: #f4f4f4;
+    border-radius: 16px;
+    display: flex;
+    overflow: hidden;
+}
 
-        target.classList.remove('tooltip-active');
-        if (typeof bodyUnlockMobileFilter === 'function') {
-          bodyUnlockMobileFilter(target);
-        }
-      },
+.another-thing-2025__training-materials-tables.up-row > div:nth-child(1) > div {
+    flex-basis: 50%;
+}
+.another-thing-2025__training-materials-item-first-col {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+}
 
-      // ===== 🔥 ЗАКРЫТИЕ ТУЛТИПА (email) — отдельный метод =====
-      closeMobileTooltipMail() {
-        const target = document.querySelector('.js--tooltip-parent.tooltip-active');
-        if (!target) return;
-        target.classList.remove('tooltip-active');
-        // Здесь НЕ разблокируем скролл — по требованию
-      },
-
-      // ===== ✉️ EMAIL: с задержкой 1 сек для плавности =====
-      async openModalMail(event) {
-        try {
-          if (this.hasAnswersChanged()) {
-            await this.sendResults();
-            // 🔥 Ждём, пока Vue обновит DOM после изменения store
-            await this.$nextTick();
-          }
-
-          // 🔥 Закрываем с задержкой 1 сек (ваше требование для плавного UX)
-          setTimeout(() => {
-            this.closeMobileTooltipMail();
-          }, 1000);
-
-          this.showModal();
-        } catch (error) {
-          console.error('Ошибка при открытии модального окна:', error);
-        }
-      },
-
-      showModal() {
-        store.dispatch('ActionOpenModalMailStatus', true);
-        if (!document.body.classList.contains('body-modal')) {
-          this.AddClassBody();
-        }
-        document.body.classList.add('js--open-modal');
-      },
-
-      // ===== 🔗 СОЦСЕТИ: с $nextTick после отправки =====
-      async handleLinkClick(type, event) {
-        try {
-          const needSend = this.hasAnswersChanged();
-
-          if (needSend) {
-            await this.sendResults();
-            // 🔥 Ключевая правка: ждём обновления DOM перед закрытием
-            await this.$nextTick();
-          }
-
-          const link = this.answerLink?.[type];
-          if (link) {
-            window.open(link, '_blank');
-          }
-
-          // 🔥 Закрываем, используя только DOM-поиск (без event.currentTarget)
-          this.closeMobileTooltip();
-
-        } catch (error) {
-          console.error('Ошибка при открытии ссылки:', error);
-        }
-      },
-
-      // ===== 📋 КОПИРОВАНИЕ: с $nextTick и колбэком =====
-      async handleCopyClick(event) {
-        const element = event?.currentTarget;
-        try {
-          if (this.hasAnswersChanged()) {
-            await this.sendResults();
-            await this.$nextTick(); // 🔥 Ждём обновления DOM
-          }
-
-          if (this.answerLink?.link) {
-            this.copyLinkManually(this.answerLink.link, element, () => {
-              // Закрываем через 1 сек, когда пользователь увидел "Скопировано"
-              setTimeout(() => {
-                this.closeMobileTooltip();
-              }, 1000);
-            });
-          }
-        } catch (error) {
-          console.error('Ошибка при копировании:', error);
-        }
-      },
-
-      // ===== ОСТАЛЬНЫЕ МЕТОДЫ (без изменений) =====
-      hasAnswersChanged() {
-        if (!this.lastSentAnswers) return true;
-        return JSON.stringify(this.answersToSand) !== JSON.stringify(this.lastSentAnswers);
-      },
-
-      async sendResults() {
-        if (this.isSending) return;
-        this.isSending = true;
-        try {
-          let initialLink = null;
-          if (this.answerLink && typeof this.answerLink.link !== 'undefined') {
-            initialLink = this.answerLink.link;
-          }
-          await this.sendingResult('result');
-          this.lastSentAnswers = JSON.parse(JSON.stringify(this.answersToSand));
-          await this.waitForAnswerLinkUpdate(initialLink);
-        } catch (error) {
-          console.error('Ошибка при отправке результатов:', error);
-          throw error;
-        } finally {
-          this.isSending = false;
-        }
-      },
-
-      async waitForAnswerLinkUpdate(oldLink, timeout = 5000) {
-        const start = Date.now();
-        return new Promise((resolve, reject) => {
-          const interval = setInterval(() => {
-            const currentLink = this.answerLink?.link;
-            if (currentLink && currentLink !== oldLink) {
-              clearInterval(interval);
-              resolve();
-            }
-            if (Date.now() - start > timeout) {
-              clearInterval(interval);
-              reject(new Error('Таймаут ожидания обновления answerLink'));
-            }
-          }, 50);
-        });
-      },
-
-      copyLinkManually(link, element, onAfterAnimation = null) {
-        try {
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(link).then(() => {
-              this._updateCopyText(element, 'Скопировано');
-              setTimeout(() => {
-                this._updateCopyText(element, 'Скопировать ссылку');
-              }, 3000);
-              if (typeof onAfterAnimation === 'function') {
-                setTimeout(() => { onAfterAnimation(); }, 1000);
-              }
-            }).catch(() => { this._fallbackCopy(link, element, onAfterAnimation); });
-          } else {
-            this._fallbackCopy(link, element, onAfterAnimation);
-          }
-        } catch {
-          this._fallbackCopy(link, element, onAfterAnimation);
-        }
-      },
-
-      _fallbackCopy(link, element, onAfterAnimation = null) {
-        const textarea = document.createElement('textarea');
-        textarea.value = link;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        this._updateCopyText(element, 'Скопировано');
-        setTimeout(() => {
-          this._updateCopyText(element, 'Скопировать ссылку');
-        }, 3000);
-        if (typeof onAfterAnimation === 'function') {
-          setTimeout(() => { onAfterAnimation(); }, 1000);
-        }
-      },
-
-      _updateCopyText(element, text) {
-        const p = element?.querySelector?.('p');
-        if (p) { p.textContent = text; }
-      },
-
-      sendingResult(flag) {
-        this.captchaInit(flag);
-        const recaptchaKey = typeof conf !== 'undefined' ? conf.smartcaptcha_key : null;
-        if (recaptchaKey) { window.smartCaptcha.execute(this.captcha_id); }
-      },
-
-      captchaInit(flag) {
-        this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
-          sitekey: conf.smartcaptcha_key,
-          invisible: true,
-          callback: (token) => {
-            if (flag === 'result') this.sendingResultToApi(token);
-            else if (flag === 'mail') this.sendingMailToApi(token);
-          },
-        });
-      },
-
-      sendingResultToApi(token) {
-        const data = {
-          calculatorId: this.calculatorId,
-          answers: this.answersToSand,
-          'smart-token': token,
-        };
-        return new Promise((resolve, reject) => {
-          axios({
-            method: 'post',
-            url: '/api/local/calculator/answers/',
-            headers: {
-              'Content-type': 'application/json; charset=UTF-8',
-              'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-            },
-            data,
-          })
-          .then((res) => {
-            if (res.data.code === 200 && res.data.result) {
-              store.dispatch('ActionAnswerLink', res.data.result.answerLink);
-              store.dispatch('ActionAnswersId', res.data.result.answersId);
-              store.dispatch('ActionAnswersExpired', 0);
-            }
-            if (res.data.code !== 200 && res.data.description) {
-              store.dispatch('ActionDescriptionAfterSand', res.data.description);
-            }
-            if (res.data.code) { this.answer_code = res.data.code; }
-            resolve();
-          })
-          .catch((error) => {
-            if (error.response?.data?.description) {
-              store.dispatch('ActionDescriptionAfterSand', error.response.data.description);
-            }
-            console.error(error);
-            reject(error);
-          });
-        });
-      },
-
-      sendingMailToApi(token) {
-        const modal = this.$refs.dataModalMail;
-        if (!modal) return;
-        const modal_main_content = modal.querySelector('.js--modal-main-content');
-        const modal_success_content = modal.querySelector('.js--modal-wr-success');
-        const modal_failed_content = modal.querySelector('.js--modal-wr-failed');
-
-        const data = {
-          "userEmail": this.mask_mail?.value || '',
-          "smart-token": token,
-          "answersId": this.answersId,
-          "agree": this.check_agree_advertisement || false
-        };
-
-        axios({
-          method: 'post',
-          url: '/api/local/calculator/answers/sendmail/',
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-            'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-          },
-          data
-        })
-        .then(() => {
-          modal_main_content?.classList?.add('unactive');
-          modal_success_content?.classList?.add('active');
-        })
-        .catch((error) => {
-          if (error.response?.data?.description) {
-            this.description_after_sand_mail = error.response.data.description;
-          }
-          console.error(error);
-          modal_main_content?.classList?.add('unactive');
-          modal_failed_content?.classList?.add('active');
-        });
-      },
-    }
-  }
+.img-object-fit-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
