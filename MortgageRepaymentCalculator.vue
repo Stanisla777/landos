@@ -1,13 +1,7 @@
- [webpack-dev-middleware] [Error:   × Rspack FS Error:IO error: Error: ENOTEMPTY: directory not empty, rmdir 'C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\dist\img\app-icon'
-<e>   │
-<e> ] {
-<e>   code: 'GenericFailure'
-<e> }
-
- [webpack-dev-middleware] [Error:   × Rspack FS Error:IO error: Error: ENOTEMPTY: directory not empty, rmdir 'C:\Users\sshchegolev\PhpstormProjects\sprosi.dom.rf\dist'
-<e>   │
-<e> ] {
-<e>   code: 'GenericFailure'
-<e> }
-
+clean: {
+    keep: (asset) => {
+      // Сохраняем всё, что в папке img, fonts или уже существующие файлы
+      return asset.includes('img/') || asset.includes('fonts/');
+    }
+  },
             
