@@ -1,4 +1,108 @@
-// отправляем метку-цель DmpKit
-          if (form_dmpkit_event_uid && typeof window.dmpkitdl !== "undefined" && window.dmpkitdl !== null) {
-            window.dmpkitdl.push({event: form_dmpkit_event_uid});
-          }
+/**
+ * Scroll Depth Tracker for CleverData / DmpKit
+ * Отправляет события: scroll_25, scroll_50, scroll_75, scroll_100
+ * Только при первом достижении порога (вперёд по скроллу)
+ */
+(function() {
+  'use strict';
+
+  // Настройки
+  const CONFIG = {
+    thresholds: [25, 50, 75, 100], // проценты
+    eventPrefix: 'scroll_',        // префикс имени события
+    throttleMs: 200                // задержка между проверками (мс)
+  };
+
+  // Состояние
+  const state = {
+    sent: new Set(),      // уже отправленные пороги
+    maxReached: 0,        // максимальный достигнутый порог
+    lastCheck: 0          // время последней проверки (для throttle)
+  };
+
+  /**
+   * Отправка события в CleverData через dmpkitdl
+   * @param {string} eventName - имя события, например 'scroll_50'
+   */
+  function sendToCleverData(eventName) {
+    if (typeof window.dmpkitdl !== 'undefined' && window.dmpkitdl !== null) {
+      try {
+        window.dmpkitdl.push({ event: eventName });
+        // Опционально: лог для отладки
+        // console.log('[CleverData] Sent event:', eventName);
+      } catch (e) {
+        console.warn('[ScrollDepth] Error sending to dmpkitdl:', e);
+      }
+    }
+  }
+
+  /**
+   * Вычисление текущей глубины прокрутки в %
+   */
+  function getScrollPercent() {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    if (docHeight <= 0) return 0;
+    return Math.round((scrollTop / docHeight) * 100);
+  }
+
+  /**
+   * Проверка и отправка событий по порогам
+   */
+  function checkScrollDepth() {
+    const now = Date.now();
+    // Throttle: не проверять чаще чем throttleMs
+    if (now - state.lastCheck < CONFIG.throttleMs) return;
+    state.lastCheck = now;
+
+    const currentPercent = getScrollPercent();
+    
+    // Проверяем только пороги, которые больше уже достигнутого максимума
+    for (const threshold of CONFIG.thresholds) {
+      if (threshold > state.maxReached && currentPercent >= threshold) {
+        const eventName = CONFIG.eventPrefix + threshold;
+        
+        // Отправляем, если ещё не отправляли этот порог
+        if (!state.sent.has(threshold)) {
+          sendToCleverData(eventName);
+          state.sent.add(threshold);
+          state.maxReached = threshold; // обновляем максимум
+        }
+        // Прерываем цикл: следующие пороги ещё не достигнуты
+        break;
+      }
+    }
+  }
+
+  /**
+   * Инициализация: навешиваем обработчик с троттлингом
+   */
+  function init() {
+    // Проверка на случай, если скрипт загрузился после начала скролла
+    checkScrollDepth();
+    
+    // Обработчик прокрутки с throttle
+    let ticking = false;
+    window.addEventListener('scroll', function() {
+      if (!ticking) {
+        window.requestAnimationFrame(function() {
+          checkScrollDepth();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+
+    // Дополнительно: проверка при изменении размера окна (может измениться высота)
+    window.addEventListener('resize', function() {
+      checkScrollDepth();
+    }, { passive: true });
+  }
+
+  // Запуск после загрузки DOM
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
