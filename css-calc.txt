@@ -4,40 +4,105 @@ const CONFIG = {
   thresholds: [25, 50, 75, 100],
   eventPrefix: 'scroll_',
   throttleMs: 200,
-  offsetBottom: 1000 // расчёт процентов высота страницы - offsetBottom
+  // Селектор блоков, составляющих "полезный контент"
+  contentSelector: '.js--calculated-scroll-area',
+  // Отступ от конца последнего блока, при котором считаем, что прочитано 100%
+  // 0 = когда конец блока коснулся верха экрана
+  // 100 = когда до конца блока осталось 100px
+  offsetBottomPx: 0 
 };
 
 const state = {
   sent: new Set(),
   maxReached: 0,
-  lastCheck: 0
+  lastCheck: 0,
+  geometry: null 
 };
 
+/**
+ * Рассчитывает границы и высоту полезного контента.
+ * Использует getBoundingClientRect для максимальной совместимости с iOS/Safari.
+ */
+function calculateGeometry() {
+  const elements = document.querySelectorAll(CONFIG.contentSelector);
+  
+  if (!elements || elements.length === 0) {
+    return null;
+  }
+
+  let minTop = Infinity;
+  let maxBottom = -Infinity;
+  let totalHeight = 0;
+
+  elements.forEach(el => {
+    // rect.top - позиция относительно верха видимой области
+    const rect = el.getBoundingClientRect();
+    
+    // Абсолютная позиция на странице
+    const absoluteTop = window.scrollY + rect.top;
+    const absoluteBottom = absoluteTop + rect.height;
+
+    if (absoluteTop < minTop) minTop = absoluteTop;
+    if (absoluteBottom > maxBottom) maxBottom = absoluteBottom;
+    
+    // Суммируем высоты (если нужно строго только контент без разрывов)
+    // Но для учета разрыва в 40px лучше использовать разницу maxBottom - minTop
+    totalHeight += rect.height;
+  });
+
+  // Вариант А: Учитываем разрывы между блоками (Рекомендуется для вашего случая с 40px)
+  const effectiveContentHeight = maxBottom - minTop;
+
+  // Вариант Б: Только сумма высот (если бы разрывы были огромными и их надо было исключить)
+  // const effectiveContentHeight = totalHeight; 
+
+  return {
+    start: minTop,                // Начало первого блока
+    end: maxBottom,               // Конец последнего блока
+    height: effectiveContentHeight // Полная высота зоны (включая мелкие разрывы)
+  };
+}
+
 function sendToCleverData(eventName) {
-  console.log('eventName');
-  console.log(eventName);
   if (typeof window.dmpkitdl !== 'undefined' && window.dmpkitdl !== null) {
     try {
       window.dmpkitdl.push({ event: eventName });
+      // console.log('[CleverData] Sent:', eventName); 
     } catch (e) {
-      console.warn('[ScrollDepth] error sending to dmpkitdl:', e);
+      console.warn('[ScrollDepth] Error sending to dmpkitdl:', e);
     }
   }
 }
 
 function getScrollPercent() {
+  // 1. Получаем геометрию (из кэша или пересчитываем)
+  if (!state.geometry) {
+    state.geometry = calculateGeometry();
+  }
+  
+  if (!state.geometry || state.geometry.height <= 0) return 0;
+
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  const viewportHeight = document.documentElement.clientHeight;
-  const docHeight = document.documentElement.scrollHeight;
+  
+  const { start, height } = state.geometry;
 
-  const scrollableHeight = docHeight - viewportHeight;
+  // 2. Сколько пикселей контента уже прошло над верхней границей экрана?
+  // Если scrollTop < start, значит мы еще не дошли до начала статьи (скроллим хедер)
+  const scrolledIntoContent = scrollTop - start;
 
-  if (scrollableHeight <= CONFIG.offsetBottom) {
-    return scrollTop > 0 ? 100 : 0;
+  // 3. Расчет процента
+  if (scrolledIntoContent < 0) {
+    return 0; // Еще не начали читать
   }
 
-  const effectiveHeight = scrollableHeight - CONFIG.offsetBottom;
-  const percent = (scrollTop / effectiveHeight) * 100;
+  // Эффективная высота для 100% (с учетом желаемого отступа от конца)
+  const targetHeight = height - CONFIG.offsetBottomPx;
+  
+  if (targetHeight <= 0) {
+     return scrolledIntoContent >= 0 ? 100 : 0;
+  }
+
+  const percent = (scrolledIntoContent / targetHeight) * 100;
 
   return Math.min(100, Math.max(0, Math.round(percent)));
 }
@@ -47,9 +112,16 @@ function checkScrollDepth() {
   if (now - state.lastCheck < CONFIG.throttleMs) return;
   state.lastCheck = now;
 
+  // Если геометрия еще не посчитана или сброшена (например, после resize)
+  if (!state.geometry) {
+    state.geometry = calculateGeometry();
+  }
+
+  // Дополнительная защита для iOS: если высота 0, возможно, контент еще не отрендерился
+  if (!state.geometry || state.geometry.height === 0) return;
+
   const currentPercent = getScrollPercent();
 
-  // eslint-disable-next-line no-restricted-syntax
   for (const threshold of CONFIG.thresholds) {
     if (threshold > state.maxReached && currentPercent >= threshold) {
       const eventName = CONFIG.eventPrefix + threshold;
@@ -64,7 +136,12 @@ function checkScrollDepth() {
 }
 
 export default function scrollDepthTrackerCleverData() {
-  checkScrollDepth();
+  // Инициализация с небольшой задержкой, чтобы DOM и стили применились
+  // Особенно важно для iOS Safari, где рендеринг может запаздывать
+  setTimeout(() => {
+    state.geometry = calculateGeometry();
+    checkScrollDepth();
+  }, 100);
 
   let ticking = false;
 
@@ -79,8 +156,12 @@ export default function scrollDepthTrackerCleverData() {
   };
 
   const onResize = () => {
+    // При ресайзе (поворот экрана, изменение панелей браузера) сбрасываем кэш
+    state.geometry = null; 
+    
     if (!ticking) {
       window.requestAnimationFrame(() => {
+        state.geometry = calculateGeometry();
         checkScrollDepth();
         ticking = false;
       });
@@ -96,40 +177,3 @@ export default function scrollDepthTrackerCleverData() {
     window.removeEventListener('resize', onResize);
   };
 }
-
-----------------------
-<body>
-<header></header
-<div class="container-pages">
- <div class="block-container">
-   <div class="block-grid-area-3-col js--calculated-scroll-area">
-            <div class="grid-area-col"></div>
-            <div class="grid-area-col">
-                <p class="time-added">Дата написания статьи 07.07.2024</p>
-                <div class="wr-time-adding before-title">
-                    <div class="round-billet"><a class="round-billet__item grey" href="#"></div>
-                </div>
-                <h1 class="h1_title align-left small"><span class="highlighting">Зарплата гросс и нет</span>: разбираемся в разнице</h1>
-                <div class="wr-title-description instruction">
-                    <p><a class="underline" href="#">Программа ипотеки</a> для сотрудников IT-компаний дает возможность получить льготный
-                        кредит по ставке до 5%. Оператор этой меры поддержки — ДОМ.РФ.
-                    </p>
-                </div>
-            </div>
-            <div class="grid-area-col tablet-none"></div>
-        </div>
-  </div>
-  <div class="block-container">
-    <div class="block-grid-area-3-col js--anchor-wr js--calculated-scroll-area">
-      <!--Область инструкции-->
-    </dv>
-    <div class="block-grid-area-3-col">
-      <!--Огромный блок с комментариями-->
-   </div>
-  </div>
-
-</div>
-<footer></footer>
-
-
-</body>
