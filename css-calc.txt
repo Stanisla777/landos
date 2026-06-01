@@ -1,61 +1,40 @@
-<div class="advanced-editor__accordion-container js--training-materials-container"
-                             data-html-tooltip-container=
-                                 '{
-                                    "subtitle" : "<p>Курс скоро откроется.</p> <p>Оставьте заявку, чтобы получить уведомление о старте и пройти его одним из первых.</p>",
-                                    "form":{"uid": "webform-objects_wething","name": "WE_THING_COURSE","dataDmpkitEventUid":"some-event"},
-                                    "formInputs":{
-                                        "bxajaxid": {
-                                            "type":"hidden",
-                                            "name": "bxajaxid",
-                                            "value": "5601",
-                                            "id": "bxajaxid_56"
-                                        },
-                                        "ajaxCall": {
-                                            "type":"hidden",
-                                            "name":"AJAX_CALL",
-                                            "value": "Y"
-                                        },
-                                        "sessid": {
-                                            "type":"hidden",
-                                            "name":"sessid",
-                                            "value": "42c65c10",
-                                            "id": "sessid_3"
-                                        },
-                                        "webFormId": {
-                                            "type":"hidden",
-                                            "name":"WEB_FORM_ID",
-                                            "value": "7"
-                                        },
-                                        "fio":{
-                                            "type":"text",
-                                            "name":"form_text_8",
-                                            "caption":"Фамилия, имя, отчество",
-                                            "placeholder": "Введите ФИО",
-                                            "required": "true"
-                                        },
-                                        "mail":{
-                                            "type":"text",
-                                            "name":"form_email_135",
-                                            "caption":"E-mail",
-                                            "placeholder": "Введите E-mail",
-                                            "required": "true"
-                                        },
-                                        "agreeReceivePromo": {
-                                            "type":"checkbox",
-                                            "name": "form_checkbox_AGREE_TO_RECEIVE_PROMO[]",
-                                            "value": "679",
-                                            "required": false
-                                        }
-                                    },
-                                    "hiddenInput":{"bxajaxid":{"id":"bxajaxid_56","value":"5601"},"ajaxCall":{"value":"Y"},"sessid":{"id":"sessid_3","value":"42c65c10"},"webFormId":{"value":"7"}},
-                                    "fio":{"caption":"Фамилия, имя, отчество","placeholder":"Введите ФИО","required":"true","name":"form_text_8"},
-                                    "mail":{"caption":"E-mail","placeholder":"Введите E-mail","required":"true","name":"form_email_135"},
-                                    "agreeReceivePromo":{"required":true,"agreeReceivePromoName":"form_checkbox_AGREE_TO_RECEIVE_PROMO[]","agreeReceivePromoValue":"679"}
-                                }'
+methods: {
+  // Безопасный парсинг: возвращает объект или {}
+  safeJsonParse(value) {
+    if (!value) return {};
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Ошибка парсинга JSON:', e);
+        return {};
+      }
+    }
+    return {};
+  },
 
- <div class="another-thing-2025__training-materials-item js--training-materials-item"
-                                            data-html-tooltip=
-                                                '{
-                                                    "title" : "<span>Узнать о старте курса “Покупка собственного жилья”</span>"
-                                                }'></div>
-</div>
+  parseDataMethod(){
+    // 1. Парсим базовые данные (контейнер)
+    const containerData = this.safeJsonParse(this.modalData.htmlTooltipContainer);
+    
+    // 2. Парсим специфичные данные (элемент)
+    const itemData = this.safeJsonParse(this.modalData.htmlTooltip);
+    
+    // 3. Объединяем: itemData имеет приоритет при совпадении ключей
+    this.parseData = { ...containerData, ...itemData };
+  },
+  
+  handleOpen(event) {
+    this.modalData = event.detail || {};
+    this.parseDataMethod(); // ← Сначала парсим
+    this.$nextTick(() => {
+      this.setupEventListeners();
+    });
+    this.showModal = true;
+    document.body.classList.add('modal-opened');
+  },
+  // ... остальные методы
+}
