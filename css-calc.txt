@@ -1,103 +1,56 @@
-// В самом начале файла, до всех функций:
-if (typeof window.REPLY_FORM_TEMPLATE === 'undefined') {
-  window.REPLY_FORM_TEMPLATE = `
-    <form class="comments__item-form-answer js--comments__item-form-answer" novalidate>
-      <div id="captcha-element-comment-{captchaId}" data-captcha-element="1"></div>
-      <div class="form-comments__container">
-        <input type="hidden" name="elementId" value="{captchaId}">
-        <input class="form-comments__input js--form-comments-title" maxlength="40" type="text" name="name" placeholder="Введите имя и фамилию" value="" required>
-        <span class="input-text"></span>
-        <span class="textarea">Максимальное количество символов 40</span>
-        <div class="form-comments__wr-textarea js--wr-form-comments-text">
-          <textarea class="form-comments__textarea js--form-comments-text" maxlength="300" name="text" placeholder="Напишите комментарий..." required>{authorName},</textarea>
-        </div>
-        <span class="textarea">Максимальное количество символов 300</span>
-        <div class="form-comments__checkbox-container">
-          <label class="form-comments__checkbox-label">
-            <input class="form-comments__checkbox js--form-comments-check" type="checkbox" required>
-            <div></div>
-            <span class="form-comments__checkbox-span">
-              Согласен с <a href="/user-agreement/#moderationrule" target="_blank">правилами модерации</a> на сайте
-            </span>
-          </label>
-          <span class="checkbox">Согласитесь с условиями</span>
-        </div>
-        <input type="hidden" name="parent_id" value="{parentId}">
-        <button class="form-comments__button btn form-comments__button_disabled" disabled>Отправить</button>
-      </div>
-    </form>
-  `;
-}
-
-----------------------
-
-function initCommentsAnswerDelegation() {
+function initCommentsComplainDelegation() {
   // Защита от повторной инициализации
-  if (window.commentsAnswerDelegationInitialized) return;
-  window.commentsAnswerDelegationInitialized = true;
+  if (window.commentsComplainDelegationInitialized) return;
+  window.commentsComplainDelegationInitialized = true;
 
   document.addEventListener('click', (e) => {
-    const button = e.target.closest('.comments__item-button-answer');
-    if (!button) return;
+    const complainBtn = e.target.closest('.comments__item-button-complain');
+    if (!complainBtn) return;
     
     e.preventDefault();
     
-    const commentItem = button.closest('.comments__item');
-    if (!commentItem) return;
-    
-    const parentId = commentItem.dataset.id;
-    const titleEl = commentItem.querySelector('.comments__item-title');
-    const authorName = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
-    
-    const elementIdInput = document.querySelector('.js--form-comments .form-comments__container input[name="elementId"]');
-    const captchaId = elementIdInput && elementIdInput.value ? elementIdInput.value : `S${Date.now()}`;
-    
-    // 1. Закрываем и удаляем другие открытые формы
-    document.querySelectorAll('.comments__item-form-answer_active').forEach((form) => {
-      const currentReplyForm = commentItem.querySelector('.comments__item-form-answer');
-      if (form !== currentReplyForm) {
-        removeReplyForm(form);
-      }
-    });
-    
-    // 2. Проверяем, есть ли уже форма
-    let replyForm = commentItem.querySelector('.comments__item-form-answer');
-    
-    if (!replyForm) {
-      let formHTML = '';
-      if (typeof window.REPLY_FORM_TEMPLATE === 'string') {
-        formHTML = window.REPLY_FORM_TEMPLATE
-          .replace(/{captchaId}/g, captchaId)
-          .replace(/{parentId}/g, parentId)
-          .replace(/{authorName}/g, authorName);
-      }
+    if (complainBtn.dataset.id) {
+      const complainInput = document.querySelector('.comments__complain-comment');
+      const complainOverlay = document.querySelector('.comments__complain-overlay');
       
-      const itemInfo = commentItem.querySelector('.comments__item-info');
-      if (itemInfo) {
-        itemInfo.insertAdjacentHTML('beforeend', formHTML);
-        replyForm = itemInfo.querySelector('.comments__item-form-answer');
+      if (complainInput && complainOverlay) {
+        complainInput.value = complainBtn.dataset.id;
+        complainOverlay.classList.add('comments__complain-overlay_active');
         
-        // Инициализация валидации
-        if (typeof CommentsFormValidationAnswer === 'function') {
-          CommentsFormValidationAnswer();
+        if (!document.body.classList.contains('modal-opened')) {
+          document.body.classList.add('modal-opened', 'body-modal-not-remove-else', 'body-modal-not-remove');
+          AddClassBody();
         }
       }
     }
-    
-    // 3. Показываем форму
-    if (replyForm) {
-      replyForm.classList.add('comments__item-form-answer_active');
-      
-      // Фокус на textarea
-      const textarea = replyForm.querySelector('.js--form-comments-text');
-      if (textarea) {
-        setTimeout(() => textarea.focus(), 100);
-      }
-    }
+  });
+}
 
-document.addEventListener('DOMContentLoaded', function() {
-  initCommentsAnswerDelegation(); // ← Добавляем эту строку
-  // ... остальные инициализации
-});
+--------------------
+
+function commentsComplain() {
+  // ❌ УДАЛИТЬ блок с кнопками "Пожаловаться" — теперь это делегирование
+  
+  // ✅ ОСТАВИТЬ обработчики закрытия попапа (они статичны)
+  const buttonClassClose = ['.comments__complain-form-button_exit', '.comments__complain-popup-close'];
+  buttonClassClose.forEach((el) => {
+    const element = document.querySelector(el);
+    if (element) {
+      // Защита от повторной привязки
+      if (element.dataset.closeHandlerAttached) return;
+      element.dataset.closeHandlerAttached = 'true';
+      
+      element.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelector('.comments__complain-comment').value = '';
+        document.querySelector('.comments__complain-overlay').classList.remove('comments__complain-overlay_active');
+        document.body.classList.remove('modal-opened');
+        if (!document.body.classList.contains('non-scroll-for-body') && document.body.classList.contains('body-additional-class')) {
+          RemoveClassBody();
+        }
+        document.body.classList.remove('body-modal-not-remove');
+        document.body.classList.remove('body-modal-not-remove-else');
+      });
+    }
   });
 }
