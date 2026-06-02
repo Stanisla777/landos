@@ -1,11 +1,9 @@
-// modules/scroll-depth-tracker-clever-data.js
-
 const CONFIG = {
   thresholds: [25, 50, 75, 100],
   eventPrefix: 'scroll_',
   throttleMs: 200,
   contentSelector: '.js--calculated-scroll-area',
-  offsetBottomPx: 0 
+  offsetBottomPx: 0
 };
 
 const state = {
@@ -13,107 +11,53 @@ const state = {
   maxReached: 0,
   lastCheck: 0,
   geometry: null,
-  observer: null // Ссылка на ResizeObserver
+  observer: null
 };
 
 /**
- * Рассчитывает геометрию контента
+ * Рассчитывает границы полезного контента.
+ * Работает корректно на iOS/Safari благодаря scrollY + getBoundingClientRect
  */
 function calculateGeometry() {
   const elements = document.querySelectorAll(CONFIG.contentSelector);
-  
-  if (!elements || elements.length === 0) {
-    return null;
-  }
+  if (!elements || elements.length === 0) return null;
 
   let minTop = Infinity;
   let maxBottom = -Infinity;
 
   elements.forEach(el => {
     const rect = el.getBoundingClientRect();
-    
-    // Если элемент скрыт или имеет нулевую высоту, пропускаем или учитываем как 0
-    // rect.height может быть 0, если контент еще не отрендерился
-    if (rect.height === 0 && rect.width === 0) return;
+    // Пропускаем скрытые или нулевые блоки (ещё не отрендерились)
+    if (rect.height <= 0 || rect.width <= 0) return;
 
-    const absoluteTop = window.scrollY + rect.top;
-    const absoluteBottom = absoluteTop + rect.height;
+    const absTop = window.scrollY + rect.top;
+    const absBottom = absTop + rect.height;
 
-    if (absoluteTop < minTop) minTop = absoluteTop;
-    if (absoluteBottom > maxBottom) maxBottom = absoluteBottom;
+    if (absTop < minTop) minTop = absTop;
+    if (absBottom > maxBottom) maxBottom = absBottom;
   });
 
-  // Если ничего не нашли корректного
   if (minTop === Infinity) return null;
-
-  const height = maxBottom - minTop;
 
   return {
     start: minTop,
     end: maxBottom,
-    height: height
+    height: maxBottom - minTop // Учитывает разрывы между блоками (в вашем случае ~40px)
   };
 }
 
-/**
- * Проверяет, загрузились ли критические изображения внутри блоков
- * Это нужно для lazy-loading картинок, которые могут менять высоту блока
- */
-function waitForImagesAndInit() {
-  const elements = document.querySelectorAll(`${CONFIG.contentSelector} img[loading="lazy"]`);
-  
-  // Если ленивых картинок нет, считаем сразу
-  if (!elements || elements.length === 0) {
-    initTracker();
-    return;
-  }
-
-  // Ждем загрузки всех ленивых картинок в зоне контента
-  // Используем Promise.all, но с таймаутом безопасности, чтобы не ждать вечно
-  const promises = Array.from(elements).map(img => {
-    if (img.complete) return Promise.resolve(); // Уже загружено
-    return new Promise((resolve) => {
-      img.addEventListener('load', resolve, { once: true });
-      img.addEventListener('error', resolve, { once: true }); // Даже если ошибка, считаем высоту какой есть
-    });
-  });
-
-  // Таймаут безопасности: если картинки грузятся дольше 3 сек, всё равно запускаем трекинг
-  const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000));
-
-  Promise.race([Promise.all(promises), timeoutPromise]).then(() => {
-    initTracker();
-  });
-}
-
-function initTracker() {
-  // 1. Считаем геометрию первый раз
-  state.geometry = calculateGeometry();
-  
-  // 2. Запускаем первичную проверку (вдруг пользователь уже проскроллил)
-  checkScrollDepth();
-
-  // 3. Настраиваем ResizeObserver для отслеживания изменений высоты
-  setupResizeObserver();
-}
-
 function setupResizeObserver() {
-  if ('ResizeObserver' in window) {
-    if (state.observer) state.observer.disconnect();
+  if (!('ResizeObserver' in window)) return;
+  if (state.observer) state.observer.disconnect();
 
-    state.observer = new ResizeObserver(() => {
-      // При изменении размера любого из блоков сбрасываем кэш геометрии
-      // и пересчитываем при следующем скролле
-      state.geometry = null; 
-      
-      // Можно сразу пересчитать, но лучше дождаться скролла для производительности
-      // Или вызвать checkScrollDepth(), если хотим мгновенной реакции
-      checkScrollDepth(); 
-    });
+  state.observer = new ResizeObserver(() => {
+    // Контент изменился (картинки загрузились, Swiper инициализировался, Vue подгрузил блок)
+    state.geometry = null; 
+    // Следующий скролл пересчитает высоту заново
+  });
 
-    const elements = document.querySelectorAll(CONFIG.contentSelector);
-    elements.forEach(el => state.observer.observe(el));
-  }
+  const elements = document.querySelectorAll(CONFIG.contentSelector);
+  elements.forEach(el => state.observer.observe(el));
 }
 
 function sendToCleverData(eventName) {
@@ -135,16 +79,14 @@ function getScrollPercent() {
   if (!state.geometry || state.geometry.height <= 0) return 0;
 
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  const { start, height } = state.geometry;
+  const scrolled = scrollTop - state.geometry.start;
+  
+  if (scrolled < 0) return 0; // Ещё не дошли до начала инструкции
 
-  const scrolledIntoContent = scrollTop - start;
+  const targetHeight = state.geometry.height - CONFIG.offsetBottomPx;
+  if (targetHeight <= 0) return scrolled >= 0 ? 100 : 0;
 
-  if (scrolledIntoContent < 0) return 0;
-
-  const targetHeight = height - CONFIG.offsetBottomPx;
-  if (targetHeight <= 0) return scrolledIntoContent >= 0 ? 100 : 0;
-
-  const percent = (scrolledIntoContent / targetHeight) * 100;
+  const percent = (scrolled / targetHeight) * 100;
   return Math.min(100, Math.max(0, Math.round(percent)));
 }
 
@@ -153,31 +95,27 @@ function checkScrollDepth() {
   if (now - state.lastCheck < CONFIG.throttleMs) return;
   state.lastCheck = now;
 
-  if (!state.geometry) {
-    state.geometry = calculateGeometry();
-  }
-
-  if (!state.geometry || state.geometry.height === 0) return;
-
-  const currentPercent = getScrollPercent();
+  const percent = getScrollPercent();
 
   for (const threshold of CONFIG.thresholds) {
-    if (threshold > state.maxReached && currentPercent >= threshold) {
-      const eventName = CONFIG.eventPrefix + threshold;
-      if (!state.sent.has(threshold)) {
-        sendToCleverData(eventName);
-        state.sent.add(threshold);
-        state.maxReached = threshold;
-      }
+    // Отправляем только если перешли порог И этот порог ещё не отправляли
+    if (threshold > state.maxReached && percent >= threshold) {
+      sendToCleverData(CONFIG.eventPrefix + threshold);
+      state.sent.add(threshold);
+      state.maxReached = threshold;
       break;
     }
   }
 }
 
 export default function scrollDepthTrackerCleverData() {
-  // Запуск после DOMContentLoaded (вызывается из index.js)
-  // Ждем загрузки картинок перед стартом
-  waitForImagesAndInit();
+  // Запускаем трекинг сразу, но с микро-задержкой для первоначального layout
+  // Это не блокирует скролл, но даёт браузеру 100мс на отрисовку DOM
+  setTimeout(() => {
+    state.geometry = calculateGeometry();
+    setupResizeObserver();
+    checkScrollDepth(); // Проверка якорей или раннего скролла
+  }, 100);
 
   let ticking = false;
 
@@ -192,7 +130,7 @@ export default function scrollDepthTrackerCleverData() {
   };
 
   const onResize = () => {
-    state.geometry = null; 
+    state.geometry = null; // При ресайзе пересчитаем геометрию на лету
     if (!ticking) {
       window.requestAnimationFrame(() => {
         state.geometry = calculateGeometry();
