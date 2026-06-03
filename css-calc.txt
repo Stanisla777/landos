@@ -1,59 +1,67 @@
-<div class="calc-tax-deduc-new__col-input js--tex-deduc-input">
-        <input type="text" placeholder="XXXXX.XX.XXXX"
-               ref="dataFieldCount"
-               @blur="moveAnotherElement"
-               @focus="inpFocus"/>
-        <div class="calc-tax-deduc-new__input-clear js--clear-calc-tax"
-             :class="dataFieldCount!=='' ?
-         'active' : ''"
-             @click="cleaerField">
-        </div>
-      </div>
+<template>
+  <div class="calc-tax-deduc-new__col-input js--tex-deduc-input">
+    <input 
+      type="text" 
+      placeholder="XXXXX.XX.XXXX"
+      ref="statementInput"
+      @blur="moveAnotherElement"
+      @focus="inpFocus"
+    />
+    <div 
+      class="calc-tax-deduc-new__input-clear js--clear-calc-tax"
+      :class="{ active: statementValue !== '' }"
+      @click="clearField"
+    ></div>
+  </div>
+</template>
 
 <script>
-import IMask from "imask";
-data(){
+import IMask from 'imask';
+
+export default {
+  data() {
     return {
-      dataFieldCount: '',
-      ageMaskRef: null
+      statementValue: '',
+      canForm: false,
+      maskRef: null
+    };
+  },
+  mounted() {
+    this.initMask();
+  },
+  beforeUnmount() {
+    if (this.maskRef) {
+      this.maskRef.destroy();
     }
   },
-methods:{
-    initAgeMask() {
-      this.ageMaskRef = IMask(this.$refs.dataFieldCount, {
-        mask: Number,
-        min: 0,
-        max: 999999, // ← временно ставим большое число, чтобы не блокировать ввод
-        scale: 0,
-        signed: false,
-        thousandsSeparator: '',
-        radix: '.',
-        mapToRadix: [],
-        normalizeZeros: true,
-        autofix: false, // отключаем, если не поддерживается
+  methods: {
+    initMask() {
+      this.maskRef = IMask(this.$refs.statementInput, {
+        mask: function (value) {
+          if (/^[eе]/.test(value)) {
+            return {
+              mask: '$00000.00.0000',
+              definitions: { '$': /[eе]/ }
+            };
+          }
+          return { mask: '00000.00.0000' };
+        },
+        lazy: true
       });
 
-      this.ageMaskRef.on('accept', () => {
-        const unmasked = this.ageMaskRef.unmaskedValue;
-        if (!unmasked) {
-          this.dataFieldCount = '';
-          return;
-        }
-        let num = parseInt(unmasked, 10);
-        if (isNaN(num)) num = 0;
-        // Ограничиваем до 30
-        if (num > 30) {
-          num = 30;
-          // Принудительно обновляем поле
-          this.ageMaskRef.unmaskedValue = '30';
-        }
-        this.dataFieldCount = this.ageMaskRef.value;
+      this.maskRef.on('accept', () => {
+        this.statementValue = this.maskRef.value;
+        const unmasked = this.maskRef.unmaskedValue;
+        this.canForm = /^([eе]\d{11}|\d{11})$/.test(unmasked);
       });
     },
-
-    cleaerField(){
-      if (this.ageMaskRef) {
-        this.ageMaskRef.value = '';
+    clearField() {
+      if (this.maskRef) {
+        this.maskRef.value = '';
       }
-    }
-  },
+    },
+    moveAnotherElement() { /* ... */ },
+    inpFocus() { /* ... */ }
+  }
+};
+</script>
