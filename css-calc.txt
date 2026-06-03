@@ -1,56 +1,146 @@
-function initCommentsComplainDelegation() {
-  // Защита от повторной инициализации
-  if (window.commentsComplainDelegationInitialized) return;
-  window.commentsComplainDelegationInitialized = true;
+vueAppManager.js
 
-  document.addEventListener('click', (e) => {
-    const complainBtn = e.target.closest('.comments__item-button-complain');
-    if (!complainBtn) return;
-    
-    e.preventDefault();
-    
-    if (complainBtn.dataset.id) {
-      const complainInput = document.querySelector('.comments__complain-comment');
-      const complainOverlay = document.querySelector('.comments__complain-overlay');
-      
-      if (complainInput && complainOverlay) {
-        complainInput.value = complainBtn.dataset.id;
-        complainOverlay.classList.add('comments__complain-overlay_active');
-        
-        if (!document.body.classList.contains('modal-opened')) {
-          document.body.classList.add('modal-opened', 'body-modal-not-remove-else', 'body-modal-not-remove');
-          AddClassBody();
-        }
-      }
+import { createApp } from 'vue';
+
+class VueAppManager {
+  constructor() {
+    this.appTypes = new Map(); // Зарегистрированные типы приложений
+    this.instances = new Map(); // Созданные экземпляры
+  }
+
+  // Регистрация нового типа приложения
+  registerAppType(type, component) {
+    this.appTypes.set(type, component);
+  }
+
+  // Создание экземпляра приложения
+  createInstance(type, containerId, props = {}) {
+    const component = this.appTypes.get(type);
+    if (!component) {
+      console.error(`❌ Тип приложения "${type}" не зарегистрирован`);
+      return null;
     }
-  });
+
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`❌ Контейнер #${containerId} не найден`);
+      return null;
+    }
+
+    // Защита от двойной инициализации
+    if (container.__vue_app__) {
+      return container.__vue_app__;
+    }
+
+    try {
+      const app = createApp(component, props);
+      app.mount(container);
+
+      // Сохраняем информацию об экземпляре
+      const instanceInfo = {
+        app,
+        containerId,
+        type,
+        props,
+        createdAt: new Date().toISOString()
+      };
+
+      if (!this.instances.has(type)) {
+        this.instances.set(type, new Map());
+      }
+      this.instances.get(type).set(containerId, instanceInfo);
+      return app;
+    } catch (error) {
+      console.error(`❌ Ошибка создания ${type}:`, error);
+    }
+  }
+
+  // Получить все экземпляры определённого типа
+  getInstances(type) {
+    return this.instances.get(type) || new Map();
+  }
+
+  // Удалить экземпляр
+  destroyInstance(type, containerId) {
+    const instances = this.instances.get(type);
+    if (instances && instances.has(containerId)) {
+      const { app } = instances.get(containerId);
+      app.unmount();
+      instances.delete(containerId);
+    }
+  }
+
+  // Очистить все экземпляры
+  destroyAll() {
+    this.instances.forEach((instances, type) => {
+      instances.forEach(({ app }) => app.unmount());
+    });
+    this.instances.clear();
+  }
+
+  // Отладка: показать состояние менеджера
+  info() {
+    this.instances.forEach((instances, type) => {
+      instances.forEach((info, id) => {
+        // console.log(`    - #${id} (${info.createdAt})`);
+      });
+    });
+  }
 }
 
---------------------
+export default new VueAppManager();
+---------------------------------
+основной index.js
 
-function commentsComplain() {
-  // ❌ УДАЛИТЬ блок с кнопками "Пожаловаться" — теперь это делегирование
-  
-  // ✅ ОСТАВИТЬ обработчики закрытия попапа (они статичны)
-  const buttonClassClose = ['.comments__complain-form-button_exit', '.comments__complain-popup-close'];
-  buttonClassClose.forEach((el) => {
-    const element = document.querySelector(el);
-    if (element) {
-      // Защита от повторной привязки
-      if (element.dataset.closeHandlerAttached) return;
-      element.dataset.closeHandlerAttached = 'true';
-      
-      element.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.querySelector('.comments__complain-comment').value = '';
-        document.querySelector('.comments__complain-overlay').classList.remove('comments__complain-overlay_active');
-        document.body.classList.remove('modal-opened');
-        if (!document.body.classList.contains('non-scroll-for-body') && document.body.classList.contains('body-additional-class')) {
-          RemoveClassBody();
-        }
-        document.body.classList.remove('body-modal-not-remove');
-        document.body.classList.remove('body-modal-not-remove-else');
-      });
+// Регистрируем типы приложений, которые не имеют ленивую загрузку и которые на всез страницах проекта
+import {
+  vueAppManager,
+  TelegramBlock,
+  SimpleRatingUniversal,
+  UsefulnessSurvey,
+} from './vue-apps';
+
+vueAppManager.registerAppType('telegram-block', TelegramBlock);
+vueAppManager.registerAppType('simple-rating', SimpleRatingUniversal);
+vueAppManager.registerAppType('usefulness-survey', UsefulnessSurvey);
+
+const componentMap = {
+  'housing-cooperative': () => import('./vue-apps/HousingCooperativeRequest.vue'),
+  'housing-appraisal': () => import('./vue-apps/HousingAppraisal/index.vue'),
+  'key-indicators': () => import('./vue-apps/KeyIndicators/index.vue'),
+};
+
+// Функция для динамической загрузки компонента
+async function loadComponent(appType) {
+  const loader = componentMap[appType];
+  if (!loader) {
+    console.error(`❌ Неизвестный тип приложения: ${appType}`);
+    return null;
+  }
+  try {
+    // console.log(`Загрузка компонента: ${appType}`);
+    const module = await loader();
+    return module.default || module;
+  } catch (error) {
+    console.error(`Ошибка загрузки ${appType}:`, error);
+    return null;
+  }
+}
+
+// Функция для создания экземпляра приложения (без изменений)
+function createAppInstance(container, appType, index) {
+  const instanceId = container.dataset.instanceId || `${appType}-${index}`;
+
+  const props = { instanceId };
+  Object.keys(container.dataset).forEach(key => {
+    if (key !== 'vueApp' && key !== 'instanceId') {
+      const camelKey = key.replace(/-([a-z])/g, g => g[1].toUpperCase());
+      props[camelKey] = container.dataset[key];
     }
   });
+
+  const containerId = `vue-app-${instanceId}`;
+  container.id = containerId;
+
+  vueAppManager.createInstance(appType, containerId, props);
 }
