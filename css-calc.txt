@@ -1,106 +1,25 @@
-<template>
-  <div class="calculator__block grey">
-    <div class="check-service__progress">
-      <p>Шаг 1 из 3</p>
-      <div class="check-service__progress-line step-1">
-        <img src="img/progress-line.svg" alt="">
-      </div>
-    </div>
-    <div class="check-service__main-body">
-      <p class="check-service__block-title">Введите номер заявления</p>
-      <p class="check-service__block-sub-title">
-        Если у вас нет номера заявления, вы можете узнать его у своего кредитора или оставить заявку - наши специалисты
-        свяжутся и помогут в решении данного вопроса.
-      </p>
-
-    </div>
-
-
-    <div class="check-service__block-form">
-      <div class="calc-tax-deduc-new__col-input js--tex-deduc-input">
-        <input
-          type="text"
-          placeholder="XXXXX.XX.XXXX"
-          ref="statementInput"
-          @blur="moveAnotherElement"
-          @focus="inpFocus"
-        />
-        <div
-          class="calc-tax-deduc-new__input-clear js--clear-calc-tax"
-          :class="{ active: statementValue !== '' }"
-          @click="clearField"
-        ></div>
-      </div>
-    </div>
-
-
-
-  </div>
-</template>
-
-<script>
-import numberFormatting from "../custom-scripts/necessaryMethods";
-import IMask from "imask";
-
-export default {
-  name: "component-number-application",
-  mixins: [numberFormatting],
-  data(){
-    return {
-      statementValue: '',
-      canForm: false,
-      maskRef: null
-    }
-  },
-  methods: {
-    initMask() {
+initMask() {
       this.maskRef = IMask(this.$refs.statementInput, {
-        mask: function (value) {
-          if (/^[eе]/.test(value)) {
-            return {
-              mask: '$00000.00.0000',
-              definitions: { '$': /[eе]/ }
-            };
+        // Передаём массив масок. IMask сам выберет подходящую.
+        mask: [
+          {
+            mask: '$00000.00.0000',
+            definitions: {
+              '$': /[eе]/ // Разрешаем только эти две буквы на первой позиции
+            }
+          },
+          {
+            mask: '00000.00.0000' // Резервная маска, если начали с цифры
           }
-          return { mask: '00000.00.0000' };
-        },
-        lazy: true
+        ],
+        lazy: false // Рекомендую поставить false, чтобы пользователь сразу видел формат __ ___.__.____
       });
 
       this.maskRef.on('accept', () => {
         this.statementValue = this.maskRef.value;
         const unmasked = this.maskRef.unmaskedValue;
+        
+        // Проверяем: ровно 11 цифр ИЛИ (буква е/е + 11 цифр)
         this.canForm = /^([eе]\d{11}|\d{11})$/.test(unmasked);
       });
     },
-    clearField() {
-      if (this.maskRef) {
-        this.maskRef.value = '';
-      }
-    },
-  },
-  watch:{
-    statementValue(){
-      if (this.statementValue!==''){
-
-      }
-      else {
-
-      }
-    }
-  },
-  mounted() {
-    this.initMask();
-    console.log(this.initMask);
-  },
-  beforeUnmount() {
-    if (this.maskRef) {
-      this.maskRef.destroy();
-    }
-  },
-}
-</script>
-
-<style scoped>
-
-</style>
