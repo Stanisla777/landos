@@ -1,1 +1,96 @@
-<p class="check-service__resend-code-counter">Отправить повторно через <span>59</span> сек.</p>
+<template>
+  <!-- ... ваш код второго шага ... -->
+
+  <!-- Показываем таймер, пока время > 0 -->
+  <p v-if="timeLeft > 0" class="check-service__resend-code-counter">
+    Отправить повторно через <span>{{ timeLeft }}</span> сек.
+  </p>
+
+  <!-- Показываем кнопку/ссылку, когда время вышло -->
+  <p v-else class="check-service__resend-code-active">
+    <a href="#" @click.prevent="handleResend">Отправить код повторно</a>
+  </p>
+
+</template>
+
+--------------------
+
+<script>
+export default {
+  name: "component-sms-step",
+  data() {
+    return {
+      timeLeft: 0,      // Текущее значение секунд
+      timerId: null,    // Ссылка на интервал, чтобы мы могли его остановить
+      // ... ваши остальные переменные (statementValue, isSmsValid и т.д.)
+    };
+  },
+  methods: {
+    // 1. Метод запуска таймера
+    startTimer(seconds) {
+      // Сначала гарантированно останавливаем старый таймер, если он был
+      this.clearTimer();
+      
+      // Устанавливаем полученное с бэкенда значение
+      this.timeLeft = Number(seconds);
+
+      // Запускаем отсчет
+      this.timerId = setInterval(() => {
+        if (this.timeLeft > 0) {
+          this.timeLeft--;
+        } else {
+          // Как только дошли до 0, останавливаем таймер
+          this.clearTimer();
+        }
+      }, 1000); // 1000 мс = 1 секунда
+    },
+
+    // 2. Метод принудительной остановки и очистки
+    clearTimer() {
+      if (this.timerId) {
+        clearInterval(this.timerId);
+        this.timerId = null;
+        // Опционально: можно сбрасывать в 0, но v-if и так скроет элемент
+        // this.timeLeft = 0; 
+      }
+    },
+
+    // 3. Пример вашего метода, который делает POST запрос на 1 шаге
+    async submitStepOne() {
+      try {
+        // const response = await axios.post('/api/send-sms', { phone: '...' });
+        
+        // Допустим, бэкенд вернул: { success: true, resendDelay: 59 }
+        const mockApiResponse = { resendDelay: 59 }; 
+
+        // ... ваша логика переключения на шаг 2 ...
+        // this.currentStep = 2;
+
+        // ЗАПУСКАЕМ ТАЙМЕР с полученным значением!
+        this.startTimer(mockApiResponse.resendDelay);
+
+      } catch (error) {
+        console.error("Ошибка отправки:", error);
+      }
+    },
+
+    // 4. Метод, который сработает при клике на "Отправить повторно"
+    handleResend() {
+      if (this.timeLeft === 0) {
+        // Здесь вы делаете повторный POST запрос
+        // this.submitStepOne(); 
+        
+        // И снова запускаете таймер (например, на те же 59 сек или сколько вернет сервер)
+        // this.startTimer(59);
+        
+        console.log("Повторная отправка запроса...");
+      }
+    }
+  },
+  
+  // ОЧЕНЬ ВАЖНО: Очищаем таймер, если пользователь ушел со страницы или компонент уничтожился
+  beforeUnmount() {
+    this.clearTimer();
+  }
+}
+</script>
