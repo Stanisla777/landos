@@ -1,64 +1,31 @@
-async downloadArchive() {
-  this.isDownloading = true;
-  this.downloadError = null;
+<button class="btn_s black btn-icon-download-left mobile-100" type="button" @click="sendingDownloadDocument">Скачать</button>
 
-  try {
-    // 1. Делаем ваш POST запрос (замените на ваш реальный вызов API)
-    // const response = await axios.post('/api/get-certificate', { /* данные */ });
-    // const result = response.data; 
-    
-    // Для примера возьмем то, что вернет ваш бэкенд:
-    const result = {
-      url: "https://api.mysite.com/downloads/spravka_2023.pdf?token=abc123&v=1"
-    };
+sendingDownloadDocument(){
+      store.dispatch('ActionDownloadDocument')
+    },
 
-    // 2. Умное извлечение имени файла
-    let fileName = 'document.zip'; // Запасное имя по умолчанию
+store.js
 
-    if (result.url) {
-      try {
-        // Создаем объект URL. Второй аргумент нужен на случай, 
-        // если бэкенд вернет относительный путь (например, "/downloads/file.zip")
-        const urlObj = new URL(result.url, window.location.origin);
-        
-        // urlObj.pathname вернет только путь: "/downloads/spravka_2023.pdf"
-        // .split('/').pop() возьмет последний элемент после слэша: "spravka_2023.pdf"
-        const extractedName = urlObj.pathname.split('/').pop();
-        
-        // Проверяем, что имя не пустое и содержит точку (похоже на файл)
-        if (extractedName && extractedName.includes('.')) {
-          fileName = decodeURIComponent(extractedName); // Декодируем, если там есть %20 и т.д.
-        }
-      } catch (e) {
-        console.warn('Не удалось распарсить URL для имени файла, используем запасное', e);
-      }
+state:{
+   
+  },
+  getters:{}
+
+actions:{
+    //скачивание файла
+    ActionDownloadDocument({commit,state}){
+      commit('mutationDownloadDocument')
     }
+  },
 
-    // 3. Скачивание файла (используем тот же надежный Blob-метод)
-    const fetchResponse = await fetch(result.url);
+mutations:{
     
-    if (!fetchResponse.ok) {
-      throw new Error(`Ошибка при загрузке файла: ${fetchResponse.status}`);
-    }
+    mutationDownloadDocument(state){
+      //тут будет ajax запрос
+      //и это всё будет в post запросе в success
 
-    const blob = await fetchResponse.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
+    },
 
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = fileName; // <-- Сюда попадет чистое имя: "spravka_2023.pdf"
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Очистка памяти
-    window.URL.revokeObjectURL(downloadUrl);
 
-  } catch (error) {
-    console.error('Ошибка при скачивании:', error);
-    this.downloadError = 'Не удалось скачать файл. Попробуйте позже.';
-  } finally {
-    this.isDownloading = false;
-  }
-}
+
+  },
