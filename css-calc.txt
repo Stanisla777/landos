@@ -1,14 +1,74 @@
-<div class="calc-tax-deduc-new__col-input js--tex-deduc-input">
-          <input
-            type="text"
-            placeholder="Введите код из СМС"
-            ref="statementInput"
-            @blur="moveAnotherElement"
-            @focus="inpFocus"
-          />
-          <div
-            class="calc-tax-deduc-new__input-clear js--clear-calc-tax"
-            :class="{ active: statementValue !== '' }"
-            @click="clearField"
-          ></div>
-        </div>
+<template>
+  <div class="calc-tax-deduc-new__col-input js--tex-deduc-input">
+    <input
+      type="text"
+      placeholder="Введите код из СМС"
+      ref="smsInput"
+      @blur="moveAnotherElement"
+      @focus="inpFocus"
+    />
+    <div
+      class="calc-tax-deduc-new__input-clear js--clear-calc-tax"
+      :class="{ active: smsCodeValue !== '' }"
+      @click="clearField"
+    ></div>
+  </div>
+  
+  <!-- Пример кнопки, которая активируется только когда введено ровно 5 цифр -->
+  <button :disabled="!isSmsValid">Подтвердить код</button>
+</template>
+
+<script>
+import IMask from "imask";
+
+export default {
+  name: "component-sms-code",
+  data() {
+    return {
+      smsCodeValue: '',
+      isSmsValid: false, // Будет true, только когда введено ровно 5 цифр
+      maskRef: null
+    };
+  },
+  methods: {
+    initMask() {
+      this.maskRef = IMask(this.$refs.smsInput, {
+        mask: '00000', // Ровно 5 цифр. '0' сохраняет ведущие нули (например, 00123)
+        lazy: false    // Показывает плейсхолдеры (например, _ _ _ _ _), чтобы пользователь видел длину
+      });
+
+      this.maskRef.on('accept', () => {
+        this.smsCodeValue = this.maskRef.value;
+        
+        // isComplete - встроенное свойство IMask. 
+        // Оно становится true, когда введены все 5 символов маски.
+        this.isSmsValid = this.maskRef.isComplete;
+      });
+    },
+    
+    clearField() {
+      if (this.maskRef) {
+        this.maskRef.value = '';
+        // Событие 'accept' сработает автоматически, 
+        // smsCodeValue станет '', а isSmsValid станет false
+      }
+    },
+
+    moveAnotherElement() {
+      // Ваша логика
+    },
+    
+    inpFocus() {
+      // Ваша логика
+    }
+  },
+  mounted() {
+    this.initMask();
+  },
+  beforeUnmount() {
+    if (this.maskRef) {
+      this.maskRef.destroy();
+    }
+  }
+};
+</script>
