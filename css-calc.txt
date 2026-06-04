@@ -1,74 +1,64 @@
-<script>
-export default {
-  name: "component-download",
-  data() {
-    return {
-      isDownloading: false,
-      downloadError: null
+async downloadArchive() {
+  this.isDownloading = true;
+  this.downloadError = null;
+
+  try {
+    // 1. Делаем ваш POST запрос (замените на ваш реальный вызов API)
+    // const response = await axios.post('/api/get-certificate', { /* данные */ });
+    // const result = response.data; 
+    
+    // Для примера возьмем то, что вернет ваш бэкенд:
+    const result = {
+      url: "https://api.mysite.com/downloads/spravka_2023.pdf?token=abc123&v=1"
     };
-  },
-  methods: {
-    async downloadArchive() {
-      this.isDownloading = true;
-      this.downloadError = null;
 
-      // Путь к файлу. 
-      // ВАЖНО: В Vue файлы для прямого доступа по URL должны лежать в папке `public`!
-      const fileUrl = 'http://localhost:8081/img/documents/archive.zip'; 
-      const fileName = 'documents_archive.zip'; // Имя, под которым файл сохранится у пользователя
+    // 2. Умное извлечение имени файла
+    let fileName = 'document.zip'; // Запасное имя по умолчанию
 
+    if (result.url) {
       try {
-        // 1. Делаем запрос на получение файла
-        const response = await fetch(fileUrl);
+        // Создаем объект URL. Второй аргумент нужен на случай, 
+        // если бэкенд вернет относительный путь (например, "/downloads/file.zip")
+        const urlObj = new URL(result.url, window.location.origin);
         
-        // 2. Проверяем, успешен ли запрос (код 200-299)
-        if (!response.ok) {
-          throw new Error(`Ошибка сети: ${response.status}`);
+        // urlObj.pathname вернет только путь: "/downloads/spravka_2023.pdf"
+        // .split('/').pop() возьмет последний элемент после слэша: "spravka_2023.pdf"
+        const extractedName = urlObj.pathname.split('/').pop();
+        
+        // Проверяем, что имя не пустое и содержит точку (похоже на файл)
+        if (extractedName && extractedName.includes('.')) {
+          fileName = decodeURIComponent(extractedName); // Декодируем, если там есть %20 и т.д.
         }
-
-        // 3. Преобразуем ответ в Blob (бинарный объект)
-        const blob = await response.blob();
-
-        // 4. Создаем временную ссылку на этот Blob в памяти браузера
-        const downloadUrl = window.URL.createObjectURL(blob);
-
-        // 5. Создаем невидимый элемент <a> для инициирования скачивания
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = fileName; // Атрибут download заставляет браузер скачать файл, а не открывать его
-        
-        // 6. Добавляем ссылку в DOM, кликаем по ней и сразу удаляем
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // 7. Очищаем память, удаляя временную ссылку на Blob
-        window.URL.revokeObjectURL(downloadUrl);
-
-      } catch (error) {
-        console.error('Ошибка при скачивании:', error);
-        this.downloadError = 'Не удалось скачать файл. Попробуйте позже.';
-      } finally {
-        // В любом случае (успех или ошибка) убираем состояние загрузки
-        this.isDownloading = false;
+      } catch (e) {
+        console.warn('Не удалось распарсить URL для имени файла, используем запасное', e);
       }
     }
+
+    // 3. Скачивание файла (используем тот же надежный Blob-метод)
+    const fetchResponse = await fetch(result.url);
+    
+    if (!fetchResponse.ok) {
+      throw new Error(`Ошибка при загрузке файла: ${fetchResponse.status}`);
+    }
+
+    const blob = await fetchResponse.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName; // <-- Сюда попадет чистое имя: "spravka_2023.pdf"
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Очистка памяти
+    window.URL.revokeObjectURL(downloadUrl);
+
+  } catch (error) {
+    console.error('Ошибка при скачивании:', error);
+    this.downloadError = 'Не удалось скачать файл. Попробуйте позже.';
+  } finally {
+    this.isDownloading = false;
   }
 }
-</script>
-
-<style scoped>
-.btn-download {
-  padding: 10px 20px;
-  cursor: pointer;
-  /* ваши стили */
-}
-.btn-download:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.error-message {
-  color: red;
-  margin-top: 10px;
-}
-</style>
