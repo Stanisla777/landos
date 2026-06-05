@@ -1,37 +1,8 @@
-initMask() {
-  this.maskRef = IMask(this.$refs.statementInput, {
-    mask: [
-      {
-        mask: '$00000.00.0000',
-        definitions: {
-          // Разрешаем ввод всех 4 вариантов буквы "е"
-          '$': /[eеEЕ]/
-        },
-        // Хук prepare срабатывает ДО применения маски
-        prepare: function (str) {
-          // Заменяем ЛЮБОЙ вариант буквы "е" (латинскую/кириллическую, строчную/заглавную)
-          // на латинскую строчную 'e'
-          // Флаг 'g' нужен, чтобы это работало даже при вставке из буфера обмена
-          return str.replace(/[eеEЕ]/g, 'e');
-        }
-      },
-      {
-        mask: '00000.00.0000'
-      }
-    ],
-    lazy: false
-  });
-
-  this.maskRef.on('accept', () => {
-    if (this.errorInput === true) {
-      this.errorInput = false;
+modalContent:{
+      icon:'time.png',
+      title:'Загрузка файла',
+      description:'Идет формирование и подписание справки УКЭП. Не покидайте страницу. Среднее время ожидания — до 1 минуты',
+      button:'Закрыть'
     }
-    this.statementValue = this.maskRef.value;
-    const unmasked = this.maskRef.unmaskedValue;
-    
-    // Поскольку prepare уже гарантированно превратил любую "е" в латинскую 'e',
-    // в unmaskedValue никогда не будет кириллической 'е'.
-    // Но проверка оставлена с обоими вариантами на случай, если что-то пойдёт не так.
-    this.fieldInput = /^([eе]\d{11}|\d{11})$/.test(unmasked);
-  });
-},
+
+<p class="modal__sending-result-title" v-if="modal_content?.title" v-html="modal_content?.title">
