@@ -1,36 +1,37 @@
 initMask() {
-      this.maskRef = IMask(this.$refs.statementInput, {
-        mask: [
-          {
-            mask: '$00000.00.0000',
-            definitions: {
-              // Разрешаю ввод и строчных, и заглавных букв
-              '$': /[eеEЕ]/
-            },
-            // Хук prepare срабатывает ДО применения маски
-            //закомментировал, так как всё равно каой будет регистр, всё равно отправляю только цифры
-            prepare: function (str) {
-              // Заменяем заглавную латинскую E на строчную e
-              // Заменяем заглавную кириллическую Е на строчную е
-              // (используем replace с флагом 'g', чтобы это работало даже при вставке из буфера обмена)
-              return str.replace(/[еЕ]/g, function(match) {
-                return match === 'E' ? 'e' : 'е';
-              });
-            }
-          },
-          {
-            mask: '00000.00.0000'
-          }
-        ],
-        lazy: false
-      });
-
-      this.maskRef.on('accept', () => {
-        if (this.errorInput===true) {
-          this.errorInput=false
+  this.maskRef = IMask(this.$refs.statementInput, {
+    mask: [
+      {
+        mask: '$00000.00.0000',
+        definitions: {
+          // Разрешаем ввод всех 4 вариантов буквы "е"
+          '$': /[eеEЕ]/
+        },
+        // Хук prepare срабатывает ДО применения маски
+        prepare: function (str) {
+          // Заменяем ЛЮБОЙ вариант буквы "е" (латинскую/кириллическую, строчную/заглавную)
+          // на латинскую строчную 'e'
+          // Флаг 'g' нужен, чтобы это работало даже при вставке из буфера обмена
+          return str.replace(/[eеEЕ]/g, 'e');
         }
-        this.statementValue = this.maskRef.value;
-        const unmasked = this.maskRef.unmaskedValue;
-        this.fieldInput = /^([eе]\d{11}|\d{11})$/.test(unmasked);
-      });
-    },
+      },
+      {
+        mask: '00000.00.0000'
+      }
+    ],
+    lazy: false
+  });
+
+  this.maskRef.on('accept', () => {
+    if (this.errorInput === true) {
+      this.errorInput = false;
+    }
+    this.statementValue = this.maskRef.value;
+    const unmasked = this.maskRef.unmaskedValue;
+    
+    // Поскольку prepare уже гарантированно превратил любую "е" в латинскую 'e',
+    // в unmaskedValue никогда не будет кириллической 'е'.
+    // Но проверка оставлена с обоими вариантами на случай, если что-то пойдёт не так.
+    this.fieldInput = /^([eе]\d{11}|\d{11})$/.test(unmasked);
+  });
+},
