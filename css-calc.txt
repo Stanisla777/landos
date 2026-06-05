@@ -1,31 +1,36 @@
-<button class="btn_s black btn-icon-download-left mobile-100" type="button" @click="sendingDownloadDocument">Скачать</button>
+initMask() {
+      this.maskRef = IMask(this.$refs.statementInput, {
+        mask: [
+          {
+            mask: '$00000.00.0000',
+            definitions: {
+              // Разрешаю ввод и строчных, и заглавных букв
+              '$': /[eеEЕ]/
+            },
+            // Хук prepare срабатывает ДО применения маски
+            //закомментировал, так как всё равно каой будет регистр, всё равно отправляю только цифры
+            prepare: function (str) {
+              // Заменяем заглавную латинскую E на строчную e
+              // Заменяем заглавную кириллическую Е на строчную е
+              // (используем replace с флагом 'g', чтобы это работало даже при вставке из буфера обмена)
+              return str.replace(/[еЕ]/g, function(match) {
+                return match === 'E' ? 'e' : 'е';
+              });
+            }
+          },
+          {
+            mask: '00000.00.0000'
+          }
+        ],
+        lazy: false
+      });
 
-sendingDownloadDocument(){
-      store.dispatch('ActionDownloadDocument')
+      this.maskRef.on('accept', () => {
+        if (this.errorInput===true) {
+          this.errorInput=false
+        }
+        this.statementValue = this.maskRef.value;
+        const unmasked = this.maskRef.unmaskedValue;
+        this.fieldInput = /^([eе]\d{11}|\d{11})$/.test(unmasked);
+      });
     },
-
-store.js
-
-state:{
-   
-  },
-  getters:{}
-
-actions:{
-    //скачивание файла
-    ActionDownloadDocument({commit,state}){
-      commit('mutationDownloadDocument')
-    }
-  },
-
-mutations:{
-    
-    mutationDownloadDocument(state){
-      //тут будет ajax запрос
-      //и это всё будет в post запросе в success
-
-    },
-
-
-
-  },
