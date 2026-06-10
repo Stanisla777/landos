@@ -1,10 +1,56 @@
-const getDefaultConfirmationResponse = () => ({
-  application_status_code: '',
-  application_status_header: '',
-  application_status_description: '',
-  application_status_data: ''
-});
+import { createStore } from 'vuex';
+import axios from 'axios';
 
-confirmation_code_response: getDefaultConfirmationResponse()
 
-state.confirmation_code_response = getDefaultConfirmationResponse();
+export default createStore({
+  state:{
+
+    modal_variations:{
+      //Загрузка файла
+      down_load_file:{
+        status_button:1, //формирует кнопку в модальном окне 1 - кнопка закрытия модалки 2 - переход на первый шаг
+        icon:'time.png',
+        title:'Загрузка файла',
+        description:'Идет формирование и подписание справки УКЭП. Не покидайте страницу. Среднее время ожидания — до 1 минуты',
+        button:'Закрыть'
+      },
+
+      //Сервис временно недоступен
+      service_is_temporarily_unavailable:{
+        status_button:1,//формирует кнопку в модальном окне 1 - кнопка закрытия модалки 2 - переход на первый шаг
+        icon:'error.png',
+        title:'Сервис временно недоступен',
+        description:'Пожалуйста, повторите попытку позже',
+        button:'Закрыть'
+      },
+
+   }
+}
+
+mutations:{
+mutationApplicationNumber(state,received_perem){
+      axios({
+        method: 'post'})
+
+      .catch((err) => {
+         if (error.code) {
+              console.log(error.code);
+
+              //сервис временно недоступен
+              if (error.code === 'P450S-6' || error.code === 'P450S-13'  || error.code === 'P450S-15') {
+                state.modal_content = state.modal_variations.service_is_temporarily_unavailable
+                //открываю модалку с формированным контентом
+                state.modal_status=true
+              }
+
+              //номер телефона отсутствует
+              if (error.code === 'P450S-8' || error.code === 'P450S-9') {
+                state.modal_content = state.modal_variations.phone_number_is_missing
+                //открываю модалку с формированным контентом
+                state.modal_status=true
+              }
+
+      })
+
+
+}
