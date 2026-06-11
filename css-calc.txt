@@ -1,33 +1,68 @@
-<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <style>
-    @keyframes spinner-rotate {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
+{
+    "result": {
+        "data": {
+            "text": "Ваше заявление (№ 11111.11.1111) аннулировано",
+            "status": "CANCELLED",
+            "date": "11.06.2026",
+            "time": "10:30",
+            "hint": "",
+            "canDownloadPrintForm": true
+        },
+        "stage": 2,
+        "number": "11111.11.1111"
+    },
+    "request_id": "fb53029b-a927-ef1a-bcba-08a6f8dcda7c",
+    "code": 200,
+    "description": "OK"
+}
 
-    .spinner-spin {
-      animation: spinner-rotate 1.2s linear infinite;
-      transform-origin: 12px 12px;
-    }
-  </style>
+axios({
+        method: 'post',
+        url: '/api/local/program450/statusrequest/check/',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+        },
+        data: {
+          code: received_perem,
+        },
+      })
+        .then((result) => {
+          if (result.data.status) {
+            //код статуса заявления
+            state.confirmation_code_response['application_status_code'] = result.data.status;
+          }
+          if (result.canDownloadPrintForm) {
+            //будет на 3 щаге кнопка скачивания или нет
+            state.confirmation_code_response['application_status_can_download'] = result.canDownloadPrintForm;
+          }
 
-  <defs>
-    <!-- Маска в виде кольца -->
-    <mask id="spinner-mask">
-      <circle cx="12" cy="12" r="12" fill="white" />
-      <circle cx="12" cy="12" r="7.8" fill="black" /> <!-- Вырезаем внутрь -->
-    </mask>
+-----------------------------
 
-    <!-- Линейный градиент для имитации конусного -->
-    <linearGradient id="spinner-gradient" x1="12" y1="0" x2="12" y2="24" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#82BF00" />
-      <stop offset="50%" stop-color="#82BF00" />
-      <stop offset="100%" stop-color="#82BF0000" />
-    </linearGradient>
-  </defs>
+ axios({
+        method: 'post',
+        url: '/api/local/program450/statusrequest/start/',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+        },
+        data: {
+          number: received_perem[0],
+          'smart-token': received_perem[1],
+        },
+      })
+        .then((result) => {
+            //маскированный номер телефона
+          state.masked_phone_number = result?.phone;
 
-  <!-- Анимированный слой через маску и вращение -->
-  <g mask="url(#spinner-mask)">
-    <rect x="0" y="0" width="24" height="24" fill="url(#spinner-gradient)" class="spinner-spin" />
-  </g>
-</svg>
+{
+    "result": {
+        "stage": 1,
+        "number": "11111.11.1111",
+        "phone": "+7 (***) *** ",
+        "timeleft": 60
+    },
+    "request_id": "167ae9b5-0714-96b4-80cb-4914df0590e9",
+    "code": 200,
+    "description": "OK"
+}
