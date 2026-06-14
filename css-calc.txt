@@ -1,68 +1,30 @@
-{
-    "result": {
-        "data": {
-            "text": "Ваше заявление (№ 11111.11.1111) аннулировано",
-            "status": "CANCELLED",
-            "date": "11.06.2026",
-            "time": "10:30",
-            "hint": "",
-            "canDownloadPrintForm": true
-        },
-        "stage": 2,
-        "number": "11111.11.1111"
-    },
-    "request_id": "fb53029b-a927-ef1a-bcba-08a6f8dcda7c",
-    "code": 200,
-    "description": "OK"
-}
+.catch((error) => {
+    
+    const errorCode = error.code || error.response?.data?.code
+    state.btn_load = false
+    handleApiError(state,errorCode)
+    console.log(error);
+});
 
-axios({
-        method: 'post',
-        url: '/api/local/program450/statusrequest/check/',
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-        },
-        data: {
-          code: received_perem,
-        },
-      })
-        .then((result) => {
-          if (result.data.status) {
-            //код статуса заявления
-            state.confirmation_code_response['application_status_code'] = result.data.status;
-          }
-          if (result.canDownloadPrintForm) {
-            //будет на 3 щаге кнопка скачивания или нет
-            state.confirmation_code_response['application_status_can_download'] = result.canDownloadPrintForm;
-          }
+const handleApiError = (state,errorCode) => {
+  if (!errorCode) return
+  //сервис временно недоступен
+  if (errorCode === 'P450S-6' || errorCode === 'P450S-13'  || errorCode === 'P450S-15') {
+    state.modal_content = state.modal_variations.service_is_temporarily_unavailable
+    //открываю модалку с формированным контентом
+    state.modal_status=true
+  }
 
------------------------------
-
- axios({
-        method: 'post',
-        url: '/api/local/program450/statusrequest/start/',
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-        },
-        data: {
-          number: received_perem[0],
-          'smart-token': received_perem[1],
-        },
-      })
-        .then((result) => {
-            //маскированный номер телефона
-          state.masked_phone_number = result?.phone;
 
 {
-    "result": {
-        "stage": 1,
-        "number": "11111.11.1111",
-        "phone": "+7 (***) *** ",
-        "timeleft": 60
-    },
-    "request_id": "167ae9b5-0714-96b4-80cb-4914df0590e9",
-    "code": 200,
-    "description": "OK"
+    "request_id": "b374d895-bd2d-b699-3ac0-f24740efd8e2",
+    "code": 400,
+    "description": "Неправильный код смс",
+    "error": {
+        "code": "P450S-14",
+        "description": "Неправильный код смс"
+    }
 }
+
+
+data-state="{&quot;data&quot;:{&quot;text&quot;:&quot;По Вашему заявлению (№ 22222.22.2222) средства государственной поддержки получены кредитором&quot;,&quot;status&quot;:&quot;REPORT_ON_CORRECTION&quot;,&quot;date&quot;:&quot;22.06.2026&quot;,&quot;time&quot;:&quot;10:30&quot;,&quot;hint&quot;:&quot;&quot;,&quot;canDownloadPrintForm&quot;:true},&quot;stage&quot;:&quot;1&quot;,&quot;number&quot;:&quot;22222.22.2222&quot;,&quot;phone&quot;:&quot;+7 (***) *** 0000&quot;,&quot;timeleft&quot;:0,&quot;requestId&quot;:&quot;&quot;,&quot;printformStatus&quot;:&quot;&quot;,&quot;printformStatusDescription&quot;:&quot;&quot;}"
