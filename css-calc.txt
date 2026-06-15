@@ -1,71 +1,27 @@
-component.vue
-<div class="check-service__wr-button-print"  v-if="confirmation_code_response.application_status_can_download === true">
-          <button v-if="!btn_load" class="btn_s black btn-icon-download-left mobile-100" type="button" @click="sendingDownloadDocument">Скачать</button>
-          <button v-else class="btn_s black btn-icon-download-left mobile-100 disabled submitting disappear-content" type="button">Скачать</button>
-        </div>
-
-
-computed:{
-    confirmation_code_response(){
-      return store.getters.CONFIRMATIONCODERESPONSE
-    }
-}
-
-store.js
-const getDefaultConfirmationResponse = () => ({
-  application_status_code: '',
-  application_status_header: '',
-  application_status_description: '',
-  application_status_data: '',
-  application_status_can_download:false
-});
-
-export default createStore({
-  state:{
-    confirmation_code_response: getDefaultConfirmationResponse(),
-  }
-
-getters:{
-  CONFIRMATIONCODERESPONSE(state){
-      return state.confirmation_code_response
-    }
-},
-mutation:{
-
-mutationSendCodeConfirmation(state,received_perem){
+Фронтенд Спроси.дом.рф отправляет запрос на бэкенд на получение ссылки на архив с файлами справки (каждые 10 секунд)
+mutationDownloadDocument(state){
 
       axios({
         method: 'post',
-        url: '/api/local/program450/statusrequest/check/',
+        url: '/api/local/program450/statusrequest/printform/',
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
           'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
         },
         data: {
-          code: received_perem,
         },
       })
         .then((response) => {
           const data = response.data.result;
-          if (data.data.status) {
-            //код статуса заявления
-            state.confirmation_code_response['application_status_code'] = data.data.status;
+          if (data.url) {
+            state.down_load_url = data.url
           }
-          if (data.canDownloadPrintForm) {
-            //будет на 3 щаге кнопка скачивания или нет
-            state.confirmation_code_response['application_status_can_download'] = data.canDownloadPrintForm;
-          }
-})
-.then(() => {
-   state.btn_load = false
-   state.step_one = false
-   state.step_two = false
-   state.step_three = true
-   state.timer_begin = false
-
         })
+        .catch((error) => {
+          const errorCode = error.response?.data?.error?.code;
+          handleApiError(state,errorCode)
+          state.btn_load = false;
+          console.log(error);
+        });
 
-}
-
-
-}
+    },
