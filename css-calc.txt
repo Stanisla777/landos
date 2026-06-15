@@ -1,41 +1,7 @@
-setDownloadUrl(state, url) {
-      state.down_load_url = url;
-    },
-
-async mutationDownloadDocument({ commit, state }) {
-      try {
-        const response = await axios({
-          method: 'post',
-          url: '/api/local/program450/statusrequest/printform/',
-          headers: {
-            'Content-Type': 'application/json; charset=UTF-8',
-            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-          },
-          data: {},
-        });
-
-        const data = response.data.result;
-
-        if (data?.url) {
-          commit('setDownloadUrl', data.url);
-          commit('clearPolling'); // Останавливаем поллинг
-          console.log('Ссылка получена:', data.url);
-        }
-      } catch (error) {
-        const errorCode = error.response?.data?.error?.code;
-        handleApiError(state, errorCode);
-        commit('clearPolling'); // Останавливаем при ошибке
-        console.error('Ошибка:', error);
+const newWindow = window.open(data.url, '_blank');
+      
+      // Если браузер заблокировал всплывающее окно
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        console.warn('Всплывающее окно заблокировано браузером');
+        // Можно показать модалку с просьбой разрешить всплывающие окна
       }
-    }
-
-
-success: function (response) {
-                   
-                    if (!!response?.result?.url) {
-                        console.log('Скачивание справки: ', response.result.url)
-                        window.open(response.result.url, '_blank', 'noopener', 'noreferrer')
-                    }
-
-                },
-
