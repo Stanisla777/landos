@@ -1,102 +1,37 @@
-state: {
-  down_load_url: null,
-  polling_interval_id: null,
-  polling_start_time: null,
-  polling_timeout: 120000, // 2 минуты
-},
+async mutationDownloadDocument({ commit, state }) {
+      try {
+        const response = await axios({
+          method: 'post',
+          url: '/api/local/program450/statusrequest/printform/',
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+          },
+          data: {},
+        });
 
-mutations: {
-  // Простые мутации - только изменение state
-  setDownloadUrl(state, url) {
-    state.down_load_url = url;
-  },
-  
-  setPollingInterval(state, intervalId) {
-    state.polling_interval_id = intervalId;
-  },
-  
-  setPollingStartTime(state, time) {
-    state.polling_start_time = time;
-  },
-  
-  clearPolling(state) {
-    if (state.polling_interval_id) {
-      clearInterval(state.polling_interval_id);
-    }
-    state.polling_interval_id = null;
-    state.polling_start_time = null;
-  },
-  
-  resetDownloadState(state) {
-    state.down_load_url = null;
-  },
-},
+        const data = response.data.result;
 
-actions: {
-  // Запуск поллинга
-  async startDownloadPolling({ commit, state }) {
-    // Очищаем предыдущий интервал
-    commit('clearPolling');
-    commit('resetDownloadState');
-    commit('setPollingStartTime', Date.now());
-    
-    // Делаем первый запрос сразу
-    await this.dispatch('mutationDownloadDocument');
-    
-    // Запускаем интервал
-    const intervalId = setInterval(async () => {
-      const elapsed = Date.now() - state.polling_start_time;
-      
-      if (elapsed >= state.polling_timeout) {
-        // Таймаут
-        commit('clearPolling');
-        
-        // ⚠️ МЕСТО ДЛЯ ОБРАБОТКИ ТАЙМАУТА
-        // commit('setBtnLoad', false);
-        // commit('setModalContent', state.modal_variations.download_timeout);
-        // commit('setModalStatus', true);
-        
-        console.warn('Таймаут: документ не сформирован за 2 минуты');
-        return;
+        if (data?.url) {
+          commit('setDownloadUrl', data.url);
+          commit('clearPolling'); // Останавливаем поллинг
+          console.log('Ссылка получена:', data.url);
+        }
+      } catch (error) {
+        const errorCode = error.response?.data?.error?.code;
+        handleApiError(state, errorCode);
+        commit('clearPolling'); // Останавливаем при ошибке
+        console.error('Ошибка:', error);
       }
-      
-      // Делаем запрос
-      await this.dispatch('mutationDownloadDocument');
-    }, 10000);
-    
-    commit('setPollingInterval', intervalId);
-  },
-  
-  // Остановка поллинга
-  stopDownloadPolling({ commit }) {
-    commit('clearPolling');
-  },
-  
-  // Сам запрос (теперь это action, а не mutation)
-  async mutationDownloadDocument({ commit, state }) {
-    try {
-      const response = await axios({
-        method: 'post',
-        url: '/api/local/program450/statusrequest/printform/',
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-        },
-        data: {},
-      });
-      
-      const data = response.data.result;
-      
-      if (data?.url) {
-        commit('setDownloadUrl', data.url);
-        commit('clearPolling'); // Останавливаем поллинг
-        console.log('Ссылка получена:', data.url);
-      }
-    } catch (error) {
-      const errorCode = error.response?.data?.error?.code;
-      handleApiError(state, errorCode);
-      commit('clearPolling'); // Останавливаем при ошибке
-      console.error('Ошибка:', error);
     }
-  },
-},
+
+
+success: function (response) {
+                   
+                    if (!!response?.result?.url) {
+                        console.log('Скачивание справки: ', response.result.url)
+                        window.open(response.result.url, '_blank', 'noopener', 'noreferrer')
+                    }
+
+                },
+
