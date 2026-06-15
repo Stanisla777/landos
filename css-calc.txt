@@ -1,47 +1,71 @@
-data-state='{"data":{"text":"По Вашему заявлению (№ 22222.22.2222) средства государственной поддержки получены кредитором","status":"REPORT_ON_CORRECTION","date":"22.06.2026","time":"10:30","hint":","canDownloadPrintForm":true},"stage":"1","number":"22222.22.2222","phone":"+7 (***) *** 0000","timeleft":0,"requestId":"","printformStatus":"","printformStatusDescription":""}'
+component.vue
+<div class="check-service__wr-button-print"  v-if="confirmation_code_response.application_status_can_download === true">
+          <button v-if="!btn_load" class="btn_s black btn-icon-download-left mobile-100" type="button" @click="sendingDownloadDocument">Скачать</button>
+          <button v-else class="btn_s black btn-icon-download-left mobile-100 disabled submitting disappear-content" type="button">Скачать</button>
+        </div>
 
-props: {
-    instanceId: {
-      type: String,
-      required: true
-    },
-    state: {
-      type: [Object, String],
-      validator: (value) => {
-        // Если уже объект — ок
-        if (typeof value === 'object' && value !== null) return true;
-        // Если строка — пробуем распарсить
-        if (typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value);
-            return typeof parsed === 'object' && parsed !== null; //
-          } catch (e) {
-            return false;
-          }
-        }
-        return false;
-      },
-    },
 
-  },
-  methods: {
-    parseStage(data) {
-      if (!data) return;
-      // Если уже объект — используем как есть
-      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-        store.dispatch('ActionMountedStage', data);
-        return;
-      }
-      // Если строка — парсим
-      if (typeof data === 'string') {
-        try {
-          const parsed = JSON.parse(data);
-          store.dispatch('ActionMountedStage', parsed);
-        } catch (e) {
-          console.warn('Ошибка парсинга answers:', e);
-        }
-      }
-    },
+computed:{
+    confirmation_code_response(){
+      return store.getters.CONFIRMATIONCODERESPONSE
+    }
+}
+
+store.js
+const getDefaultConfirmationResponse = () => ({
+  application_status_code: '',
+  application_status_header: '',
+  application_status_description: '',
+  application_status_data: '',
+  application_status_can_download:false
+});
+
+export default createStore({
+  state:{
+    confirmation_code_response: getDefaultConfirmationResponse(),
   }
 
-StatusPaymentsLargeFamilies450.vue:59 Ошибка парсинга answers: SyntaxError: Expected ',' or '}' after property value in JSON at position 188 (line 1 column 189)
+getters:{
+  CONFIRMATIONCODERESPONSE(state){
+      return state.confirmation_code_response
+    }
+},
+mutation:{
+
+mutationSendCodeConfirmation(state,received_perem){
+
+      axios({
+        method: 'post',
+        url: '/api/local/program450/statusrequest/check/',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+        },
+        data: {
+          code: received_perem,
+        },
+      })
+        .then((response) => {
+          const data = response.data.result;
+          if (data.data.status) {
+            //код статуса заявления
+            state.confirmation_code_response['application_status_code'] = data.data.status;
+          }
+          if (data.canDownloadPrintForm) {
+            //будет на 3 щаге кнопка скачивания или нет
+            state.confirmation_code_response['application_status_can_download'] = data.canDownloadPrintForm;
+          }
+})
+.then(() => {
+   state.btn_load = false
+   state.step_one = false
+   state.step_two = false
+   state.step_three = true
+   state.timer_begin = false
+
+        })
+
+}
+
+
+}
