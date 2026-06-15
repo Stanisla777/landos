@@ -1,27 +1,95 @@
-Фронтенд Спроси.дом.рф отправляет запрос на бэкенд на получение ссылки на архив с файлами справки (каждые 10 секунд)
-mutationDownloadDocument(state){
+state: {
+  down_load_url: null,
+  polling_interval_id: null, // ID интервала для остановки
+  polling_start_time: null, // Время начала поллинга
+  polling_timeout: 120000, // 2 минуты в миллисекундах
+},
 
-      axios({
-        method: 'post',
-        url: '/api/local/program450/statusrequest/printform/',
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-        },
-        data: {
-        },
+mutations: {
+  // Запуск поллинга
+  startDownloadPolling(state) {
+    // Очищаем предыдущий интервал, если был
+    if (state.polling_interval_id) {
+      clearInterval(state.polling_interval_id);
+    }
+    
+    // Сбрасываем URL
+    state.down_load_url = null;
+    
+    // Запоминаем время начала
+    state.polling_start_time = Date.now();
+    
+    // Делаем первый запрос сразу
+    this.commit('mutationDownloadDocument');
+    
+    // Запускаем интервал каждые 10 секунд
+    state.polling_interval_id = setInterval(() => {
+      // Проверяем таймаут
+      const elapsed = Date.now() - state.polling_start_time;
+      
+      if (elapsed >= state.polling_timeout) {
+        // Таймаут 2 минуты - останавливаем
+        this.commit('stopDownloadPolling');
+        
+        // ⚠️ МЕСТО ДЛЯ ОБРАБОТКИ ТАЙМАУТА
+        // Здесь вы можете:
+        // - Убрать прелоад у кнопки
+        // - Показать модалку с ошибкой
+        // - state.btn_load = false;
+        // - state.modal_content = state.modal_variations.download_timeout;
+        // - state.modal_status = true;
+        
+        console.warn('Таймаут: документ не сформирован за 2 минуты');
+        return;
+      }
+      
+      // Делаем запрос
+      this.commit('mutationDownloadDocument');
+    }, 10000); // 10 секунд
+  },
+  
+  // Остановка поллинга
+  stopDownloadPolling(state) {
+    if (state.polling_interval_id) {
+      clearInterval(state.polling_interval_id);
+      state.polling_interval_id = null;
+      state.polling_start_time = null;
+    }
+  },
+  
+  // Ваш существующий mutation с доработкой
+  mutationDownloadDocument(state) {
+    axios({
+      method: 'post',
+      url: '/api/local/program450/statusrequest/printform/',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+      },
+      data: {},
+    })
+      .then((response) => {
+        const data = response.data.result;
+        
+        if (data?.url) {
+          // URL получен - сохраняем и останавливаем поллинг
+          state.down_load_url = data.url;
+          
+          // Останавливаем поллинг
+          this.commit('stopDownloadPolling');
+          
+          console.log('Ссылка на документ получена:', data.url);
+        }
       })
-        .then((response) => {
-          const data = response.data.result;
-          if (data.url) {
-            state.down_load_url = data.url
-          }
-        })
-        .catch((error) => {
-          const errorCode = error.response?.data?.error?.code;
-          handleApiError(state,errorCode)
-          state.btn_load = false;
-          console.log(error);
-        });
-
-    },
+      .catch((error) => {
+        const errorCode = error.response?.data?.error?.code;
+        handleApiError(state, errorCode);
+        state.btn_load = false;
+        
+        // Если произошла ошибка - останавливаем поллинг
+        this.commit('stopDownloadPolling');
+        
+        console.error('Ошибка при получении ссылки:', error);
+      });
+  },
+},
