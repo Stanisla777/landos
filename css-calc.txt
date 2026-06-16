@@ -1,112 +1,31 @@
-mutation: {
-//если прошло 2 минуты и ссылка не пявилась
-    mutationLinkNotAppear(state,received_perem){
-      state.modal_content = state.modal_variations[received_perem]
-      //открываю модалку с формированным контентом
-      state.modal_status=true
-      state.btn_load = false
-    },
+async startDownloadPolling({ commit, state }) {
+  // Очищаем предыдущий интервал
+  commit('clearPolling');
+  commit('resetDownloadState');
+  commit('setPollingStartTime', Date.now());
 
+  // Делаем первый запрос сразу
+  await this.dispatch('mutationDownloadDocument');
 
-    // Простые мутации - только изменение state
-    setDownloadUrl(state, url) {
-      state.down_load_url = url;
-    },
+  // ПРОВЕРКА: если URL уже получен, не запускаем поллинг
+  if (state.down_load_url) {
+    console.log('URL получен сразу, поллинг не нужен');
+    return;
+  }
 
-    setPollingInterval(state, intervalId) {
-      state.polling_interval_id = intervalId;
-    },
+  // Запускаем интервал только если URL ещё не получен
+  const intervalId = setInterval(async () => {
+    const elapsed = Date.now() - state.polling_start_time;
 
-    setPollingStartTime(state, time) {
-      state.polling_start_time = time;
-    },
-
-    clearPolling(state) {
-      if (state.polling_interval_id) {
-        clearInterval(state.polling_interval_id);
-      }
-      state.polling_interval_id = null;
-      state.polling_start_time = null;
-    },
-
-    resetDownloadState(state) {
-      state.down_load_url = null;
-    },
-
-}
-
-action: {
-
- async startDownloadPolling({ commit, state }) {
-      // Очищаем предыдущий интервал
+    if (elapsed >= state.polling_timeout) {
       commit('clearPolling');
-      commit('resetDownloadState');
-      commit('setPollingStartTime', Date.now());
+      commit('mutationLinkNotAppear', 'certificate_not_generated');
+      console.warn('Таймаут: документ не сформирован за 2 минуты');
+      return;
+    }
 
-      // Делаем первый запрос сразу
-      await this.dispatch('mutationDownloadDocument');
+    await this.dispatch('mutationDownloadDocument');
+  }, 10000);
 
-      // Запускаем интервал
-      const intervalId = setInterval(async () => {
-        const elapsed = Date.now() - state.polling_start_time;
-
-        if (elapsed >= state.polling_timeout) {
-          // Таймаут
-          commit('clearPolling');
-
-          // МЕСТО ДЛЯ ОБРАБОТКИ ТАЙМАУТА
-
-          commit('mutationLinkNotAppear', 'certificate_not_generated');
-
-          console.warn('Таймаут: документ не сформирован за 2 минуты');
-          return;
-        }
-
-        // Делаем запрос
-        await this.dispatch('mutationDownloadDocument');
-      }, 10000);
-
-      commit('setPollingInterval', intervalId);
-    },
-
-    // Остановка поллинга
-    stopDownloadPolling({ commit }) {
-      commit('clearPolling');
-    },
-
-    // Сам запрос (теперь это action, а не mutation)
-    async mutationDownloadDocument({ commit, state }) {
-      try {
-        const response = await axios({
-          method: 'post',
-          url: '/api/local/program450/statusrequest/printform/',
-          headers: {
-            'Content-Type': 'application/json; charset=UTF-8',
-            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-          },
-          data: {},
-        });
-
-        const data = response.data.result;
-
-        if (data?.url) {
-          // commit('setDownloadUrl', data.url); // оставил пока вдруг вернусь к Blob меоду
-          const newWindow = window.open(data.url, '_blank');
-
-          // Если браузер заблокировал всплывающее окно
-          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-            console.warn('Всплывающее окно заблокировано браузером');
-            // тут продумать про модалку с призывом разрешить окна всплывающие
-          }
-          state.btn_load = false
-          commit('clearPolling'); // Останавливаем поллинг
-          console.log('Ссылка получена:', data.url);
-        }
-      } catch (error) {
-        const errorCode = error.response?.data?.error?.code;
-        handleApiError(state, errorCode);
-        commit('clearPolling'); // Останавливаем при ошибке
-        console.error('Ошибка:', error);
-      }
-    },
+  commit('setPollingInterval', intervalId);
 }
