@@ -1,31 +1,5 @@
-async startDownloadPolling({ commit, state }) {
-  // Очищаем предыдущий интервал
-  commit('clearPolling');
-  commit('resetDownloadState');
-  commit('setPollingStartTime', Date.now());
-
-  // Делаем первый запрос сразу
-  await this.dispatch('mutationDownloadDocument');
-
-  // ПРОВЕРКА: если URL уже получен, не запускаем поллинг
-  if (state.down_load_url) {
-    console.log('URL получен сразу, поллинг не нужен');
-    return;
-  }
-
-  // Запускаем интервал только если URL ещё не получен
-  const intervalId = setInterval(async () => {
-    const elapsed = Date.now() - state.polling_start_time;
-
-    if (elapsed >= state.polling_timeout) {
-      commit('clearPolling');
-      commit('mutationLinkNotAppear', 'certificate_not_generated');
-      console.warn('Таймаут: документ не сформирован за 2 минуты');
-      return;
-    }
-
-    await this.dispatch('mutationDownloadDocument');
-  }, 10000);
-
-  commit('setPollingInterval', intervalId);
-}
+if (this.down_load_url===null||this.down_load_url==='') {
+        //сначала даю команду передать контнент и открыть модальное окно
+        store.dispatch('ActionModalContent',this.statusModal[0])
+        store.dispatch('ActionOpenModal',true)
+      }
