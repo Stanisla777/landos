@@ -1,41 +1,63 @@
-async mutationDownloadDocument({ commit, state }) {
-      try {
-        const response = await axios({
-          method: 'post',
-          url: '/api/local/program450/statusrequest/printform/',
-          headers: {
-            'Content-Type': 'application/json; charset=UTF-8',
-            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-          },
-          data: {},
-        });
+async downloadArchive(fileUrl) {
+  this.isDownloading = true;
+  this.downloadError = null;
 
-        const data = response.data.result;
-
-        if (data?.url) {
-          state.btn_load = false
-          state.modal_status = false
-          commit('setDownloadUrl', data.url); // оставил пока вдруг вернусь к Blob меоду
-          const newWindow = window.open(data.url, '_blank');
-
-          // Если браузер заблокировал всплывающее окно
-          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-            console.warn('Всплывающее окно заблокировано браузером');
-            // тут продумать про модалку с призывом разрешить окна всплывающие
-          }
-
-          commit('clearPolling'); // Останавливаем поллинг
-          console.log('Ссылка получена:', data.url);
-        }
-      } catch (error) {
-        //Убрать
-        // const newWindow = window.open('http://localhost:8081/img/documents/Договор купли-продажи.docx', '_blank');
-        //-------------------
-
-        const errorCode = error.response?.data?.error?.code;
-        state.btn_load = false
-        handleApiError(state, errorCode);
-        commit('clearPolling'); // Останавливаем при ошибке
-        console.error('Ошибка:', error);
-      }
+  try {
+    // 1. Извлекаем имя файла из URL (самый простой способ)
+    // Если URL: https://site.com/docs/spravka.zip?token=123
+    // split('?')[0] уберет токен, split('/').pop() возьмет spravka.zip
+    const cleanUrl = fileUrl.split('?')[0]; 
+    let fileName = cleanUrl.split('/').pop() || 'document.zip';
+    
+    // Декодируем, если в имени есть русские буквы (%D1...)
+    try {
+      fileName = decodeURIComponent(fileName);
+    } catch (e) {
+      console.warn('Ошибка декодирования имени файла', e);
     }
+
+    // 2. Скачиваем файл через Fetch (контролируем процесс)
+    const fetchResponse = await fetch(fileUrl);
+
+    if (!fetchResponse.ok) {
+      throw new Error(`Ошибка сети: ${fetchResponse.status}`);
+    }
+
+    const blob = await fetchResponse.blob();
+    
+    // Проверка на пустой файл (опционально, но полезно)
+    if (blob.size === 0) {
+      throw new Error('Файл пуст');
+    }
+
+    // 3. Создаем ссылку и инициируем скачивание
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName; // Имя от бэкенда
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Очищаем память
+    window.URL.revokeObjectURL(downloadUrl);
+
+    // 4. Успех: закрываем модалку, убираем лоадер
+    store.dispatch('ActionBtnLoad', false);
+    store.dispatch('ActionOpenModal', false);
+
+  } catch (error) {
+    console.error('Ошибка при скачивании:', error);
+    
+    // 5. Ошибка: показываем модалку с ошибкой
+    this.downloadError = 'Не удалось скачать файл. Попробуйте позже.';
+    
+    store.dispatch('ActionModalContent', this.statusModal[2]); // Ваша модалка ошибки
+    store.dispatch('ActionOpenModal', true);
+    store.dispatch('ActionBtnLoad', false);
+
+  } finally {
+    this.isDownloading = false;
+  }
+}
