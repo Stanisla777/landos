@@ -1,19 +1,12 @@
-<div class="block-grid-area-3-col js--calculated-scroll-area">
-<!--Какой-то контент-->
-</div>
-
-<div class="block-grid-area-3-col js--calculated-scroll-area">
-<!--Какой-то контент-->
-</div>
-
-js
 /* eslint-disable */
 const CONFIG = {
   thresholds: [25, 50, 75, 100],
   eventPrefix: 'scroll_',
   throttleMs: 200,
   contentSelector: '.js--calculated-scroll-area',
-  offsetBottomPx: 0
+  // offsetBottomPx теперь не нужен для этой логики, но можно оставить для тонкой настройки
+  // Если хотите, чтобы 100% срабатывало чуть раньше самого низа блока, поставьте, например, 100
+  offsetBottomPx: 0 
 };
 
 const state = {
@@ -33,7 +26,6 @@ function calculateGeometry() {
 
   elements.forEach(el => {
     const rect = el.getBoundingClientRect();
-    // Пропускаем скрытые или нулевые блоки (ещё не отрендерились)
     if (rect.height <= 0 || rect.width <= 0) return;
 
     const absTop = window.scrollY + rect.top;
@@ -57,9 +49,7 @@ function setupResizeObserver() {
   if (state.observer) state.observer.disconnect();
 
   state.observer = new ResizeObserver(() => {
-    // Контент изменился (картинки загрузились, Swiper инициализировался, Vue подгрузил блок)
     state.geometry = null;
-    // Следующий скролл пересчитает высоту заново
   });
 
   const elements = document.querySelectorAll(CONFIG.contentSelector);
@@ -70,6 +60,7 @@ function sendToCleverData(eventName) {
   if (typeof window.dmpkitdl !== 'undefined' && window.dmpkitdl !== null) {
     try {
       window.dmpkitdl.push({ event: eventName });
+      // console.log('[CleverData] Sent:', eventName);
     } catch (e) {
       console.warn('[ScrollDepth] Error sending to dmpkitdl:', e);
     }
@@ -80,18 +71,31 @@ function getScrollPercent() {
   if (!state.geometry) {
     state.geometry = calculateGeometry();
   }
-
+  
   if (!state.geometry || state.geometry.height <= 0) return 0;
 
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  const scrolled = scrollTop - state.geometry.start;
+  const viewportHeight = document.documentElement.clientHeight; // 🔥 Высота экрана
+  
+  // Сколько пикселей контента уже прошло над верхней границей экрана
+  const scrolledIntoContent = scrollTop - state.geometry.start;
+  
+  if (scrolledIntoContent < 0) return 0;
 
-  if (scrolled < 0) return 0; // Ещё не дошли до начала инструкции
+  // 🔥 ГЛАВНОЕ ИЗМЕНЕНИЕ:
+  // Мы хотим, чтобы 100% наступило, когда НИЖНЯЯ граница контента появится на экране.
+  // Это значит, что пользователю нужно проскроллить: (ВысотаКонтента - ВысотаЭкрана).
+  // Если контент меньше высоты экрана, то targetDistance будет <= 0, и мы сразу считаем 100%.
+  
+  const targetDistance = state.geometry.height - viewportHeight - CONFIG.offsetBottomPx;
 
-  const targetHeight = state.geometry.height - CONFIG.offsetBottomPx;
-  if (targetHeight <= 0) return scrolled >= 0 ? 100 : 0;
+  // Если контент короче экрана (или равен ему с учетом отступа), считаем, что он виден целиком сразу
+  if (targetDistance <= 0) {
+     return scrolledIntoContent >= 0 ? 100 : 0;
+  }
 
-  const percent = (scrolled / targetHeight) * 100;
+  const percent = (scrolledIntoContent / targetDistance) * 100;
+
   return Math.min(100, Math.max(0, Math.round(percent)));
 }
 
@@ -103,7 +107,6 @@ function checkScrollDepth() {
   const percent = getScrollPercent();
 
   for (const threshold of CONFIG.thresholds) {
-    // Отправляем только если перешли порог И этот порог ещё не отправляли
     if (threshold > state.maxReached && percent >= threshold) {
       sendToCleverData(CONFIG.eventPrefix + threshold);
       state.sent.add(threshold);
@@ -114,11 +117,10 @@ function checkScrollDepth() {
 }
 
 export default function scrollDepthTrackerCleverData() {
-  // Запускаю расчhёт сразу, но с микро-задержкой для первоначальной загрузки
   setTimeout(() => {
     state.geometry = calculateGeometry();
     setupResizeObserver();
-    checkScrollDepth(); // Проверка якорей или раннего скролла
+    checkScrollDepth();
   }, 100);
 
   let ticking = false;
@@ -134,7 +136,7 @@ export default function scrollDepthTrackerCleverData() {
   };
 
   const onResize = () => {
-    state.geometry = null; // При ресайзе пересчитываю геометрию на лету
+    state.geometry = null;
     if (!ticking) {
       window.requestAnimationFrame(() => {
         state.geometry = calculateGeometry();
