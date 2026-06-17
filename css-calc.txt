@@ -1,158 +1,79 @@
-/* eslint-disable */
-const CONFIG = {
-  thresholds: [25, 50, 75, 100],
-  eventPrefix: 'scroll_',
-  throttleMs: 200,
-  contentSelector: '.js--calculated-scroll-area',
-  // offsetBottomPx теперь не нужен для этой логики, но можно оставить для тонкой настройки
-  // Если хотите, чтобы 100% срабатывало чуть раньше самого низа блока, поставьте, например, 100
-  offsetBottomPx: 0 
-};
+async downloadArchive(fileUrl) {
+      this.isDownloading = true;
+      this.downloadError = null;
 
-const state = {
-  sent: new Set(),
-  maxReached: 0,
-  lastCheck: 0,
-  geometry: null,
-  observer: null
-};
+      try {
+        const result = {
+          url: fileUrl
+        };
 
-function calculateGeometry() {
-  const elements = document.querySelectorAll(CONFIG.contentSelector);
-  if (!elements || elements.length === 0) return null;
+        // 2. Умное извлечение имени файла
+        let fileName = 'document.zip'; // Запасное имя по умолчанию
 
-  let minTop = Infinity;
-  let maxBottom = -Infinity;
+        if (result.url) {
+          try {
+            // Создаем объект URL. Второй аргумент нужен на случай,
+            // если бэкенд вернет относительный путь (например, "/downloads/file.zip")
+            const urlObj = new URL(result.url, window.location.origin);
 
-  elements.forEach(el => {
-    const rect = el.getBoundingClientRect();
-    if (rect.height <= 0 || rect.width <= 0) return;
+            // urlObj.pathname вернет только путь: "/downloads/spravka_2023.pdf"
+            // .split('/').pop() возьмет последний элемент после слэша: "spravka_2023.pdf"
+            const extractedName = urlObj.pathname.split('/').pop();
 
-    const absTop = window.scrollY + rect.top;
-    const absBottom = absTop + rect.height;
+            // Проверяем, что имя не пустое и содержит точку (похоже на файл)
+            if (extractedName && extractedName.includes('.')) {
+              fileName = decodeURIComponent(extractedName); // Декодируем, если там есть %20 и т.д.
+            }
+          } catch (e) {
+            console.warn('Не удалось распарсить URL для имени файла, используем запасное', e);
+          }
+        }
 
-    if (absTop < minTop) minTop = absTop;
-    if (absBottom > maxBottom) maxBottom = absBottom;
-  });
+        // 3. Скачивание файла (используем тот же надежный Blob-метод)
+        const fetchResponse = await fetch(result.url);
 
-  if (minTop === Infinity) return null;
+        if (!fetchResponse.ok) {
+          throw new Error(`Ошибка при загрузке файла: ${fetchResponse.status}`);
+        }
 
-  return {
-    start: minTop,
-    end: maxBottom,
-    height: maxBottom - minTop
-  };
-}
+        const blob = await fetchResponse.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
 
-function setupResizeObserver() {
-  if (!('ResizeObserver' in window)) return;
-  if (state.observer) state.observer.disconnect();
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName; // <-- Сюда попадет чистое имя: "spravka_2023.pdf"
 
-  state.observer = new ResizeObserver(() => {
-    state.geometry = null;
-  });
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-  const elements = document.querySelectorAll(CONFIG.contentSelector);
-  elements.forEach(el => state.observer.observe(el));
-}
+        // Очистка памяти
+        window.URL.revokeObjectURL(downloadUrl);
 
-function sendToCleverData(eventName) {
-  if (typeof window.dmpkitdl !== 'undefined' && window.dmpkitdl !== null) {
-    try {
-      window.dmpkitdl.push({ event: eventName });
-      // console.log('[CleverData] Sent:', eventName);
-    } catch (e) {
-      console.warn('[ScrollDepth] Error sending to dmpkitdl:', e);
+        //убираю у кнопки прелоадер так как файл скачался
+        setTimeout(()=>{
+          store.dispatch('ActionBtnLoad',false)
+        },2000)
+        //закрываю мобильное окно так как файл скачался
+        store.dispatch('ActionOpenModal',false)
+
+      } catch (error) {
+        console.error('Ошибка при скачивании:', error);
+        //---ТУТ ОШИБКИ, КОГДА СЕРВЕР ОТДАЛ УСПЕШНО ФАЙЛ, НО ОН НЕ СКАЧАЛСЯ, НАПРИМЕР БИТЫЙ
+        this.downloadError = 'Не удалось скачать файл. Попробуйте позже.';
+        //ответ с сервера был успешный но файл скачать не удалось, возможно он был битый поэтому:
+        //меняю содержание окна
+        store.dispatch('ActionModalContent',this.statusModal[2])
+        //открываю новое окно если оно было закрыто
+        store.dispatch('ActionOpenModal',true)
+        //у кнопки убираю лоадер
+        store.dispatch('ActionBtnLoad',false)
+
+      } finally {
+        //ВОТ ТУТ ЕЩЁ РАЗ ПОДУМАТЬ ЭТИ СОСТОЯНИЯ ОБРАБАТЫВАТЬ ЗДЕСЬ ЛИ
+        this.isDownloading = false;
+      }
     }
-  }
-}
 
-function getScrollPercent() {
-  if (!state.geometry) {
-    state.geometry = calculateGeometry();
-  }
-  
-  if (!state.geometry || state.geometry.height <= 0) return 0;
 
-  const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  const viewportHeight = document.documentElement.clientHeight; // 🔥 Высота экрана
-  
-  // Сколько пикселей контента уже прошло над верхней границей экрана
-  const scrolledIntoContent = scrollTop - state.geometry.start;
-  
-  if (scrolledIntoContent < 0) return 0;
-
-  // 🔥 ГЛАВНОЕ ИЗМЕНЕНИЕ:
-  // Мы хотим, чтобы 100% наступило, когда НИЖНЯЯ граница контента появится на экране.
-  // Это значит, что пользователю нужно проскроллить: (ВысотаКонтента - ВысотаЭкрана).
-  // Если контент меньше высоты экрана, то targetDistance будет <= 0, и мы сразу считаем 100%.
-  
-  const targetDistance = state.geometry.height - viewportHeight - CONFIG.offsetBottomPx;
-
-  // Если контент короче экрана (или равен ему с учетом отступа), считаем, что он виден целиком сразу
-  if (targetDistance <= 0) {
-     return scrolledIntoContent >= 0 ? 100 : 0;
-  }
-
-  const percent = (scrolledIntoContent / targetDistance) * 100;
-
-  return Math.min(100, Math.max(0, Math.round(percent)));
-}
-
-function checkScrollDepth() {
-  const now = Date.now();
-  if (now - state.lastCheck < CONFIG.throttleMs) return;
-  state.lastCheck = now;
-
-  const percent = getScrollPercent();
-
-  for (const threshold of CONFIG.thresholds) {
-    if (threshold > state.maxReached && percent >= threshold) {
-      sendToCleverData(CONFIG.eventPrefix + threshold);
-      state.sent.add(threshold);
-      state.maxReached = threshold;
-      break;
-    }
-  }
-}
-
-export default function scrollDepthTrackerCleverData() {
-  setTimeout(() => {
-    state.geometry = calculateGeometry();
-    setupResizeObserver();
-    checkScrollDepth();
-  }, 100);
-
-  let ticking = false;
-
-  const onScroll = () => {
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        checkScrollDepth();
-        ticking = false;
-      });
-      ticking = true;
-    }
-  };
-
-  const onResize = () => {
-    state.geometry = null;
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        state.geometry = calculateGeometry();
-        checkScrollDepth();
-        ticking = false;
-      });
-      ticking = true;
-    }
-  };
-
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onResize, { passive: true });
-
-  return () => {
-    window.removeEventListener('scroll', onScroll);
-    window.removeEventListener('resize', onResize);
-    if (state.observer) state.observer.disconnect();
-  };
-}
+const newWindow = window.open(data.url, '_blank');
