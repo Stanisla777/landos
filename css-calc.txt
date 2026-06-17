@@ -1,4 +1,18 @@
-if (data?.url) {
+async mutationDownloadDocument({ commit, state }) {
+      try {
+        const response = await axios({
+          method: 'post',
+          url: '/api/local/program450/statusrequest/printform/',
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+          },
+          data: {},
+        });
+
+        const data = response.data.result;
+
+        if (data?.url) {
           state.btn_load = false
           state.modal_status = false
           commit('setDownloadUrl', data.url); // оставил пока вдруг вернусь к Blob меоду
@@ -13,83 +27,15 @@ if (data?.url) {
           commit('clearPolling'); // Останавливаем поллинг
           console.log('Ссылка получена:', data.url);
         }
---------------------
-async downloadArchive(fileUrl) {
-      this.isDownloading = true;
-      this.downloadError = null;
-
-      try {
-        const result = {
-          url: fileUrl
-        };
-
-        // 2. Умное извлечение имени файла
-        let fileName = 'document.zip'; // Запасное имя по умолчанию
-
-        if (result.url) {
-          try {
-            // Создаем объект URL. Второй аргумент нужен на случай,
-            // если бэкенд вернет относительный путь (например, "/downloads/file.zip")
-            const urlObj = new URL(result.url, window.location.origin);
-
-            // urlObj.pathname вернет только путь: "/downloads/spravka_2023.pdf"
-            // .split('/').pop() возьмет последний элемент после слэша: "spravka_2023.pdf"
-            const extractedName = urlObj.pathname.split('/').pop();
-
-            // Проверяем, что имя не пустое и содержит точку (похоже на файл)
-            if (extractedName && extractedName.includes('.')) {
-              fileName = decodeURIComponent(extractedName); // Декодируем, если там есть %20 и т.д.
-            }
-          } catch (e) {
-            console.warn('Не удалось распарсить URL для имени файла, используем запасное', e);
-          }
-        }
-
-        // 3. Скачивание файла (используем тот же надежный Blob-метод)
-        const fetchResponse = await fetch(result.url);
-
-        if (!fetchResponse.ok) {
-          throw new Error(`Ошибка при загрузке файла: ${fetchResponse.status}`);
-        }
-
-        const blob = await fetchResponse.blob();
-        const downloadUrl = window.URL.createObjectURL(blob);
-
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = fileName; // <-- Сюда попадет чистое имя: "spravka_2023.pdf"
-
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Очистка памяти
-        window.URL.revokeObjectURL(downloadUrl);
-
-        //убираю у кнопки прелоадер так как файл скачался
-        setTimeout(()=>{
-          store.dispatch('ActionBtnLoad',false)
-        },2000)
-        //закрываю мобильное окно так как файл скачался
-        store.dispatch('ActionOpenModal',false)
-
       } catch (error) {
-        console.error('Ошибка при скачивании:', error);
-        //---ТУТ ОШИБКИ, КОГДА СЕРВЕР ОТДАЛ УСПЕШНО ФАЙЛ, НО ОН НЕ СКАЧАЛСЯ, НАПРИМЕР БИТЫЙ
-        this.downloadError = 'Не удалось скачать файл. Попробуйте позже.';
-        //ответ с сервера был успешный но файл скачать не удалось, возможно он был битый поэтому:
-        //меняю содержание окна
-        store.dispatch('ActionModalContent',this.statusModal[2])
-        //открываю новое окно если оно было закрыто
-        store.dispatch('ActionOpenModal',true)
-        //у кнопки убираю лоадер
-        store.dispatch('ActionBtnLoad',false)
+        //Убрать
+        // const newWindow = window.open('http://localhost:8081/img/documents/Договор купли-продажи.docx', '_blank');
+        //-------------------
 
-      } finally {
-        //ВОТ ТУТ ЕЩЁ РАЗ ПОДУМАТЬ ЭТИ СОСТОЯНИЯ ОБРАБАТЫВАТЬ ЗДЕСЬ ЛИ
-        this.isDownloading = false;
+        const errorCode = error.response?.data?.error?.code;
+        state.btn_load = false
+        handleApiError(state, errorCode);
+        commit('clearPolling'); // Останавливаем при ошибке
+        console.error('Ошибка:', error);
       }
     }
-
-
-const newWindow = window.open(data.url, '_blank');
