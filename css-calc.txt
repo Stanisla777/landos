@@ -1,70 +1,63 @@
-npm install vue-style-loader --save-dev
+async downloadArchive(fileUrl) {
+  this.isDownloading = true;
+  this.downloadError = null;
 
------
-
-{
-  test: /\.scss$/,
-  resourceQuery: /vue/,  // ← ИЗМЕНЕНО: убрали ^ и \?
-  use: [
-    { loader: 'vue-style-loader' },  // ← ИЗМЕНЕНО: вместо style-loader
-    { loader: 'css-loader', options: { sourceMap: true, url: false } },
-    {
-      loader: 'postcss-loader',
-      options: {
-        sourceMap: true,
-        postcssOptions: {
-          plugins: [require('autoprefixer')]
-        }
-      }
-    },
-    {
-      loader: 'sass-loader',
-      options: {
-        api: 'modern-compiler',
-        sourceMap: true,
-        sassOptions: {
-          quietDeps: true,
-          silenceDeprecations: [
-            'import', 'legacy-js-api', 'global-builtin',
-            'color-functions', 'slash-div', 'mixed-decls'
-          ],
-          includePaths: [
-            path.resolve(__dirname, 'node_modules'),
-            path.resolve(__dirname, 'src')
-          ]
-        }
-      }
+  try {
+    // 1. Извлекаем имя файла из URL (самый простой способ)
+    // Если URL: https://site.com/docs/spravka.zip?token=123
+    // split('?')[0] уберет токен, split('/').pop() возьмет spravka.zip
+    const cleanUrl = fileUrl.split('?')[0]; 
+    let fileName = cleanUrl.split('/').pop() || 'document.zip';
+    
+    // Декодируем, если в имени есть русские буквы (%D1...)
+    try {
+      fileName = decodeURIComponent(fileName);
+    } catch (e) {
+      console.warn('Ошибка декодирования имени файла', e);
     }
-  ]
-}
 
-----------------
+    // 2. Скачиваем файл через Fetch (контролируем процесс)
+    const fetchResponse = await fetch(fileUrl);
 
-{
-  test: /\.css$/,
-  resourceQuery: /vue/,  // ← ИЗМЕНЕНО: убрали ^ и \?
-  use: [
-    { loader: 'vue-style-loader' },  // ← ИЗМЕНЕНО: вместо style-loader
-    { loader: 'css-loader', options: { sourceMap: true, url: false } },
-    {
-      loader: 'postcss-loader',
-      options: {
-        sourceMap: true,
-        postcssOptions: { plugins: [require('autoprefixer')] }
-      }
+    if (!fetchResponse.ok) {
+      throw new Error(`Ошибка сети: ${fetchResponse.status}`);
     }
-  ]
-}
 
-----------
-{
-  test: /\.vue$/,
-  include: [
-    path.resolve(__dirname, 'src'),
-    /node_modules/  // ← ДОБАВЛЕНО: явно указываем node_modules
-  ],
-  loader: 'rspack-vue-loader',
-  options: {
-    experimentalInlineMatchResource: true,
+    const blob = await fetchResponse.blob();
+    
+    // Проверка на пустой файл (опционально, но полезно)
+    if (blob.size === 0) {
+      throw new Error('Файл пуст');
+    }
+
+    // 3. Создаем ссылку и инициируем скачивание
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName; // Имя от бэкенда
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Очищаем память
+    window.URL.revokeObjectURL(downloadUrl);
+
+    // 4. Успех: закрываем модалку, убираем лоадер
+    store.dispatch('ActionBtnLoad', false);
+    store.dispatch('ActionOpenModal', false);
+
+  } catch (error) {
+    console.error('Ошибка при скачивании:', error);
+    
+    // 5. Ошибка: показываем модалку с ошибкой
+    this.downloadError = 'Не удалось скачать файл. Попробуйте позже.';
+    
+    store.dispatch('ActionModalContent', this.statusModal[2]); // Ваша модалка ошибки
+    store.dispatch('ActionOpenModal', true);
+    store.dispatch('ActionBtnLoad', false);
+
+  } finally {
+    this.isDownloading = false;
   }
 }
