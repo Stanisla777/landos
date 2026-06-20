@@ -1,72 +1,49 @@
-<div class="check-service__wr-button-print"  v-if="confirmation_code_response.application_status_can_download === true">
-          <button v-if="!btn_load && !download_directly" class="btn_s black btn-icon-download-left mobile-100" type="button" @click="sendingDownloadDocument">Скачать</button>
-          <button v-if="btn_load && !download_directly" class="btn_s black btn-icon-download-left mobile-100 disabled submitting disappear-content" type="button">Скачать</button>
-          <a href="#" v-if="download_directly" class="btn_s black btn-icon-download-left mobile-100">Скачать</a>
-        </div>
+const newWindow = window.open(data.url, '_blank');
 
-export default createStore({
-  state:{
-    download_directly:false
+// Даём браузеру 500мс на обработку
+setTimeout(() => {
+  if (!newWindow || newWindow.closed) {
+    console.warn('Всплывающее окно заблокировано браузером');
+    state.download_directly = true;
+    // Здесь же показать модалку с предупреждением
   }
-})
+}, 500);
 
-computed:{
-    confirmation_code_response(){
-      return store.getters.CONFIRMATIONCODERESPONSE
-    },
-    down_load_url(){
-      return store.getters.DOWNLOADURL
-    },
-    btn_load(){
-      return store.getters.BTNLOAD
-    },
-    download_directly(){
-      return store.getters.DOWNLOADDIRECTLY
-    },
-  },
+a :href="down_load_url" download v-if="download_directly" class="...">Скачать</a>
 
-store.js
-
-actions:{
-  async mutationDownloadDocument({ commit, state }) {
-      try {
-        const response = await axios({
-          method: 'post',
-          url: '/api/local/program450/statusrequest/printform/',
-          headers: {
-            'Content-Type': 'application/json; charset=UTF-8',
-            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-          },
-          data: {},
-        });
-
-        const data = response.data.result;
-
-        if (data?.url) {
-          state.btn_load = false
-          state.modal_status = false
-          commit('setDownloadUrl', data.url); // оставил пока вдруг вернусь к Blob меоду
-          const newWindow = window.open(data.url, '_blank');
-
-          // Если браузер заблокировал всплывающее окно
-          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-            console.warn('Всплывающее окно заблокировано браузером');
-            // тут продумать про модалку с призывом разрешить окна всплывающие
-          }
-
-          commit('clearPolling'); // Останавливаем поллинг
-          console.log('Ссылка получена:', data.url);
-        }
-      } catch (error) {
-        //Убрать
-        const newWindow = window.open('http://localhost:8081/img/documents/Договор купли-продажи.docx', '_blank');
-        //-------------------
-
-        const errorCode = error.response?.data?.error?.code;
-        state.btn_load = false
-        handleApiError(state, errorCode);
-        commit('clearPolling'); // Останавливаем при ошибке
-        console.error('Ошибка:', error);
-      }
-    },
+Удаление ссылки
+// В компоненте
+methods: {
+  handleDirectDownload() {
+    // Скачивание уже произошло по клику на <a download>
+    // Сбрасываем флаг, закрываем модалку
+    setTimeout(() => {
+      store.commit('setDownloadDirectly', false);
+      store.commit('resetDownloadState'); // очищаем URL
+      store.dispatch('ActionOpenModal', false);
+    }, 500);
+  }
 }
+
+<a 
+  :href="down_load_url" 
+  download 
+  v-if="download_directly" 
+  class="btn_s black btn-icon-download-left mobile-100"
+  @click="handleDirectDownload"
+>Скачать</a>
+
+---------------------------
+
+ // Проверяем блокировку
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.warn('Всплывающее окно заблокировано браузером');
+          
+          // Показываем модалку с предупреждением
+          commit('setDownloadDirectly', true);
+          commit('setModalContent', state.modal_variations.popup_blocked); // Ваша модалка
+          commit('setModalStatus', true);
+        } else {
+          // Окно открылось — закрываем модалку
+          commit('setModalStatus', false);
+        }
