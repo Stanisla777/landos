@@ -1,46 +1,31 @@
-async mutationDownloadDocument({ commit, state }) {
-      try {
-        const response = await axios({
-          method: 'post',
-          url: '/api/local/program450/statusrequest/printform/',
-          headers: {
-            'Content-Type': 'application/json; charset=UTF-8',
-            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-          },
-          data: {},
-        });
+const newWindow = window.open(data.url, '_blank');
 
-        const data = response.data.result;
+// Проверка №1: синхронная блокировка
+if (!newWindow) {
+  console.warn('Окно заблокировано (синхронно)');
+  commit('setDownloadDirectly', true);
+  commit('setModalContent', state.modal_variations.popup_blocked);
+  commit('setModalStatus', true);
+  commit('clearPolling'); // ← Сразу останавливаем поллинг
+  return;
+}
 
-        if (data?.url) {
-          state.btn_load = false
-          state.modal_status = false
-          commit('setDownloadUrl', data.url); // оставил пока вдруг вернусь к Blob меоду
-          const newWindow = window.open(data.url, '_blank');
+// Проверка №2: асинхронная проверка (Safari может закрыть окно)
+setTimeout(() => {
+  try {
+    if (newWindow.closed) {
+      console.warn('Окно было закрыто браузером');
+      commit('setDownloadDirectly', true);
+      commit('setModalContent', state.modal_variations.popup_blocked);
+      commit('setModalStatus', true);
+    }
+  } catch (e) {
+    // Ошибка доступа к closed — считаем блокировкой
+    console.warn('Ошибка доступа к окну:', e);
+    commit('setDownloadDirectly', true);
+    commit('setModalContent', state.modal_variations.popup_blocked);
+    commit('setModalStatus', true);
+  }
+}, 300);
 
-          // Если браузер заблокировал всплывающее окно
-          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-            console.warn('Всплывающее окно заблокировано браузером');
-
-            // Показываем модалку с предупреждением
-            commit('setDownloadDirectly', true);
-            commit('setModalContent', state.modal_variations.popup_blocked); // Ваша модалка
-            commit('setModalStatus', true);
-          }
-
-          commit('clearPolling'); // Останавливаем поллинг
-          console.log('Ссылка получена:', data.url);
-        }
-      } catch (error) {
-        
-
-
-
-       
-        const errorCode = error.response?.data?.error?.code;
-        state.btn_load = false
-        handleApiError(state, errorCode);
-        commit('clearPolling'); // Останавливаем при ошибке
-        console.error('Ошибка:', error);
-      }
-    },
+commit('clearPolling'); // ← Если окно открылось, останавливаем поллинг
