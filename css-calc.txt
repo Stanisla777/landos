@@ -1,14 +1,15 @@
-if (data?.url) {
-  state.btn_load = false;
-  commit('setDownloadUrl', data.url);
-  commit('clearPolling');
+clearPolling(state) {
+      if (state.polling_interval_id) {
+        clearInterval(state.polling_interval_id);
+      }
+      state.polling_interval_id = null;
+      state.polling_start_time = null;
+    },
 
-  // Программное скачивание
-  const link = document.createElement('a');
-  link.href = data.url;
-  link.download = ''; // имя файла (опционально)
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+Компонент
+<button class="btn_s transparent_black_border btn-icon-else mobile-100" type="button" @click="checkNewApplication">Проверить новое заявление</button>
+
+//возврт назад на первый шаг
+    checkNewApplication() {
+      store.commit('clearPolling');
+    },
