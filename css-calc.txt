@@ -1,148 +1,152 @@
-//если прошло 2 минуты и ссылка не пявилась
-    mutationLinkNotAppear(state,received_perem){
-      state.modal_content = state.modal_variations[received_perem]
-      //открываю модалку с формированным контентом
-      state.modal_status=true
-      state.btn_load = false
-      state.closed_manually = false
-    },
+url_received: false
+
 setDownloadUrl(state, url) {
-      state.down_load_url = url;
-    },
+    state.down_load_url = url;
+  },
+  
+  setClosedManually(state, value) {
+    state.closed_manually = value;
+  },
+  
+  setHelpGeneration(state, value) {
+    state.help_generation = value;
+  },
+  
+  setUrlReceived(state, value) {
+    state.url_received = value;
+  },
 
-    setPollingInterval(state, intervalId) {
-      state.polling_interval_id = intervalId;
-    },
+  setPollingInterval(state, intervalId) {
+    state.polling_interval_id = intervalId;
+  },
 
-    setPollingStartTime(state, time) {
-      state.polling_start_time = time;
-    },
+  setPollingStartTime(state, time) {
+    state.polling_start_time = time;
+  },
 
-    clearPolling(state) {
-      if (state.polling_interval_id) {
-        clearInterval(state.polling_interval_id);
+  clearPolling(state) {
+    if (state.polling_interval_id) {
+      clearInterval(state.polling_interval_id);
+    }
+    state.polling_interval_id = null;
+    state.polling_start_time = null;
+  },
+
+  resetDownloadState(state) {
+    state.down_load_url = null;
+    state.url_received = false;
+  },
+  
+  mutationLinkNotAppear(state, received_perem) {
+    state.modal_content = state.modal_variations[received_perem];
+    state.modal_status = true;
+    state.btn_load = false;
+    state.closed_manually = false;
+  },
+
+-------------
+
+actions: {
+  async startDownloadPolling({ commit, state }) {
+    commit('clearPolling');
+    commit('resetDownloadState');
+    commit('setPollingStartTime', Date.now());
+    
+    // ⭐ Сбрасываем флаг
+    state.url_received = false;
+
+    await this.dispatch('mutationDownloadDocument');
+
+    // ⭐ Проверяем флаг
+    if (state.url_received) {
+      console.log('URL получен сразу, поллинг не нужен');
+      return;
+    }
+
+    const intervalId = setInterval(async () => {
+      const elapsed = Date.now() - state.polling_start_time;
+
+      if (elapsed >= state.polling_timeout) {
+        commit('clearPolling');
+        commit('mutationLinkNotAppear', 'certificate_not_generated');
+        return;
       }
-      state.polling_interval_id = null;
-      state.polling_start_time = null;
-    },
 
-    resetDownloadState(state) {
-      state.down_load_url = null;
-    },
+      await this.dispatch('mutationDownloadDocument');
+    }, 10000);
 
-----------------------
+    commit('setPollingInterval', intervalId);
+  },
 
 async mutationDownloadDocument({ commit, state }) {
-      try {
-        const response = await axios({
-          method: 'post',
-          url: '/api/local/program450/statusrequest/printform/',
-          headers: {
-            'Content-Type': 'application/json; charset=UTF-8',
-            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-          },
-          data: {},
-        });
+  try {
+    const response = await axios({
+      method: 'post',
+      url: '/api/local/program450/statusrequest/printform/',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+      },
+      data: {},
+    });
 
-        const data = response.data.result;
+    const data = response.data.result;
 
-        if (data?.url) {
-          state.btn_load = false
-          state.modal_status = false
-          commit('setDownloadUrl', data.url); // оставил пока вдруг вернусь к Blob меоду
+    if (data?.url) {
+      state.btn_load = false;
+      state.modal_status = false;
+      state.url_received = true;
+      
+      commit('setDownloadUrl', data.url);
+      commit('clearPolling');
 
+      // Скачивание
+      const link = document.createElement('a');
+      link.href = data.url;
+      link.download = '';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-          commit('clearPolling'); // Останавливаем поллинг
-
-
-          //РЕАЛИЗАЦИЯ СКАЧИВАНИЯ С ПОМОЩЬЮ WINDOW.OPEN
-          // const newWindow = window.open(data.url, '_blank');
-          // // Первая проверка блокировки - простая, окно заблокировано newWindow=null
-          // if (!newWindow) {
-          //   console.warn('Окно заблокировано');
-          //   commit('setDownloadDirectly', true);
-          //   commit('setModalContent', state.modal_variations.popup_blocked);
-          //   commit('setModalStatus', true);
-          //   return;
-          // }
-          //
-          // // Вторая проверка для хитрых браузеров, типа Safari окно открывает, но закрывает через долю секунды
-          // setTimeout(() => {
-          //   try {
-          //     if (newWindow.closed) {
-          //       console.warn('Окно было закрыто браузером');
-          //       commit('setDownloadDirectly', true);
-          //       commit('setModalContent', state.modal_variations.popup_blocked);
-          //       commit('setModalStatus', true);
-          //     }
-          //   } catch (e) {
-          //     // Ошибка доступа к closed — считаем блокировкой
-          //     console.warn('Ошибка доступа к окну:', e);
-          //     commit('setDownloadDirectly', true);
-          //     commit('setModalContent', state.modal_variations.popup_blocked);
-          //     commit('setModalStatus', true);
-          //   }
-          // }, 300);
-
-          // Программное скачивание
-          const link = document.createElement('a');
-          link.href = data.url;
-          link.download = ''; //
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          console.log('Ссылка получена:', data.url);
-          state.down_load_url = null;
-          state.closed_manually = false
-          state.help_generation = false
-        }
-        else {
-          if (!state.closed_manually && state.help_generation) {
-            state.modal_content = state.modal_variations.down_load_file
-            state.help_generation = true
-            state.modal_status=true
-          }
-          state.temporary_word = data.requestId
-
-        }
-      } catch (error) {
-        //Убрать
-        //это с помощью window.open тестирую
-
-        // const newWindow = window.open('http://localhost:8081/img/documents/Договор купли-продажи.docx', '_blank');
-        // state.down_load_url = 'http://localhost:8081/img/documents/Договор купли-продажи.docx'
-        // commit('mutationDownloadDirectly', true);
-        // state.modal_content = state.modal_variations.popup_blocked
-        // //открываю модалку с формированным контентом
-        // state.modal_status=true
-
-        //это тестирую с помощью создания ссылки и програмного клика
-        // state.btn_load = false
-        // setTimeout(() => {
-        //   state.modal_status = false
-        // },1000)
-        //
-        // state.down_load_url = 'http://localhost:8081/img/documents/Договор купли-продажи.docx'
-        // const link = document.createElement('a');
-        // link.href = 'http://localhost:8081/img/documents/Договор купли-продажи.docx';
-        // link.download = ''; // имя файла (опционально)
-        // link.style.display = 'none';
-        // document.body.appendChild(link);
-        // link.click();
-        // document.body.removeChild(link);
-
-        //------------------- закончилось то, что можно убрать
-
-
-
-        //РАССКОМЕНТИРОВАТ!!!!!!!!!!!!!!!
-        const errorCode = error.response?.data?.error?.code;
-        state.btn_load = false
-        state.closed_manually = false
-        state.help_generation = false
-        handleApiError(state, errorCode);
-        commit('clearPolling'); // Останавливаем при ошибке
-        console.error('Ошибка:', error);
+      state.down_load_url = null;
+      state.closed_manually = false;
+      state.help_generation = false;
+    } else {
+      state.url_received = false;
+      
+      // ⭐ ИСПРАВЛЕНО: !state.help_generation вместо state.help_generation
+      if (!state.closed_manually && !state.help_generation) {
+        state.modal_content = state.modal_variations.down_load_file;
+        state.help_generation = true;
+        state.modal_status = true;
       }
-    },
+      state.temporary_word = data.requestId;
+    }
+  } catch (error) {
+    state.url_received = false;
+    const errorCode = error.response?.data?.error?.code;
+    state.btn_load = false;
+    state.closed_manually = false;
+    state.help_generation = false;
+    handleApiError(state, errorCode);
+    commit('clearPolling');
+    console.error('Ошибка:', error);
+  }
+}
+
+
+-------------------
+
+methods: {
+  sendingDownloadDocument() {
+    // ⭐ Сбрасываем флаги при каждом новом клике
+    store.commit('setClosedManually', false);
+    store.commit('setHelpGeneration', false);
+    
+    store.dispatch('ActionModalContent', this.statusModal[0]);
+    store.dispatch('ActionOpenModal', true);
+    store.dispatch('ActionBtnLoad', true);
+    store.dispatch('startDownloadPolling');
+  }
+}
