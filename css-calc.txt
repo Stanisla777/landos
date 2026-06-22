@@ -1,31 +1,30 @@
 const newWindow = window.open(data.url, '_blank');
+          // Первая проверка блокировки
+          if (!newWindow) {
+            console.warn('Окно заблокировано (синхронно)');
+            commit('setDownloadDirectly', true);
+            commit('setModalContent', state.modal_variations.popup_blocked);
+            commit('setModalStatus', true);
+            commit('clearPolling'); // ← Сразу останавливаем поллинг
+            return;
+          }
 
-// Проверка №1: синхронная блокировка
-if (!newWindow) {
-  console.warn('Окно заблокировано (синхронно)');
-  commit('setDownloadDirectly', true);
-  commit('setModalContent', state.modal_variations.popup_blocked);
-  commit('setModalStatus', true);
-  commit('clearPolling'); // ← Сразу останавливаем поллинг
-  return;
-}
+          // Вторая проверка для Safari может закрыть окно
+          setTimeout(() => {
+            try {
+              if (newWindow.closed) {
+                console.warn('Окно было закрыто браузером');
+                commit('setDownloadDirectly', true);
+                commit('setModalContent', state.modal_variations.popup_blocked);
+                commit('setModalStatus', true);
+              }
+            } catch (e) {
+              // Ошибка доступа к closed — считаем блокировкой
+              console.warn('Ошибка доступа к окну:', e);
+              commit('setDownloadDirectly', true);
+              commit('setModalContent', state.modal_variations.popup_blocked);
+              commit('setModalStatus', true);
+            }
+          }, 300);
 
-// Проверка №2: асинхронная проверка (Safari может закрыть окно)
-setTimeout(() => {
-  try {
-    if (newWindow.closed) {
-      console.warn('Окно было закрыто браузером');
-      commit('setDownloadDirectly', true);
-      commit('setModalContent', state.modal_variations.popup_blocked);
-      commit('setModalStatus', true);
-    }
-  } catch (e) {
-    // Ошибка доступа к closed — считаем блокировкой
-    console.warn('Ошибка доступа к окну:', e);
-    commit('setDownloadDirectly', true);
-    commit('setModalContent', state.modal_variations.popup_blocked);
-    commit('setModalStatus', true);
-  }
-}, 300);
-
-commit('clearPolling'); // ← Если окно открылось, останавливаем поллинг
+          commit('clearPolling'); // Останавливаем поллинг
