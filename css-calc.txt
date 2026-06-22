@@ -1,48 +1,14 @@
 if (data?.url) {
-          state.btn_load = false
-          state.modal_status = false
-          commit('setDownloadUrl', data.url); // оставил пока вдруг вернусь к Blob меоду
+  state.btn_load = false;
+  commit('setDownloadUrl', data.url);
+  commit('clearPolling');
 
-
-          // Если браузер заблокировал всплывающее окно
-          // if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-          //   console.warn('Всплывающее окно заблокировано браузером');
-          //
-          //   // Показываем модалку с предупреждением
-          //   commit('setDownloadDirectly', true);
-          //   commit('setModalContent', state.modal_variations.popup_blocked); // Ваша модалка
-          //   commit('setModalStatus', true);
-          // }
-
-          const newWindow = window.open(data.url, '_blank');
-          // Первая проверка блокировки
-          if (!newWindow) {
-            console.warn('Окно заблокировано (синхронно)');
-            commit('setDownloadDirectly', true);
-            commit('setModalContent', state.modal_variations.popup_blocked);
-            commit('setModalStatus', true);
-            commit('clearPolling'); // ← Сразу останавливаем поллинг
-            return;
-          }
-
-          // Вторая проверка для Safari может закрыть окно
-          setTimeout(() => {
-            try {
-              if (newWindow.closed) {
-                console.warn('Окно было закрыто браузером');
-                commit('setDownloadDirectly', true);
-                commit('setModalContent', state.modal_variations.popup_blocked);
-                commit('setModalStatus', true);
-              }
-            } catch (e) {
-              // Ошибка доступа к closed — считаем блокировкой
-              console.warn('Ошибка доступа к окну:', e);
-              commit('setDownloadDirectly', true);
-              commit('setModalContent', state.modal_variations.popup_blocked);
-              commit('setModalStatus', true);
-            }
-          }, 300);
-
-          commit('clearPolling'); // Останавливаем поллинг
-          console.log('Ссылка получена:', data.url);
-        }
+  // Программное скачивание
+  const link = document.createElement('a');
+  link.href = data.url;
+  link.download = ''; // имя файла (опционально)
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
