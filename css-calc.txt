@@ -1,152 +1,186 @@
-url_received: false
+<button v-if="!btn_load && !download_directly" class="btn_s black btn-icon-download-left mobile-100" type="button" @click="sendingDownloadDocument">Скачать</button>
 
-setDownloadUrl(state, url) {
-    state.down_load_url = url;
-  },
-  
-  setClosedManually(state, value) {
-    state.closed_manually = value;
-  },
-  
-  setHelpGeneration(state, value) {
-    state.help_generation = value;
-  },
-  
-  setUrlReceived(state, value) {
-    state.url_received = value;
-  },
+sendingDownloadDocument(){
+      store.commit('setClosedManually', false);
+      store.commit('setHelpGeneration', false);
+      store.dispatch('ActionBtnLoad',true)
+      store.dispatch('startDownloadPolling')
+    },
 
-  setPollingInterval(state, intervalId) {
-    state.polling_interval_id = intervalId;
-  },
+export default createStore({
+  state:{
+    state:null,
+    step_one:true,
+    step_two:false,
+    step_three:false,
+    timer_begin:false,
+    modal_status: false, //модальное окно активно или нет
+    masked_phone_number:'', //маскированный номер телефона
+    timeleft:0, // сколько секунд осталось до возможности  отправить смс код повторно
 
-  setPollingStartTime(state, time) {
-    state.polling_start_time = time;
-  },
+    //скачивание файла
+    down_load_url:null,
+    polling_interval_id: null, // ID интервала для остановки
+    polling_start_time: null, // Время начала поллинга
+    polling_timeout: 120000, // 2 минуты в миллисекундах
+    //то что я получаю а post запросе проверка кода для третьего шага
+    confirmation_code_response: getDefaultConfirmationResponse(),
 
-  clearPolling(state) {
-    if (state.polling_interval_id) {
-      clearInterval(state.polling_interval_id);
-    }
-    state.polling_interval_id = null;
-    state.polling_start_time = null;
-  },
+    //флаг первоначальное состояние, чтобы в компонентах через watch сбрасывать поля
+    original_condition:false,
+    btn_load:false,
 
-  resetDownloadState(state) {
-    state.down_load_url = null;
-    state.url_received = false;
-  },
-  
-  mutationLinkNotAppear(state, received_perem) {
-    state.modal_content = state.modal_variations[received_perem];
-    state.modal_status = true;
-    state.btn_load = false;
-    state.closed_manually = false;
+    download_directly:false,
+    //модальное окно закрыто вручную
+    closed_manually:false,
+    help_generation:false,
+
+  //  временная
+    temporary_word:'',
+    url_received: false
+
   },
 
--------------
 
-actions: {
-  async startDownloadPolling({ commit, state }) {
-    commit('clearPolling');
-    commit('resetDownloadState');
-    commit('setPollingStartTime', Date.now());
-    
-    // ⭐ Сбрасываем флаг
-    state.url_received = false;
 
-    await this.dispatch('mutationDownloadDocument');
+mutations:{
+   setDownloadUrl(state, url) {
+      state.down_load_url = url;
+    },
 
-    // ⭐ Проверяем флаг
-    if (state.url_received) {
-      console.log('URL получен сразу, поллинг не нужен');
-      return;
-    }
+    setClosedManually(state, value) {
+      state.closed_manually = value;
+    },
 
-    const intervalId = setInterval(async () => {
-      const elapsed = Date.now() - state.polling_start_time;
+    setHelpGeneration(state, value) {
+      state.help_generation = value;
+    },
 
-      if (elapsed >= state.polling_timeout) {
-        commit('clearPolling');
-        commit('mutationLinkNotAppear', 'certificate_not_generated');
+    setUrlReceived(state, value) {
+      state.url_received = value;
+    },
+
+    setPollingInterval(state, intervalId) {
+      state.polling_interval_id = intervalId;
+    },
+
+    setPollingStartTime(state, time) {
+      state.polling_start_time = time;
+    },
+
+    clearPolling(state) {
+      if (state.polling_interval_id) {
+        clearInterval(state.polling_interval_id);
+      }
+      state.polling_interval_id = null;
+      state.polling_start_time = null;
+    },
+
+    resetDownloadState(state) {
+      state.down_load_url = null;
+      state.url_received = false;
+    },
+
+    mutationLinkNotAppear(state, received_perem) {
+      state.modal_content = state.modal_variations[received_perem];
+      state.modal_status = true;
+      state.btn_load = false;
+      state.closed_manually = false;
+      state.help_generation = false;
+      state.url_received = false;
+    },
+}
+
+actions:{
+// Запуск поллинга
+    async startDownloadPolling({ commit, state }) {
+      commit('clearPolling');
+      commit('resetDownloadState');
+      commit('setPollingStartTime', Date.now());
+
+      // Сбрасываем флаг
+      state.url_received = false;
+
+      await this.dispatch('mutationDownloadDocument');
+
+      // Проверяем флаг
+      if (state.url_received) {
         return;
       }
 
-      await this.dispatch('mutationDownloadDocument');
-    }, 10000);
+      const intervalId = setInterval(async () => {
+        const elapsed = Date.now() - state.polling_start_time;
 
-    commit('setPollingInterval', intervalId);
-  },
+        if (elapsed >= state.polling_timeout) {
+          commit('clearPolling');
+          commit('mutationLinkNotAppear', 'certificate_not_generated');
+          return;
+        }
 
-async mutationDownloadDocument({ commit, state }) {
-  try {
-    const response = await axios({
-      method: 'post',
-      url: '/api/local/program450/statusrequest/printform/',
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-      },
-      data: {},
-    });
+        await this.dispatch('mutationDownloadDocument');
+      }, 10000);
 
-    const data = response.data.result;
+      commit('setPollingInterval', intervalId);
+    },
 
-    if (data?.url) {
-      state.btn_load = false;
-      state.modal_status = false;
-      state.url_received = true;
-      
-      commit('setDownloadUrl', data.url);
+    // Остановка поллинга
+    stopDownloadPolling({ commit }) {
       commit('clearPolling');
+    },
 
-      // Скачивание
-      const link = document.createElement('a');
-      link.href = data.url;
-      link.download = '';
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    // Сам запрос (теперь это action, а не mutation)
+    async mutationDownloadDocument({ commit, state }) {
+      try {
+        const response = await axios({
+          method: 'post',
+          url: '/api/local/program450/statusrequest/printform/',
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
+          },
+          data: {},
+        });
 
-      state.down_load_url = null;
-      state.closed_manually = false;
-      state.help_generation = false;
-    } else {
-      state.url_received = false;
-      
-      // ⭐ ИСПРАВЛЕНО: !state.help_generation вместо state.help_generation
-      if (!state.closed_manually && !state.help_generation) {
-        state.modal_content = state.modal_variations.down_load_file;
-        state.help_generation = true;
-        state.modal_status = true;
+        const data = response.data.result;
+
+        if (data?.url) {
+          state.btn_load = false;
+          state.modal_status = false;
+          state.url_received = true;
+
+          commit('setDownloadUrl', data.url);
+          commit('clearPolling');
+
+          // Скачивание
+          const link = document.createElement('a');
+          link.href = data.url;
+          link.download = '';
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          state.down_load_url = null;
+          state.closed_manually = false;
+          state.help_generation = false;
+        } else {
+          state.url_received = false;
+
+          if (!state.closed_manually && !state.help_generation) {
+            state.modal_content = state.modal_variations.down_load_file;
+            state.help_generation = true;
+            state.modal_status = true;
+          }
+          state.temporary_word = data.requestId;
+        }
+      } catch (error) {
+        state.url_received = false;
+        const errorCode = error.response?.data?.error?.code;
+        state.btn_load = false;
+        state.closed_manually = false;
+        state.help_generation = false;
+        handleApiError(state, errorCode);
+        commit('clearPolling');
+        console.error('Ошибка:', error);
       }
-      state.temporary_word = data.requestId;
-    }
-  } catch (error) {
-    state.url_received = false;
-    const errorCode = error.response?.data?.error?.code;
-    state.btn_load = false;
-    state.closed_manually = false;
-    state.help_generation = false;
-    handleApiError(state, errorCode);
-    commit('clearPolling');
-    console.error('Ошибка:', error);
-  }
-}
-
-
--------------------
-
-methods: {
-  sendingDownloadDocument() {
-    // ⭐ Сбрасываем флаги при каждом новом клике
-    store.commit('setClosedManually', false);
-    store.commit('setHelpGeneration', false);
-    
-    store.dispatch('ActionModalContent', this.statusModal[0]);
-    store.dispatch('ActionOpenModal', true);
-    store.dispatch('ActionBtnLoad', true);
-    store.dispatch('startDownloadPolling');
-  }
-}
+    },
