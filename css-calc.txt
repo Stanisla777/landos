@@ -1,104 +1,60 @@
-polling_error: false,
+Сделать ограничение по количеству вводимых цифр в поле "Кадастровый номер": не менее 10 цифр и не более 40 (без учета разделителей ":")
+<input @input="onInput" class="status-kadastr-block__input" v-model="value" placeholder="ХХ:ХХ:ХХХХХХХ:ХХ">
 
-mutation:{
- setPollingError(state, value) {
-    state.polling_error = value;
-  },
-
-action:{
-
-async startDownloadPolling({ commit, state }) {
-  commit('clearPolling');
-  commit('resetDownloadState');
-  commit('setPollingStartTime', Date.now());
-
-  state.url_received = false;
-  state.polling_error = false; //  Сбрасываем флаг
-
-  await this.dispatch('mutationDownloadDocument');
-
-  //  Не создаём интервал, если была ошибка или URL получен
-  if (state.url_received || state.polling_error) {
-    return;
-  }
-
-  const intervalId = setInterval(async () => {
-    const elapsed = Date.now() - state.polling_start_time;
-
-    if (elapsed >= state.polling_timeout) {
-      commit('clearPolling');
-      commit('mutationLinkNotAppear', 'certificate_not_generated');
-      return;
-    }
-
-    await this.dispatch('mutationDownloadDocument');
-  }, 10000);
-
-  commit('setPollingInterval', intervalId);
-}
------------------------------
-
-async mutationDownloadDocument({ commit, state }) {
-  try {
-    const response = await axios({
-      method: 'post',
-      url: '/api/local/program450/statusrequest/printform/',
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'X-Bitrix-Csrf-Token': window.BX?.bitrix_sessid?.(),
-      },
-      data: {},
-    });
-
-    const data = response.data.result;
-
-    if (data?.url) {
-      state.btn_load = false;
-      state.modal_status = false;
-      state.url_received = true;
-      state.polling_error = false; // ⭐ Сбрасываем флаг ошибки
-
-      commit('setDownloadUrl', data.url);
-      commit('clearPolling');
-
-      // Скачивание
-      const link = document.createElement('a');
-      link.href = data.url;
-      link.download = '';
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      state.down_load_url = null;
-      state.closed_manually = false;
-      state.help_generation = false;
-    } else {
-      state.url_received = false;
-      state.polling_error = false; // ⭐ Сбрасываем флаг ошибки
-
-      if (!state.closed_manually && !state.help_generation) {
-        state.modal_content = state.modal_variations.down_load_file;
-        state.help_generation = true;
-        state.modal_status = true;
+onInput(){
+      if(this.value){
+        const result = this.value.match(/[0-9:]/g)
+        this.value = result === null ? '' : result.join('')
       }
-      state.temporary_word = data.requestId;
+
+    },
+    inputCost(){
+      const input_tel = document.querySelectorAll('.status-kadastr-block__input');
+      const maskOptions = {
+        mask: '[0-9:]'
+      };
+      for (const item of input_tel) {
+        new IMask(item, maskOptions);
+      }
+
+    },
+
+----------------------
+
+initMask() {
+      this.maskRef = IMask(this.$refs.statementInput, {
+        mask: [
+          {
+            mask: '$00000.00.0000',
+            definitions: {
+              // Разрешаем ввод всех 4 вариантов буквы "е"
+              '$': /[eеEЕуУtT]/
+            },
+            // Хук prepare срабатывает ДО применения маски
+            prepare: function (str) {
+              // Заменяем ЛЮБОЙ вариант буквы "е" (латинскую/кириллическую, строчную/заглавную)
+              // на латинскую строчную 'e'
+              // Флаг 'g' нужен, чтобы это работало даже при вставке из буфера обмена
+              return str.replace(/[eеEЕуУtT]/g, 'e');
+            }
+          },
+          {
+            mask: '00000.00.0000'
+          }
+        ],
+        lazy: false
+      });
+
+      this.maskRef.on('accept', () => {
+        if (this.errorInput === true) {
+          this.errorInput = false;
+        }
+        this.applicationNumber = this.maskRef.value;
+        const unmasked = this.maskRef.unmaskedValue;
+
+        // Поскольку prepare уже гарантированно превратил любую "е" в латинскую 'e',
+        // в unmaskedValue никогда не будет кириллической 'е'.
+        // Но проверка оставлена с обоими вариантами на случай, если что-то пойдёт не так.
+        this.fieldInput = /^([eе]\d{11}|\d{11})$/.test(unmasked);
+      });
     }
-  } catch (error) {
-    state.url_received = false;
-    state.polling_error = true; // ⭐ Устанавливаем флаг ошибки
-    
-    const errorCode = error.response?.data?.error?.code;
-    state.btn_load = false;
-    state.closed_manually = false;
-    state.help_generation = false;
-    handleApiError(state, errorCode);
-    commit('clearPolling');
-    console.error('Ошибка:', error);
-  }
-}
-
----------------------
-
-sendingDownloadDocument() {
-    store.commit('setPollingError', false); // ⭐ Сбрасываем флаг
