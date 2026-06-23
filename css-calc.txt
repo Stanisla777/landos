@@ -1,119 +1,86 @@
-<input 
-  :value="value" 
-  @keydown="onKeyDown"
-  @input="onInput"
-  @paste="onPaste"
-  class="status-kadastr-block__input" 
-  placeholder="ХХ:ХХ:ХХХХХХХ:ХХ"
->
-
-data() {
-  return {
-    value: '',
-    btnLoad: false
-  }
-},
-methods: {
-  onKeyDown(event) {
-    // Разрешаем служебные клавиши
-    const allowedKeys = [
-      'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 
-      'Tab', 'Home', 'End', 'Enter'
-    ];
-    
-    // Разрешаем Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-    if (event.ctrlKey || event.metaKey) {
-      if (['a', 'c', 'v', 'x'].includes(event.key.toLowerCase())) {
-        return; // Позволяем стандартное поведение
-      }
-    }
-    
-    // Разрешаем служебные клавиши
-    if (allowedKeys.includes(event.key)) {
+onKeyDown(event) {
+  const allowedKeys = [
+    'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 
+    'Tab', 'Home', 'End', 'Enter'
+  ];
+  
+  if (event.ctrlKey || event.metaKey) {
+    if (['a', 'c', 'v', 'x'].includes(event.key.toLowerCase())) {
       return;
     }
+  }
+  
+  if (allowedKeys.includes(event.key)) {
+    return;
+  }
 
-    // Проверяем, что нажата цифра
-    const isDigit = /^[0-9]$/.test(event.key);
-    
-    // Проверяем, что нажато двоеточие
-    const isColon = event.key === ':';
+  const isDigit = /^[0-9]$/.test(event.key);
+  // Разрешаем оба символа: двоеточие (англ. раскладка) и точку с запятой (рус. раскладка)
+  const isColon = event.key === ':' || event.key === ';';
 
-    // Если не цифра и не двоеточие — блокируем
-    if (!isDigit && !isColon) {
+  if (!isDigit && !isColon) {
+    event.preventDefault();
+    return;
+  }
+
+  if (isColon) {
+    if (this.value.length === 0) {
       event.preventDefault();
       return;
     }
-
-    // Если это двоеточие — проверяем дополнительные условия
-    if (isColon) {
-      // Блокируем, если это первый символ (поле пустое)
-      if (this.value.length === 0) {
-        event.preventDefault();
-        return;
-      }
-      
-      // Блокируем, если предыдущий символ тоже двоеточие
-      if (this.value.endsWith(':')) {
-        event.preventDefault();
-        return;
-      }
-      
-      // Считаем количество двоеточий (максимум 3 для формата ХХ:ХХ:ХХХХХХХ:ХХ)
-      const colonCount = (this.value.match(/:/g) || []).length;
-      if (colonCount >= 3) {
-        event.preventDefault();
-        return;
-      }
-    }
-
-    // Если это цифра — проверяем лимит
-    if (isDigit) {
-      const digitCount = (this.value.match(/[0-9]/g) || []).length;
-      if (digitCount >= 40) {
-        event.preventDefault();
-        return;
-      }
-    }
-
-    // Если всё ок — позволяем ввод (ничего не блокируем)
-  },
-  
-  // Обработчик вставки из буфера обмена
-  onPaste(event) {
-    event.preventDefault();
-    const pastedText = event.clipboardData.getData('text');
     
-    // Фильтруем вставленный текст
-    let result = '';
-    let digitCount = 0;
-    let prevCharWasColon = true;
-    
-    for (let char of pastedText) {
-      if (/[0-9]/.test(char)) {
-        if (digitCount < 40) {
-          result += char;
-          digitCount++;
-          prevCharWasColon = false;
-        }
-      } else if (char === ':') {
-        if (!prevCharWasColon && result.length > 0) {
-          const colonCount = (result.match(/:/g) || []).length;
-          if (colonCount < 3) {
-            result += char;
-            prevCharWasColon = true;
-          }
-        }
-      }
+    if (this.value.endsWith(':')) {
+      event.preventDefault();
+      return;
     }
-    
-    this.value = result;
-    this.btnLoad = digitCount >= 10;
-  },
-  
-  // Этот метод нужен для обновления btnLoad при обычном вводе
-  onInput() {
-    const digitCount = (this.value.match(/[0-9]/g) || []).length;
-    this.btnLoad = digitCount >= 10;
   }
+
+  if (isDigit) {
+    const digitCount = (this.value.match(/[0-9]/g) || []).length;
+    if (digitCount >= 40) {
+      event.preventDefault();
+      return;
+    }
+  }
+},
+
+onInput(event) {
+  const input = event.target;
+  const cursorPosition = input.selectionStart;
+  const rawValue = input.value;
+  
+  // Фильтруем значение и преобразуем ; в :
+  let result = '';
+  let digitCount = 0;
+  let prevCharWasColon = true;
+  
+  for (let char of rawValue) {
+    if (/[0-9]/.test(char)) {
+      if (digitCount < 40) {
+        result += char;
+        digitCount++;
+        prevCharWasColon = false;
+      }
+    } else if (char === ':' || char === ';') {
+      // Всегда сохраняем как двоеточие
+      if (!prevCharWasColon && result.length > 0) {
+        result += ':';
+        prevCharWasColon = true;
+      }
+    }
+  }
+  
+  // Вычисляем новую позицию курсора
+  let newCursorPosition = cursorPosition;
+  if (result.length < rawValue.length) {
+    const removedChars = rawValue.length - result.length;
+    newCursorPosition = Math.max(0, cursorPosition - removedChars);
+  }
+  
+  this.value = result;
+  this.btnLoad = digitCount >= 10;
+  
+  this.$nextTick(() => {
+    input.setSelectionRange(newCursorPosition, newCursorPosition);
+  });
 }
