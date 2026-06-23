@@ -1,35 +1,37 @@
-onInput(event) {
-    const rawValue = event.target.value;
-    let result = '';
-    let digitCount = 0;
-    
-    // Считаем, что "предыдущий символ был двоеточием", 
-    // чтобы запретить ввод двоеточия самым первым символом
-    let prevCharWasColon = true; 
+<input @input="onInput" class="status-kadastr-block__input" :value="value" placeholder="ХХ:ХХ:ХХХХХХХ:ХХ">
 
-    for (let char of rawValue) {
-      // 1. Разрешаем только цифры
-      if (/[0-9]/.test(char)) {
-        if (digitCount < 40) { // Лимит не более 40 цифр
-          result += char;
-          digitCount++;
-          prevCharWasColon = false;
+
+      const rawValue = event.target.value;
+      let result = '';
+      let digitCount = 0;
+
+      // Считаем, что "предыдущий символ был двоеточием",
+      // чтобы запретить ввод двоеточия самым первым символом
+      let prevCharWasColon = true;
+
+      for (let char of rawValue) {
+        // 1. Разрешаем только цифры
+        if (/[0-9]/.test(char)) {
+          if (digitCount < 40) { // Лимит не более 40 цифр
+            result += char;
+            digitCount++;
+            prevCharWasColon = false;
+          }
         }
-      } 
-      // 2. Разрешаем двоеточие
-      else if (char === ':') {
-        // Пропускаем, если это первый символ ИЛИ если предыдущий тоже был двоеточием
-        if (!prevCharWasColon && result.length > 0) {
-          result += char;
-          prevCharWasColon = true;
+        // 2. Разрешаем двоеточие
+        else if (char === ':') {
+          // Пропускаем, если это первый символ ИЛИ если предыдущий тоже был двоеточием
+          if (!prevCharWasColon && result.length > 0) {
+            result += char;
+            prevCharWasColon = true;
+          }
         }
+        // Все остальные символы (буквы, пробелы, тире и т.д.) просто игнорируются (не попадают в result)
       }
-      // Все остальные символы (буквы, пробелы, тире и т.д.) просто игнорируются (не попадают в result)
-    }
 
-    // Обновляем значение в поле
-    this.value = result;
+      // Обновляем значение в поле
+      this.value = result;
 
-    // 3. Включаем кнопку, если набрано 10 и более цифр
-    this.btnLoad = digitCount >= 10;
-  }
+      // 3. Включаем кнопку, если набрано 10 и более цифр
+      this.btnLoad = digitCount >= 10;
+    },
