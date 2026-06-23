@@ -1,60 +1,35 @@
-Сделать ограничение по количеству вводимых цифр в поле "Кадастровый номер": не менее 10 цифр и не более 40 (без учета разделителей ":")
-<input @input="onInput" class="status-kadastr-block__input" v-model="value" placeholder="ХХ:ХХ:ХХХХХХХ:ХХ">
+onInput(event) {
+    const rawValue = event.target.value;
+    let result = '';
+    let digitCount = 0;
+    
+    // Считаем, что "предыдущий символ был двоеточием", 
+    // чтобы запретить ввод двоеточия самым первым символом
+    let prevCharWasColon = true; 
 
-onInput(){
-      if(this.value){
-        const result = this.value.match(/[0-9:]/g)
-        this.value = result === null ? '' : result.join('')
-      }
-
-    },
-    inputCost(){
-      const input_tel = document.querySelectorAll('.status-kadastr-block__input');
-      const maskOptions = {
-        mask: '[0-9:]'
-      };
-      for (const item of input_tel) {
-        new IMask(item, maskOptions);
-      }
-
-    },
-
-----------------------
-
-initMask() {
-      this.maskRef = IMask(this.$refs.statementInput, {
-        mask: [
-          {
-            mask: '$00000.00.0000',
-            definitions: {
-              // Разрешаем ввод всех 4 вариантов буквы "е"
-              '$': /[eеEЕуУtT]/
-            },
-            // Хук prepare срабатывает ДО применения маски
-            prepare: function (str) {
-              // Заменяем ЛЮБОЙ вариант буквы "е" (латинскую/кириллическую, строчную/заглавную)
-              // на латинскую строчную 'e'
-              // Флаг 'g' нужен, чтобы это работало даже при вставке из буфера обмена
-              return str.replace(/[eеEЕуУtT]/g, 'e');
-            }
-          },
-          {
-            mask: '00000.00.0000'
-          }
-        ],
-        lazy: false
-      });
-
-      this.maskRef.on('accept', () => {
-        if (this.errorInput === true) {
-          this.errorInput = false;
+    for (let char of rawValue) {
+      // 1. Разрешаем только цифры
+      if (/[0-9]/.test(char)) {
+        if (digitCount < 40) { // Лимит не более 40 цифр
+          result += char;
+          digitCount++;
+          prevCharWasColon = false;
         }
-        this.applicationNumber = this.maskRef.value;
-        const unmasked = this.maskRef.unmaskedValue;
-
-        // Поскольку prepare уже гарантированно превратил любую "е" в латинскую 'e',
-        // в unmaskedValue никогда не будет кириллической 'е'.
-        // Но проверка оставлена с обоими вариантами на случай, если что-то пойдёт не так.
-        this.fieldInput = /^([eе]\d{11}|\d{11})$/.test(unmasked);
-      });
+      } 
+      // 2. Разрешаем двоеточие
+      else if (char === ':') {
+        // Пропускаем, если это первый символ ИЛИ если предыдущий тоже был двоеточием
+        if (!prevCharWasColon && result.length > 0) {
+          result += char;
+          prevCharWasColon = true;
+        }
+      }
+      // Все остальные символы (буквы, пробелы, тире и т.д.) просто игнорируются (не попадают в result)
     }
+
+    // Обновляем значение в поле
+    this.value = result;
+
+    // 3. Включаем кнопку, если набрано 10 и более цифр
+    this.btnLoad = digitCount >= 10;
+  }
