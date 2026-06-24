@@ -1,4 +1,71 @@
-// ✅ Проверка куки cookiewindowclosed (можно вынести в утилиту, если нужно)
+<template>
+  <article class="telegram" v-if="active" :class="{'mobile-hidden' : isHidden}">
+    <div class="telegram__popup">
+      <button class="telegram__popup-close" @click="hideBlock">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1.00005 1L10.1713 10.1712" stroke="#252628" stroke-width="2" stroke-linecap="round" />
+          <path d="M1 10.1716L10.1712 1.00038" stroke="#252628" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+      <img :src="qr" class="telegram__popup-qr" alt="">
+      <p class="telegram__popup-text" v-html="description"></p>
+      <div class="telegram__popup-block">
+        <img
+          v-if="mobilicon"
+          class="telegram__popup-block-icon"
+          :src="mobilicon"
+          alt=""
+        >
+        <p
+          class="telegram__popup-text telegram__popup-text_mobile"
+          v-html="description"
+        ></p>
+      </div>
+      <a
+        class="telegram__popup-link-button"
+        target="_blank"
+        :href="link"
+      >
+        Подписаться
+      </a>
+    </div>
+  </article>
+</template>
+
+<script>
+export default {
+  name: 'TelegramBlock',
+  props: {
+    instanceId: {
+      type: String,
+      required: true
+    },
+    qr: { type: String, default: '' },
+    mobilicon: { type: String, default: '' },
+    link: { type: String, default: '' },
+    description: { type: String, default: '' }
+  },
+  data() {
+    return {
+      active: false,
+      isHidden:true,
+      screenWidth : window.innerWidth,
+    };
+  },
+  methods: {
+    updateScreenWidth() {
+      this.screenWidth = window.innerWidth;
+    },
+    hideBlock() {
+      this.setCookie(this.cookieKey, true, 1);
+      this.active = false;
+    },
+    // Проверка: мобильное устройство?
+    isMobile() {
+      return window.innerWidth <= 480;
+    },
+
+    // Проверка куки cookiewindowclosed (можно вынести в утилиту, если нужно)
     getCookieCookies(name) {
       const matches = document.cookie.match(new RegExp(
         `(?:^|; )${name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1')}=([^;]*)`
@@ -6,26 +73,60 @@
       return matches ? decodeURIComponent(matches[1]) : undefined;
     },
 
-mounted() {
-    // === 1. Инициализация: проверяем, закрыл ли пользователь Telegram вручную ===
+    // Показать блок (убрать mobile-hidden)
+    showBlock() {
+      // if (this.isMobile()) {
+        this.isHidden = true;
+      // }
+    },
+    setCookie(key, value, days) {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+      document.cookie = `${key}=${value};path=/;expires=${expires.toUTCString()}`;
+    },
+    getCookie(key) {
+      const keyValue = document.cookie.match(`(^|;) ?${key}=([^;]*)(;|$)`);
+      return keyValue ? keyValue[2] : null;
+    }
+  },
+  computed: {
+    cookieKey() {
+      return `telegram_${this.instanceId}`;
+    }
+  },
+  watch: {
+    screenWidth() {
+      if (this.screenWidth <= 480) {
+        this.showBlock()
+      }
+    },
+  },
+  mounted() {
+    window.addEventListener('resize', this.updateScreenWidth);
+    //  проверяем, закрыл ли пользователь Telegram вручную
     if (!this.getCookie(this.cookieKey)) {
       this.active = true; // Рендерим компонент
 
-      // === 2. Логика для мобильных ===
+      //  Логика для мобильных
       if (window.innerWidth <= 480) {
-        // ✅ Проверяем куку Cookies-приложения
+        // Проверяем куку Cookies-приложения
         const cookiesClosed = this.getCookieCookies('cookiewindowclosed');
-        
+
         if (cookiesClosed === 'yes') {
-          // Кука есть → показываем Telegram сразу (без задержки)
+          // Кука есть -  показываем Telegram сразу (без задержки)
           this.isHidden = false;
         } else {
-          // Куки нет → ждём событие от Cookies-компонента
+          // Куки нет - ждём событие от Cookies-компонента
           window.addEventListener('cookies-closed-mobile', this.showBlock);
         }
       } else {
-        // === 3. Десктоп: показываем сразу ===
+        // Десктоп: показываем сразу
         this.isHidden = false;
       }
     }
   },
+  beforeUnmount() {
+    window.removeEventListener('cookies-closed-mobile', this.showBlock);
+  }
+};
+</script>
