@@ -1,3 +1,35 @@
+// возвращает куки с указанным name,
+// или undefined, если ничего не найдено
+function getCookie(name) {
+  const matches = document.cookie.match(new RegExp(
+    // eslint-disable-next-line no-useless-escape
+    `(?:^|; )${name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1')}=([^;]*)`
+  ));
+  return matches ? decodeURIComponent(matches[1]) : undefined;
+}
+
+export default function cookies() {
+  const cookiesWindow = document.querySelector('.js--cookies');
+
+  if (!cookiesWindow) {
+    return false;
+  }
+
+  if (!(getCookie('cookiewindowclosed'))) {
+    cookiesWindow.classList.add('show');
+  }
+
+  // по закрытию куки-окна делаем запись в куки браузера о том, что оно закрыто на 5 лет
+  cookiesWindow.addEventListener('click', (e) => {
+    if (e.target.classList.contains('cookies__btn')) {
+      cookiesWindow.classList.remove('show');
+      document.cookie = 'cookiewindowclosed=yes; path=/; max-age=157248000';
+    }
+    // document.cookie = 'cookiewindowclosed=yes; path=/; max-age=157248000';
+  });
+}
+
+
 <template>
   <div v-if="active" class="cookies-vue">
     <div class="cookies-vue__body">
