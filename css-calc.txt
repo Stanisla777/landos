@@ -1,25 +1,31 @@
-// Проверка: мобильное устройство?
-    isMobile() {
-      return window.innerWidth <= 480;
+// ✅ Проверка куки cookiewindowclosed (можно вынести в утилиту, если нужно)
+    getCookieCookies(name) {
+      const matches = document.cookie.match(new RegExp(
+        `(?:^|; )${name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1')}=([^;]*)`
+      ));
+      return matches ? decodeURIComponent(matches[1]) : undefined;
     },
-    
-    // Показать блок (убрать mobile-hidden)
-    showBlock() {
-      if (this.isMobile()) {
-        this.isHidden = false;
-      }
-    },
-
-if (window.innerWidth <= 480) {
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('cookies-closed-mobile'));
-    }, 15000);
-  }
 
 mounted() {
-  // ... ваш код ...
-  window.addEventListener('cookies-closed-mobile', this.showBlock);
-},
-beforeUnmount() {
-  window.removeEventListener('cookies-closed-mobile', this.showBlock);
-}
+    // === 1. Инициализация: проверяем, закрыл ли пользователь Telegram вручную ===
+    if (!this.getCookie(this.cookieKey)) {
+      this.active = true; // Рендерим компонент
+
+      // === 2. Логика для мобильных ===
+      if (window.innerWidth <= 480) {
+        // ✅ Проверяем куку Cookies-приложения
+        const cookiesClosed = this.getCookieCookies('cookiewindowclosed');
+        
+        if (cookiesClosed === 'yes') {
+          // Кука есть → показываем Telegram сразу (без задержки)
+          this.isHidden = false;
+        } else {
+          // Куки нет → ждём событие от Cookies-компонента
+          window.addEventListener('cookies-closed-mobile', this.showBlock);
+        }
+      } else {
+        // === 3. Десктоп: показываем сразу ===
+        this.isHidden = false;
+      }
+    }
+  },
