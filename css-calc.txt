@@ -3,36 +3,72 @@ export default function disappearAdditionalBarScroll(el) {
   const infoBar = document.querySelector('.js--information-bar-top-page');
   const firstBlock = document.querySelector('.js--another-thing-first-block');
 
-  // Если плашки в будущем не будет, скрипт просто ничего не делает,
-  // и хедер останется в своем дефолтном состоянии из CSS.
   if (!headerContainer || !infoBar) return;
 
   let ticking = false;
+  let isFixed = false;
 
-  // Функция проверки положения плашки
+  // Создаем элемент-заглушку, который будет сохранять место хедера в потоке
+  const placeholder = document.createElement('div');
+  placeholder.style.display = 'none';
+  placeholder.style.width = '100%';
+  
+  // Вставляем заглушку после headerContainer
+  headerContainer.parentNode.insertBefore(placeholder, headerContainer.nextSibling);
+
   function updateHeaderPosition() {
-    // Получаю координаты плашки относительно окна браузера (viewport)
     const rect = infoBar.getBoundingClientRect();
+    const shouldBeFixed = rect.bottom <= 0;
 
-    // rect.bottom — это координата нижней границы плашки по оси Y.
-    // Если она <= 0, значит нижняя граница ушла за верхний край экрана.
-    if (rect.bottom <= 0) {
+    // Если состояние не меняется - ничего не делаем
+    if (shouldBeFixed === isFixed) {
+      ticking = false;
+      return;
+    }
+
+    if (shouldBeFixed) {
+      // Запоминаем текущую высоту хедера перед фиксацией
+      const headerHeight = headerContainer.offsetHeight;
+      
+      // Настраиваем заглушку
+      placeholder.style.display = 'block';
+      placeholder.style.height = headerHeight + 'px';
+      
+      // Добавляем класс фиксации
       headerContainer.classList.add('header-position-fixed');
+      
       if (firstBlock) {
         firstBlock.classList.add('style-first-block');
       }
-
+      
+      isFixed = true;
     } else {
+      // Убираем класс фиксации
       headerContainer.classList.remove('header-position-fixed');
+      
       if (firstBlock) {
         firstBlock.classList.remove('style-first-block');
       }
+      
+      // Скрываем заглушку
+      placeholder.style.display = 'none';
+      placeholder.style.height = '0';
+      
+      isFixed = false;
     }
 
-    ticking = false; // Сбрасываем флаг для следующего кадра
+    ticking = false;
   }
 
-  // Слушатель скролла с оптимизацией (throttling через requestAnimationFrame)
+  // Добавляем обработчик изменения размера окна
+  // чтобы обновлять высоту заглушки при ресайзе
+  function handleResize() {
+    if (isFixed) {
+      const headerHeight = headerContainer.offsetHeight;
+      placeholder.style.height = headerHeight + 'px';
+    }
+  }
+
   window.addEventListener('scroll', () => {
     if (!ticking) {
       window.requestAnimationFrame(updateHeaderPosition);
@@ -40,9 +76,8 @@ export default function disappearAdditionalBarScroll(el) {
     }
   });
 
-  // Проверяем положение плашки сразу при загрузке страницы
-  // (на случай, если пользователь обновил страницу, уже проскроллив её вниз)
+  window.addEventListener('resize', handleResize);
+
+  // Проверяем положение при загрузке
   updateHeaderPosition();
-
-
 }
