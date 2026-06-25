@@ -1,39 +1,28 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Находим нужные элементы
-    const headerContainer = document.querySelector('.js--another-thing-header');
+const headerContainer = document.querySelector('.js--another-thing-header');
     const infoBar = document.querySelector('.js--information-bar-top-page');
 
-    // Если плашки в будущем не будет, скрипт просто ничего не делает, 
-    // и хедер останется в своем дефолтном состоянии из CSS.
     if (!headerContainer || !infoBar) return;
 
-    let ticking = false;
-
-    // Функция проверки положения плашки
-    function updateHeaderPosition() {
-        // Получаем координаты плашки относительно окна браузера (viewport)
-        const rect = infoBar.getBoundingClientRect();
-        
-        // rect.bottom — это координата нижней границы плашки по оси Y.
-        // Если она <= 0, значит нижняя граница ушла за верхний край экрана.
-        if (rect.bottom <= 0) {
-            headerContainer.classList.add('header-position-fixed');
-        } else {
-            headerContainer.classList.remove('header-position-fixed');
+    // Создаем наблюдатель
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                // entry.boundingClientRect.bottom — нижняя граница плашки
+                // entry.isIntersecting — виден ли элемент
+                if (!entry.isIntersecting && entry.boundingClientRect.bottom <= 0) {
+                    // Плашка ушла за верх
+                    headerContainer.classList.add('header-position-fixed');
+                } else {
+                    // Плашка видна
+                    headerContainer.classList.remove('header-position-fixed');
+                }
+            });
+        },
+        {
+            threshold: 0, // Срабатывает при любом пересечении
+            rootMargin: '0px 0px 0px 0px' // Без отступов
         }
-        
-        ticking = false; // Сбрасываем флаг для следующего кадра
-    }
+    );
 
-    // Слушатель скролла с оптимизацией (throttling через requestAnimationFrame)
-    window.addEventListener('scroll', () => {
-        if (!ticking) {
-            window.requestAnimationFrame(updateHeaderPosition);
-            ticking = true;
-        }
-    });
-
-    // Проверяем положение плашки сразу при загрузке страницы 
-    // (на случай, если пользователь обновил страницу, уже проскроллив её вниз)
-    updateHeaderPosition();
-});
+    // Начинаем наблюдение за плашкой
+    observer.observe(infoBar);
