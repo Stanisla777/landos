@@ -1,30 +1,53 @@
-const headerContainer = document.querySelector('.js--another-thing-header');
+document.addEventListener('DOMContentLoaded', () => {
+    const headerContainer = document.querySelector('.js--another-thing-header');
     const infoBar = document.querySelector('.js--information-bar-top-page');
 
     if (!headerContainer || !infoBar) return;
 
-    // Небольшой порог, чтобы класс добавлялся чуть раньше, 
-    // до того как плашка полностью исчезнет
-    const THRESHOLD = 2;
+    let ticking = false;
+    let addClassTimeout = null; // Таймер для задержки добавления класса
 
     function updateHeaderPosition() {
         const rect = infoBar.getBoundingClientRect();
         
-        // Добавляем класс чуть раньше (за 2px до полного исчезновения)
-        if (rect.bottom <= THRESHOLD) {
+        if (rect.bottom <= 0) {
+            // Добавляем класс с задержкой 50мс
             if (!headerContainer.classList.contains('header-position-fixed')) {
-                headerContainer.classList.add('header-position-fixed');
+                // Очищаем предыдущий таймер, если он есть
+                if (addClassTimeout) {
+                    clearTimeout(addClassTimeout);
+                }
+                
+                // Устанавливаем новую задержку
+                addClassTimeout = setTimeout(() => {
+                    headerContainer.classList.add('header-position-fixed');
+                }, 50); // Задержка 50 миллисекунд
             }
         } else {
+            // Убираем класс СРАЗУ, без задержки
+            if (addClassTimeout) {
+                clearTimeout(addClassTimeout);
+                addClassTimeout = null;
+            }
+            
             if (headerContainer.classList.contains('header-position-fixed')) {
                 headerContainer.classList.remove('header-position-fixed');
             }
         }
+        
+        ticking = false;
     }
 
-    // Убираем requestAnimationFrame — проверяем на каждом событии скролла
-    // Это дает мгновенную реакцию без задержек
-    window.addEventListener('scroll', updateHeaderPosition, { passive: true });
-    
-    // Первичная проверка
-    updateHeaderPosition();
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(updateHeaderPosition);
+            ticking = true;
+        }
+    });
+
+    // Первичная проверка при загрузке (без задержки)
+    const rect = infoBar.getBoundingClientRect();
+    if (rect.bottom <= 0) {
+        headerContainer.classList.add('header-position-fixed');
+    }
+});
