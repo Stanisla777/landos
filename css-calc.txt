@@ -3,26 +3,28 @@ const headerContainer = document.querySelector('.js--another-thing-header');
 
     if (!headerContainer || !infoBar) return;
 
-    // Создаем наблюдатель
-    const observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((entry) => {
-                // entry.boundingClientRect.bottom — нижняя граница плашки
-                // entry.isIntersecting — виден ли элемент
-                if (!entry.isIntersecting && entry.boundingClientRect.bottom <= 0) {
-                    // Плашка ушла за верх
-                    headerContainer.classList.add('header-position-fixed');
-                } else {
-                    // Плашка видна
-                    headerContainer.classList.remove('header-position-fixed');
-                }
-            });
-        },
-        {
-            threshold: 0, // Срабатывает при любом пересечении
-            rootMargin: '0px 0px 0px 0px' // Без отступов
-        }
-    );
+    // Небольшой порог, чтобы класс добавлялся чуть раньше, 
+    // до того как плашка полностью исчезнет
+    const THRESHOLD = 2;
 
-    // Начинаем наблюдение за плашкой
-    observer.observe(infoBar);
+    function updateHeaderPosition() {
+        const rect = infoBar.getBoundingClientRect();
+        
+        // Добавляем класс чуть раньше (за 2px до полного исчезновения)
+        if (rect.bottom <= THRESHOLD) {
+            if (!headerContainer.classList.contains('header-position-fixed')) {
+                headerContainer.classList.add('header-position-fixed');
+            }
+        } else {
+            if (headerContainer.classList.contains('header-position-fixed')) {
+                headerContainer.classList.remove('header-position-fixed');
+            }
+        }
+    }
+
+    // Убираем requestAnimationFrame — проверяем на каждом событии скролла
+    // Это дает мгновенную реакцию без задержек
+    window.addEventListener('scroll', updateHeaderPosition, { passive: true });
+    
+    // Первичная проверка
+    updateHeaderPosition();
