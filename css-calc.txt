@@ -1,56 +1,43 @@
-export default function disappearAdditionalBarScroll(el) {
+export default function disappearAdditionalBarScroll() {
   const headerContainer = document.querySelector('.js--another-thing-header');
   const infoBar = document.querySelector('.js--information-bar-top-page');
+  const header = headerContainer?.querySelector('header');
   const firstBlock = document.querySelector('.js--another-thing-first-block');
 
-  if (!headerContainer || !infoBar) return;
+  if (!headerContainer || !infoBar || !header) return;
 
   let ticking = false;
   let isFixed = false;
+  let resizeTimer = null; // Таймер для debounce
 
-  // Создаем элемент-заглушку, который будет сохранять место хедера в потоке
+  // Создаем заглушку
   const placeholder = document.createElement('div');
-  placeholder.style.display = 'none';
-  placeholder.style.width = '100%';
-  
-  // Вставляем заглушку после headerContainer
+  placeholder.style.cssText = 'display:none;width:100%;';
   headerContainer.parentNode.insertBefore(placeholder, headerContainer.nextSibling);
 
   function updateHeaderPosition() {
     const rect = infoBar.getBoundingClientRect();
     const shouldBeFixed = rect.bottom <= 0;
 
-    // Если состояние не меняется - ничего не делаем
     if (shouldBeFixed === isFixed) {
       ticking = false;
       return;
     }
 
     if (shouldBeFixed) {
-      // Запоминаем текущую высоту хедера перед фиксацией
-      const headerHeight = headerContainer.offsetHeight;
+      const headerHeight = header.offsetHeight;
       
-      // Настраиваем заглушку
       placeholder.style.display = 'block';
       placeholder.style.height = headerHeight + 'px';
       
-      // Добавляем класс фиксации
       headerContainer.classList.add('header-position-fixed');
-      
-      if (firstBlock) {
-        firstBlock.classList.add('style-first-block');
-      }
+      firstBlock?.classList.add('style-first-block');
       
       isFixed = true;
     } else {
-      // Убираем класс фиксации
       headerContainer.classList.remove('header-position-fixed');
+      firstBlock?.classList.remove('style-first-block');
       
-      if (firstBlock) {
-        firstBlock.classList.remove('style-first-block');
-      }
-      
-      // Скрываем заглушку
       placeholder.style.display = 'none';
       placeholder.style.height = '0';
       
@@ -60,13 +47,21 @@ export default function disappearAdditionalBarScroll(el) {
     ticking = false;
   }
 
-  // Добавляем обработчик изменения размера окна
-  // чтобы обновлять высоту заглушки при ресайзе
+  // Обработчик resize с debounce
   function handleResize() {
-    if (isFixed) {
-      const headerHeight = headerContainer.offsetHeight;
-      placeholder.style.height = headerHeight + 'px';
+    // Очищаем предыдущий таймер при каждом новом событии resize
+    if (resizeTimer) {
+      clearTimeout(resizeTimer);
     }
+
+    // Запускаем новый таймер — функция выполнится только через 100мс
+    // после ПОСЛЕДНЕГО события resize
+    resizeTimer = setTimeout(() => {
+      if (isFixed) {
+        placeholder.style.height = header.offsetHeight + 'px';
+      }
+      resizeTimer = null; // Сбрасываем таймер после выполнения
+    }, 100);
   }
 
   window.addEventListener('scroll', () => {
@@ -74,10 +69,10 @@ export default function disappearAdditionalBarScroll(el) {
       window.requestAnimationFrame(updateHeaderPosition);
       ticking = true;
     }
-  });
+  }, { passive: true });
 
   window.addEventListener('resize', handleResize);
 
-  // Проверяем положение при загрузке
+  // Первичная проверка
   updateHeaderPosition();
 }
