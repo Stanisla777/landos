@@ -1,14 +1,58 @@
 export default createStore({
-  state:{
-    timeleft_certificate:0,
-    modal_variations:{
-     certificate_could_not_generated_available_through:{
-        status_button:1,//формирует кнопку в модальном окне 1 - кнопка закрытия модалки 2 - переход на первый шаг
-        icon:'attention.png',
-        title:'Справку не удалось сформировать',
-        description:`Повторный запрос справки будет доступен через ${state.timeleft_certificate} секунд`,
-        button:'Закрыть'
+  state: {
+    timeleft_certificate: 0,
+    modal_variations: {
+      certificate_could_not_generated_available_through: {
+        status_button: 1,
+        icon: 'attention.png',
+        title: 'Справку не удалось сформировать',
+        description: '', // Будет заполнено динамически
+        button: 'Закрыть'
       },
+      // ... другие модалки
+    }
+  },
+  
+  mutations: {
+    setCertificateTimeoutError(state, timeleft) {
+      state.timeleft_certificate = timeleft;
+      
+      // Клонируем объект и подставляем время
+      state.modal_content = {
+        ...state.modal_variations.certificate_could_not_generated_available_through,
+        description: `Повторный запрос справки будет доступен через ${timeleft} секунд`
+      };
+      state.modal_status = true;
+      state.btn_load = false;
     }
   }
-})
+});
+
+-------------
+const handleApiError = (state, errorCode, timeleft = null) => {
+  if (!errorCode) return;
+
+  // Ошибка с таймером
+  if (errorCode === 'P450S-XX' && timeleft !== null) {
+    state.timeleft_certificate = timeleft;
+    state.modal_content = {
+      ...state.modal_variations.certificate_could_not_generated_available_through,
+      description: `Повторный запрос справки будет доступен через ${timeleft} секунд`
+    };
+    state.modal_status = true;
+    state.btn_load = false;
+    return;
+  }
+  
+  // Остальные ошибки...
+};
+-------------------
+
+.catch((error) => {
+  const errorCode = error.response?.data?.error?.code;
+  const timeleft = error.response?.data?.result?.timeleft || 0; // Получаем время из ответа
+  
+  state.btn_load = false;
+  handleApiError(state, errorCode, timeleft); // Передаём timeleft
+  commit('clearPolling');
+});
