@@ -1,33 +1,8 @@
-const handleApiError = (state,errorCode,timeleft = null) => {
-  if (errorCode) {
-
-    //превышен лимит запросов
-    if (errorCode === 'P450S-4') {
-      state.modal_content = state.modal_variations.request_limit_exceeded
-      //открываю модалку с формированным контентом
-      state.modal_status = true
-    }
-    //Неверный формат кода из смс - ЭТУ ОШИБКУ P450S-14 ЫВОДИМ ПОД ПОЛЕМ
-    else if (errorCode === 'P450S-14') {
-      state.error_invalid_code = true
-    }
-
-
-
-    //Номер заявления найден, но номер телефона отсутствует
-    else if (errorCode === 'P450S-18') {
-      state.modal_content = state.modal_variations.phone_number_is_missing
-      //открываю модалку с формированным контентом
-      state.modal_status=true
-    }
-
-    if (errorCode === 'P450S-19' && timeleft !== null) {
-      state.timeleft_certificate = timeleft;
-      state.modal_content = {
-        ...state.modal_variations.certificate_could_not_generated_available_through,
-        description: `Повторный запрос справки будет доступен через ${timeleft} секунд`
-      };
-      state.modal_status = true;
-    }
-  }
-}
+.catch((error) => {
+  const errorCode = error.response?.data?.error?.code;
+  const timeleft = error.response?.data?.result?.timeleft || 0; // Получаем время из ответа
+  
+  state.btn_load = false;
+  handleApiError(state, errorCode, timeleft); // Передаём timeleft
+  commit('clearPolling');
+});
