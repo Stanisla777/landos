@@ -1,30 +1,48 @@
-<button  class="btn_s black mobile-100" type="button"
-           :class="btn_load ? 'submitting disappear-content' : ''"
-           v-if="fieldInput&&isAgreed"
-           @click="sendingApplicationMethod">
-          Проверить
-        </button>
-
--------------------
 captchaInit() {
-      this.captcha_id = window.smartCaptcha.render('yandex-captcha-large-family-450', {
-        sitekey: conf?.smartcaptcha_key,
-        invisible: true,
-        callback: (token) => {
-          this.sendingApplicationNumberToApi(token);
-        },
+  this.captcha_id = window.smartCaptcha.render('yandex-captcha-large-family-450', {
+    sitekey: conf?.smartcaptcha_key,
+    invisible: true,
+    
+    // Успешное прохождение
+    callback: (token) => {
+      this.sendingApplicationNumberToApi(token);
+    },
+    
+    // Ошибка капчи
+    errorCallback: (error) => {
+      console.error('Ошибка капчи:', error);
+      
+      // Убираем лоадер у кнопки
+      store.dispatch('ActionBtnLoad', false);
+      
+      // Показываем модалку с ошибкой
+      store.dispatch('ActionModalContent', {
+        status_button: 1,
+        icon: 'error.png',
+        title: 'Ошибка проверки',
+        description: 'Не удалось выполнить проверку. Попробуйте ещё раз.',
+        button: 'Закрыть'
       });
+      store.dispatch('ActionOpenModal', true);
     },
-
-sendingApplicationMethod() {
-      store.dispatch('ActionBtnLoad',true)
-      this.captchaInit();
-      const recaptchaKey = conf?.smartcaptcha_key;
-      if (recaptchaKey) {
-        window.smartCaptcha.execute(this.captcha_id);
-      }
-
-    },
-sendingApplicationNumberToApi(token) {
-      store.dispatch('ActionApplicationNumber', [this.applicationNumber,token])
-    },
+    
+    // Токен истёк
+    expiredCallback: () => {
+      console.warn('Токен капчи истёк');
+      
+      // Убираем лоадер
+      store.dispatch('ActionBtnLoad', false);
+      
+      // Можно показать сообщение или просто сбросить состояние
+      // Вариант 1: показать модалку
+      store.dispatch('ActionModalContent', {
+        status_button: 1,
+        icon: 'attention.png',
+        title: 'Время проверки истекло',
+        description: 'Пожалуйста, повторите проверку.',
+        button: 'Закрыть'
+      });
+      store.dispatch('ActionOpenModal', true);
+    }
+  });
+}
