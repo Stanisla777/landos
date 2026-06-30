@@ -1,16 +1,16 @@
 methods: {
   onKeyDown(event) {
-    // Разрешаем служебные клавиши
     const allowedKeys = [
       'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight',
       'Tab', 'Home', 'End', 'Enter'
     ];
 
-    // Разрешаем Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    // Используем event.code вместо event.key для хоткеев
+    // event.code возвращает физическую клавишу независимо от раскладки
     if (event.ctrlKey || event.metaKey) {
-      const key = event.key.toLowerCase();
-      if (['a', 'c', 'v', 'x'].includes(key)) {
-        return; // Разрешаем стандартное поведение
+      const code = event.code;
+      if (['KeyA', 'KeyC', 'KeyV', 'KeyX'].includes(code)) {
+        return; // Разрешаем Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
       }
     }
 
@@ -19,6 +19,8 @@ methods: {
     }
 
     const isDigit = /^[0-9]$/.test(event.key);
+
+    // Разрешаем все символы, которые могут быть преобразованы в двоеточие
     const isColon = event.key === ':' || event.key === ';' ||
       event.key === 'ж' || event.key === 'Ж' ||
       event.key === '^';
@@ -85,9 +87,7 @@ methods: {
 
   onPaste(event) {
     event.preventDefault();
-    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-    
-    if (!pastedText) return;
+    const pastedText = event.clipboardData.getData('text');
 
     let result = '';
     let digitCount = 0;
@@ -111,11 +111,5 @@ methods: {
 
     this.value = result;
     this.btnAbled = digitCount >= 10;
-    
-    // Устанавливаем курсор в конец после вставки
-    this.$nextTick(() => {
-      const input = event.target;
-      input.setSelectionRange(result.length, result.length);
-    });
   }
 }
