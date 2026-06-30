@@ -1,124 +1,121 @@
-<input  class="status-kadastr-block__input" placeholder="ХХ:ХХ:ХХХХХХХ:ХХ"
-           @keydown="onKeyDown"
-           @input="onInput"
-           @paste="onPaste"
-           :value="value" >
+methods: {
+  onKeyDown(event) {
+    // Разрешаем служебные клавиши
+    const allowedKeys = [
+      'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight',
+      'Tab', 'Home', 'End', 'Enter'
+    ];
 
-
-
-methods:{
-onKeyDown(event) {
-      const allowedKeys = [
-        'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight',
-        'Tab', 'Home', 'End', 'Enter'
-      ];
-
-      if (event.ctrlKey || event.metaKey) {
-        if (['a', 'c', 'v', 'x'].includes(event.key.toLowerCase())) {
-          return;
-        }
+    // Разрешаем Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    if (event.ctrlKey || event.metaKey) {
+      const key = event.key.toLowerCase();
+      if (['a', 'c', 'v', 'x'].includes(key)) {
+        return; // Разрешаем стандартное поведение
       }
+    }
 
-      if (allowedKeys.includes(event.key)) {
-        return;
-      }
+    if (allowedKeys.includes(event.key)) {
+      return;
+    }
 
-      const isDigit = /^[0-9]$/.test(event.key);
+    const isDigit = /^[0-9]$/.test(event.key);
+    const isColon = event.key === ':' || event.key === ';' ||
+      event.key === 'ж' || event.key === 'Ж' ||
+      event.key === '^';
 
-      // Разрешаем все символы, которые могут быть преобразованы в двоеточие
-      const isColon = event.key === ':' || event.key === ';' ||
-        event.key === 'ж' || event.key === 'Ж' ||
-        event.key === '^';
+    if (!isDigit && !isColon) {
+      event.preventDefault();
+      return;
+    }
 
-      if (!isDigit && !isColon) {
+    if (isColon) {
+      if (this.value.length === 0 || this.value.endsWith(':')) {
         event.preventDefault();
         return;
       }
+    }
 
-      if (isColon) {
-        if (this.value.length === 0 || this.value.endsWith(':')) {
-          event.preventDefault();
-          return;
+    if (isDigit) {
+      const digitCount = (this.value.match(/[0-9]/g) || []).length;
+      if (digitCount >= 40) {
+        event.preventDefault();
+        return;
+      }
+    }
+  },
+
+  onInput(event) {
+    const input = event.target;
+    const cursorPosition = input.selectionStart;
+    const rawValue = input.value;
+
+    let result = '';
+    let digitCount = 0;
+    let prevCharWasColon = true;
+
+    for (let char of rawValue) {
+      if (/[0-9]/.test(char)) {
+        if (digitCount < 40) {
+          result += char;
+          digitCount++;
+          prevCharWasColon = false;
         }
       }
-
-      if (isDigit) {
-        const digitCount = (this.value.match(/[0-9]/g) || []).length;
-        if (digitCount >= 40) {
-          event.preventDefault();
-          return;
+      else if (char === ':' || char === ';' || char === 'ж' || char === 'Ж' || char === '^') {
+        if (!prevCharWasColon && result.length > 0) {
+          result += ':';
+          prevCharWasColon = true;
         }
       }
-    },
+    }
 
-    onInput(event) {
+    let newCursorPosition = cursorPosition;
+    if (result.length < rawValue.length) {
+      const removedChars = rawValue.length - result.length;
+      newCursorPosition = Math.max(0, cursorPosition - removedChars);
+    }
+
+    this.value = result;
+    this.btnAbled = digitCount >= 10;
+
+    this.$nextTick(() => {
+      input.setSelectionRange(newCursorPosition, newCursorPosition);
+    });
+  },
+
+  onPaste(event) {
+    event.preventDefault();
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+    
+    if (!pastedText) return;
+
+    let result = '';
+    let digitCount = 0;
+    let prevCharWasColon = true;
+
+    for (let char of pastedText) {
+      if (/[0-9]/.test(char)) {
+        if (digitCount < 40) {
+          result += char;
+          digitCount++;
+          prevCharWasColon = false;
+        }
+      }
+      else if (char === ':' || char === ';' || char === 'ж' || char === 'Ж' || char === '^') {
+        if (!prevCharWasColon && result.length > 0) {
+          result += ':';
+          prevCharWasColon = true;
+        }
+      }
+    }
+
+    this.value = result;
+    this.btnAbled = digitCount >= 10;
+    
+    // Устанавливаем курсор в конец после вставки
+    this.$nextTick(() => {
       const input = event.target;
-      const cursorPosition = input.selectionStart;
-      const rawValue = input.value;
-
-      let result = '';
-      let digitCount = 0;
-      let prevCharWasColon = true;
-
-      for (let char of rawValue) {
-        if (/[0-9]/.test(char)) {
-          if (digitCount < 40) {
-            result += char;
-            digitCount++;
-            prevCharWasColon = false;
-          }
-        }
-        // Все эти символы преобразуем в двоеточие
-        else if (char === ':' || char === ';' || char === 'ж' || char === 'Ж' || char === '^') {
-          if (!prevCharWasColon && result.length > 0) {
-            result += ':';
-            prevCharWasColon = true;
-          }
-        }
-      }
-
-      let newCursorPosition = cursorPosition;
-      if (result.length < rawValue.length) {
-        const removedChars = rawValue.length - result.length;
-        newCursorPosition = Math.max(0, cursorPosition - removedChars);
-      }
-
-      this.value = result;
-      this.btnAbled = digitCount >= 10;
-
-      this.$nextTick(() => {
-        input.setSelectionRange(newCursorPosition, newCursorPosition);
-      });
-    },
-
-    onPaste(event) {
-      event.preventDefault();
-      const pastedText = event.clipboardData.getData('text');
-
-      let result = '';
-      let digitCount = 0;
-      let prevCharWasColon = true;
-
-      for (let char of pastedText) {
-        if (/[0-9]/.test(char)) {
-          if (digitCount < 40) {
-            result += char;
-            digitCount++;
-            prevCharWasColon = false;
-          }
-        }
-        // Все эти символы преобразуем в двоеточие
-        else if (char === ':' || char === ';' || char === 'ж' || char === 'Ж' || char === '^') {
-          if (!prevCharWasColon && result.length > 0) {
-            result += ':';
-            prevCharWasColon = true;
-          }
-        }
-      }
-
-      this.value = result;
-      this.btnAbled = digitCount >= 10;
-    },
-
-
+      input.setSelectionRange(result.length, result.length);
+    });
+  }
 }
