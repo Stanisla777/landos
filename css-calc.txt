@@ -1,24 +1,30 @@
-.catch((error) => {
-  const errorCode = error.response?.data?.error?.code;
-  const timeleft = error.response?.data?.result?.timeleft || 0; // Получаем время из ответа
-  
-  state.btn_load = false;
-  handleApiError(state, errorCode, timeleft); // Передаём timeleft
-  commit('clearPolling');
-});
+<button  class="btn_s black mobile-100" type="button"
+           :class="btn_load ? 'submitting disappear-content' : ''"
+           v-if="fieldInput&&isAgreed"
+           @click="sendingApplicationMethod">
+          Проверить
+        </button>
 
+-------------------
+captchaInit() {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-large-family-450', {
+        sitekey: conf?.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          this.sendingApplicationNumberToApi(token);
+        },
+      });
+    },
 
-else if (errorCode === 'P450S-19') {
-  if (timeleft !== null) {
-    // С таймером
-    state.timeleft_certificate = timeleft;
-    state.modal_content = {
-      ...state.modal_variations.certificate_could_not_generated_available_through,
-      description: `Повторный запрос справки будет доступен через ${timeleft} секунд`
-    };
-  } else {
-    // Без таймера (общая ошибка)
-    state.modal_content = state.modal_variations.certificate_could_not_generated;
-  }
-  state.modal_status = true;
-}
+sendingApplicationMethod() {
+      store.dispatch('ActionBtnLoad',true)
+      this.captchaInit();
+      const recaptchaKey = conf?.smartcaptcha_key;
+      if (recaptchaKey) {
+        window.smartCaptcha.execute(this.captcha_id);
+      }
+
+    },
+sendingApplicationNumberToApi(token) {
+      store.dispatch('ActionApplicationNumber', [this.applicationNumber,token])
+    },
