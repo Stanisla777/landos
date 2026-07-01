@@ -1,15 +1,38 @@
- contentSliders[i].swiper = swiper_test_n;
+mounted() {
+    this.parseParamData(this.param)
 
-updateSwiperHeight() {
-    this.$nextTick(() => {
-      const container = this.$el.closest('.js--test-polls-swiper');
-      if (container && container.swiper) {
-        // Даём браузеру кадр на перерисовку, затем обновляем Swiper
-        setTimeout(() => {
-          container.swiper.update();
-        }, 50);
+    this.$nextTick(()=>{
+      this.updateSwiperHeight();
+      const wrap_slide = this.$refs.testWrap.closest('.js--test-polls-swiper')
+      if(wrap_slide){
+        const count_slider = parseInt(wrap_slide.getAttribute('data-slide'))
+
+        if(count_slider===1||count_slider===0){
+          this.state_slider=true
+        }
+        else {
+          this.state_slider=false
+        }
+
+
+        const element = this.$refs.testWrap.querySelector('.test-n__title')
+        const style = getComputedStyle(element)
+        wrap_slide.querySelector('.js-test-pagination').style.color=style.color
       }
-    });
-  }
+      else{
+        this.state_slider=true
+      }
 
+      if(this.$el.closest('.content-block-new')) {
+        this.location_content_new = true
+      }
+    })
+    window.addEventListener('online', () => {
+      this.button_web_status=false
+    });
+    window.addEventListener('offline', () => {
+      this.button_web_status=true
+    });
+
+  }
 
