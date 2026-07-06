@@ -1,1 +1,1 @@
-npm install @ringsites/ui-components
+sudo systemctl restart nginx
