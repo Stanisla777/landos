@@ -1,39 +1,11 @@
-  plugins: [
-    new VueLoaderPlugin(),
-    new rspack.DefinePlugin({ ... }),
-    // ... ваши остальные плагины
-    
-    // 🎯 Плагин для игнорирования стилей из UI-кита
-    new rspack.IgnorePlugin({
-      checkResource(resource, context) {
-        // 1. Проверяем, что импорт происходит из директории компонентов UI-кита
-        // context — это абсолютный путь к папке файла, который делает import
-        if (/@ringsites[\\/]ui-components[\\/]components/.test(context)) {
-          
-          // 2. Игнорируем виртуальные блоки стилей, которые генерирует vue-loader
-          // При experimentalInlineMatchResource: true запрос выглядит как Component.vue.scss?vue
-          // В стандартном режиме это может быть Component.vue?vue&type=style
-          const isVueStyleBlock = 
-            /\.vue\.(scss|css)\?vue/.test(resource) || 
-            /\.vue\?vue(?:&type=style)/.test(resource) ||
-            /\.vue\?vue$/.test(resource);
-            
-          if (isVueStyleBlock) return true;
-          
-          // 3. Игнорируем прямые импорты .scss/.css файлов внутри самих компонентов
-          // (например, если в <script> написано import './styles.scss')
-          // Учитываем как относительные пути (./), так и абсолютные пути к файлам UI-кита
-          const isLocalOrInternalScss = 
-            (/^\.{1,2}[\\/]/.test(resource) || /@ringsites[\\/]ui-components[\\/]components/.test(resource)) && 
-            /\.(scss|css)(\?.*)?$/.test(resource);
-            
-          if (isLocalOrInternalScss) return true;
-        }
-        
-        return false;
-      }
-    }),
+npm install --save-dev null-loader
 
-    new rspack.CssExtractRspackPlugin({ ... }),
-    // ...
-  ]
+// НОВОЕ ПРАВИЛО: Игнорируем стили из UI-кита, импортированные из <style> блоков
+    {
+      test: /\.scss$/,
+      include: /@ringsites[\\/]ui-components[\\/]components/,
+      issuer: /(\?vue|\.vue\.(scss|css))/, // Только если импортируется из vue-loader
+      use: [
+        { loader: 'null-loader' }
+      ]
+    },
