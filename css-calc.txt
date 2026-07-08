@@ -1,33 +1,62 @@
 captchaInit() {
-      this.captcha_id = window.smartCaptcha.render('yandex-captcha-large-family-450', {
-        sitekey: conf?.smartcaptcha_key,
-        invisible: true,
-        callback: (token) => {
-          this.sendingApplicationNumberToApi(token);
-        },
+  
 
-        closeCallback: () => {
-          // Убираю лоадер у кнопки
-          store.dispatch('ActionBtnLoad', false);
-        },
+  this.captcha_id = window.smartCaptcha.render('yandex-captcha-large-family-450', {
+    sitekey: conf?.smartcaptcha_key,
+    invisible: true,
+    
+    //Успешное прохождение
+    callback: (token) => {
+      this.sendingApplicationNumberToApi(token);
+    },
 
-        // Ошибка капчи
-        errorCallback: (error) => {
-          console.error('Ошибка капчи:', error);
-          // Убираю лоадер у кнопки
-          store.dispatch('ActionBtnLoad', false);
-          // Показываю модалку с ошибкой
-          store.dispatch('ActionModalContent','security_check_error')
-          store.dispatch('ActionOpenModal', true);
-        },
+    //  Пользователь закрыл окно капчи
+    closeCallback: () => {
+      // Убираю лоадер у кнопки
+      store.dispatch('ActionBtnLoad', false);
+    },
 
-        expiredCallback: () => {
-          console.warn('Токен капчи истёк')
-          // Убираем лоадер
-          store.dispatch('ActionBtnLoad', false);
-          store.dispatch('ActionModalContent','captcha_time_up')
-          store.dispatch('ActionOpenModal', true);
-        }
+    // Ошибка капчи
+    errorCallback: (error) => {
+      console.error('Ошибка капчи:', error);
+      // Убираю лоадер у кнопки
+      store.dispatch('ActionBtnLoad', false);
+      // Показываю модалку с ошибкой
+      store.dispatch('ActionModalContent', 'security_check_error');
+      store.dispatch('ActionOpenModal', true);
+    },
 
-      });
+    // Токен истёк
+    expiredCallback: () => {
+      console.warn('Токен капчи истёк');
+      // Убираем лоадер
+      store.dispatch('ActionBtnLoad', false);
+      store.dispatch('ActionModalContent', 'captcha_time_up');
+      store.dispatch('ActionOpenModal', true);
     }
+  });
+
+  //Подписываемся на события через новый API (на случай, если старые коллбэки не сработают)
+  try {
+    window.smartCaptcha.subscribe(this.captcha_id, {
+      close: () => {
+        console.log('Капча закрыта (через subscribe)');
+        store.dispatch('ActionBtnLoad', false);
+      },
+      error: (error) => {
+        console.error('Ошибка капчи (через subscribe):', error);
+        store.dispatch('ActionBtnLoad', false);
+        store.dispatch('ActionModalContent', 'security_check_error');
+        store.dispatch('ActionOpenModal', true);
+      },
+      expired: () => {
+        console.warn('Токен капчи истёк (через subscribe)');
+        store.dispatch('ActionBtnLoad', false);
+        store.dispatch('ActionModalContent', 'captcha_time_up');
+        store.dispatch('ActionOpenModal', true);
+      }
+    });
+  } catch (e) {
+    console.warn('subscribe не поддерживается в этой версии Smart Captcha', e);
+  }
+},
