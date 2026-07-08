@@ -1,9 +1,65 @@
-9889.403b3ac1.bundle.js:1 subscribe не поддерживается Error: [SmartCaptcha] Invalid event: `[object Object]`. event should be one of: challenge-visible, challenge-hidden, network-error, token-expired, javascript-error, success
-    at Object.subscribe (captcha.js:2:207470)
-    at Object.subscribe (captcha.js:2:217767)
-    at Proxy.captchaInit (9889.403b3ac1.bundle.js:1:22849)
-    at Proxy.sendingApplicationMethod (9889.403b3ac1.bundle.js:1:23486)
-    at r.fieldInput.r.isAgreed.onClick.e.<computed>.e.<computed> (9889.403b3ac1.bundle.js:1:25840)
-    at tQ (bundle.js:1:648621)
-    at t0 (bundle.js:1:648697)
-    at HTMLButtonElement.s (bundle.js:1:716445)
+captchaInit() {
+  // Очищаем предыдущую капчу, если была
+  if (this.captcha_id !== null) {
+    try {
+      window.smartCaptcha.destroy(this.captcha_id);
+    } catch (e) {
+      // Игнорируем ошибки
+    }
+  }
+
+  this.captcha_id = window.smartCaptcha.render('yandex-captcha-large-family-450', {
+    sitekey: conf?.smartcaptcha_key,
+    invisible: true,
+    
+    // ✅ Успешное прохождение
+    callback: (token) => {
+      this.sendingApplicationNumberToApi(token);
+    },
+
+    // ✅ Ошибка капчи
+    errorCallback: (error) => {
+      console.error('Ошибка капчи:', error);
+      store.dispatch('ActionBtnLoad', false);
+      store.dispatch('ActionModalContent', 'security_check_error');
+      store.dispatch('ActionOpenModal', true);
+    },
+
+    // ✅ Токен истёк
+    expiredCallback: () => {
+      console.warn('Токен капчи истёк');
+      store.dispatch('ActionBtnLoad', false);
+      store.dispatch('ActionModalContent', 'captcha_time_up');
+      store.dispatch('ActionOpenModal', true);
+    }
+  });
+
+  // ✅ Подписываемся на событие "окно капчи закрыто" через subscribe
+  try {
+    // ⭐ Правильный синтаксис: subscribe(id, 'имя_события', коллбэк)
+    window.smartCaptcha.subscribe(this.captcha_id, 'challenge-hidden', () => {
+      console.log('Пользователь закрыл окно капчи (challenge-hidden)');
+      store.dispatch('ActionBtnLoad', false);
+    });
+  } catch (e) {
+    console.warn('Не удалось подписаться на challenge-hidden', e);
+  }
+},
+
+sendingApplicationMethod() {
+  store.dispatch('ActionBtnLoad', true);
+  this.captchaInit();
+  
+  const recaptchaKey = conf?.smartcaptcha_key;
+  if (recaptchaKey) {
+    window.smartCaptcha.execute(this.captcha_id);
+  }
+  
+  // ✅ Страховка: если через 3 минуты ничего не произошло — убираем лоадер
+  setTimeout(() => {
+    if (store.state.btn_load) {
+      console.warn('Капча не отработала за 3 минуты, сбрасываем лоадер');
+      store.dispatch('ActionBtnLoad', false);
+    }
+  }, 180000); // 3 минуты
+}
