@@ -12,37 +12,45 @@ captchaInit() {
     sitekey: conf?.smartcaptcha_key,
     invisible: true,
     
-    // ✅ Успешное прохождение
+    // ✅ Успешное прохождение (callback обычно работает, это стандартный параметр)
     callback: (token) => {
       this.sendingApplicationNumberToApi(token);
-    },
+    }
+  });
 
-    // ✅ Ошибка капчи
-    errorCallback: (error) => {
-      console.error('Ошибка капчи:', error);
+  // ✅ Подписываемся на ВСЕ события через subscribe
+  try {
+    // Пользователь закрыл окно капчи
+    window.smartCaptcha.subscribe(this.captcha_id, 'challenge-hidden', () => {
+      console.log('Пользователь закрыл окно капчи');
       store.dispatch('ActionBtnLoad', false);
-      store.dispatch('ActionModalContent', 'security_check_error');
-      store.dispatch('ActionOpenModal', true);
-    },
+    });
 
-    // ✅ Токен истёк
-    expiredCallback: () => {
+    // Токен истёк
+    window.smartCaptcha.subscribe(this.captcha_id, 'token-expired', () => {
       console.warn('Токен капчи истёк');
       store.dispatch('ActionBtnLoad', false);
       store.dispatch('ActionModalContent', 'captcha_time_up');
       store.dispatch('ActionOpenModal', true);
-    }
-  });
+    });
 
-  // ✅ Подписываемся на событие "окно капчи закрыто" через subscribe
-  try {
-    // ⭐ Правильный синтаксис: subscribe(id, 'имя_события', коллбэк)
-    window.smartCaptcha.subscribe(this.captcha_id, 'challenge-hidden', () => {
-      console.log('Пользователь закрыл окно капчи (challenge-hidden)');
+    // Ошибка сети
+    window.smartCaptcha.subscribe(this.captcha_id, 'network-error', () => {
+      console.error('Ошибка сети при проверке капчи');
       store.dispatch('ActionBtnLoad', false);
+      store.dispatch('ActionModalContent', 'security_check_error');
+      store.dispatch('ActionOpenModal', true);
+    });
+
+    // Ошибка JavaScript
+    window.smartCaptcha.subscribe(this.captcha_id, 'javascript-error', () => {
+      console.error('Ошибка JavaScript в капче');
+      store.dispatch('ActionBtnLoad', false);
+      store.dispatch('ActionModalContent', 'security_check_error');
+      store.dispatch('ActionOpenModal', true);
     });
   } catch (e) {
-    console.warn('Не удалось подписаться на challenge-hidden', e);
+    console.warn('Не удалось подписаться на события капчи', e);
   }
 },
 
