@@ -1,1 +1,94 @@
-grid-template-rows: 1fr minmax(100px, 2.07fr);
+<div data-switcher-content-elements='[{ "id": "0", "text": "Темы" }, { "id": "1", "text": "Сервисы" }, { "id": "1", "text": "Образование" }, { "id": "1", "text": "Спецпроекты" }]' data-vue-app="switcher-component"></div>
+
+<template>
+  <DsSwitcher
+    :items=switcher
+    :current-id=switcher[0]?.id
+  >
+  </DsSwitcher>
+</template>
+<script>
+import { DsSwitcher } from '@ringsites/ui-components/DsSwitcher';
+export default {
+  name: "SwitcherComponent",
+  props: {
+    instanceId: {
+      type: String,
+      default: '',
+    },
+    switcherContentElements: {
+      type: [Array, String],
+      default: () => [],
+      validator: (value) => {
+        if (Array.isArray(value)) return true;
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed);
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      },
+    },
+  },
+  data() {
+    return {
+      switcher:[
+        // { id: '0', text: 'Банковский бизнес' },
+        // { id: '1', text: 'Небанковский бизнес' },
+        // { id: '2', text: 'Функции развития' },
+        // { id: '3', text: 'Цифровые платформы' },
+      ],
+      contentModelValue:''
+    }
+  },
+  methods:{
+    parseSwitcherData(data) {
+      if (!data) return;
+      // Если уже объект — используем как есть
+      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+        this.switcher = data
+        return;
+      }
+      // Если строка — парсим
+      if (typeof data === 'string') {
+        try {
+          const parsed = JSON.parse(data);
+          this.switcher = parsed
+        } catch (e) {
+          console.warn('Ошибка парсинга answers:', e);
+        }
+      }
+    },
+  },
+  mounted() {
+    this.parseSwitcherData(this.switcherContentElements)
+  },
+  components: {DsSwitcher}
+
+}
+
+</script>
+
+<style scoped>
+
+</style>
+
+----------------------------
+
+export default function switcherChoiceStory() {
+  const parent = document.querySelector('.js--for-swither-container')
+  if (parent) {
+    const arraySwitcher = parent.querySelectorAll('.ds-switcher__item')
+    console.log(arraySwitcher)
+    for (let item of arraySwitcher) {
+      item.onclick = () => {
+        console.log('Click')
+      }
+    }
+  }
+
+}
+
