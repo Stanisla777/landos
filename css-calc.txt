@@ -1,81 +1,70 @@
 .grid-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr); // 4 колонки для точных 25%/50%/75%
-  grid-gap: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
 
-  // 🔒 Скрываем карточки, если их больше 6 (защита от менеджеров)
+  // 🔒 Скрываем всё, что больше 6 блоков
   & > .grid-row__item:nth-child(n+7) {
     display: none;
   }
 
   // =================================================================
-  // 🔹 1 карточка: 100% ширины (span 4)
+  // 🔹 1 блок: 100%
   // =================================================================
   &:has(> .grid-row__item:nth-child(1):last-child) {
-    & > .grid-row__item {
-      grid-column: span 4;
-    }
-    // 👇 Медиа-запросы для 1 карточки
-    // @media (max-width: 768px) { ... }
+    & > .grid-row__item { flex: 0 0 100%; }
+    // 👇 Медиа-запросы для 1 блока
   }
 
   // =================================================================
-  // 🔹 2 карточки: 50% + 50% (span 2 + span 2)
+  // 🔹 2 блока: 50% + 50%
+  // calc(50% - 8px) учитывает половину gap (16px / 2 = 8px)
   // =================================================================
   &:has(> .grid-row__item:nth-child(2):last-child) {
-    & > .grid-row__item {
-      grid-column: span 2;
-    }
-    // 👇 Медиа-запросы для 2 карточек
+    & > .grid-row__item { flex: 0 0 calc(50% - 8px); }
+    // 👇 Медиа-запросы для 2 блоков
   }
 
   // =================================================================
-  // 🔹 3 карточки: 50% + 50% | 100%
+  // 🔹 3 блока: 50% + 50% | 100%
   // =================================================================
   &:has(> .grid-row__item:nth-child(3):last-child) {
-    & > .grid-row__item:nth-child(1),
-    & > .grid-row__item:nth-child(2) {
-      grid-column: span 2;
-    }
-    & > .grid-row__item:nth-child(3) {
-      grid-column: span 4;
-    }
-    // 👇 Медиа-запросы для 3 карточек
+    & > .grid-row__item:nth-child(-n+2) { flex: 0 0 calc(50% - 8px); }
+    & > .grid-row__item:nth-child(3)   { flex: 0 0 100%; }
+    // 👇 Медиа-запросы для 3 блоков
   }
 
   // =================================================================
-  // 🔹 4 карточки: 75% + 25% | 50% + 50%
+  // 🔹 4 блока: 75%(881px) + 25%(367px) | 50% + 50%
+  // calc(100% - 383px) = 100% - 367px - 16px gap
   // =================================================================
   &:has(> .grid-row__item:nth-child(4):last-child) {
-    & > .grid-row__item:nth-child(1) { grid-column: span 3; } // 75%
-    & > .grid-row__item:nth-child(2) { grid-column: span 1; } // 25%
-    & > .grid-row__item:nth-child(3),
-    & > .grid-row__item:nth-child(4) { grid-column: span 2; } // 50% + 50%
-    // 👇 Медиа-запросы для 4 карточек
+    & > .grid-row__item:nth-child(1) { flex: 0 0 calc(100% - 383px); }
+    & > .grid-row__item:nth-child(2) { flex: 0 0 367px; }
+    & > .grid-row__item:nth-child(-n+4):nth-child(n+3) { flex: 0 0 calc(50% - 8px); }
+    // 👇 Медиа-запросы для 4 блоков
   }
 
   // =================================================================
-  // 🔹 5 карточек: 75% + 25% | 50% + 50% | 100%
+  // 🔹 5 блоков: 75% + 25% | 50% + 50% | 100%
   // =================================================================
   &:has(> .grid-row__item:nth-child(5):last-child) {
-    & > .grid-row__item:nth-child(1) { grid-column: span 3; }
-    & > .grid-row__item:nth-child(2) { grid-column: span 1; }
-    & > .grid-row__item:nth-child(3),
-    & > .grid-row__item:nth-child(4) { grid-column: span 2; }
-    & > .grid-row__item:nth-child(5) { grid-column: span 4; }
-    // 👇 Медиа-запросы для 5 карточек
+    & > .grid-row__item:nth-child(1) { flex: 0 0 calc(100% - 383px); }
+    & > .grid-row__item:nth-child(2) { flex: 0 0 367px; }
+    & > .grid-row__item:nth-child(-n+4):nth-child(n+3) { flex: 0 0 calc(50% - 8px); }
+    & > .grid-row__item:nth-child(5) { flex: 0 0 100%; }
+    // 👇 Медиа-запросы для 5 блоков
   }
 
   // =================================================================
-  // 🔹 6 карточек: 75% + 25% | 50% + 50% | 25% + 75%
+  // 🔹 6 блоков: 75% + 25% | 50% + 50% | 25% + 75%
   // =================================================================
   &:has(> .grid-row__item:nth-child(6):last-child) {
-    & > .grid-row__item:nth-child(1) { grid-column: span 3; }
-    & > .grid-row__item:nth-child(2) { grid-column: span 1; }
-    & > .grid-row__item:nth-child(3),
-    & > .grid-row__item:nth-child(4) { grid-column: span 2; }
-    & > .grid-row__item:nth-child(5) { grid-column: span 1; } // 25%
-    & > .grid-row__item:nth-child(6) { grid-column: span 3; } // 75%
-    // 👇 Медиа-запросы для 6 карточек
+    & > .grid-row__item:nth-child(1) { flex: 0 0 calc(100% - 383px); }
+    & > .grid-row__item:nth-child(2) { flex: 0 0 367px; }
+    & > .grid-row__item:nth-child(-n+4):nth-child(n+3) { flex: 0 0 calc(50% - 8px); }
+    & > .grid-row__item:nth-child(5) { flex: 0 0 367px; }
+    & > .grid-row__item:nth-child(6) { flex: 0 0 calc(100% - 383px); }
+    // 👇 Медиа-запросы для 6 блоков
   }
 }
