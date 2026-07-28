@@ -1,275 +1,48 @@
-<div class="btn_s transparent_black_border btn-icon-arrow-forward-right mobile-100 another-thing-2025__training-materials-btn js--modal-training-courses">
-                                                    Узнать о старте
-                                                </div>
+.modal {
+  //background: transparent;
+  left: 0;
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
+  position: fixed;
+  top: 0;
+  //visibility: hidden;
+  opacity:0;
+  pointer-events:none;
+  background:rgba(28,27,40,0);
+  transition: opacity 0.3s ease-in-out, background 0.3s ease-in-out;
+  width: 100vw;
+  z-index: 1111;
+
+  &__wrapper {
+   
+
+    background-color: $color-bg-white;
+    box-shadow: 0px 10px 30px rgba(202, 204, 223, 0.5);
+    //visibility: hidden;
+    opacity:0;
+    pointer-events: none;
+    position: fixed;
+    left: 50%;
+    top: -520px;
+    transform: translate(-50%, -50%);
+    max-height: calc(100vh - 2rem);
+    transition: opacity 0.3s ease-in-out, top 0.3s ease-in-out;
+    width: calc(100% - 2.5rem); //40px
+    z-index: 1002;
+
+  }
 
 
-export default function modalNewCourses() {
-  const arrayBtn = document.querySelectorAll('.js--modal-training-courses');
-  arrayBtn.forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.closest('.js--training-materials-item') && btn.closest('.js--training-materials-container')) {
-        window.dispatchEvent(new CustomEvent('open-universal-modal', {
-          detail: {
-            htmlTooltip: btn?.closest('.js--training-materials-item')?.dataset?.htmlTooltip || '',
-            course: btn?.closest('.js--training-materials-item')?.dataset?.course || '',
-            htmlTooltipContainer: btn?.closest('.js--training-materials-container')?.dataset?.htmlTooltipContainer || '',
-          }
-        }));
-      }
 
-    })
-  })
+  &.open, &.show {
+    opacity: 1;
+    pointer-events: auto;
+    background:rgba(28,27,40,0.4);
 
-}
-
------------------------
-
-<template>
-  <div class="modal js--modal-sending-without-closing" :class="showModal ? 'open' : ''" ref='refModal' @click.self="closeModal">
-    <div class="modal__wrapper new bg-grey mor-rep-calculators__modal js--modal">
-      <button class="modal__closer outside" @click="closeModal">
-        <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd"
-                d="M0.357542 15.3637C-0.0329827 15.7543 -0.0329827 16.3874 0.357542 16.778C0.748066 17.1685 1.38123 17.1685 1.77176 16.778L8.13551 10.4142L14.4995 16.7782C14.89 17.1687 15.5232 17.1687 15.9137 16.7782C16.3042 16.3876 16.3042 15.7545 15.9137 15.364L9.54972 8.99999L15.9139 2.63582C16.3044 2.24529 16.3044 1.61213 15.9139 1.2216C15.5234 0.83108 14.8902 0.83108 14.4997 1.2216L8.13551 7.58577L1.77156 1.22182C1.38104 0.8313 0.747871 0.8313 0.357346 1.22182C-0.0331781 1.61235 -0.0331778 2.24551 0.357346 2.63604L6.7213 8.99999L0.357542 15.3637Z"></path>
-        </svg>
-      </button>
-      <div class="modal__main-content js--modal-main-content unactive">
-        <form class="feedback js--universal-form"  :name="parseData?.form?.name" action="/" novalidate="" :data-uid="parseData?.form?.uid" :data-dmpkit-event-uid="parseData?.form?.dataDmpkitEventUid" method="POST" enctype="multipart/form-data">
-
-          <input type="hidden" :name="parseData?.formInputs?.bxajaxid?.name" :id="parseData?.formInputs?.bxajaxid?.id" :value="parseData?.formInputs?.bxajaxid?.value">
-          <input type="hidden" :name="parseData?.formInputs?.ajaxCall?.name" :value="parseData?.formInputs?.ajaxCall?.value">
-          <input type="hidden" :name="parseData?.formInputs?.sessid?.name" :id="parseData?.formInputs?.sessid?.id" :value="parseData?.formInputs?.sessid?.value">
-          <input type="hidden" :name="parseData?.formInputs?.webFormId?.name" :value="parseData?.formInputs?.webFormId?.value">
-          <input type="hidden" :name="parseData?.formInputs?.course?.name" :value="parseData?.itemCourse">
-
-          <div v-if="parseData.title" v-html="parseData.title" class="modal__title"></div>
-          <div v-if="parseData.subtitle" v-html="parseData.subtitle" class="modal__desc"></div>
-          <div v-else class="modal__desc">
-            <p>Курс скоро откроется.</p>
-            <p>Оставьте заявку, чтобы получить уведомление о старте и пройти его одним из первых.</p>
-          </div>
-
-          <div class="feedback__form-sand">
-
-            <div class="feedback__row">
-              <label class="input input_bordered">
-                <span class="input_label" v-if="parseData?.formInputs?.fio?.caption">{{parseData.formInputs.fio.caption}}</span>
-                <input class="js--validate-mask js--validate-mask-name  js--validate-required"
-                   :placeholder="parseData?.formInputs?.fio?.placeholder ? parseData.formInputs.fio.placeholder : 'Введите ФИО'"
-                   :name="parseData?.formInputs?.fio?.name"
-                   :required="parseData?.formInputs?.fio?.required === true || parseData?.formInputs?.fio?.required === 'true'"
-                   type="text"
-                   data-mask-hint="Допустима только кириллица" data-maxlength="40"
-                   data-maxlength-hint="Допустимое количество символов"
-                   data-required-hint="Введите полностью фамилию, имя и отчество (при наличии)"
-                />
-              </label>
-            </div>
-
-            <div class="feedback__row">
-              <label class="input input_bordered">
-                <span class="input_label" v-if="parseData?.formInputs?.mail?.caption">{{parseData.formInputs.mail.caption}}</span>
-                <input class="js--validate-mask js--validate-mask-email js--validate-required "
-                   type="text"
-                   inputmode="email"
-                   :placeholder="parseData?.formInputs?.mail?.placeholder ? parseData.formInputs.mail.placeholder : 'Введите E-mail'"
-                   :name="parseData?.formInputs?.mail?.name"
-                   :required="parseData?.formInputs?.mail?.required === true || parseData?.formInputs?.mail?.required === 'true'"
-                   data-mask-hint="Недопустимый формат E-mail" data-maxlength="70"
-                   data-maxlength-hint="Допустимое количество символов"
-                   data-required-hint="Поле обязательно для заполнения"
-                />
-              </label>
-            </div>
-          </div>
-          <div class="feed_back__wr-checkbox modal__bottom-form">
-            <div class="checkbox-stylized feed_back__user-form-subscription js--checkbox_wrapper">
-              <div class="personal-office__user-form-subscription-em"></div>
-              <div class="feed_back__user-form-block">
-                <input class="js--feedback-check js--validate-mask js--validate-mask--check"
-                   id="we_thing_start_course_personal_data"
-                   type="checkbox" name=""
-                   required="required"
-                   data-required-hint="Согласитесь с условиями"/>
-                <label class="feed_back__chek-label" for="we_thing_start_course_personal_data">
-                  <p>Согласен (-на) на обработку</p>
-                  <a href="/user-agreement/#user-agreement" target="_blank">персональных данных</a>
-                </label>
-              </div>
-            </div>
-
-
-            <div class="checkbox-stylized feed_back__user-form-subscription js--checkbox_wrapper">
-              <div class="personal-office__user-form-subscription-em"></div>
-              <div class="feed_back__user-form-block">
-                <input id="we_thing_start_course_advertisement" class="js--validate-mask js--validate-mask--check"
-                   type="checkbox"
-                   :class="parseData?.formInputs?.agreeReceivePromo?.required===true||parseData?.formInputs?.agreeReceivePromo?.required==='true'?'js--feedback-check':''"
-                   :value="parseData?.formInputs?.agreeReceivePromo?.value"
-                   :name="parseData?.formInputs?.agreeReceivePromo?.name"
-                   :required="parseData?.formInputs?.agreeReceivePromo?.required===true || parseData?.formInputs?.agreeReceivePromo?.required==='true'"
-                   data-required-hint="Согласитесь с условиями"
-                />
-                <label class="feed_back__chek-label" for="we_thing_start_course_advertisement">
-                  <p>Согласен (-на) на получение</p>
-                  <a href="/user-agreement/#user-personalized-communications" target="_blank">рекламных материалов</a>
-                </label>
-              </div>
-            </div>
-          </div>
-          <div class="js--feedback-bottom feed_back__bottom-error"></div>
-          <div class="modal__bottom-sand">
-            <button class="btn_s black js--btn-universal-form" type="submit">Отправить заявку</button>
-          </div>
-        </form>
-      </div>
-
-      <!--окно появляется после отправки добавлением класса .active-->
-      <div class="modal__sending-result success js--modal-wr-success active">
-        <div class="modal__sending-result-icon"></div>
-        <p class="modal__sending-result-title"><span class="highlighting">Спасибо</span> за&nbsp;обращение!</p>
-        <div class="modal__sending-result-wr-des">
-          <p>Ваш запрос направлен в отел по работе с клиентами.</p>
-          <p>Мы свяжемся с вами в ближайшее время</p>
-        </div>
-        <button class="btn_s black" @click="closeModal">Закрыть</button>
-      </div><!--окно появляется после отправки добавлением класса .active-->
-      <div class="modal__sending-result failed">
-        <div class="modal__sending-result-icon"></div>
-        <p class="modal__sending-result-title"><span class="highlighting">Ошибка</span></p>
-        <div class="modal__sending-result-wr-des">
-          <p>Ваша заявка не обработана, пожалуйста попробуйте позже</p>
-        </div>
-        <button class="btn_s black" @click="closeModal">Закрыть</button>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script>
-import AddClassBody from '../../../../modules/redesign-site/disallow-body-scrolling';
-import RemoveClassBody from '../../../../modules/redesign-site/allow-body-scrolling';
-import universalForm from '../../../../modules/universal-form/universal-form';
-import store from "../../../FamilyMortgageCalculator/store";
-export default {
-  name: "ModalWeThingNewCourses",
-  data() {
-    return {
-      showModal:false,
-      modalData:{},
-      parseData: {}
+    .modal__wrapper {
+      opacity:1;
+      pointer-events: auto;
+      top: 50%;
     }
-  },
-  methods: {
-    handleOpen(event) {
-      this.modalData = event.detail || {};
-      this.parseDataMethod();
-      this.$nextTick(() => {
-        this.setupEventListeners();
-        // this.showModal=true
-      })
-      this.showModal=true
-      document.body.classList.add(
-        'modal-opened'
-      );
-      AddClassBody()
-    },
-    safeJsonParse(value) {
-      // 1. Если это null, undefined или пустая строка
-      if (!value) return null;
-
-      // 2. Если это уже объект или массив, возвращаем как есть
-      if (typeof value === 'object') {
-        return value;
-      }
-
-      // 3. Если это строка
-      if (typeof value === 'string') {
-        const trimmed = value.trim();
-
-        // Если строка пустая
-        if (!trimmed) return null;
-
-        // Если строка НЕ начинается с { или [, это точно не JSON-объект/массив
-        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-          return value; // Возвращаем обычную строку "bti" как есть
-        }
-
-        // Если начинается с { или [, пытаемся распарсить
-        try {
-          return JSON.parse(trimmed);
-        } catch (e) {
-          console.warn('Ошибка парсинга JSON, возвращаем исходную строку:', value, e);
-          return value;
-        }
-      }
-      return value;
-    },
-
-    parseDataMethod(){
-      // 1. Парсим базовые данные (контейнер)
-      const containerData = this.safeJsonParse(this.modalData.htmlTooltipContainer);
-
-      // 2. Парсим отдельные данные (элемент)
-      const itemData = this.safeJsonParse(this.modalData.htmlTooltip);
-
-      //3 Парсим название купса для скрытого input в форме
-      const itemCourse = this.safeJsonParse(this.modalData.course);
-
-      // 3. Объединяем: itemData имеет приоритет при совпадении ключей
-      this.parseData = { ...containerData, ...itemData, itemCourse };
-    },
-    closeModal(el){
-      const element = el.currentTarget;
-      const block = element.closest('#another-thing-speaker');
-      if (block) {
-        block.setAttribute('style', 'z-index:7;');
-      }
-
-      const windowMainContent = this.$refs.refModal.querySelector('.js--modal-main-content')
-      const windowSuccessnContent = this.$refs.refModal.querySelector('.js--modal-wr-success')
-      setTimeout(()=>{
-        if (windowSuccessnContent && windowMainContent && windowMainContent.classList.contains('unactive')) {
-          windowSuccessnContent.classList.remove('active')
-          windowMainContent.classList.remove('unactive')
-        }
-      },500)
-
-
-      this.showModal=false
-      document.body.classList.remove(
-        'modal-opened'
-      );
-      RemoveClassBody();
-    },
-    setupEventListeners() {
-      const element = this.$refs.refModal.querySelector('.js--another-thing-close-modal');
-      if (element) {
-        element.addEventListener('click', this.closeModal)
-      }
-    },
-  },
-  mounted(){
-    window.addEventListener('open-universal-modal', this.handleOpen);
-    universalForm();
-  },
-  beforeUnmount() {
-    window.removeEventListener('open-universal-modal', this.handleOpen);
   }
 }
-</script>
-
-<style scoped>
-
-</style>
-
-disallow-body-scrolling.js
-export default function AddClassBody() {
-  document.body.classList.add('body-modal');
-  document.body.classList.add('body-additional-class');
-  document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
-  document.ontouchmove = (e) => {
-    e.preventDefault();
-  };
-}
-
