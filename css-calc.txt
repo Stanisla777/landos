@@ -1,47 +1,10 @@
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  height: calc(var(--vh, 1vh) * 100);
-  z-index: 1111;
-
-  // Скрытое состояние: используем opacity, чтобы закрытие тоже было плавным
-  opacity: 0;
-  pointer-events: none;
-  background: rgba(28, 27, 40, 0);
-  transition: opacity 0.3s ease-in-out, background 0.3s ease-in-out;
-
-  &__wrapper {
-    position: fixed;
-    left: 50%;
-    top: 50%; // Точка отсчета всегда по центру
-    
-    // В закрытом состоянии окно сдвинуто ВВЕРХ за пределы экрана
-    transform: translate(-50%, -150%); 
-    
-    width: calc(100% - 2.5rem);
-    max-height: calc(100vh - 2rem);
-    background-color: $color-bg-white;
-    box-shadow: 0px 10px 30px rgba(202, 204, 223, 0.5);
-    pointer-events: none;
-    
-    // Анимируем только transform и opacity (это работает плавно в ОБЕ стороны)
-    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+export default function RemoveClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal');
+    document.body.classList.remove('body-additional-class');
   }
-
-  // Состояние открытия
-  &.open, &.show {
-    opacity: 1;
-    pointer-events: auto;
-    background: rgba(28, 27, 40, 0.4);
-
-    .modal__wrapper {
-      opacity: 1;
-      pointer-events: auto;
-      // При открытии окно возвращается в центр
-      transform: translate(-50%, -50%); 
-    }
-  }
+  const scrollY = document.body.style.top;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  window.scrollTo(0, parseInt(scrollY || '0') * -1);
 }
