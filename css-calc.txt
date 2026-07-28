@@ -1,46 +1,47 @@
-// disallow-body-scrolling.js
-export default function AddClassBody() {
-  // 1. Запоминаем текущую позицию скролла
+AddClassBody() {
   const scrollY = window.scrollY;
 
-  // 2. Вычисляем и применяем компенсацию ширины скроллбара 
-  // (ОБЯЗАТЕЛЬНО делаем это ДО position: fixed)
-  const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
-  document.body.style.paddingRight = `${scrollBarWidth}px`;
-
-  // 3. Применяем фиксацию ПО ОТДЕЛЬНОСТИ (НЕ через setAttribute!)
-  // Это предотвращает стирание padding-right и резкий сдвиг контента
   document.body.style.position = 'fixed';
   document.body.style.top = `-${scrollY}px`;
-  document.body.style.width = '100%'; // Критически важно для iOS, чтобы контент не сжимался
+
+  //Проверяю iOS 
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
+  // Применяем width: 100% ТОЛЬКО для iOS, чтобы не ломать десктоп
+  if (isIOS) {
+    document.body.style.width = '100%';
+  }
+
 
   document.body.classList.add('body-modal');
   document.body.classList.add('body-additional-class');
 
-  // 4. Блокируем скролл на уровне тач-событий
+  // Блокирую пружинивание на iOS
   document.ontouchmove = (e) => {
     e.preventDefault();
   };
 }
+----
 
-export default function RemoveClassBody() {
-  // 1. Убираем классы (ваш margin-right и overflow вернутся в норму сами)
+RemoveClassBody() {
   if (!document.body.classList.contains('body-modal-modals')) {
     document.body.classList.remove('body-modal');
     document.body.classList.remove('body-additional-class');
   }
 
-  // 2. Очищаем inline-стили, которые мы добавили при открытии
   const scrollY = document.body.style.top;
+  
+  // Очищаем inline-стили (очистка width='' безопасна и для десктопа, и для iOS)
   document.body.style.position = '';
   document.body.style.top = '';
-  document.body.style.width = ''; // Обязательно очищаем
+  document.body.style.width = ''; 
 
-  // 3. Возвращаем скролл на исход позицию
+  // Возвращаем скролл на исходную позицию
   if (scrollY) {
     window.scrollTo(0, parseInt(scrollY || '0') * -1);
   }
 
-  // 4. Убираем блокировщик тачей
+  // Убираем блокировщик тачей
   document.ontouchmove = null;
 }
