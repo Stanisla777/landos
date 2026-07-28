@@ -22,3 +22,25 @@ export default function AddClassBody() {
     e.preventDefault();
   };
 }
+
+export default function RemoveClassBody() {
+  // 1. Убираем классы (ваш margin-right и overflow вернутся в норму сами)
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal');
+    document.body.classList.remove('body-additional-class');
+  }
+
+  // 2. Очищаем inline-стили, которые мы добавили при открытии
+  const scrollY = document.body.style.top;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = ''; // Обязательно очищаем
+
+  // 3. Возвращаем скролл на исход позицию
+  if (scrollY) {
+    window.scrollTo(0, parseInt(scrollY || '0') * -1);
+  }
+
+  // 4. Убираем блокировщик тачей
+  document.ontouchmove = null;
+}
