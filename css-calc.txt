@@ -1,10 +1,24 @@
-export default function RemoveClassBody() {
-  if (!document.body.classList.contains('body-modal-modals')) {
-    document.body.classList.remove('body-modal');
-    document.body.classList.remove('body-additional-class');
-  }
-  const scrollY = document.body.style.top;
-  document.body.style.position = '';
-  document.body.style.top = '';
-  window.scrollTo(0, parseInt(scrollY || '0') * -1);
+// disallow-body-scrolling.js
+export default function AddClassBody() {
+  // 1. Запоминаем текущую позицию скролла
+  const scrollY = window.scrollY;
+
+  // 2. Вычисляем и применяем компенсацию ширины скроллбара 
+  // (ОБЯЗАТЕЛЬНО делаем это ДО position: fixed)
+  const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+  document.body.style.paddingRight = `${scrollBarWidth}px`;
+
+  // 3. Применяем фиксацию ПО ОТДЕЛЬНОСТИ (НЕ через setAttribute!)
+  // Это предотвращает стирание padding-right и резкий сдвиг контента
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.width = '100%'; // Критически важно для iOS, чтобы контент не сжимался
+
+  document.body.classList.add('body-modal');
+  document.body.classList.add('body-additional-class');
+
+  // 4. Блокируем скролл на уровне тач-событий
+  document.ontouchmove = (e) => {
+    e.preventDefault();
+  };
 }
