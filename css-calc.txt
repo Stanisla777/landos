@@ -1,60 +1,37 @@
 sudo systemctl restart nginx
 
 safeJsonParse(value) {
-      if (!value) return {};
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        return value;
-      }
-      if (typeof value === 'string') {
-        try {
-          return JSON.parse(value);
-        } catch (e) {
-          console.warn('Ошибка парсинга JSON:', e);
-          return {};
-        }
-      }
-      return {};
+  // 1. Если это null, undefined или пустая строка
+  if (!value) return null; // или {}, в зависимости от вашей логики
+
+  // 2. Если это уже объект или массив, возвращаем как есть
+  if (typeof value === 'object') {
+    return value;
+  }
+
+  // 3. Если это строка
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    
+    // Если строка пустая
+    if (!trimmed) return null;
+
+    // 🔥 ГЛАВНАЯ ПРОВЕРКА: 
+    // Если строка НЕ начинается с { или [, это точно не JSON-объект/массив
+    // (например, "bti", "123", "true")
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+      return value; // Возвращаем обычную строку "bti" как есть!
     }
 
-
-answers: {
-      type: [Object, String],
-      default: () => ({}),
-      validator: (value) => {
-        // Если уже объект — ок
-        if (typeof value === 'object' && value !== null) return true;
-        // Если строка — пробуем распарсить
-        if (typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value);
-            return typeof parsed === 'object' && parsed !== null; //
-          } catch (e) {
-            return false;
-          }
-        }
-        return false;
-      },
+    // Если начинается с { или [, пытаемся распарсить
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      console.warn('Ошибка парсинга JSON, возвращаем исходную строку:', value, e);
+      return value; // Или {}, если вы строго ожидаете только объект
     }
+  }
 
-mounted() {
- this.parseAnswerData(this.answers)
-},
-methods: {
-parseAnswerData(data) {
-      if (!data) return;
-      // Если уже объект — используем как есть
-      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-        this.answersData = data
-        return;
-      }
-      // Если строка — парсим
-      if (typeof data === 'string') {
-        try {
-          const parsed = JSON.parse(data);
-          this.answersData = parsed
-        } catch (e) {
-          console.warn('Ошибка парсинга answers:', e);
-        }
-      }
-    },
+  // 4. Для чисел, boolean и т.д.
+  return value;
 }
