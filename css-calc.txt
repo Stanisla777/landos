@@ -1,201 +1,318 @@
-staore.js
-
-/* eslint-disable */
-import { createStore } from 'vuex';
-
-export default createStore({
-  state: {
-    // ... ваши существующие поля ...
-  },
-  getters: {
-    // ... ваши существующие геттеры ...
-    
-    // ДОБАВЛЕНО: Сырые числовые значения для удобной синхронизации компонентов
-    MATERNALCAPITAL_RAW(state) {
-      return state.maternal_capital;
-    },
-    PERSONALFUNDS_RAW(state) {
-      return state.personal_funds;
-    },
-  },
-  mutations: {
+store.js
     mutationPriceAppartment(state, received_perem) {
-      // 1. Устанавливаем цену (она уже приходит >= 625000 из компонента, но добавляем страховку)
       let price = parseInt(received_perem);
       if (isNaN(price) || price === 0) {
         price = 625000; 
       }
       state.appartment_price = price;
 
-      // 2. Ограничиваем материнский капитал, если он стал больше стоимости недвижимости
       if (state.maternal_capital > state.appartment_price) {
         state.maternal_capital = state.appartment_price;
       }
 
-      // 3. Ограничиваем первоначальный взнос стоимостью недвижимости
-      // (Если ПВ был 2 000 000, а цена стала 625 000, ПВ станет 625 000. Если ПВ был 200 000, он останется 200 000)
       if (state.initialfee > state.appartment_price) {
         state.initialfee = state.appartment_price;
       }
 
-      // 4. КЛЮЧЕВОЙ МОМЕНТ: Синхронизируем личные средства
-      // Личные средства всегда равны: Первоначальный взнос минус Материнский капитал
       state.personal_funds = state.initialfee - state.maternal_capital;
 
-      // 5. Защита от отрицательных личных средств (на случай форс-мажора)
       if (state.personal_funds < 0) {
         state.personal_funds = 0;
-        // Если мат. капитал вдруг оказался больше текущего ПВ, выравниваем ПВ по мат. капиталу
         state.initialfee = state.maternal_capital;
       }
 
-      // 6. Обновляем отображаемые значения (с пробелами и знаком рубля) для всех затронутых полей
       state.initialfee_show = state.initialfee.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ') + ' ₽';
       state.maternal_capital_show = state.maternal_capital.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ') + ' ₽';
       state.personal_funds_show = state.personal_funds.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ') + ' ₽';
     },
+------------------------
+component-apartment-prisi.vue
 
-    // ... остальные мутации без изменений ...
+export default {
+  name: 'component-apartment-price',
+  data(){
+    return {
+      realtySlider: '',
+      dataField: 0,
+      dataFieldForCalculation: 0,
+      subsidies: 0,
+      stepApartment: 1,
+      stgMin: 625000,
+      stgMiddle: 27000000,
+      stgMax: 56000000,
+      input_salary: false,
+      isDragging: false // <--- ДОБАВЛЕНО
+    }
+  },
+  methods:{
+    initRealtySlider() {
+      this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
+        start: [this.stgMin],
+        connect: 'lower',
+        step: this.stepApartment,
+        initial: this.stgMin,
+        range: {
+          min: this.stgMin,
+          max: this.stgMax
+        },
+      });
 
----------------------------------------
+      this.realtySlider.on('update', (val, handle) => {
+        this.dataField = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+        this.dataFieldForCalculation = parseInt(val[handle]).toFixed(0)
+      });
 
+      // <--- ДОБАВЛЕНО: Отслеживание начала и конца перетаскивания
+      this.realtySlider.on('start', () => { this.isDragging = true; });
+      this.realtySlider.on('end', () => { this.isDragging = false; });
+    },
+    
+    // ... (методы inputField, keyUp, inputPast, lossFocus, inputFocus оставляем как были) ...
+
+    // ИСПРАВЛЕННЫЙ МЕТОД: Защита от промежуточных значений
+    calculationPageLoad() {
+      let cleanValue = parseInt(String(this.dataField).replace(/\s/g, '')) || 0;
+
+      // ЕСЛИ ПОЛЬЗОВАТЕЛЬ ТОЛЬКО НАЧАЛ ВВОДИТЬ ЧИСЛО (например, "8" или "62"), 
+      // МЫ ИГНОРИРУЕМ ОБНОВЛЕНИЕ СТОРА, ЧТОБЫ НЕ СЛОМАТЬ ПЕРВОНАЧАЛЬНЫЙ ВЗНОС
+      if (cleanValue > 0 && cleanValue < this.stgMin) {
+        return; 
+      }
+
+      // Если поле полностью очищено (0), принудительно ставим минимум
+      if (cleanValue === 0) {
+        cleanValue = this.stgMin;
+        this.dataField = this.stgMin.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+      }
+
+      this.dataFieldForCalculation = cleanValue;
+      store.dispatch('ActionRealPriceAppartment', cleanValue);
+    },
+  },
+  mounted(){
+    this.initRealtySlider()
+  },
+  watch:{
+    dataField(){
+      this.calculationPageLoad()
+    }
+  },
+};
+
+-------------------------
 component-initial-payment.vue
 
-watch: {
+export default {
+  name: 'component-initial-payment',
+  data(){
+    return {
+      activeInput: false,
+      realtySlider: '',
+      dataField: 0,
+      dataFieldForCalculation: 0,
+      subsidies: 0,
+      stepApartment: 1,
+      stgMin: 0,
+      stgMiddle: 27000000,
+      stgMax: 56000000,
+      input_salary: false,
+      isDragging: false // <--- ДОБАВЛЕНО
+    }
+  },
+  methods:{
+    initRealtySlider() {
+      this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
+        start: [this.stgMin],
+        connect: 'lower',
+        step: this.stepApartment,
+        initial: this.stgMin,
+        range: {
+          min: this.stgMin,
+          max: this.stgMax
+        },
+      });
+
+      this.realtySlider.on('update', (val, handle) => {
+        this.dataField = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+        this.dataFieldForCalculation = parseInt(val[handle]).toFixed(0)
+      });
+
+      // <--- ДОБАВЛЕНО
+      this.realtySlider.on('start', () => { this.isDragging = true; });
+      this.realtySlider.on('end', () => { this.isDragging = false; });
+    },
+    // ... (остальные методы без изменений) ...
+  },
+  watch:{
     limit_init_fee() {
       const safeMax = this.limit_init_fee <= this.stgMin 
         ? this.stgMin + this.stepApartment 
         : this.limit_init_fee;
 
       this.realtySlider.updateOptions({
-        range: {
-          min: this.stgMin,
-          max: safeMax
-        }
+        range: { min: this.stgMin, max: safeMax }
       });
       
-      // Страховка: если текущее значение слайдера вдруг стало больше лимита
       if (parseInt(this.realtySlider.get()) > this.limit_init_fee) {
         this.realtySlider.set(this.limit_init_fee);
       }
     },
     init_fee(newVal) {
-      // ВСЕГДА синхронизируем слайдер и поле при изменении значения в сторе
-      // Это сработает и при сбросе стоимости недвижимости
-      this.realtySlider.set(newVal);
+      // <--- ИСПРАВЛЕНО: Обновляем слайдер только если пользователь его НЕ тянет
+      if (!this.isDragging) {
+        this.realtySlider.set(newVal);
+      }
     },
-    dataField() {
-      this.calculationPageLoad();
+    dataField(){
+      this.calculationPageLoad()
     }
   },
+  // ...
 
--------------------------
+---------------------------------------------
 
 component-maternal-capital.vue
 
-  computed: {
-    limitmaterialcapital() {
-      return store.getters.LIMITMATERIALCAPITAL;
-    },
-    maternal_capital_show() {
-      return store.getters.MATERNALCAPITALSHOW;
-    },
-    // ДОБАВЛЕНО: сырое значение для отслеживания изменений
-    maternal_capital_raw() {
-      return store.getters.MATERNALCAPITAL_RAW;
+export default {
+  name: 'v-component-maternal-capital',
+  props:['tooltipMaternityCapital','maximumMaternityCapital'],
+  data(){
+    return {
+      // ... ваши существующие поля ...
+      isDragging: false // <--- ДОБАВЛЕНО
     }
   },
-  watch: {
-    // ДОБАВЛЕНО: Синхронизация инпута и слайдера, если значение изменилось извне (из store)
+  methods:{
+    initRealtySlider() {
+      this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
+        start: [this.start],
+        connect: 'lower',
+        step: this.stepApartment,
+        initial: this.stgMin,
+        range: {
+          min: this.stgMin,
+          max: this.maximumMaternityCapital
+        },
+      });
+      this.realtySlider.on('update', (val, handle) => {
+        this.dataField = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+        this.dataFieldForCalculation = parseInt(val[handle]).toFixed(0)
+      });
+
+      // <--- ДОБАВЛЕНО
+      this.realtySlider.on('start', () => { this.isDragging = true; });
+      this.realtySlider.on('end', () => { this.isDragging = false; });
+    },
+    // ... (остальные методы без изменений) ...
+  },
+  computed:{
+    limitmaterialcapital(){ return store.getters.LIMITMATERIALCAPITAL },
+    maternal_capital_show(){ return store.getters.MATERNALCAPITALSHOW },
+    maternal_capital_raw(){ return store.getters.MATERNALCAPITAL_RAW } // <--- Убедитесь, что этот геттер есть в store.js
+  },
+  watch:{
     maternal_capital_raw(newVal) {
-      const currentVal = parseInt(String(this.dataField).replace(/\s/g, '')) || 0;
-      if (currentVal !== newVal) {
-        this.dataField = newVal.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
-        this.realtySlider.set(newVal);
+      // <--- ИСПРАВЛЕНО: Синхронизируем только если не идет перетаскивание
+      if (!this.isDragging) {
+        const currentVal = parseInt(String(this.dataField).replace(/\s/g, '')) || 0;
+        if (currentVal !== newVal) {
+          this.dataField = newVal.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+          this.realtySlider.set(newVal);
+        }
       }
     },
     limitmaterialcapital() {
       if (this.limitmaterialcapital < this.maximumMaternityCapital && this.limitmaterialcapital !== 0) {
-        this.realtySlider.updateOptions({
-          range: {
-            min: this.stgMin,
-            max: this.limitmaterialcapital
-          }
-        });
+        this.realtySlider.updateOptions({ range: { min: this.stgMin, max: this.limitmaterialcapital } });
       } else if (this.limitmaterialcapital >= this.maximumMaternityCapital) {
-        this.realtySlider.updateOptions({
-          range: {
-            min: this.stgMin,
-            max: this.maximumMaternityCapital
-          }
-        });
+        this.realtySlider.updateOptions({ range: { min: this.stgMin, max: this.maximumMaternityCapital } });
       } else if (this.limitmaterialcapital === 0) {
-        this.$refs.realtyInput.classList.add('unactive');
+        this.$refs.realtyInput.classList.add('unactive')
       }
       
       if (this.limitmaterialcapital !== 0 && this.$refs.realtyInput.classList.contains('unactive')) {
-        this.$refs.realtyInput.classList.remove('unactive');
+        this.$refs.realtyInput.classList.remove('unactive')
       }
     },
-    dataField() {
-      this.calculationPageLoad();
+    dataField(){
+      this.calculationPageLoad()
     }
   },
+  // ...
 
-------------------
-
+-------------------------
 component-personal-funds.vue
 
-  computed: {
-    limitpersonalfunds() {
-      return store.getters.LIMITPERSONALFUNDS;
-    },
-    personalfunds_show() {
-      return store.getters.PERSONALFUNDSHOW;
-    },
-    checkbox_status() {
-      return store.getters.CHECKBOXSTATUS;
-    },
-    initial_fee() {
-      return store.getters.INITIALFEE;
-    },
-    // ДОБАВЛЕНО: сырое значение для отслеживания изменений
-    personal_funds_raw() {
-      return store.getters.PERSONALFUNDS_RAW;
+export default {
+  name: 'component-personal-funds',
+  data(){
+    return {
+      // ... ваши существующие поля ...
+      isDragging: false // <--- ДОБАВЛЕНО
     }
   },
-  watch: {
-    // ДОБАВЛЕНО: Синхронизация инпута и слайдера при изменении из store
+  methods:{
+    initRealtySlider() {
+      this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
+        start: [this.start],
+        connect: 'lower',
+        step: this.stepApartment,
+        initial: this.stgMin,
+        range: {
+          min: this.stgMin,
+          max: this.stgMax
+        },
+      });
+      this.realtySlider.on('update', (val, handle) => {
+        this.dataField = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+        this.dataFieldForCalculation = parseInt(val[handle]).toFixed(0)
+      });
+
+      // <--- ДОБАВЛЕНО
+      this.realtySlider.on('start', () => { this.isDragging = true; });
+      this.realtySlider.on('end', () => { this.isDragging = false; });
+    },
+    // ... (остальные методы без изменений) ...
+  },
+  computed:{
+    limitpersonalfunds(){ return store.getters.LIMITPERSONALFUNDS },
+    personalfunds_show(){ return store.getters.PERSONALFUNDSHOW },
+    checkbox_status(){ return store.getters.CHECKBOXSTATUS },
+    initial_fee(){ return store.getters.INITIALFEE },
+    personal_funds_raw(){ return store.getters.PERSONALFUNDS_RAW } // <--- Убедитесь, что этот геттер есть в store.js
+  },
+  watch:{
     personal_funds_raw(newVal) {
-      const currentVal = parseInt(String(this.dataField).replace(/\s/g, '')) || 0;
-      if (currentVal !== newVal) {
-        this.dataField = newVal.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
-        this.realtySlider.set(newVal);
+      // <--- ИСПРАВЛЕНО: Синхронизируем только если не идет перетаскивание
+      if (!this.isDragging) {
+        const currentVal = parseInt(String(this.dataField).replace(/\s/g, '')) || 0;
+        if (currentVal !== newVal) {
+          this.dataField = newVal.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ');
+          this.realtySlider.set(newVal);
+        }
       }
     },
-    checkbox_status() {
-      if (this.checkbox_status === true) {
+    checkbox_status(){
+      if(this.checkbox_status===true){
         this.realtySlider.set(this.initial_fee);
       }
     },
-    limitpersonalfunds() {
-      if (this.limitpersonalfunds !== 0) {
+    limitpersonalfunds(){
+      if(this.limitpersonalfunds!==0){
         this.realtySlider.updateOptions({
-          range: {
-            min: this.stgMin,
-            max: this.limitpersonalfunds
-          }
+          range: { min: this.stgMin, max: this.limitpersonalfunds }
         });
-      } else if (this.limitpersonalfunds === 0) {
-        this.$refs.realtyInput.classList.add('unactive');
+      } else if(this.limitpersonalfunds===0){
+        this.$refs.realtyInput.classList.add('unactive')
       }
       
-      // ИСПРАВЛЕНО: опечатка в оригинальном коде (было limitmaterialcapital вместо limitpersonalfunds)
-      if (this.limitpersonalfunds !== 0 && this.$refs.realtyInput.classList.contains('unactive')) {
-        this.$refs.realtyInput.classList.remove('unactive');
+      // ИСПРАВЛЕНА ОПЕЧАТКА из оригинального кода (было limitmaterialcapital)
+      if(this.limitpersonalfunds!==0 && this.$refs.realtyInput.classList.contains('unactive')){
+        this.$refs.realtyInput.classList.remove('unactive')
       }
     },
-    dataField() {
-      this.calculationPageLoad();
+    dataField(){
+      this.calculationPageLoad()
     }
   },
+  // ...
