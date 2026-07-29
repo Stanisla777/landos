@@ -1,16 +1,422 @@
-limit_init_fee(newVal) {
-        // Если значение стало 0 или меньше (пользователь временно очистил поле),
-        // мы просто игнорируем обновление. Слайдер сохранит свой старый диапазон,
-        // визуального скачка не будет, и ошибки noUiSlider не возникнет.
-        if (newVal <= 0) {
-            return;
-        }
+//материнский капитал
+<template>
+  <div class="property-calculator__row property-calculator__several-columns_col margin js--wr-material-capital">
+    <div class="calculator_s__period-input-wrapper">
+      <p class="property-calculator__row-label not-margin">Материнский капитал</p>
+      <div class="property-calculator__period-input-wrap-icon green">
+        <svg width="6" height="9" viewbox="0 0 6 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M2.29615 5.82809V5.87809H2.34615H3.38128H3.43128V5.82809C3.43128 5.17718 3.88001 4.74316 4.37092 4.26834C4.3939 4.24612 4.41697 4.2238 4.44009 4.20137C4.95161 3.70514 5.47928 3.15761 5.47928 2.27748C5.47928 1.56616 5.1798 1.02591 4.72144 0.664646C4.26438 0.304406 3.65179 0.123828 3.0251 0.123828C1.94115 0.123828 0.916704 0.644209 0.518245 1.74851L0.503822 1.78848L0.540948 1.80916L1.42025 2.2989L1.47368 2.32866L1.49223 2.27038C1.60592 1.91305 1.80522 1.65293 2.06481 1.48165C2.32489 1.31005 2.64868 1.22557 3.01397 1.22557C3.39653 1.22557 3.72964 1.31585 3.96588 1.49634C4.20027 1.67543 4.34415 1.94688 4.34415 2.322C4.34415 2.63879 4.22214 2.90106 4.03445 3.14622C3.87409 3.35566 3.66836 3.5496 3.45209 3.75346C3.41356 3.78978 3.37469 3.82642 3.33569 3.86351C2.82303 4.3511 2.29615 4.90943 2.29615 5.82809ZM2.85815 8.28226C3.29809 8.28226 3.63162 7.93659 3.63162 7.50879C3.63162 7.08098 3.29809 6.73531 2.85815 6.73531C2.42984 6.73531 2.08467 7.08048 2.08467 7.50879C2.08467 7.9371 2.42984 8.28226 2.85815 8.28226Z"
+            fill="#1C1B28" stroke="#1C1B28" stroke-width="0.1">
+          </path>
+        </svg>
+        <div class="calculator_s__tooltip">
+          <div class="calculator_s__tooltip-wrap" v-html="tooltipMaternityCapital"></div>
+        </div>
+      </div>
+    </div>
+    <div class="property-calculator__input-field mortgage-calculator__material-capital js--material-capital" @click="inputFocus" ref="realtyInput">
+      <input class="property-calculator__value" inputmode="numeric" type="text" placeholder="Введите сумму"
+         v-model="dataField"
+         @keydown="inputField"
+         @keyup="keyUp"
+         @change="inputValue"
+         @paste="inputPast"/>
+      <div class="range-input__slider" ref="mortgagePrice"></div>
+    </div>
+    <div class="property-calculator__wr-range">
+      <p class="property-calculator__range">{{ stgMin }}</p>
+      <p class="property-calculator__range" v-if="limitmaterialcapital<maximumMaternityCapital">
+        {{ String(limitmaterialcapital).slice(0, 3) }} тыс.</p>
+      <p class="property-calculator__range" v-if="limitmaterialcapital>=maximumMaternityCapital">
+        {{ String(maximumMaternityCapital).slice(0, 3) }} тыс.</p>
+    </div>
+  </div>
+</template>
+<script>
+import eventBus from '../eventBus';
+import store from "../store";
 
-        // Обновляем диапазон только тогда, когда пришло корректное положительное число
-        this.realtySlider.updateOptions({
-            range: {
-                min: this.stgMin,
-                max: newVal
-            }
-        });
+import noUiSlider from 'nouislider';
+export default {
+  name: 'v-component-maternal-capital',
+  props:['tooltipMaternityCapital','maximumMaternityCapital'],
+  data(){
+    return {
+      hint_text:'Размер выплаты на первого ребенка в 2022 году составит 524,5 тыс. рублей, на второго — 693,1 тыс. рублей, ' +
+        'если семья не получала маткапитал на первого ребенка, и 168,6 тыс. рублей, если его оформляла.',
+      // maximumMaternityCapital:693144,
+      currency:false,
+      materialCapital:0,
+      modal_text:'Вы не можете ввести сумму больше 693 144 рублей. Это максимальная сумма материнского капитала на данный момент.',
+      pop_up:false,
+
+      realtySlider: '', // Слайдер "Стоимость недвижимости"
+      dataField: 0, // Стоимость недвижимости
+      dataFieldForCalculation: 0,
+      subsidies: 0,
+      stepApartment: 1, // Шаг для range инпутов
+      stgMin: 0, // Минимальное значение поля стоимости
+      stgMax: 10000000, // Максимальное значение поля стоимости
+      input_salary:false,
+      start:0
+    }
+  },
+  methods:{
+
+    initRealtySlider() {
+      this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
+        start: [this.start],
+        connect: 'lower',
+        step: this.stepApartment,
+        initial: this.stgMin,
+        range: {
+          min: this.stgMin,
+          max: this.maximumMaternityCapital
+        },
+      });
+      this.realtySlider.on('update', (val,handle) => {
+        this.dataField = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+        this.dataFieldForCalculation = parseInt(val[handle]).toFixed(0)
+      });
     },
+    inputField(event){
+      const element = event.currentTarget
+      let value = element.value
+      value = parseInt(value.replace(/\s/g, ''));
+      if ( event.keyCode == 46 || event.keyCode == 8 || event.keyCode == 9 || event.keyCode == 27 ||
+        // Разрешаем: Ctrl+A
+        (event.keyCode == 65 && event.ctrlKey === true) ||
+        // Разрешаем: home, end, влево, вправо
+        (event.keyCode >= 35 && event.keyCode <= 39)) {
+
+        // Ничего не делаем
+        return;
+      } else {
+        // Запрещаем все, кроме цифр на основной клавиатуре, а так же Num-клавиатуре
+        if ((event.keyCode < 48 || event.keyCode > 57) && (event.keyCode < 96 || event.keyCode > 105 )) {
+          event.preventDefault();
+        }
+      }
+      if(event.keyCode == 13){
+        const parent = element.closest('.js--number-cost')
+        let value = parent.querySelector('input').value
+        value = parseInt(value.replace(/\s/g, ''));
+        this.realtySlider.set(value);
+      }
+      if(value>this.maximumMaternityCapital){
+        event.preventDefault();
+      }
+    },
+    keyUp(e) {
+      const element = e.currentTarget;
+      const parent = element.closest('.js--wr-material-capital')
+      const modal = parent.querySelector('.js--pop-up-abs')
+      let val = parseInt(element.value.replace(/\s/g, ''));
+      if(element.value!==''&&(parseInt(element.value.replace(/\s/g, ''))>=this.stgMin)&&parseInt(element.value.replace(/\s/g, ''))<=this.maximumMaternityCapital){
+        this.realtySlider.set(parseInt(element.value.replace(/\s/g, '')));
+        if(parent.querySelector('.js--pop-up-abs.active')){
+          modal.classList.remove('active')
+        }
+      }
+      else if(parseInt(element.value.replace(/\s/g, ''))>this.maximumMaternityCapital)  {
+        this.realtySlider.set(this.maximumMaternityCapital);
+        if(modal){
+          modal.classList.add('active')
+        }
+      }
+      if (val >= this.limitmaterialcapital && this.limitmaterialcapital<this.maximumMaternityCapital) {
+        this.realtySlider.set(this.limitmaterialcapital);
+      }
+    },
+    inputPast(el){
+      const element = el.currentTarget;
+      let element_val = (el.clipboardData || window.clipboardData).getData('text');
+      if ( element_val.search(/[^0-9]/g) != -1 ) {
+        el.preventDefault();
+      }
+    },
+    inputValue(el){
+      const element = el.currentTarget;
+      let value = element.value
+      value = parseInt(value.replace(/\s/g, ''));
+
+      if(value<this.stgMin)  {
+        this.dataFieldForCalculation = this.stgMin
+        this.realtySlider.set(this.stgMin);
+      }
+    },
+    inputFocus(el){
+      const element = el.currentTarget
+      element.querySelector('input').focus()
+    },
+    calculationPageLoad(param){
+      store.dispatch('ActionMaternalCapital',parseInt(this.dataFieldForCalculation))
+    },
+  },
+  mounted(){
+
+    this.initRealtySlider()
+    store.dispatch('ActionLimitMaternityCapital',this.maximumMaternityCapital)
+    document.addEventListener('click', function(event) {
+
+      const ignoreClickOnMeElement = document.querySelector('.js--material-capital input');
+      const emty_val = ignoreClickOnMeElement.value
+      const isClickInsideElement = ignoreClickOnMeElement.contains(event.target);
+
+      const modal = document.querySelector('.js--pop-up-abs')
+      if(modal){
+        modal.classList.remove('active')
+      }
+    });
+  },
+  computed:{
+    limitmaterialcapital(){
+      return store.getters.LIMITMATERIALCAPITAL
+    },
+    maternal_capital(){
+      return  store.getters.MATERNALCAPITALSHOW
+    }
+  },
+  watch:{
+    limitmaterialcapital(){
+      if(this.limitmaterialcapital<this.maximumMaternityCapital&&this.limitmaterialcapital!==0){
+        this.realtySlider.updateOptions({
+          range: {
+            min: this.stgMin,
+            max: this.limitmaterialcapital
+          }
+        });
+      }
+      else if(this.limitmaterialcapital>this.maximumMaternityCapital){
+        this.realtySlider.updateOptions({
+          range: {
+            min: this.stgMin,
+            max: this.maximumMaternityCapital
+          }
+        });
+      }
+      else if(this.limitmaterialcapital===0){
+        this.$refs.realtyInput.classList.add('unactive')
+      }
+      if(this.limitmaterialcapital!==0&&this.$refs.realtyInput.classList.contains('unactive')){
+        this.$refs.realtyInput.classList.remove('unactive')
+      }
+
+    },
+    dataField(){
+      this.calculationPageLoad()
+    }
+
+  },
+  created(){
+  },
+
+  components:{
+  }
+};
+</script>
+<style scoped>
+</style>
+
+//личные средства
+
+<template>
+  <div class="property-calculator__row property-calculator__several-columns_col margin">
+    <p class="property-calculator__row-label">Личные средства</p>
+    <div class="property-calculator__input-field mortgage-calculator__personal-funds js--personal-funds"
+         @click="inputFocus" ref="realtyInput">
+      <input class="property-calculator__value" inputmode="numeric" placeholder="Введите сумму" type="text"
+         v-model="dataField"
+         @keydown="inputField"
+         @keyup="keyUp"
+         @change="inputValue"
+         @paste="inputPast"/>
+      <div class="range-input__slider" ref="mortgagePrice"></div>
+    </div>
+    <div class="property-calculator__wr-range">
+      <p class="property-calculator__range">{{ stgMin }}</p>
+      <p class="property-calculator__range">{{ String(stgMax).slice(0, 2) }} млн</p>
+    </div>
+  </div>
+</template>
+<script>
+import eventBus from '../eventBus';
+import store from "../store";
+import noUiSlider from 'nouislider';
+export default {
+  name: 'component-personal-funds',
+  props:[],
+  data(){
+    return {
+      currency:false,
+      personalFunds:0,
+      realtySlider: '', // Слайдер "Стоимость недвижимости"
+      dataField: 0, // Стоимость недвижимости
+      dataFieldForCalculation: 0,
+      subsidies: 0,
+      stepApartment: 1, // Шаг для range инпутов
+      stgMin: 0, // Минимальное значение поля стоимости
+      stgMax: 56000000, // Максимальное значение поля стоимости
+      input_salary:false,
+      start:0
+    }
+  },
+  methods:{
+    initRealtySlider() {
+      this.realtySlider = noUiSlider.create(this.$refs.mortgagePrice, {
+        start: [this.start],
+        connect: 'lower',
+        step: this.stepApartment,
+        initial: this.stgMin,
+        range: {
+          min: this.stgMin,
+          max: this.stgMax
+        },
+      });
+      this.realtySlider.on('update', (val,handle) => {
+        this.dataField = parseInt(val[handle]).toFixed(0).toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+        this.dataFieldForCalculation = parseInt(val[handle]).toFixed(0)
+      });
+
+      this.realtySlider.on('end', (val,handle) => {
+
+      });
+
+    },
+    inputField(event){
+      const element = event.currentTarget
+      let value = element.value
+
+      value = parseInt(value.replace(/\s/g, ''));
+      if ( event.keyCode == 46 || event.keyCode == 8 || event.keyCode == 9 || event.keyCode == 27 ||
+        // Разрешаем: Ctrl+A
+        (event.keyCode == 65 && event.ctrlKey === true) ||
+        // Разрешаем: home, end, влево, вправо
+        (event.keyCode >= 35 && event.keyCode <= 39)) {
+
+        // Ничего не делаем
+        return;
+      } else {
+        // Запрещаем все, кроме цифр на основной клавиатуре, а так же Num-клавиатуре
+        if ((event.keyCode < 48 || event.keyCode > 57) && (event.keyCode < 96 || event.keyCode > 105 )) {
+          event.preventDefault();
+        }
+      }
+
+      if(event.keyCode == 13){
+        const parent = element.closest('.js--number-cost')
+        let value = parent.querySelector('input').value
+        value = parseInt(value.replace(/\s/g, ''));
+        this.realtySlider.set(value);
+      }
+      if(value>this.stgMax){
+        event.preventDefault();
+      }
+    },
+
+    keyUp(e){
+      const element = e.currentTarget
+
+      if(element.value!==''&&(parseInt(element.value.replace(/\s/g, ''))>=this.stgMin)&&parseInt(element.value.replace(/\s/g, ''))<=this.stgMax){
+        this.realtySlider.set(parseInt(element.value.replace(/\s/g, '')));
+      }
+
+      else if(parseInt(element.value.replace(/\s/g, ''))>this.stgMax)  {
+        this.realtySlider.set(this.stgMax);
+      }
+
+
+      let val = parseInt(element.value.replace(/\s/g, ''))
+
+      if(val>=this.limitpersonalfunds){
+        e.preventDefault()
+        this.realtySlider.set(this.limitpersonalfunds);
+      }
+    },
+    inputPast(el){
+      const element = el.currentTarget;
+      let element_val = (el.clipboardData || window.clipboardData).getData('text');
+      if ( element_val.search(/[^0-9]/g) != -1 ) {
+        el.preventDefault();
+      }
+    },
+    inputValue(el){
+      const element = el.currentTarget;
+      let value = element.value
+      value = parseInt(value.replace(/\s/g, ''));
+
+      if(value<this.stgMin)  {
+        this.dataFieldForCalculation = this.stgMin
+        this.realtySlider.set(this.stgMin);
+      }
+    },
+
+    inputFocus(el){
+      const element = el.currentTarget
+      element.querySelector('input').focus()
+    },
+    calculationPageLoad(param){
+      store.dispatch('ActionPersonalFunds',parseInt(this.dataFieldForCalculation))
+    },
+  },
+  mounted(){
+    this.initRealtySlider()
+
+  },
+  computed:{
+    limitpersonalfunds(){
+      return store.getters.LIMITPERSONALFUNDS
+    },
+    personalfunds(){
+      return  store.getters.PERSONALFUNDSHOW
+    },
+    checkbox_status(){
+      return store.getters.CHECKBOXSTATUS
+    },
+    initial_fee(){
+      return store.getters.INITIALFEE
+    }
+
+  },
+  watch:{
+    checkbox_status(){
+      if(this.checkbox_status===true){
+        this.realtySlider.set(this.initial_fee);
+      }
+    },
+    limitpersonalfunds(){
+      if(this.limitpersonalfunds!==0){
+        this.realtySlider.updateOptions({
+          range: {
+            min: this.stgMin,
+            max: this.limitpersonalfunds
+          }
+        });
+      }
+      else if(this.limitpersonalfunds===0){
+        this.$refs.realtyInput.classList.add('unactive')
+      }
+      if(this.limitmaterialcapital!==0&&this.$refs.realtyInput.classList.contains('unactive')){
+        this.$refs.realtyInput.classList.remove('unactive')
+      }
+
+    },
+    dataField(){
+      this.calculationPageLoad()
+    }
+  },
+  created(){
+    eventBus.on('eventcheckboxChanged',(el)=>{
+      if(el[1]==false){
+        this.currency=false
+      }
+    })
+  },
+  components:{}
+};
+</script>
+<style scoped>
+</style>
+
+
