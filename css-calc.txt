@@ -1,12 +1,16 @@
- limit_init_fee(newVal){
-        // Защита от ошибки noUiSlider: min и max не могут быть равны
-        const min = this.stgMin;
-        const max = newVal > min ? newVal : min + this.stepApartment;
-        
+limit_init_fee(newVal) {
+        // Если значение стало 0 или меньше (пользователь временно очистил поле),
+        // мы просто игнорируем обновление. Слайдер сохранит свой старый диапазон,
+        // визуального скачка не будет, и ошибки noUiSlider не возникнет.
+        if (newVal <= 0) {
+            return;
+        }
+
+        // Обновляем диапазон только тогда, когда пришло корректное положительное число
         this.realtySlider.updateOptions({
             range: {
-                min: min,
-                max: max
+                min: this.stgMin,
+                max: newVal
             }
         });
     },
