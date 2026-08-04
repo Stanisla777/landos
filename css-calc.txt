@@ -1,24 +1,18 @@
-AddClassBody() {
-      const scrollY = window.scrollY;
+handleOpen(event) {
+  this.modalData = event.detail || {};
+  this.parseDataMethod();
+  
+  this.$nextTick(() => {
+    this.setupEventListeners();
+    
+    // 1. Сначала делаем модалку "существующей" для Vue (но она всё ещё скрыта через CSS opacity: 0)
+    this.showModal = true;
 
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-
-      //Проверяю iOS
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-
-      // Применяем width: 100% ТОЛЬКО для iOS, чтобы не ломать десктоп
-      if (isIOS) {
-        document.body.style.width = '100%';
-      }
-
-
-      document.body.classList.add('body-modal');
-      document.body.classList.add('body-additional-class');
-
-      // Блокирую пружинивание на iOS
-      document.ontouchmove = (e) => {
-        e.preventDefault();
-      };
-    },
+    // 2. Ждём, пока браузер завершит текущий цикл отрисовки DOM
+    requestAnimationFrame(() => {
+      // 3. И только теперь, на следующем кадре, блокируем body.
+      // Браузер уже "знает" о модалке, и фиксация body не вызовет резкого пересчёта вместе с её появлением.
+      this.AddClassBody();
+    });
+  });
+}
