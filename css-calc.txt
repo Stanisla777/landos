@@ -1,9 +1,69 @@
-Возможная причина ошибки. В редких случаях глобальный объект window.beesenderchatconfig может не успевать инициализироваться, либо инициализируется без srcUrl или connectorUrl. Поэтому теперь я в коде бессендера делаю проверки на существование объекта и заполненность свойств. Дополнительно в методах 
-signalRConnection - он регестрирует обработчик событий(отправка сообщений добавление сообщений и так далее)
-и
-connectSignalR - непосоедственный запуск подключений
-добавил в начало if (!this.connectorUrl) return;
-для того, чтобы если будет пустой connectorUrl виджет не пытался подключиться к серверу, и не спамил Zabbix
+/* eslint-disable */
+/* === BESENDER CONFIG WAITER === */
+(function () {
+    var MAX_WAIT = 5000;
+    var INTERVAL = 100;
+    var waited = 0;
+
+    function isConfigReady() {
+        return typeof window.beesenderchatconfig !== 'undefined'
+            && window.beesenderchatconfig !== null
+            && window.beesenderchatconfig.srcUrl
+            && window.beesenderchatconfig.connectorUrl;
+    }
+
+    function startWidget() {
+        /* === ОРИГИНАЛЬНЫЙ КОД НАЧИНАЕТСЯ === */
+
+        (function (e) {
+            var t = {};
+            function n(r) { ... }
+            ...
+        })({
+            0: function (e, t, n) { ... },
+            '56d7': function (e, t, n) {
+                ...
+            }
+        });
+
+        /* === ОРИГИНАЛЬНЫЙ КОД ЗАКАНЧИВАЕТСЯ === */
+    } // конец startWidget
+
+    function waitForConfig() {
+        if (isConfigReady()) {
+            startWidget();
+        } else if (waited < MAX_WAIT) {
+            waited += INTERVAL;
+            setTimeout(waitForConfig, INTERVAL);
+        } else {
+            console.error('[beesender-debug] Config not found after ' + MAX_WAIT + 'ms, starting widget anyway');
+            startWidget();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', waitForConfig);
+    } else {
+        waitForConfig();
+    }
+})();
+/* === END CONFIG WAITER === */
+
+-*----------------------
+
+function logConfigState(label) {
+        var cfg = window.beesenderchatconfig;
+        console.log('[beesender-waiter] ' + label, {
+            waited: waited + 'ms',
+            configExists: typeof cfg !== 'undefined' && cfg !== null,
+            srcUrl: cfg ? cfg.srcUrl : '(config не определён)',
+            connectorUrl: cfg ? cfg.connectorUrl : '(config не определён)',
+            readyState: document.readyState,
+            page: window.location.pathname
+        });
+    }
+
+
 
 
 
