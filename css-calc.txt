@@ -13,21 +13,12 @@
     }
 
     function startWidget() {
-        /* === ОРИГИНАЛЬНЫЙ КОД НАЧИНАЕТСЯ === */
-
-        (function (e) {
-            var t = {};
-            function n(r) { ... }
-            ...
-        })({
-            0: function (e, t, n) { ... },
-            '56d7': function (e, t, n) {
-                ...
-            }
-        });
-
-        /* === ОРИГИНАЛЬНЫЙ КОД ЗАКАНЧИВАЕТСЯ === */
-    } // конец startWidget
+        /* === ОРИГИНАЛЬНЫЙ КОД BESENDER === */
+        ;(function (e) {
+            // ... весь оригинальный код ...
+        })({ /* ... */ });
+        /* === КОНЕЦ ОРИГИНАЛЬНОГО КОДА === */
+    }
 
     function waitForConfig() {
         if (isConfigReady()) {
@@ -36,8 +27,16 @@
             waited += INTERVAL;
             setTimeout(waitForConfig, INTERVAL);
         } else {
-            console.error('[beesender-debug] Config not found after ' + MAX_WAIT + 'ms, starting widget anyway');
-            startWidget();
+            // Конфиг не появился за 10 секунд — НЕ запускаем виджет
+            console.error('[beesender] Config not found after ' + MAX_WAIT + 'ms. Widget NOT started.', {
+                page: window.location.href,
+                configExists: typeof window.beesenderchatconfig !== 'undefined',
+                srcUrl: window.beesenderchatconfig ? window.beesenderchatconfig.srcUrl : '(config не определён)',
+                connectorUrl: window.beesenderchatconfig ? window.beesenderchatconfig.connectorUrl : '(config не определён)',
+                time: new Date().toISOString()
+            });
+            // Можно дополнительно отправить на сервер для мониторинга:
+            // if (window.beesenderOnError) window.beesenderOnError({...});
         }
     }
 
