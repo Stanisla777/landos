@@ -1,32 +1,54 @@
-.parent {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-
-  // 🔹 Ровно 4 блока: 1-й на всю высоту, 3-х во второй колонке
-  &:has(> .item:nth-child(4):last-child) {
-    grid-template-rows: repeat(3, auto); // Явно создаём 3 ряда
-    > .item:nth-child(1) { grid-row: 1 / -1; } // Растягиваем на все 3 ряда
-    > .item:nth-child(n+2) { grid-column: 2; } // Остальные уходят во 2-ю колонку (автоматически встанут в ряды 1,2,3)
-  }
-
-  // 🔹 Ровно 3 блока: 1-й на всю высоту, 2-х во второй колонке
-  &:has(> .item:nth-child(3):last-child) {
-    grid-template-rows: repeat(2, auto); // 2 ряда
-    > .item:nth-child(1) { grid-row: 1 / -1; }
-    > .item:nth-child(n+2) { grid-column: 2; }
-  }
-
-  // 🔹 Ровно 2 блока: стандартная сетка 50/50
-  &:has(> .item:nth-child(2):last-child) {
-    grid-template-rows: auto;
-    > .item:nth-child(1) { grid-column: 1; }
-    > .item:nth-child(2) { grid-column: 2; }
-  }
-
-  // 🔹 1 блок (на всякий случай): 100% ширины
-  &:has(> .item:nth-child(1):last-child) {
-    grid-template-columns: 1fr;
-    > .item { grid-column: 1 / -1; }
-  }
+export default function aboutMap() {
+    const aboutMapItem = document.getElementById('about-map');
+    if (aboutMapItem) {
+        let myMap;
+        // eslint-disable-next-line no-undef
+        ymaps.ready(() => {
+            // Создание карты.
+            // eslint-disable-next-line no-undef
+            myMap = new ymaps.Map('about-map', {
+                // Координаты центра карты.
+                // Порядок по умолчанию: «широта, долгота».
+                // Чтобы не определять координаты центра карты вручную,
+                // воспользуйтесь инструментом Определение координат.
+                center: [55.753301, 37.606263],
+                // Уровень масштабирования. Допустимые значения:
+                // от 0 (весь мир) до 19.
+                zoom: 16
+            });
+            myMap.controls.remove('zoomControl');
+            myMap.controls.remove('searchControl');
+            myMap.controls.remove('trafficControl');
+            myMap.controls.remove('rulerControl');
+            myMap.controls.remove('geolocationControl');
+            myMap.controls.remove('typeSelector');
+            myMap.controls.remove('fullscreenControl');
+            myMap.behaviors.disable('scrollZoom');
+          // eslint-disable-next-line no-undef
+          const layout = ymaps.templateLayoutFactory.createClass('<div class="map-label">'
+            + '<div class="map-label__img">'
+            + '<img width="46" height="46" class="map-icon-img" src="/local/templates/main/img/labe2l.png" alt="">'
+            + '</div>'
+            + '<div class="map-label__die">'
+            + '<p>улица Воздвиженка, 10</p>'
+            + '</div>'
+            + '</div>');
+          // eslint-disable-next-line no-undef
+            const myPlacemark = new ymaps.Placemark([55.753301, 37.606263], {}, {
+              // Опции.
+              // Необходимо указать данный тип макета.
+              iconLayout: layout,
+              // Своё изображение иконки метки.
+              iconImageHref: '/local/templates/main/img/labe2l.png',
+              // Размеры метки.
+              iconImageSize: [46, 46],
+              // Смещение левого верхнего угла иконки относительно
+              // её "ножки" (точки привязки)
+              iconImageOffset: [-20, -50],
+              iconContentOffset: [15, 15],
+            });
+            myMap.geoObjects.add(myPlacemark);
+        });
+    }
 }
+
