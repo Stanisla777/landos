@@ -1,67 +1,61 @@
 export default function aboutMap() {
     const aboutMapItem = document.getElementById('about-map');
     if (aboutMapItem) {
-        let myMap;
-        // eslint-disable-next-line no-undef
-        ymaps.ready(() => {
-            // Создание карты.
+        // 1. Проверяем, загрузился ли API Яндекс.Карт.
+        // Если ymaps нет в глобальной области видимости, просто прерываем функцию.
+        if (typeof ymaps === 'undefined') {
+            console.warn('Яндекс.Карты (ymaps) не загружены. Инициализация карты пропущена.');
+            return;
+        }
+
+        try {
+            let myMap;
             // eslint-disable-next-line no-undef
-            myMap = new ymaps.Map('about-map', {
-                // Координаты центра карты.
-                // Порядок по умолчанию: «широта, долгота».
-                // Чтобы не определять координаты центра карты вручную,
-                // воспользуйтесь инструментом Определение координат.
-                center: [55.753301, 37.606263],
-                // Уровень масштабирования. Допустимые значения:
-                // от 0 (весь мир) до 19.
-                zoom: 16
+            ymaps.ready(() => {
+                // 2. Внутренний try...catch для безопасности выполнения кода внутри коллбэка
+                try {
+                    // Создание карты.
+                    // eslint-disable-next-line no-undef
+                    myMap = new ymaps.Map('about-map', {
+                        center: [55.753301, 37.606263],
+                        zoom: 16
+                    });
+                    
+                    myMap.controls.remove('zoomControl');
+                    myMap.controls.remove('searchControl');
+                    myMap.controls.remove('trafficControl');
+                    myMap.controls.remove('rulerControl');
+                    myMap.controls.remove('geolocationControl');
+                    myMap.controls.remove('typeSelector');
+                    myMap.controls.remove('fullscreenControl');
+                    myMap.behaviors.disable('scrollZoom');
+                    
+                    // eslint-disable-next-line no-undef
+                    const layout = ymaps.templateLayoutFactory.createClass('<div class="map-label">'
+                        + '<div class="map-label__img">'
+                        + '<img width="46" height="46" class="map-icon-img" src="/local/templates/main/img/labe2l.png" alt="">'
+                        + '</div>'
+                        + '<div class="map-label__die">'
+                        + '<p>улица Воздвиженка, 10</p>'
+                        + '</div>'
+                        + '</div>');
+                        
+                    // eslint-disable-next-line no-undef
+                    const myPlacemark = new ymaps.Placemark([55.753301, 37.606263], {}, {
+                        iconLayout: layout,
+                        iconImageHref: '/local/templates/main/img/labe2l.png',
+                        iconImageSize: [46, 46],
+                        iconImageOffset: [-20, -50],
+                        iconContentOffset: [15, 15],
+                    });
+                    
+                    myMap.geoObjects.add(myPlacemark);
+                } catch (innerError) {
+                    console.error('Ошибка внутри ymaps.ready при построении карты:', innerError);
+                }
             });
-            myMap.controls.remove('zoomControl');
-            myMap.controls.remove('searchControl');
-            myMap.controls.remove('trafficControl');
-            myMap.controls.remove('rulerControl');
-            myMap.controls.remove('geolocationControl');
-            myMap.controls.remove('typeSelector');
-            myMap.controls.remove('fullscreenControl');
-            myMap.behaviors.disable('scrollZoom');
-          // eslint-disable-next-line no-undef
-          const layout = ymaps.templateLayoutFactory.createClass('<div class="map-label">'
-            + '<div class="map-label__img">'
-            + '<img width="46" height="46" class="map-icon-img" src="/local/templates/main/img/labe2l.png" alt="">'
-            + '</div>'
-            + '<div class="map-label__die">'
-            + '<p>улица Воздвиженка, 10</p>'
-            + '</div>'
-            + '</div>');
-          // eslint-disable-next-line no-undef
-            const myPlacemark = new ymaps.Placemark([55.753301, 37.606263], {}, {
-              // Опции.
-              // Необходимо указать данный тип макета.
-              iconLayout: layout,
-              // Своё изображение иконки метки.
-              iconImageHref: '/local/templates/main/img/labe2l.png',
-              // Размеры метки.
-              iconImageSize: [46, 46],
-              // Смещение левого верхнего угла иконки относительно
-              // её "ножки" (точки привязки)
-              iconImageOffset: [-20, -50],
-              iconContentOffset: [15, 15],
-            });
-            myMap.geoObjects.add(myPlacemark);
-        });
+        } catch (error) {
+            console.error('Критическая ошибка инициализации ymaps:', error);
+        }
     }
 }
-
-
------------------
-
-Uncaught (in promise) ReferenceError: ymaps is not defined
-    at aboutMap (about-map.js:6:9)
-    at index.js:307:19
-    at Generator.<anonymous> (index.js:2:1)
-    at Generator.next (index.js:2:1)
-    at asyncGeneratorStep (index.js:2:1)
-    at _next (index.js:2:1)
-    at index.js:2:1
-    at new Promise (<anonymous>)
-    at HTMLDocument.<anonymous> (index.js:2:1)
