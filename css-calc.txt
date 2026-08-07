@@ -1,61 +1,21 @@
-export default function aboutMap() {
-    const aboutMapItem = document.getElementById('about-map');
-    if (aboutMapItem) {
-        // 1. Проверяем, загрузился ли API Яндекс.Карт.
-        // Если ymaps нет в глобальной области видимости, просто прерываем функцию.
-        if (typeof ymaps === 'undefined') {
-            console.warn('Яндекс.Карты (ymaps) не загружены. Инициализация карты пропущена.');
-            return;
-        }
+// 🔹 РОВНО 5 БЛОКОВ: 
+  // 1-й блок (лев) = высота 1+2 блоков (прав)
+  // 2-й блок (лев) = высота 3-го блока (прав)
+  &:has(> .item:nth-child(5):last-child) {
+    grid-template-rows: repeat(3, auto);
+    > .item:nth-child(1) { grid-row: 1 / 3; }   // Занимает строки 1 и 2
+    > .item:nth-child(2) { grid-row: 3 / 4; }   // Занимает строку 3
+    > .item:nth-child(n+3) { grid-column: 2; }  // Автоматически встанут в строки 1, 2, 3
+  }
 
-        try {
-            let myMap;
-            // eslint-disable-next-line no-undef
-            ymaps.ready(() => {
-                // 2. Внутренний try...catch для безопасности выполнения кода внутри коллбэка
-                try {
-                    // Создание карты.
-                    // eslint-disable-next-line no-undef
-                    myMap = new ymaps.Map('about-map', {
-                        center: [55.753301, 37.606263],
-                        zoom: 16
-                    });
-                    
-                    myMap.controls.remove('zoomControl');
-                    myMap.controls.remove('searchControl');
-                    myMap.controls.remove('trafficControl');
-                    myMap.controls.remove('rulerControl');
-                    myMap.controls.remove('geolocationControl');
-                    myMap.controls.remove('typeSelector');
-                    myMap.controls.remove('fullscreenControl');
-                    myMap.behaviors.disable('scrollZoom');
-                    
-                    // eslint-disable-next-line no-undef
-                    const layout = ymaps.templateLayoutFactory.createClass('<div class="map-label">'
-                        + '<div class="map-label__img">'
-                        + '<img width="46" height="46" class="map-icon-img" src="/local/templates/main/img/labe2l.png" alt="">'
-                        + '</div>'
-                        + '<div class="map-label__die">'
-                        + '<p>улица Воздвиженка, 10</p>'
-                        + '</div>'
-                        + '</div>');
-                        
-                    // eslint-disable-next-line no-undef
-                    const myPlacemark = new ymaps.Placemark([55.753301, 37.606263], {}, {
-                        iconLayout: layout,
-                        iconImageHref: '/local/templates/main/img/labe2l.png',
-                        iconImageSize: [46, 46],
-                        iconImageOffset: [-20, -50],
-                        iconContentOffset: [15, 15],
-                    });
-                    
-                    myMap.geoObjects.add(myPlacemark);
-                } catch (innerError) {
-                    console.error('Ошибка внутри ymaps.ready при построении карты:', innerError);
-                }
-            });
-        } catch (error) {
-            console.error('Критическая ошибка инициализации ymaps:', error);
-        }
-    }
-}
+  // 🔹 РОВНО 6 БЛОКОВ:
+  // 1-й блок (лев) = высота 1,2,3 блоков (прав)
+  // 2-й блок (лев) = высота 4-го блока (прав)
+  // (в вашем ТЗ было повторение "первый блок...". Сделал логичный сплит 3+1. 
+  //  Если нужно 2+2, см. комментарий ниже 👇)
+  &:has(> .item:nth-child(6):last-child) {
+    grid-template-rows: repeat(4, auto);
+    > .item:nth-child(1) { grid-row: 1 / 4; }   // Занимает строки 1, 2, 3
+    > .item:nth-child(2) { grid-row: 4 / 5; }   // Занимает строку 4
+    > .item:nth-child(n+3) { grid-column: 2; }  // Автоматически встанут в строки 1, 2, 3, 4
+  }
