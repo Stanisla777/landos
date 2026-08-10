@@ -1,72 +1,45 @@
-methods: {
-  initSwiper() {
-    this.destroySwiper();
+updateControls(swiper) {
+  if (!swiper) return;
 
-    if (!this.$refs.swiperContainer || this.flatSlides.length === 0) {
-      return;
-    }
+  this.isBeginning = Boolean(swiper.isBeginning);
 
-    this.swiper = new Swiper(this.$refs.swiperContainer, {
-      slidesPerView: 'auto',
-      spaceBetween: 16,
-      watchOverflow: true,
-      observer: true,
-      observeParents: true,
-      grabCursor: true,
-      keyboard: {
-        enabled: true
-      },
-      on: {
-        slideChange: (swiper) => {
-          this.activeIndex = swiper.activeIndex;
-          this.updateControls(swiper);
-        },
-        resize: (swiper) => {
-          swiper.update();
-          this.updateControls(swiper);
-        },
-        imagesReady: (swiper) => {
-          swiper.update();
-          this.updateControls(swiper);
-        }
-      }
-    });
+  const lastRealSlideIndex = this.flatSlides.length - 1;
 
-    this.activeIndex = this.swiper.activeIndex || 0;
-    this.updateControls(this.swiper);
-  },
-
-  destroySwiper() {
-    if (this.swiper && typeof this.swiper.destroy === 'function') {
-      this.swiper.destroy(true, true);
-    }
-    this.swiper = null;
-  },
-
-  updateControls(swiper) {
-    if (!swiper) return;
-    
-    this.isBeginning = Boolean(swiper.isBeginning);
-    
-    // Последний реальный слайд (не считая пустой слайд-заполнитель)
-    const lastRealSlideIndex = this.flatSlides.length - 1;
-    
-    // Если активный слайд >= последнего реального, то isEnd = true
-    this.isEnd = swiper.activeIndex >= lastRealSlideIndex;
-  },
-
-  nextSlide() {
-    if (!this.swiper) return;
-    
-    // Не листаем, если уже на последнем реальном слайде
-    const lastRealSlideIndex = this.flatSlides.length - 1;
-    if (this.swiper.activeIndex < lastRealSlideIndex) {
-      this.swiper.slideNext();
-    }
-  },
-
-  prevSlide() {
-    if (!this.swiper) return;
-    this.swiper.slidePrev();
+  // Если активный слайд уже последний реальный, то точно конец
+  if (swiper.activeIndex >= lastRealSlideIndex) {
+    this.isEnd = true;
+    return;
   }
+
+  // Проверяем, виден ли последний реальный слайд полностью
+  const lastRealSlide = swiper.slides[lastRealSlideIndex];
+  
+  if (lastRealSlide) {
+    const swiperRect = swiper.el.getBoundingClientRect();
+    const slideRect = lastRealSlide.getBoundingClientRect();
+
+    // Если правый край последнего слайда <= правому краю контейнера,
+    // значит все блоки последнего года видны и листать некуда
+    if (slideRect.right <= swiperRect.right + 1) {
+      this.isEnd = true;
+    } else {
+      this.isEnd = false;
+    }
+  } else {
+    this.isEnd = Boolean(swiper.isEnd);
+  }
+},
+
+nextSlide() {
+  if (!this.swiper) return;
+  
+  // Не листаем, если уже в конце
+  if (!this.isEnd) {
+    this.swiper.slideNext();
+  }
+},
+
+prevSlide() {
+  if (!this.swiper) return;
+  this.swiper.slidePrev();
 }
