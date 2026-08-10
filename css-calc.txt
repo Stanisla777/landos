@@ -1,150 +1,148 @@
-data() {
-  return {
-    swiper: null,
-    activeIndex: 0,
-    isBeginning: true,
-    isEnd: false,
-    history: [
-      {
-        title: '1997',
-        items: [
-          {
-            title: 'создание Консультационного центра ДОМ.РФ',
-            description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
-            picture: '/upload/file.png'
-          }
-        ]
-      },
-      {
-        title: '2008',
-        items: [
-          {
-            title: 'создание Консультационного центра ДОМ.РФ',
-            description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
-            picture: '/upload/file.png'
-          },
-          {
-            title: 'создание Консультационного центра ДОМ.РФ',
-            description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
-            picture: '/upload/file.png'
-          }
-        ]
-      }
-    ]
-  };
-}
-
-----------------
-
 <template>
-  <section class="history-timeline">
-    <template v-if="flatSlides.length">
-      <div v-if="currentYear" class="history-timeline__header">
-        <div class="history-timeline__year">
-          {{ currentYear }}
+  <div class="history__wrapper-slider-arrow-subtitle">
+    <h2 class="h2_subtitle">
+      Развитие ДОМ.РФ — это последовательность решений, которые сформировали текущий масштаб и роль компании
+      на рынке
+    </h2>
+  </div>
+
+  <div class="history__slider">
+
+    <section class="history-timeline">
+      <template v-if="flatSlides.length">
+        <div v-if="currentYear" class="history-timeline__header">
+          <div class="history-timeline__year">
+            {{ currentYear }}
+          </div>
+
+          <div class="history-timeline__track">
+            <span class="history-timeline__dot"></span>
+            <span class="history-timeline__line"></span>
+          </div>
         </div>
 
-        <div class="history-timeline__track">
-          <span class="history-timeline__dot"></span>
-          <span class="history-timeline__line"></span>
-        </div>
-      </div>
-
-      <div
-        ref="swiperContainer"
-        class="swiper-container history-timeline__swiper"
-      >
-        <div class="swiper-wrapper">
-          <div
-            v-for="(slide, index) in flatSlides"
-            :key="`${slide.year}-${index}`"
-            class="swiper-slide history-timeline__slide"
-            :class="{
+        <div
+          ref="swiperContainer"
+          class="swiper-container history-timeline__swiper"
+        >
+          <div class="swiper-wrapper">
+            <div
+              v-for="(slide, index) in flatSlides"
+              :key="`${slide.year}-${index}`"
+              class="swiper-slide history-timeline__slide"
+              :class="{
               'history-timeline__slide--year-first': slide.isFirstInYear,
               'history-timeline__slide--year-last': slide.isLastInYear
             }"
-          >
-            <article class="history-card">
-              <div
-                v-if="slide.picture"
-                class="history-card__image"
-              >
-                <img
-                  :src="slide.picture"
-                  :alt="slide.title || ''"
-                  loading="lazy"
+            >
+              <article class="history-card">
+                <div
+                  v-if="slide.picture"
+                  class="history-card__image"
                 >
-              </div>
+                  <img
+                    :src="slide.picture"
+                    :alt="slide.title || ''"
+                    loading="lazy"
+                  >
+                </div>
 
-              <h3 class="history-card__title">
-                {{ slide.title }}
-              </h3>
+                <h3 class="history-card__title">
+                  {{ slide.title }}
+                </h3>
 
-              <div
-                class="history-card__text"
-                v-html="slide.description"
-              ></div>
-            </article>
+                <div
+                  class="history-card__text"
+                  v-html="slide.description"
+                ></div>
+              </article>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div
-        v-if="flatSlides.length > 1"
-        class="history-timeline__controls"
+        <div
+          v-if="flatSlides.length > 1"
+          class="history-timeline__controls"
+        >
+          <button
+            type="button"
+            class="history-timeline__button"
+            :disabled="isBeginning"
+            @click="prevSlide"
+          >
+            Назад
+          </button>
+
+          <button
+            type="button"
+            class="history-timeline__button"
+            :disabled="isEnd"
+            @click="nextSlide"
+          >
+            Вперёд
+          </button>
+        </div>
+      </template>
+
+      <p
+        v-else
+        class="history-timeline__empty"
       >
-        <button
-          type="button"
-          class="history-timeline__button"
-          :disabled="isBeginning"
-          @click="prevSlide"
-        >
-          Назад
-        </button>
+        История пока не передана.
+      </p>
+    </section>
 
-        <button
-          type="button"
-          class="history-timeline__button"
-          :disabled="isEnd"
-          @click="nextSlide"
-        >
-          Вперёд
-        </button>
-      </div>
-    </template>
 
-    <p
-      v-else
-      class="history-timeline__empty"
-    >
-      История пока не передана.
-    </p>
-  </section>
+
+
+  </div>
+
+
 </template>
 
 <script>
-import Swiper from 'swiper';
-import 'swiper/swiper-bundle.css';
+import Swiper, { Navigation, Pagination } from 'swiper';
+Swiper.use([Navigation, Pagination]);
+let mySwiper;
 
 export default {
-  name: 'HistoryTimeline',
-
-  props: {
-    history: {
-      type: Array,
-      default: () => []
-    }
-  },
-
+  name: "HistoryCompany",
   data() {
     return {
       swiper: null,
       activeIndex: 0,
       isBeginning: true,
-      isEnd: false
+      isEnd: false,
+      history: [
+        {
+          title: '1997',
+          items: [
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: '/upload/file.png'
+            }
+          ]
+        },
+        {
+          title: '2008',
+          items: [
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: '/upload/file.png'
+            },
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: '/upload/file.png'
+            }
+          ]
+        }
+      ]
     };
   },
-
+  //
   computed: {
     flatSlides() {
       if (!Array.isArray(this.history)) {
@@ -272,133 +270,9 @@ export default {
       this.swiper.slidePrev();
     }
   }
-};
+}
 </script>
 
 <style scoped>
-.history-timeline {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 0;
-}
 
-.history-timeline *,
-.history-timeline *::before,
-.history-timeline *::after {
-  box-sizing: border-box;
-}
-
-.history-timeline__header {
-  margin-bottom: 16px;
-}
-
-.history-timeline__year {
-  margin-bottom: 12px;
-  font-size: 32px;
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.history-timeline__track {
-  position: relative;
-  height: 12px;
-}
-
-.history-timeline__dot {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #1f2430;
-  transform: translateY(-50%);
-}
-
-.history-timeline__line {
-  position: absolute;
-  top: 50%;
-  left: 10px;
-  right: 0;
-  height: 1px;
-  background: #1f2430;
-  transform: translateY(-50%);
-}
-
-.history-timeline__swiper {
-  overflow: hidden;
-}
-
-.history-timeline__slide {
-  width: 320px;
-  height: auto;
-}
-
-.history-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 16px;
-  border: 1px solid #d7dbe4;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.history-card__image {
-  margin-bottom: 12px;
-}
-
-.history-card__image img {
-  display: block;
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-}
-
-.history-card__title {
-  margin: 0 0 8px;
-  font-size: 18px;
-  line-height: 1.3;
-}
-
-.history-card__text {
-  font-size: 14px;
-  line-height: 1.45;
-  color: #565b66;
-}
-
-.history-card__text :deep(p) {
-  margin: 0;
-}
-
-.history-timeline__controls {
-  display: flex;
-  gap: 8px;
-  margin-top: 24px;
-}
-
-.history-timeline__button {
-  min-width: 120px;
-  padding: 10px 16px;
-  border: 1px solid #1f2430;
-  background: #ffffff;
-  color: #1f2430;
-  cursor: pointer;
-}
-
-.history-timeline__button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.history-timeline__empty {
-  margin: 0;
-  color: #565b66;
-}
-
-@media (max-width: 767px) {
-  .history-timeline__slide {
-    width: 260px;
-  }
-}
 </style>
