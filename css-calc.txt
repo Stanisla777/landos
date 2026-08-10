@@ -1,45 +1,101 @@
-updateControls(swiper) {
-  if (!swiper) return;
+methods: {
+  initSwiper() {
+    this.destroySwiper();
 
-  this.isBeginning = Boolean(swiper.isBeginning);
+    if (!this.$refs.swiperContainer || this.flatSlides.length === 0) {
+      return;
+    }
 
-  const lastRealSlideIndex = this.flatSlides.length - 1;
+    this.swiper = new Swiper(this.$refs.swiperContainer, {
+      slidesPerView: 'auto',
+      spaceBetween: 16,
+      watchOverflow: true,
+      observer: true,
+      observeParents: true,
+      grabCursor: true,
+      keyboard: {
+        enabled: true
+      },
+      on: {
+        slideChange: (swiper) => {
+          this.activeIndex = swiper.activeIndex;
+          this.updateControls(swiper);
+        },
+        progress: (swiper) => {
+          this.updateControls(swiper);
+        },
+        resize: (swiper) => {
+          swiper.update();
+          this.updateControls(swiper);
+        },
+        imagesReady: (swiper) => {
+          swiper.update();
+          this.updateControls(swiper);
+        }
+      }
+    });
 
-  // Если активный слайд уже последний реальный, то точно конец
-  if (swiper.activeIndex >= lastRealSlideIndex) {
-    this.isEnd = true;
-    return;
-  }
+    this.activeIndex = this.swiper.activeIndex || 0;
+    this.updateControls(this.swiper);
 
-  // Проверяем, виден ли последний реальный слайд полностью
-  const lastRealSlide = swiper.slides[lastRealSlideIndex];
-  
-  if (lastRealSlide) {
-    const swiperRect = swiper.el.getBoundingClientRect();
-    const slideRect = lastRealSlide.getBoundingClientRect();
+    this.$nextTick(() => {
+      if (this.swiper) {
+        this.updateControls(this.swiper);
+      }
+    });
+  },
 
-    // Если правый край последнего слайда <= правому краю контейнера,
-    // значит все блоки последнего года видны и листать некуда
-    if (slideRect.right <= swiperRect.right + 1) {
+  destroySwiper() {
+    if (this.swiper && typeof this.swiper.destroy === 'function') {
+      this.swiper.destroy(true, true);
+    }
+    this.swiper = null;
+  },
+
+  updateControls(swiper) {
+    if (!swiper) return;
+
+    this.isBeginning = Boolean(swiper.isBeginning);
+
+    const lastRealSlideIndex = this.flatSlides.length - 1;
+    const activeSlide = this.flatSlides[swiper.activeIndex];
+    const lastSlide = this.flatSlides[lastRealSlideIndex];
+
+    if (swiper.activeIndex >= lastRealSlideIndex) {
       this.isEnd = true;
+      return;
+    }
+
+    if (activeSlide && lastSlide && activeSlide.year !== lastSlide.year) {
+      this.isEnd = false;
+      return;
+    }
+
+    const lastRealSlide = swiper.slides[lastRealSlideIndex];
+
+    if (lastRealSlide) {
+      const swiperRect = swiper.el.getBoundingClientRect();
+      const slideRect = lastRealSlide.getBoundingClientRect();
+
+      if (slideRect.right <= swiperRect.right + 1) {
+        this.isEnd = true;
+      } else {
+        this.isEnd = false;
+      }
     } else {
       this.isEnd = false;
     }
-  } else {
-    this.isEnd = Boolean(swiper.isEnd);
-  }
-},
+  },
 
-nextSlide() {
-  if (!this.swiper) return;
-  
-  // Не листаем, если уже в конце
-  if (!this.isEnd) {
-    this.swiper.slideNext();
-  }
-},
+  nextSlide() {
+    if (!this.swiper) return;
+    if (!this.isEnd) {
+      this.swiper.slideNext();
+    }
+  },
 
-prevSlide() {
-  if (!this.swiper) return;
-  this.swiper.slidePrev();
+  prevSlide() {
+    if (!this.swiper) return;
+    this.swiper.slidePrev();
+  }
 }
