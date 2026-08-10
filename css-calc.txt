@@ -20,18 +20,30 @@
               class="swiper-slide history-timeline__slide"
             >
               <div class="history-slide-wrapper">
-                <!-- Год и линия рендерятся ТОЛЬКО в первой карточке года -->
-                <div
-                  v-if="slide.isFirstInYear"
-                  class="history-slide__header"
-                >
-                  <div class="history-slide__year">
+                <div class="history-slide__header">
+                  <!-- Год и точка только в первой карточке года -->
+                  <div
+                    v-if="slide.isFirstInYear"
+                    class="history-slide__year"
+                  >
                     {{ slide.year }}
                   </div>
 
                   <div class="history-slide__track">
-                    <span class="history-slide__dot"></span>
-                    <span class="history-slide__line"></span>
+                    <span
+                      v-if="slide.isFirstInYear"
+                      class="history-slide__dot"
+                    ></span>
+
+                    <span
+                      class="history-slide__line"
+                      :class="{
+                        'history-slide__line--first': slide.isFirstInYear,
+                        'history-slide__line--middle': !slide.isFirstInYear && !slide.isLastInYear,
+                        'history-slide__line--last': slide.isLastInYear && !slide.isFirstInYear,
+                        'history-slide__line--single': slide.isFirstInYear && slide.isLastInYear
+                      }"
+                    ></span>
                   </div>
                 </div>
 
@@ -58,6 +70,9 @@
                 </article>
               </div>
             </div>
+
+            <!-- Пустой слайд-заполнитель для прижатия последнего года к левому краю -->
+            <div class="swiper-slide history-timeline__slide history-timeline__slide--spacer"></div>
           </div>
         </div>
 
@@ -156,7 +171,7 @@ export default {
       ]
     };
   },
-  
+
   computed: {
     flatSlides() {
       if (!Array.isArray(this.history)) {
@@ -173,7 +188,8 @@ export default {
             title: item.title || '',
             description: item.description || '',
             picture: item.picture || '',
-            isFirstInYear: index === 0
+            isFirstInYear: index === 0,
+            isLastInYear: index === items.length - 1
           });
         });
 
@@ -288,19 +304,23 @@ export default {
   flex-shrink: 0;
 }
 
-.history-slide-wrapper {
-  position: relative;
-  padding-top: 60px; /* Место для года и линии */
+/* Пустой слайд-заполнитель */
+.history-timeline__slide--spacer {
+  width: 100vw;
+  pointer-events: none;
 }
 
-/* Год и линия позиционируются абсолютно над карточкой */
+.history-slide-wrapper {
+  position: relative;
+  padding-top: 60px;
+}
+
 .history-slide__header {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 60px;
-  margin-bottom: 16px;
 }
 
 .history-slide__year {
@@ -324,16 +344,40 @@ export default {
   border-radius: 50%;
   background: #1f2430;
   transform: translateY(-50%);
+  z-index: 2;
 }
 
 .history-slide__line {
   position: absolute;
   top: 50%;
-  left: 10px;
-  right: 0;
   height: 1px;
   background: #1f2430;
   transform: translateY(-50%);
+  z-index: 1;
+}
+
+/* Первая карточка года (не единственная): линия от точки до правого края + 16px */
+.history-slide__line--first {
+  left: 10px;
+  right: -16px;
+}
+
+/* Средняя карточка года: линия от левого края до правого края + 16px */
+.history-slide__line--middle {
+  left: 0;
+  right: -16px;
+}
+
+/* Последняя карточка года (не первая): линия от левого края до правого края */
+.history-slide__line--last {
+  left: 0;
+  right: 0;
+}
+
+/* Единственная карточка года: линия от точки до правого края */
+.history-slide__line--single {
+  left: 10px;
+  right: 0;
 }
 
 .history-card {
