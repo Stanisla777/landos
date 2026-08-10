@@ -1,448 +1,72 @@
-<template>
-  <div class="history__wrapper-slider-arrow-subtitle">
-    <h2 class="h2_subtitle">
-      Развитие ДОМ.РФ — это последовательность решений, которые сформировали текущий масштаб и роль компании
-      на рынке
-    </h2>
-  </div>
-
-  <div class="history__slider">
-    <section class="history-timeline">
-      <template v-if="flatSlides.length">
-        <div
-          ref="swiperContainer"
-          class="swiper-container history-timeline__swiper"
-        >
-          <div class="swiper-wrapper">
-            <div
-              v-for="(slide, index) in flatSlides"
-              :key="`${slide.year}-${index}`"
-              class="swiper-slide history-timeline__slide"
-            >
-              <div class="history-slide-wrapper">
-                <div class="history-slide__header">
-                  <!-- Год и точка только в первой карточке года -->
-                  <div
-                    :class="slide.isFirstInYear ? 'visible' : 'not-visible'"
-                    class="history-slide__year"
-                  >
-                    {{ slide.year }}
-                  </div>
-
-                  <div class="history-slide__track">
-                    <span
-                      v-if="slide.isFirstInYear"
-                      class="history-slide__dot"
-                    ></span>
-
-                    <span
-                      class="history-slide__line"
-                      :class="{
-                        'history-slide__line--first': slide.isFirstInYear,
-                        'history-slide__line--middle': !slide.isFirstInYear && !slide.isLastInYear,
-                        'history-slide__line--last': slide.isLastInYear && !slide.isFirstInYear,
-                        'history-slide__line--single': slide.isFirstInYear && slide.isLastInYear
-                      }"
-                    ></span>
-                  </div>
-                </div>
-
-                <article class="history-card">
-                  <div
-                    v-if="slide.picture"
-                    class="history-card__image"
-                  >
-                    <img
-                      :src="slide.picture"
-                      :alt="slide.title || ''"
-                      loading="lazy"
-                    >
-                  </div>
-
-                  <h3 class="history-card__title">
-                    {{ slide.title }}
-                  </h3>
-
-                  <div
-                    class="history-card__text"
-                    v-html="slide.description"
-                  ></div>
-                </article>
-              </div>
-            </div>
-
-            <!-- Пустой слайд-заполнитель для прижатия последнего года к левому краю -->
-            <div class="swiper-slide history-timeline__slide history-timeline__slide--spacer"></div>
-          </div>
-        </div>
-
-        <div
-          v-if="flatSlides.length > 1"
-          class="history-timeline__controls"
-        >
-          <button
-            type="button"
-            class="history-timeline__button"
-            :disabled="isBeginning"
-            @click="prevSlide"
-          >
-            Назад
-          </button>
-
-          <button
-            type="button"
-            class="history-timeline__button"
-            :disabled="isEnd"
-            @click="nextSlide"
-          >
-            Вперёд
-          </button>
-        </div>
-      </template>
-
-      <p
-        v-else
-        class="history-timeline__empty"
-      >
-        История пока не передана.
-      </p>
-    </section>
-  </div>
-</template>
-
-<script>
-import Swiper, { Navigation, Pagination } from 'swiper';
-Swiper.use([Navigation, Pagination]);
-
-export default {
-  name: "HistoryCompany",
-  data() {
-    return {
-      swiper: null,
-      activeIndex: 0,
-      isBeginning: true,
-      isEnd: false,
-      history: [
-        {
-          title: '1997',
-          items: [
-            {
-              title: 'создание Консультационного центра ДОМ.РФ',
-              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
-              picture: '/upload/file.png'
-            }
-          ]
-        },
-        {
-          title: '2008',
-          items: [
-            {
-              title: 'создание Консультационного центра ДОМ.РФ',
-              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
-              picture: '/upload/file.png'
-            },
-            {
-              title: 'создание Консультационного центра ДОМ.РФ',
-              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
-              picture: '/upload/file.png'
-            }
-          ]
-        },
-        {
-          title: '2021',
-          items: [
-            {
-              title: 'создание Консультационного центра ДОМ.РФ',
-              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
-              picture: '/upload/file.png'
-            },
-            {
-              title: 'создание Консультационного центра ДОМ.РФ',
-              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
-              picture: '/upload/file.png'
-            },
-            {
-              title: 'создание Консультационного центра ДОМ.РФ',
-              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
-              picture: '/upload/file.png'
-            }
-          ]
-        }
-      ]
-    };
-  },
-
-  computed: {
-    flatSlides() {
-      if (!Array.isArray(this.history)) {
-        return [];
-      }
-
-      return this.history.reduce((acc, year) => {
-        const yearTitle = year && year.title !== undefined ? String(year.title) : '';
-        const items = Array.isArray(year.items) ? year.items : [];
-
-        items.forEach((item, index) => {
-          acc.push({
-            year: yearTitle,
-            title: item.title || '',
-            description: item.description || '',
-            picture: item.picture || '',
-            isFirstInYear: index === 0,
-            isLastInYear: index === items.length - 1
-          });
-        });
-
-        return acc;
-      }, []);
-    }
-  },
-
-  watch: {
-    history: {
-      deep: true,
-      handler() {
-        this.activeIndex = 0;
-        this.$nextTick(() => {
-          this.initSwiper();
-        });
-      }
-    }
-  },
-
-  mounted() {
-    this.$nextTick(() => {
-      this.initSwiper();
-    });
-  },
-
-  beforeUnmount() {
+methods: {
+  initSwiper() {
     this.destroySwiper();
+
+    if (!this.$refs.swiperContainer || this.flatSlides.length === 0) {
+      return;
+    }
+
+    this.swiper = new Swiper(this.$refs.swiperContainer, {
+      slidesPerView: 'auto',
+      spaceBetween: 16,
+      watchOverflow: true,
+      observer: true,
+      observeParents: true,
+      grabCursor: true,
+      keyboard: {
+        enabled: true
+      },
+      on: {
+        slideChange: (swiper) => {
+          this.activeIndex = swiper.activeIndex;
+          this.updateControls(swiper);
+        },
+        resize: (swiper) => {
+          swiper.update();
+          this.updateControls(swiper);
+        },
+        imagesReady: (swiper) => {
+          swiper.update();
+          this.updateControls(swiper);
+        }
+      }
+    });
+
+    this.activeIndex = this.swiper.activeIndex || 0;
+    this.updateControls(this.swiper);
   },
 
-  methods: {
-    initSwiper() {
-      this.destroySwiper();
-
-      if (!this.$refs.swiperContainer || this.flatSlides.length === 0) {
-        return;
-      }
-
-      this.swiper = new Swiper(this.$refs.swiperContainer, {
-        slidesPerView: 'auto',
-        spaceBetween: 16,
-        watchOverflow: true,
-        observer: true,
-        observeParents: true,
-        grabCursor: true,
-        keyboard: {
-          enabled: true
-        },
-        on: {
-          slideChange: (swiper) => {
-            this.activeIndex = swiper.activeIndex;
-            this.updateControls(swiper);
-          },
-          resize: (swiper) => {
-            swiper.update();
-            this.updateControls(swiper);
-          },
-          imagesReady: (swiper) => {
-            swiper.update();
-            this.updateControls(swiper);
-          }
-        }
-      });
-
-      this.activeIndex = this.swiper.activeIndex || 0;
-      this.updateControls(this.swiper);
-    },
-
-    destroySwiper() {
-      if (this.swiper && typeof this.swiper.destroy === 'function') {
-        this.swiper.destroy(true, true);
-      }
-      this.swiper = null;
-    },
-
-    updateControls(swiper) {
-      if (!swiper) return;
-      this.isBeginning = Boolean(swiper.isBeginning);
-      this.isEnd = Boolean(swiper.isEnd);
-    },
-
-    nextSlide() {
-      if (this.swiper) this.swiper.slideNext();
-    },
-
-    prevSlide() {
-      if (this.swiper) this.swiper.slidePrev();
+  destroySwiper() {
+    if (this.swiper && typeof this.swiper.destroy === 'function') {
+      this.swiper.destroy(true, true);
     }
-  }
-}
-</script>
+    this.swiper = null;
+  },
 
-.history-timeline {
-  //max-width: 1200px;
-  //margin: 0 auto;
-  //padding: 24px 0;
-}
+  updateControls(swiper) {
+    if (!swiper) return;
+    
+    this.isBeginning = Boolean(swiper.isBeginning);
+    
+    // Последний реальный слайд (не считая пустой слайд-заполнитель)
+    const lastRealSlideIndex = this.flatSlides.length - 1;
+    
+    // Если активный слайд >= последнего реального, то isEnd = true
+    this.isEnd = swiper.activeIndex >= lastRealSlideIndex;
+  },
 
-.history-timeline *,
-.history-timeline *::before,
-.history-timeline *::after {
-  box-sizing: border-box;
-}
+  nextSlide() {
+    if (!this.swiper) return;
+    
+    // Не листаем, если уже на последнем реальном слайде
+    const lastRealSlideIndex = this.flatSlides.length - 1;
+    if (this.swiper.activeIndex < lastRealSlideIndex) {
+      this.swiper.slideNext();
+    }
+  },
 
-
-.history-timeline__slide {
-  width: 320px;
-  flex-shrink: 0;
-}
-
-/* Пустой слайд-заполнитель */
-.history-timeline__slide--spacer {
-  width: 100vw;
-  pointer-events: none;
-}
-
-.history-slide-wrapper {
-  position: relative;
-  padding-top: 60px;
-}
-
-.history-slide__header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-}
-
-.history-slide__year {
-  margin-bottom: 12px;
-  font-size: 32px;
-  font-weight: 600;
-  line-height: 1.1;
-  &.not-visible{
-    opacity:0;
-  }
-}
-
-.history-slide__track {
-  position: relative;
-  height: 12px;
-}
-
-.history-slide__dot {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #1f2430;
-  transform: translateY(-50%);
-  z-index: 2;
-}
-
-.history-slide__line {
-  position: absolute;
-  top: 50%;
-  height: 1px;
-  background: #1f2430;
-  transform: translateY(-50%);
-  z-index: 1;
-}
-
-/* Первая карточка года (не единственная): линия от точки до правого края + 16px */
-.history-slide__line--first {
-  left: 10px;
-  right: -16px;
-}
-
-/* Средняя карточка года: линия от левого края до правого края + 16px */
-.history-slide__line--middle {
-  left: 0;
-  right: -16px;
-}
-
-/* Последняя карточка года (не первая): линия от левого края до правого края */
-.history-slide__line--last {
-  left: 0;
-  right: 0;
-}
-
-/* Единственная карточка года: линия от точки до правого края */
-.history-slide__line--single {
-  left: 10px;
-  right: 0;
-}
-
-.history-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 16px;
-  border: 1px solid #d7dbe4;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.history-card__image {
-  margin-bottom: 12px;
-}
-
-.history-card__image img {
-  display: block;
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-}
-
-.history-card__title {
-  margin: 0 0 8px;
-  font-size: 18px;
-  line-height: 1.3;
-}
-
-.history-card__text {
-  font-size: 14px;
-  line-height: 1.45;
-  color: #565b66;
-}
-
-.history-card__text :deep(p) {
-  margin: 0;
-}
-
-.history-timeline__controls {
-  display: flex;
-  gap: 8px;
-  margin-top: 24px;
-}
-
-.history-timeline__button {
-  min-width: 120px;
-  padding: 10px 16px;
-  border: 1px solid #1f2430;
-  background: #ffffff;
-  color: #1f2430;
-  cursor: pointer;
-}
-
-.history-timeline__button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.history-timeline__empty {
-  margin: 0;
-  color: #565b66;
-}
-
-@media (max-width: 767px) {
-  .history-timeline__slide {
-    width: 260px;
+  prevSlide() {
+    if (!this.swiper) return;
+    this.swiper.slidePrev();
   }
 }
