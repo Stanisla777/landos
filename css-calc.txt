@@ -9,49 +9,54 @@
   <div class="history__slider">
     <section class="history-timeline">
       <template v-if="flatSlides.length">
-        <div class="history-timeline__header">
-          <div class="history-timeline__year">
-            {{ currentYear }}
-          </div>
-
-          <div class="history-timeline__track">
-            <span class="history-timeline__dot"></span>
-            <span class="history-timeline__line"></span>
-          </div>
-        </div>
-
         <div
           ref="swiperContainer"
           class="swiper-container history-timeline__swiper"
         >
           <div class="swiper-wrapper">
-            <!-- Перебираем ПЛОСКИЙ массив карточек -->
             <div
               v-for="(slide, index) in flatSlides"
               :key="`${slide.year}-${index}`"
               class="swiper-slide history-timeline__slide"
             >
-              <article class="history-card">
+              <div class="history-slide-wrapper">
+                <!-- Год и линия рендерятся ТОЛЬКО в первой карточке года -->
                 <div
-                  v-if="slide.picture"
-                  class="history-card__image"
+                  v-if="slide.isFirstInYear"
+                  class="history-slide__header"
                 >
-                  <img
-                    :src="slide.picture"
-                    :alt="slide.title || ''"
-                    loading="lazy"
-                  >
+                  <div class="history-slide__year">
+                    {{ slide.year }}
+                  </div>
+
+                  <div class="history-slide__track">
+                    <span class="history-slide__dot"></span>
+                    <span class="history-slide__line"></span>
+                  </div>
                 </div>
 
-                <h3 class="history-card__title">
-                  {{ slide.title }}
-                </h3>
+                <article class="history-card">
+                  <div
+                    v-if="slide.picture"
+                    class="history-card__image"
+                  >
+                    <img
+                      :src="slide.picture"
+                      :alt="slide.title || ''"
+                      loading="lazy"
+                    >
+                  </div>
 
-                <div
-                  class="history-card__text"
-                  v-html="slide.description"
-                ></div>
-              </article>
+                  <h3 class="history-card__title">
+                    {{ slide.title }}
+                  </h3>
+
+                  <div
+                    class="history-card__text"
+                    v-html="slide.description"
+                  ></div>
+                </article>
+              </div>
             </div>
           </div>
         </div>
@@ -153,7 +158,6 @@ export default {
   },
   
   computed: {
-    // Плоский массив всех карточек
     flatSlides() {
       if (!Array.isArray(this.history)) {
         return [];
@@ -168,18 +172,13 @@ export default {
             year: yearTitle,
             title: item.title || '',
             description: item.description || '',
-            picture: item.picture || ''
+            picture: item.picture || '',
+            isFirstInYear: index === 0
           });
         });
 
         return acc;
       }, []);
-    },
-
-    // Год = год АКТИВНОЙ КАРТОЧКИ
-    currentYear() {
-      const activeSlide = this.flatSlides[this.activeIndex];
-      return activeSlide ? activeSlide.year : '';
     }
   },
 
@@ -280,23 +279,43 @@ export default {
   box-sizing: border-box;
 }
 
-.history-timeline__header {
+.history-timeline__swiper {
+  overflow: visible;
+}
+
+.history-timeline__slide {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.history-slide-wrapper {
+  position: relative;
+  padding-top: 60px; /* Место для года и линии */
+}
+
+/* Год и линия позиционируются абсолютно над карточкой */
+.history-slide__header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
   margin-bottom: 16px;
 }
 
-.history-timeline__year {
+.history-slide__year {
   margin-bottom: 12px;
   font-size: 32px;
   font-weight: 600;
   line-height: 1.1;
 }
 
-.history-timeline__track {
+.history-slide__track {
   position: relative;
   height: 12px;
 }
 
-.history-timeline__dot {
+.history-slide__dot {
   position: absolute;
   top: 50%;
   left: 0;
@@ -307,7 +326,7 @@ export default {
   transform: translateY(-50%);
 }
 
-.history-timeline__line {
+.history-slide__line {
   position: absolute;
   top: 50%;
   left: 10px;
@@ -315,15 +334,6 @@ export default {
   height: 1px;
   background: #1f2430;
   transform: translateY(-50%);
-}
-
-.history-timeline__swiper {
-  overflow: hidden;
-}
-
-.history-timeline__slide {
-  width: 320px; /* Фиксированная ширина карточки */
-  flex-shrink: 0; /* Чтобы карточки не сжимались */
 }
 
 .history-card {
