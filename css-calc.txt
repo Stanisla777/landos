@@ -21,7 +21,6 @@
             >
               <div class="history-slide-wrapper">
                 <div class="history-slide__header">
-                  <!-- Год и точка только в первой карточке года -->
                   <div
                     v-if="slide.isFirstInYear"
                     class="history-slide__year"
@@ -38,7 +37,7 @@
                     <span
                       class="history-slide__line"
                       :class="{
-                        'history-slide__line--first': slide.isFirstInYear,
+                        'history-slide__line--first': slide.isFirstInYear && !slide.isLastInYear,
                         'history-slide__line--middle': !slide.isFirstInYear && !slide.isLastInYear,
                         'history-slide__line--last': slide.isLastInYear && !slide.isFirstInYear,
                         'history-slide__line--single': slide.isFirstInYear && slide.isLastInYear
@@ -71,7 +70,7 @@
               </div>
             </div>
 
-            <!-- Пустой слайд-заполнитель для прижатия последнего года к левому краю -->
+            <!-- Пустой слайд-заполнитель -->
             <div class="swiper-slide history-timeline__slide history-timeline__slide--spacer"></div>
           </div>
         </div>
@@ -230,7 +229,7 @@ export default {
 
       this.swiper = new Swiper(this.$refs.swiperContainer, {
         slidesPerView: 'auto',
-        spaceBetween: 16,
+        spaceBetween: 0, // Убираем spaceBetween, отступы задаём через padding
         watchOverflow: true,
         observer: true,
         observeParents: true,
@@ -295,43 +294,48 @@ export default {
   box-sizing: border-box;
 }
 
-.history-timeline__swiper {
-  overflow: visible;
-}
-
 .history-timeline__slide {
-  width: 320px;
+  width: 336px; /* 320px карточка + 16px отступ */
+  padding-right: 16px; /* Отступ между карточками */
   flex-shrink: 0;
 }
 
 /* Пустой слайд-заполнитель */
 .history-timeline__slide--spacer {
   width: 100vw;
+  padding-right: 0;
   pointer-events: none;
 }
 
 .history-slide-wrapper {
   position: relative;
-  padding-top: 60px;
+  padding-top: 60px; /* Место для года и линии */
 }
 
 .history-slide__header {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
+  right: 16px; /* Учитываем padding-right слайда */
   height: 60px;
 }
 
+/* Год позиционируем абсолютно, чтобы не влиял на поток */
 .history-slide__year {
-  margin-bottom: 12px;
+  position: absolute;
+  top: 0;
+  left: 0;
   font-size: 32px;
   font-weight: 600;
   line-height: 1.1;
 }
 
+/* Линия всегда на одной высоте */
 .history-slide__track {
-  position: relative;
+  position: absolute;
+  top: 44px; /* Фиксированная позиция линии */
+  left: 0;
+  right: -16px; /* Выходим за пределы карточки на padding-right */
   height: 12px;
 }
 
@@ -356,16 +360,16 @@ export default {
   z-index: 1;
 }
 
-/* Первая карточка года (не единственная): линия от точки до правого края + 16px */
+/* Первая карточка года (не единственная): линия от точки до правого края */
 .history-slide__line--first {
   left: 10px;
-  right: -16px;
+  right: 0;
 }
 
-/* Средняя карточка года: линия от левого края до правого края + 16px */
+/* Средняя карточка года: линия от левого края до правого края */
 .history-slide__line--middle {
   left: 0;
-  right: -16px;
+  right: 0;
 }
 
 /* Последняя карточка года (не первая): линия от левого края до правого края */
@@ -444,7 +448,7 @@ export default {
 
 @media (max-width: 767px) {
   .history-timeline__slide {
-    width: 260px;
+    width: 276px; /* 260px карточка + 16px отступ */
   }
 }
 </style>
