@@ -1,20 +1,30 @@
- on: {
-    slideChange: (swiper) => {
-      this.activeIndex = swiper.activeIndex;
-      // Обновляем сразу для случаев без анимации
-      this.updateControls(swiper);
-    },
-    transitionEnd: (swiper) => {
-      // Обновляем после завершения анимации,
-      // чтобы getBoundingClientRect вернул финальные значения
-      this.updateControls(swiper);
-    },
-    resize: (swiper) => {
-      swiper.update();
-      this.updateControls(swiper);
-    },
-    imagesReady: (swiper) => {
-      swiper.update();
-      this.updateControls(swiper);
+updateControls(swiper) {
+  if (!swiper) return;
+
+  this.isBeginning = Boolean(swiper.isBeginning);
+
+  const lastRealSlideIndex = this.flatSlides.length - 1;
+  const activeSlide = this.flatSlides[swiper.activeIndex];
+  const lastSlide = this.flatSlides[lastRealSlideIndex];
+
+  if (swiper.activeIndex >= lastRealSlideIndex) {
+    this.isEnd = true;
+  } else if (activeSlide && lastSlide && activeSlide.year !== lastSlide.year) {
+    this.isEnd = false;
+  } else {
+    const lastRealSlide = swiper.slides[lastRealSlideIndex];
+
+    if (lastRealSlide) {
+      const swiperRect = swiper.el.getBoundingClientRect();
+      const slideRect = lastRealSlide.getBoundingClientRect();
+
+      this.isEnd = slideRect.right <= swiperRect.right + 1;
+    } else {
+      this.isEnd = false;
     }
   }
+
+  // Блокируем свайп мышкой и пальцем
+  swiper.allowSlideNext = !this.isEnd;
+  swiper.allowSlidePrev = !this.isBeginning;
+}
