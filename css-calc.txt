@@ -1,11 +1,462 @@
-this.handleResize = this.debounce(() => {
-  if (!this.swiper) return;
+<template>
+  <div class="flex-container-h2 m-b-16">
+    <h2 class="h2_title m-b-16">{{objectHistory.title}}</h2>
+  </div>
+  <div class="history-timeline__wr-arrow-subtitle">
+    <h2 class="h2_subtitle">{{objectHistory.subtitle}}</h2>
+    <div
+      v-if="flatSlides.length > 1"
+      class="history-timeline__controls"
+    >
 
-  // Принудительный пересчёт размеров и слайдов
-  this.swiper.updateSize();
-  this.swiper.updateSlides();
-  this.swiper.updateProgress();
-  this.swiper.update();
+      <ds-button
+        class="history-timeline__button-prev"
+        :variant="'secondary'"
+        :size="'large'"
+        :disabled="isBeginning"
+        :loading="false"
+        :rounded="false"
+        :block="false"
+        :dark-mode="false"
+        :arrow="false"
+        :icon="'icon-only'"
+        @click="prevSlide"
+      />
 
-  this.updateControls(this.swiper);
-}, 300); // увеличиваем задержку до 300ms
+      <ds-button
+        :variant="'secondary'"
+        :size="'large'"
+        :disabled="isEnd"
+        :loading="false"
+        :rounded="false"
+        :block="false"
+        :dark-mode="false"
+        :arrow="false"
+        :icon="'icon-only'"
+        @click="nextSlide"
+      />
+    </div>
+  </div>
+
+  <div class="history-timeline__slider history-timeline__slide-one-height"
+       :class="isEnd ? 'isEnd' : ''">
+    <template v-if="flatSlides.length">
+      <div
+        ref="swiperContainer"
+        class="swiper-container"
+      >
+        <div class="swiper-wrapper">
+          <div
+            v-for="(slide, index) in flatSlides"
+            :key="`${slide.year}-${index}`"
+            class="swiper-slide history-timeline__slide"
+            :class="slide?.picture==='' ? 'not-picture' : 'with-picture'"
+          >
+            <div class="history-timeline__wrapper">
+              <div class="history-timeline__header">
+                <!-- Год и точка только в первой карточке года -->
+                <div
+                  :class="slide.isFirstInYear ? 'visible' : 'not-visible'"
+                  class="history-timeline__year"
+                >
+                  {{ slide.year }}
+                </div>
+
+                <div class="history-timeline__track">
+                  <span
+                    v-if="slide.isFirstInYear"
+                    class="history-timeline__dot"
+                  ></span>
+
+                  <span
+                    class="history-timeline__line"
+                    :class="{
+                      'history-timeline__line--first': slide.isFirstInYear,
+                      'history-timeline__line--middle': !slide.isFirstInYear && !slide.isLastInYear,
+                      'history-timeline__line--last': slide.isLastInYear && !slide.isFirstInYear,
+                      'history-timeline__line--single': slide.isFirstInYear && slide.isLastInYear
+                    }"
+                  ></span>
+                </div>
+              </div>
+
+              <!--Карточка без картинки-->
+              <div class="history-timeline__card" v-if="slide?.picture===''">
+                <div class="history-timeline__body">
+                  <h3 class="history-timeline__title">
+                    {{ slide.title }}
+                  </h3>
+                  <div class="history-timeline__description" v-html="slide.description"></div>
+                </div>
+              </div>
+
+              <!--Карточка с картинкой-->
+              <div class="history-timeline__card" v-if="slide?.picture!==''">
+                <div class="history-timeline__body">
+                  <h3 class="history-timeline__title">
+                    {{ slide.title }}
+                  </h3>
+
+                  <div
+                    class="history-timeline__description"
+                    v-html="slide.description"
+                  ></div>
+                </div>
+
+                <div
+                  v-if="slide.picture"
+                  class="history-timeline__image"
+                >
+                  <img
+                    :src="slide.picture"
+                    :alt="slide.title || ''"
+                    loading="lazy"
+                  >
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Пустой слайд-заполнитель для прижатия последнего года к левому краю -->
+<!--          <div class="swiper-slide history-timeline__slide history-timeline__slide&#45;&#45;spacer"></div>-->
+        </div>
+      </div>
+
+    </template>
+
+  </div>
+</template>
+
+<script>
+import Swiper, { Navigation, Pagination } from 'swiper';
+Swiper.use([Navigation, Pagination]);
+import { DsButton } from '@ringsites/ui-components/DsButton';
+
+export default {
+  name: "HistoryCompany",
+  props: {
+    instanceId: {
+      type: String,
+      required: true
+    },
+    arrayHistory: {
+      type: [Object, String],
+      default: () => ({}),
+      validator: (value) => {
+        // Если объект
+        if (typeof value === 'object' && value !== null) return true;
+        // Если строка — распарсю
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return typeof parsed === 'object' && parsed !== null; //
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      },
+    },
+  },
+  data() {
+    return {
+      swiper: null,
+      activeIndex: 0,
+      isBeginning: true,
+      isEnd: false,
+      objectHistory: {
+        'title' : 'История развития',
+        'subtitle' : 'Развитие ДОМ.РФ — это последовательность решений, которые сформировали текущий масштаб и роль компании на рынке',
+        'years': [
+          {
+          'title': '1197',
+          'items': [
+            {
+              'title': 'создание Консультационного центра ДОМ.РФ',
+              'description': '<p>Ежегодный просветительский проект</p>',
+              'picture': 'img/img-bunner-new.webp'
+            },
+            {
+              'title': 'создание Консультационного центра ДОМ.РФ',
+              'description': '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              'picture': ''
+            }
+          ]
+        },
+          {
+            'title': '2008',
+            'items': [
+              {
+                'title': 'создание Консультационного центра ДОМ.РФ',
+                'description': '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+                'picture': ''
+              },
+              {
+                'title': 'создание Консультационного центра ДОМ.РФ',
+                'description': '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+                'picture': ''
+              }
+            ]
+          },
+        ]
+      },
+
+      // objectHistory:{},
+
+      history: [
+        {
+          title: '1997',
+          items: [
+            {
+              title: 'Создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: ''
+            },
+            {
+              title: 'Создание центра',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: ''
+            },
+
+          ]
+        },
+        {
+          title: '2008',
+          items: [
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный <a href="#">просветительский проект</a> по финансовой грамотности в жилищной сфере</p>',
+              picture: 'img/img-bunner-new.webp'
+            },
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский</p>',
+              picture: 'img/img-bunner-new.webp'
+            }
+          ]
+        },
+        {
+          title: '2021',
+          items: [
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: 'img/img-bunner-new.webp'
+            },
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: ''
+            },
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: ''
+            }
+
+          ]
+        }
+      ]
+    };
+  },
+
+  methods: {
+    parseHistoryArray(data) {
+      if (!data) return;
+      // Если уже объект — используем как есть
+      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+        this.objectHistory = data
+        return;
+      }
+      // Если строка — парсим
+      if (typeof data === 'string') {
+        try {
+          const parsed = JSON.parse(data);
+          this.objectHistory = parsed
+        } catch (e) {
+          console.warn('Ошибка парсинга answers:', e);
+        }
+      }
+    },
+
+    debounce(fn, delay) {
+      let timer = null;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+      };
+    },
+
+    initSwiper() {
+      this.destroySwiper();
+
+      if (!this.$refs.swiperContainer || this.flatSlides.length === 0) {
+        return;
+      }
+
+      this.swiper = new Swiper(this.$refs.swiperContainer, {
+        slidesPerView: 'auto',
+        spaceBetween: 16,
+        watchOverflow: true,
+        // observer: true,
+        // observeParents: true,
+        keyboard: {
+          enabled: true
+        },
+        on: {
+          slideChange: (swiper) => {
+            this.activeIndex = swiper.activeIndex;
+            // Обновляем сразу для случаев без анимации
+            // this.updateControls(swiper);
+          },
+          transitionEnd: (swiper) => {
+            // Обновляем после завершения анимации,
+            // чтобы getBoundingClientRect вернул финальные значения
+            this.updateControls(swiper);
+          },
+          imagesReady: (swiper) => {
+            swiper.update();
+            this.updateControls(swiper);
+          }
+        }
+      });
+
+      this.activeIndex = this.swiper.activeIndex || 0;
+      this.updateControls(this.swiper);
+
+      this.$nextTick(() => {
+        if (this.swiper) {
+          this.updateControls(this.swiper);
+        }
+      });
+    },
+
+    destroySwiper() {
+      if (this.swiper && typeof this.swiper.destroy === 'function') {
+        this.swiper.destroy(true, true);
+      }
+      this.swiper = null;
+    },
+
+    updateControls(swiper) {
+      if (!swiper) return;
+
+      this.isBeginning = Boolean(swiper.isBeginning);
+
+      const lastRealSlideIndex = this.flatSlides.length - 1;
+      const activeSlide = this.flatSlides[swiper.activeIndex];
+      const lastSlide = this.flatSlides[lastRealSlideIndex];
+
+      if (swiper.activeIndex >= lastRealSlideIndex) {
+        this.isEnd = true;
+      } else if (activeSlide && lastSlide && activeSlide.year !== lastSlide.year) {
+        this.isEnd = false;
+      } else {
+        const lastRealSlide = swiper.slides[lastRealSlideIndex];
+
+        if (lastRealSlide) {
+          const swiperRect = swiper.el.getBoundingClientRect();
+          const slideRect = lastRealSlide.getBoundingClientRect();
+
+          this.isEnd = slideRect.right <= swiperRect.right + 1;
+        } else {
+          this.isEnd = false;
+        }
+      }
+
+      // Блокируем свайп мышкой и пальцем
+      swiper.allowSlideNext = !this.isEnd;
+      swiper.allowSlidePrev = !this.isBeginning;
+      console.log('this.isEnd');
+      console.log(this.isEnd);
+    },
+
+    nextSlide() {
+      if (!this.swiper) return;
+      if (!this.isEnd) {
+        this.swiper.slideNext();
+      }
+    },
+
+    prevSlide() {
+      if (!this.swiper) return;
+      this.swiper.slidePrev();
+    }
+  },
+
+  computed: {
+    flatSlides() {
+      if (!Array.isArray(this.objectHistory.years)) {
+        return [];
+      }
+
+      return this.objectHistory.years.reduce((acc, year) => {
+        const yearTitle = year && year.title !== undefined ? String(year.title) : '';
+        const items = Array.isArray(year.items) ? year.items : [];
+
+        items.forEach((item, index) => {
+          acc.push({
+            year: yearTitle,
+            title: item.title || '',
+            description: item.description || '',
+            picture: item.picture || '',
+            isFirstInYear: index === 0,
+            isLastInYear: index === items.length - 1
+          });
+        });
+
+        return acc;
+      }, []);
+    }
+  },
+
+  watch: {
+    history: {
+      deep: true,
+      handler() {
+        this.activeIndex = 0;
+        this.$nextTick(() => {
+          this.initSwiper();
+        });
+      }
+    }
+  },
+
+  mounted() {
+    // this.parseHistoryArray(this.arrayHistory) //расскоментировать
+    this.$nextTick(() => {
+      this.initSwiper();
+    });
+
+    // Свой обработчик ресайза с задержкой
+    this.handleResize = this.debounce(() => {
+      if (!this.swiper) return;
+
+      // Принудительный пересчёт размеров и слайдов
+      this.swiper.updateSize();
+      this.swiper.updateSlides();
+      this.swiper.updateProgress();
+      this.swiper.update();
+
+      this.updateControls(this.swiper);
+    }, 300);
+
+    window.addEventListener('resize', this.handleResize);
+  },
+
+  beforeUnmount() {
+    window.removeEventListener('resize', this.handleResize);
+    this.destroySwiper();
+  },
+
+
+
+  components : {
+    DsButton
+  }
+
+}
+</script>
+
