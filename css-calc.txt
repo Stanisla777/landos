@@ -1,75 +1,11 @@
-mounted() {
-  this.$nextTick(() => {
-    this.initSwiper();
-  });
+this.handleResize = this.debounce(() => {
+  if (!this.swiper) return;
 
-  // Свой обработчик ресайза с задержкой
-  this.handleResize = this.debounce(() => {
-    if (this.swiper) {
-      this.swiper.update(true); // true — принудительный пересчёт всех размеров
-      this.updateControls(this.swiper);
-    }
-  }, 250);
+  // Принудительный пересчёт размеров и слайдов
+  this.swiper.updateSize();
+  this.swiper.updateSlides();
+  this.swiper.updateProgress();
+  this.swiper.update();
 
-  window.addEventListener('resize', this.handleResize);
-},
-
-beforeUnmount() {
-  window.removeEventListener('resize', this.handleResize);
-  this.destroySwiper();
-},
-
-methods: {
-  debounce(fn, delay) {
-    let timer = null;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn.apply(this, args), delay);
-    };
-  },
-
-  initSwiper() {
-    this.destroySwiper();
-
-    if (!this.$refs.swiperContainer || this.flatSlides.length === 0) {
-      return;
-    }
-
-    this.swiper = new Swiper(this.$refs.swiperContainer, {
-      slidesPerView: 'auto',
-      spaceBetween: 16,
-      watchOverflow: true,
-      observer: true,
-      observeParents: true,
-      grabCursor: true,
-      keyboard: {
-        enabled: true
-      },
-      on: {
-        slideChange: (swiper) => {
-          this.activeIndex = swiper.activeIndex;
-          this.updateControls(swiper);
-        },
-        transitionEnd: (swiper) => {
-          this.updateControls(swiper);
-        },
-        imagesReady: (swiper) => {
-          swiper.update(true);
-          this.updateControls(swiper);
-        }
-        // resize убираем — он срабатывает слишком рано
-      }
-    });
-
-    this.activeIndex = this.swiper.activeIndex || 0;
-    this.updateControls(this.swiper);
-
-    this.$nextTick(() => {
-      if (this.swiper) {
-        this.updateControls(this.swiper);
-      }
-    });
-  },
-
-  // ... остальные методы без изменений
-}
+  this.updateControls(this.swiper);
+}, 300); // увеличиваем задержку до 300ms
