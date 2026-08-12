@@ -1,13 +1,755 @@
-content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 120px; /* ширина зоны "тумана" */
-  background: linear-gradient(
-    to right,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 1)
-  );
-  pointer-events: none; /* не блокирует свайп и клики */
-  z-index: 10;
+<template>
+  <div class="flex-container-h2 m-b-16">
+    <h2 class="h2_title m-b-16">{{objectHistory.title}}</h2>
+  </div>
+  <div class="history-timeline__wr-arrow-subtitle">
+    <h2 class="h2_subtitle">{{objectHistory.subtitle}}</h2>
+    <div
+      v-if="flatSlides.length > 1"
+      class="history-timeline__controls"
+    >
+
+      <ds-button
+        class="history-timeline__button-prev"
+        :variant="'secondary'"
+        :size="'large'"
+        :disabled="isBeginning"
+        :loading="false"
+        :rounded="false"
+        :block="false"
+        :dark-mode="false"
+        :arrow="false"
+        :icon="'icon-only'"
+        @click="prevSlide"
+      />
+
+      <ds-button
+        :variant="'secondary'"
+        :size="'large'"
+        :disabled="isEnd"
+        :loading="false"
+        :rounded="false"
+        :block="false"
+        :dark-mode="false"
+        :arrow="false"
+        :icon="'icon-only'"
+        @click="nextSlide"
+      />
+    </div>
+  </div>
+
+  <div class="history-timeline__slider history-timeline__slide-one-height">
+    <template v-if="flatSlides.length">
+      <div
+        ref="swiperContainer"
+        class="swiper-container"
+      >
+        <div class="swiper-wrapper">
+          <div
+            v-for="(slide, index) in flatSlides"
+            :key="`${slide.year}-${index}`"
+            class="swiper-slide history-timeline__slide"
+            :class="slide?.picture==='' ? 'not-picture' : 'with-picture'"
+          >
+            <div class="history-timeline__wrapper">
+              <div class="history-timeline__header">
+                <!-- Год и точка только в первой карточке года -->
+                <div
+                  :class="slide.isFirstInYear ? 'visible' : 'not-visible'"
+                  class="history-timeline__year"
+                >
+                  {{ slide.year }}
+                </div>
+
+                <div class="history-timeline__track">
+                  <span
+                    v-if="slide.isFirstInYear"
+                    class="history-timeline__dot"
+                  ></span>
+
+                  <span
+                    class="history-timeline__line"
+                    :class="{
+                      'history-timeline__line--first': slide.isFirstInYear,
+                      'history-timeline__line--middle': !slide.isFirstInYear && !slide.isLastInYear,
+                      'history-timeline__line--last': slide.isLastInYear && !slide.isFirstInYear,
+                      'history-timeline__line--single': slide.isFirstInYear && slide.isLastInYear
+                    }"
+                  ></span>
+                </div>
+              </div>
+
+              <!--Карточка без картинки-->
+              <div class="history-timeline__card" v-if="slide?.picture===''">
+                <div class="history-timeline__body">
+                  <h3 class="history-timeline__title">
+                    {{ slide.title }}
+                  </h3>
+                  <div class="history-timeline__description" v-html="slide.description"></div>
+                </div>
+              </div>
+
+              <!--Карточка с картинкой-->
+              <div class="history-timeline__card" v-if="slide?.picture!==''">
+                <div class="history-timeline__body">
+                  <h3 class="history-timeline__title">
+                    {{ slide.title }}
+                  </h3>
+
+                  <div
+                    class="history-timeline__description"
+                    v-html="slide.description"
+                  ></div>
+                </div>
+
+                <div
+                  v-if="slide.picture"
+                  class="history-timeline__image"
+                >
+                  <img
+                    :src="slide.picture"
+                    :alt="slide.title || ''"
+                    loading="lazy"
+                  >
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Пустой слайд-заполнитель для прижатия последнего года к левому краю -->
+          <div class="swiper-slide history-timeline__slide history-timeline__slide--spacer"></div>
+        </div>
+      </div>
+
+    </template>
+
+  </div>
+</template>
+
+<script>
+import Swiper, { Navigation, Pagination } from 'swiper';
+Swiper.use([Navigation, Pagination]);
+import { DsButton } from '@ringsites/ui-components/DsButton';
+
+export default {
+  name: "HistoryCompany",
+  props: {
+    instanceId: {
+      type: String,
+      required: true
+    },
+    arrayHistory: {
+      type: [Object, String],
+      default: () => ({}),
+      validator: (value) => {
+        // Если объект
+        if (typeof value === 'object' && value !== null) return true;
+        // Если строка — распарсю
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            return typeof parsed === 'object' && parsed !== null; //
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      },
+    },
+  },
+  data() {
+    return {
+      swiper: null,
+      activeIndex: 0,
+      isBeginning: true,
+      isEnd: false,
+      objectHistory: {
+        'title' : 'История развития',
+        'subtitle' : 'Развитие ДОМ.РФ — это последовательность решений, которые сформировали текущий масштаб и роль компании на рынке',
+        'years': [
+          {
+          'title': '2020',
+          'items': [
+            {
+              'title': 'создание Консультационного центра ДОМ.РФ',
+              'description': '<p>Ежегодный просветительский проект</p>',
+              'picture': ''
+            },
+            {
+              'title': 'создание Консультационного центра ДОМ.РФ',
+              'description': '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              'picture': ''
+            }
+          ]
+        },
+          {
+            'title': '2021',
+            'items': [
+              {
+                'title': 'создание Консультационного центра ДОМ.РФ',
+                'description': '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+                'picture': 'img/img-bunner-new.webp'
+              },
+              {
+                'title': 'создание Консультационного центра ДОМ.РФ',
+                'description': '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+                'picture': 'img/img-bunner-new.webp'
+              }
+            ]
+          },
+          {
+            'title': '2023',
+            'items': [
+              {
+                'title': 'создание Консультационного центра ДОМ.РФ',
+                'description': '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+                'picture': '/upload/file.png'
+              },
+              {
+                'title': 'создание Консультационного центра ДОМ.РФ',
+                'description': '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+                'picture': '/upload/file.png'
+              }
+            ]
+          }
+        ]
+      },
+
+      // objectHistory:{},
+
+      history: [
+        {
+          title: '1997',
+          items: [
+            {
+              title: 'Создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: ''
+            },
+            {
+              title: 'Создание центра',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: ''
+            },
+
+          ]
+        },
+        {
+          title: '2008',
+          items: [
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный <a href="#">просветительский проект</a> по финансовой грамотности в жилищной сфере</p>',
+              picture: 'img/img-bunner-new.webp'
+            },
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский</p>',
+              picture: 'img/img-bunner-new.webp'
+            }
+          ]
+        },
+        {
+          title: '2021',
+          items: [
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: 'img/img-bunner-new.webp'
+            },
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: ''
+            },
+            {
+              title: 'создание Консультационного центра ДОМ.РФ',
+              description: '<p>Ежегодный просветительский проект по финансовой грамотности в жилищной сфере</p>',
+              picture: ''
+            }
+
+          ]
+        }
+      ]
+    };
+  },
+
+  methods: {
+    parseHistoryArray(data) {
+      if (!data) return;
+      // Если уже объект — используем как есть
+      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+        this.objectHistory = data
+        return;
+      }
+      // Если строка — парсим
+      if (typeof data === 'string') {
+        try {
+          const parsed = JSON.parse(data);
+          this.objectHistory = parsed
+        } catch (e) {
+          console.warn('Ошибка парсинга answers:', e);
+        }
+      }
+    },
+
+    initSwiper() {
+      this.destroySwiper();
+
+      if (!this.$refs.swiperContainer || this.flatSlides.length === 0) {
+        return;
+      }
+
+      this.swiper = new Swiper(this.$refs.swiperContainer, {
+        slidesPerView: 'auto',
+        spaceBetween: 16,
+        watchOverflow: true,
+        observer: true,
+        observeParents: true,
+        keyboard: {
+          enabled: true
+        },
+        on: {
+          slideChange: (swiper) => {
+            this.activeIndex = swiper.activeIndex;
+            // Обновляем сразу для случаев без анимации
+            this.updateControls(swiper);
+          },
+          transitionEnd: (swiper) => {
+            // Обновляем после завершения анимации,
+            // чтобы getBoundingClientRect вернул финальные значения
+            this.updateControls(swiper);
+          },
+          resize: (swiper) => {
+            swiper.update();
+            this.updateControls(swiper);
+          },
+          imagesReady: (swiper) => {
+            swiper.update();
+            this.updateControls(swiper);
+          }
+        }
+      });
+
+      this.activeIndex = this.swiper.activeIndex || 0;
+      this.updateControls(this.swiper);
+
+      this.$nextTick(() => {
+        if (this.swiper) {
+          this.updateControls(this.swiper);
+        }
+      });
+    },
+
+    destroySwiper() {
+      if (this.swiper && typeof this.swiper.destroy === 'function') {
+        this.swiper.destroy(true, true);
+      }
+      this.swiper = null;
+    },
+
+    updateControls(swiper) {
+      if (!swiper) return;
+
+      this.isBeginning = Boolean(swiper.isBeginning);
+
+      const lastRealSlideIndex = this.flatSlides.length - 1;
+      const activeSlide = this.flatSlides[swiper.activeIndex];
+      const lastSlide = this.flatSlides[lastRealSlideIndex];
+
+      if (swiper.activeIndex >= lastRealSlideIndex) {
+        this.isEnd = true;
+      } else if (activeSlide && lastSlide && activeSlide.year !== lastSlide.year) {
+        this.isEnd = false;
+      } else {
+        const lastRealSlide = swiper.slides[lastRealSlideIndex];
+
+        if (lastRealSlide) {
+          const swiperRect = swiper.el.getBoundingClientRect();
+          const slideRect = lastRealSlide.getBoundingClientRect();
+
+          this.isEnd = slideRect.right <= swiperRect.right + 1;
+        } else {
+          this.isEnd = false;
+        }
+      }
+
+      // Блокируем свайп мышкой и пальцем
+      swiper.allowSlideNext = !this.isEnd;
+      swiper.allowSlidePrev = !this.isBeginning;
+    },
+
+    nextSlide() {
+      if (!this.swiper) return;
+      if (!this.isEnd) {
+        this.swiper.slideNext();
+      }
+    },
+
+    prevSlide() {
+      if (!this.swiper) return;
+      this.swiper.slidePrev();
+    }
+  },
+
+  computed: {
+    flatSlides() {
+      if (!Array.isArray(this.objectHistory.years)) {
+        return [];
+      }
+
+      return this.objectHistory.years.reduce((acc, year) => {
+        const yearTitle = year && year.title !== undefined ? String(year.title) : '';
+        const items = Array.isArray(year.items) ? year.items : [];
+
+        items.forEach((item, index) => {
+          acc.push({
+            year: yearTitle,
+            title: item.title || '',
+            description: item.description || '',
+            picture: item.picture || '',
+            isFirstInYear: index === 0,
+            isLastInYear: index === items.length - 1
+          });
+        });
+
+        return acc;
+      }, []);
+    }
+  },
+
+  watch: {
+    history: {
+      deep: true,
+      handler() {
+        this.activeIndex = 0;
+        this.$nextTick(() => {
+          this.initSwiper();
+        });
+      }
+    }
+  },
+
+  mounted() {
+    // this.parseHistoryArray(this.arrayHistory)
+    this.$nextTick(() => {
+      this.initSwiper();
+    });
+  },
+
+  beforeUnmount() {
+    this.destroySwiper();
+  },
+
+
+
+  components : {
+    DsButton
+  }
+
+}
+</script>
+----------------------
+
+//История компании
+.history-timeline {
+
+  //блок подзаголовок + кнопки
+  &__wr-arrow-subtitle{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap:20px;
+    &>h2,h3{
+      width: 100%;
+      max-width: 625px;
+    }
+  }
+
+  //кнопки
+  &__controls {
+    display: flex;
+    gap: 16px;
+    @include respondTo(small) {
+      gap:12px;
+    }
+  }
+  &__button {
+    min-width: 120px;
+    padding: 10px 16px;
+    border: 1px solid #1f2430;
+    background: #ffffff;
+    color: #1f2430;
+    cursor: pointer;
+    //кнопка назад
+    &-prev{
+      transform: rotate(180deg);
+    }
+  }
+
+  //слайдер
+  &__slide-one-height {
+    position: relative;
+    // Убираем height: auto с .swiper-slide — это мешает stretch
+
+    .swiper-wrapper {
+      display: flex;
+      align-items: stretch; // ← для 1 слайда
+    }
+
+    .swiper-slide {
+      height: auto;
+      display: flex;
+      //flex-direction: column;
+
+      & > * {
+        flex-grow: 1;
+        width: 100%;
+      }
+    }
+
+
+  }
+  &__wrapper {
+    position: relative;
+    padding-top: 89px;
+    @include respondTo(small) {
+      padding-top: 73px;
+    }
+  }
+  &__slider{
+    margin-top: 24px;
+    @include respondTo(small) {
+      margin-top: 16px;
+    }
+    & *,
+    & *::before,
+    & *::after {
+      box-sizing: border-box;
+    }
+    .swiper-container{
+      &::after{
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 150px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0) 79.48%, rgba(255, 255, 255, 0.1) 47.8%, #fff 100%);
+        pointer-events: none; /* не блокирует свайп и клики */
+        z-index: 10;
+      }
+
+    }
+  }
+
+  //отдельный слайд  swiper-slide
+  &__slide {
+    flex-shrink: 0;
+    &.not-picture{
+      width: 362px;
+      @include respondTo(mobile) {
+        width: calc((100% / 2) - 8px);
+      }
+      @media screen and (max-width: 560px){
+        width: min-content;
+      }
+      @include respondTo(small) {
+        width: 100%;
+      }
+    }
+    &.with-picture{
+      width: 748px;
+      @include respondTo(mobile) {
+        width: 100%;
+      }
+      .history-timeline__card{
+        display: flex;
+        .history-timeline__body{
+          flex-grow:1;
+        }
+        //&>div{
+        //  flex-basis: 50%;
+        //}
+      }
+    }
+
+  }
+
+  //историческая линия
+  &__header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    //height: 60px;
+  }
+  &__year {
+    margin-bottom: 14px;
+    font-size: 32px;
+    font-family: $ff-semi-bold;
+    line-height: 113%;
+    @include respondTo(mobile) {
+      font-size: 24px;
+      line-height: 117%;
+    }
+    @include respondTo(small) {
+      font-size: 20px;
+      line-height: 120%;
+    }
+    &.not-visible{
+      opacity:0;
+    }
+  }
+
+
+  &__track {
+    position: relative;
+  }
+  &__dot {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border:2px solid #6d6d6d;
+
+    transform: translateY(-50%);
+    z-index: 2;
+  }
+
+  &__line {
+    position: absolute;
+    top: 50%;
+    height: 2px;
+    background: #6d6d6d;
+    transform: translateY(-50%);
+    z-index: 1;
+  }
+
+  /* Первая карточка года (не единственная): линия от точки до правого края + 16px */
+  &__line--first {
+    left: 12px;
+    right: -16px;
+  }
+
+  /* Средняя карточка года: линия от левого края до правого края + 16px */
+  &__line--middle {
+    left: 0;
+    right: -16px;
+  }
+
+  /* Последняя карточка года (не первая): линия от левого края до правого края */
+  &__line--last {
+    left: 0;
+    right: 0;
+  }
+
+  /* Единственная карточка года: линия от точки до правого края */
+  &__line--single {
+    left: 12px;
+    right: 0;
+  }
+
+  //отдельный блок-событие года
+  &__card {
+    overflow:hidden;
+    height: 100%;
+    border-radius: 16px;
+    background-color: #f4f4f4;
+    min-height: 328px;
+    @include respondTo(mobile) {
+      min-height: unset;
+    }
+  }
+  &__body{
+    padding: 32px;
+    @include respondTo(small) {
+      padding: 16px;
+    }
+  }
+  &__title {
+    font-size: 24px;
+    line-height: 117%;
+    font-family: $ff-semi-bold;
+    @include respondTo(mobile) {
+      font-size: 20px;
+      line-height: 120%;
+    }
+    @include respondTo(small) {
+      font-size: 18px;
+      line-height: 133%;
+    }
+  }
+  &__description {
+    margin-top: 16px;
+    font-family: $ff-medium;
+    font-size: 16px;
+    line-height: 150%;
+    @include respondTo(mobile) {
+      margin-top: 12px;
+    }
+    @include respondTo(small) {
+      font-size: 14px;
+      line-height: 143%;
+    }
+    p,li,a{
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+    }
+    p{
+      a{
+        text-decoration: underline;
+        text-underline-offset: 4px;
+        &:hover{
+          text-decoration: unset;
+        }
+        @include respondTo(small) {
+          text-underline-offset: 3px;
+        }
+      }
+    }
+
+  }
+
+  &__image {
+    width: clamp(200px, 49%, 362px);
+    flex-shrink:0;
+    @include respondTo(small) {
+      display: none;
+    }
+  }
+
+  &__image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+
+
+
+  .history-timeline__empty {
+    margin: 0;
+    color: #565b66;
+  }
+
+
+
+}
+
+//---------------------------
+
+
+
+
+/* Пустой слайд-заполнитель */
+.history-timeline__slide--spacer {
+  width: 100vw;
+  pointer-events: none;
+}
