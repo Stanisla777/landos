@@ -1,370 +1,261 @@
-<div data-vue-app="history-company"
-                     data-array-history='{"title":"История развития","subtitle":"Развитие ДОМ.РФ — это последовательность решений, которые сформировали текущий масштаб и роль компании на рынке",
-                     "years":[
-                     {"title": "2020","items":[
-                     {"title": "Создание центра","description": "<p>Ежегодный просветительский проект</p>","picture": ""},
-                     {"title": "создание Консультационного центра ДОМ.РФ","description": "<p>Ежегодный просветительский проект</p>","picture": ""}]},
-                     {"title": "2021","items":[
-                     {"title": "создание Консультационного центра ДОМ.РФ","description": "<p>Ежегодный просветительский проект</p>","picture": ""}]}
-                     ]}'>
-                </div>
+/* eslint-disable */
+import Swiper, {
+  Navigation, Pagination, Autoplay, Thumbs, EffectFade
+} from 'swiper';
+import paginationSlider_s from './redesign-site/paginationSlider';
+// eslint-disable-next-line no-unused-vars
+import setEqualHeight from './TemplateScript/updateBlockHeights';
+import RemoveClassBody from './redesign-site/allow-body-scrolling';
 
+Swiper.use([Navigation, Pagination, Autoplay, Thumbs, EffectFade]);
 
-<template>
-  <div class="flex-container-h2 m-b-16">
-    <h2 class="h2_title m-b-16">{{objectHistory.title}}</h2>
-  </div>
-  <div class="history-timeline__wr-arrow-subtitle">
-    <h2 class="h2_subtitle">{{objectHistory.subtitle}}</h2>
-    <div
-      v-if="flatSlides.length > 1"
-      class="history-timeline__controls"
-    >
+/**
+ * Выравнивает высоту блоков с классом .js--blocks-in-slide-one-height
+ * внутри видимых слайдов Swiper-слайдеров.
+ *
+ * Если у .js--slider-construtor есть класс .js--not-one-height-mobile,
+ * то на экранах < 590px выравнивание НЕ применяется.
+ */
+function equalizeBlocksInSlideHeight() {
+  const sliders = document.querySelectorAll('.js--slider-construtor');
 
-      <ds-button
-        class="history-timeline__button-prev"
-        :variant="'secondary'"
-        :size="'large'"
-        :disabled="isBeginning"
-        :loading="false"
-        :rounded="false"
-        :block="false"
-        :dark-mode="false"
-        :arrow="false"
-        :icon="'icon-only'"
-        @click="prevSlide"
-      />
+  sliders.forEach(sliderEl => {
+    const swiper = sliderEl.swiper;
+    if (!swiper) return;
 
-      <ds-button
-        :variant="'secondary'"
-        :size="'large'"
-        :disabled="isEnd"
-        :loading="false"
-        :rounded="false"
-        :block="false"
-        :dark-mode="false"
-        :arrow="false"
-        :icon="'icon-only'"
-        @click="nextSlide"
-      />
-    </div>
-  </div>
+    const disableOnMobile = sliderEl.classList.contains('js--not-one-height-mobile');
+    const isMobile = window.innerWidth < 590;
 
-  <div class="history-timeline__slider history-timeline__slide-one-height"
-       :class="isEnd ? 'isEnd' : ''">
-    <template v-if="flatSlides.length">
-      <div
-        ref="swiperContainer"
-        class="swiper-container"
-      >
-        <div class="swiper-wrapper">
-          <div
-            v-for="(slide, index) in flatSlides"
-            :key="`${slide.year}-${index}`"
-            class="swiper-slide history-timeline__slide"
-            :class="slide?.picture==='' ? 'not-picture' : 'with-picture'"
-          >
-            <div class="history-timeline__wrapper">
-              <div class="history-timeline__header">
-                <!-- Год и точка только в первой карточке года -->
-                <div
-                  :class="slide.isFirstInYear ? 'visible' : 'not-visible'"
-                  class="history-timeline__year"
-                >
-                  {{ slide.year }}
-                </div>
-
-                <div class="history-timeline__track">
-                  <span
-                    v-if="slide.isFirstInYear"
-                    class="history-timeline__dot"
-                  ></span>
-
-                  <span
-                    class="history-timeline__line"
-                    :class="{
-                      'history-timeline__line--first': slide.isFirstInYear,
-                      'history-timeline__line--middle': !slide.isFirstInYear && !slide.isLastInYear,
-                      'history-timeline__line--last': slide.isLastInYear && !slide.isFirstInYear,
-                      'history-timeline__line--single': slide.isFirstInYear && slide.isLastInYear
-                    }"
-                  ></span>
-                </div>
-              </div>
-
-              <!--Карточка без картинки-->
-              <div class="history-timeline__card" v-if="slide?.picture===''">
-                <div class="history-timeline__body">
-                  <h3 class="history-timeline__title">
-                    {{ slide.title }}
-                  </h3>
-                  <div class="history-timeline__description" v-html="slide.description"></div>
-                </div>
-              </div>
-
-              <!--Карточка с картинкой-->
-              <div class="history-timeline__card" v-if="slide?.picture!==''">
-                <div class="history-timeline__body">
-                  <h3 class="history-timeline__title">
-                    {{ slide.title }}
-                  </h3>
-
-                  <div
-                    class="history-timeline__description"
-                    v-html="slide.description"
-                  ></div>
-                </div>
-
-                <div
-                  v-if="slide.picture"
-                  class="history-timeline__image"
-                >
-                  <img
-                    :src="slide.picture"
-                    :alt="slide.title || ''"
-                    loading="lazy"
-                  >
-                </div>
-
-              </div>
-
-            </div>
-          </div>
-
-          <!-- Пустой слайд-заполнитель для прижатия последнего года к левому краю -->
-<!--          <div class="swiper-slide history-timeline__slide history-timeline__slide&#45;&#45;spacer"></div>-->
-        </div>
-      </div>
-
-    </template>
-
-  </div>
-</template>
-
-<script>
-import Swiper, { Navigation, Pagination } from 'swiper';
-Swiper.use([Navigation, Pagination]);
-import { DsButton } from '@ringsites/ui-components/DsButton';
-
-export default {
-  name: "HistoryCompany",
-  props: {
-    instanceId: {
-      type: String,
-      required: true
-    },
-    arrayHistory: {
-      type: [Object, String],
-      default: () => ({}),
-      validator: (value) => {
-        // Если объект
-        if (typeof value === 'object' && value !== null) return true;
-        // Если строка — распарсю
-        if (typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value);
-            return typeof parsed === 'object' && parsed !== null; //
-          } catch (e) {
-            return false;
-          }
-        }
-        return false;
-      },
-    },
-  },
-  data() {
-    return {
-      swiper: null,
-      activeIndex: 0,
-      isBeginning: true,
-      isEnd: false,
-      objectHistory:{},
-    };
-  },
-
-  methods: {
-    parseHistoryArray(data) {
-      if (!data) return;
-      // Если уже объект — используем как есть
-      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-        this.objectHistory = data
-        return;
-      }
-      // Если строка — парсим
-      if (typeof data === 'string') {
-        try {
-          const parsed = JSON.parse(data);
-          this.objectHistory = parsed
-        } catch (e) {
-          console.warn('Ошибка парсинга answers:', e);
-        }
-      }
-    },
-
-    debounce(fn, delay) {
-      let timer = null;
-      return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn.apply(this, args), delay);
-      };
-    },
-
-    initSwiper() {
-      this.destroySwiper();
-
-      if (!this.$refs.swiperContainer || this.flatSlides.length === 0) {
-        return;
-      }
-
-      this.swiper = new Swiper(this.$refs.swiperContainer, {
-        slidesPerView: 'auto',
-        spaceBetween: 16,
-        watchOverflow: true,
-        observer: true,
-        observeParents: true,
-        keyboard: {
-          enabled: true
-        },
-        on: {
-          slideChange: (swiper) => {
-            this.activeIndex = swiper.activeIndex;
-            // Обновляем сразу для случаев без анимации
-            // this.updateControls(swiper);
-          },
-          transitionEnd: (swiper) => {
-            // Обновляем после завершения анимации,
-            // чтобы getBoundingClientRect вернул финальные значения
-            this.updateControls(swiper);
-          },
-          imagesReady: (swiper) => {
-            swiper.update();
-            this.updateControls(swiper);
-          }
-        }
-      });
-
-      this.activeIndex = this.swiper.activeIndex || 0;
-      this.updateControls(this.swiper);
-
-      this.$nextTick(() => {
-        if (this.swiper) {
-          this.updateControls(this.swiper);
-        }
-      });
-    },
-
-    destroySwiper() {
-      if (this.swiper && typeof this.swiper.destroy === 'function') {
-        this.swiper.destroy(true, true);
-      }
-      this.swiper = null;
-    },
-
-    updateControls(swiper) {
-      if (!swiper) return;
-
-      this.isBeginning = Boolean(swiper.isBeginning);
-
-      const lastRealSlideIndex = this.flatSlides.length - 1;
-      const lastRealSlide = swiper.slides[lastRealSlideIndex];
-
-      if (lastRealSlide) {
-        const swiperRect = swiper.el.getBoundingClientRect();
-        const slideRect = lastRealSlide.getBoundingClientRect();
-
-        // Если правый край последнего слайда не выходит за правый край контейнера,
-        // значит все слайды видны и листать дальше ненужно
-        this.isEnd = slideRect.right <= swiperRect.right + 1;
-      } else {
-        this.isEnd = false;
-      }
-
-      // Блокирую свайп мышкой и пальцем
-      swiper.allowSlideNext = !this.isEnd;
-      swiper.allowSlidePrev = !this.isBeginning;
-    },
-
-    nextSlide() {
-      if (!this.swiper) return;
-      if (!this.isEnd) {
-        this.swiper.slideNext();
-      }
-    },
-
-    prevSlide() {
-      if (!this.swiper) return;
-      this.swiper.slidePrev();
+    if (disableOnMobile && isMobile) {
+      const blocks = sliderEl.querySelectorAll('.js--blocks-in-slide-one-height');
+      blocks.forEach(block => block.style.minHeight = '');
+      return;
     }
-  },
 
-  computed: {
-    flatSlides() {
-      if (!Array.isArray(this.objectHistory.years)) {
-        return [];
-      }
+    // Берём ВСЕ настоящие слайды (не дубликаты, не заглушки)
+    const realSlides = Array.from(sliderEl.querySelectorAll('.swiper-slide'))
+      .filter(slide =>
+        !slide.classList.contains('swiper-slide-duplicate') &&
+        !slide.classList.contains('swiper-slide-invisible-blank')
+      );
 
-      return this.objectHistory.years.reduce((acc, year) => {
-        const yearTitle = year && year.title !== undefined ? String(year.title) : '';
-        const items = Array.isArray(year.items) ? year.items : [];
-
-        items.forEach((item, index) => {
-          acc.push({
-            year: yearTitle,
-            title: item.title || '',
-            description: item.description || '',
-            picture: item.picture || '',
-            isFirstInYear: index === 0,
-            isLastInYear: index === items.length - 1
-          });
-        });
-
-        return acc;
-      }, []);
+    if (realSlides.length <= 1) {
+      const blocks = sliderEl.querySelectorAll('.js--blocks-in-slide-one-height');
+      blocks.forEach(block => block.style.minHeight = '');
+      return;
     }
-  },
 
-  watch: {
-    history: {
-      deep: true,
-      handler() {
-        this.activeIndex = 0;
-        this.$nextTick(() => {
-          this.initSwiper();
-        });
-      }
+    const targetBlocks = realSlides
+      .map(slide => slide.querySelector('.js--blocks-in-slide-one-height'))
+      .filter(Boolean);
+
+    if (targetBlocks.length <= 1) {
+      targetBlocks.forEach(block => block.style.minHeight = '');
+      return;
     }
-  },
 
-  mounted() {
-    this.parseHistoryArray(this.arrayHistory) //расскоментировать
-    this.$nextTick(() => {
-      this.initSwiper();
+    // Сброс
+    targetBlocks.forEach(block => block.style.minHeight = '');
+
+    let maxHeight = 0;
+    targetBlocks.forEach(block => {
+      maxHeight = Math.max(maxHeight, block.offsetHeight);
     });
 
-    // Свой обработчик ресайза с задержкой
-    this.handleResize = this.debounce(() => {
-      if (!this.swiper) return;
-
-      // Принудительный пересчёт размеров и слайдов
-      this.swiper.updateSize();
-      this.swiper.updateSlides();
-      this.swiper.updateProgress();
-      this.swiper.update();
-
-      this.updateControls(this.swiper);
-    }, 300);
-
-    window.addEventListener('resize', this.handleResize);
-  },
-
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize);
-    this.destroySwiper();
-  },
-
-  components : {
-    DsButton
-  }
-
+    targetBlocks.forEach(block => {
+      block.style.minHeight = `${maxHeight}px`;
+    });
+  });
 }
-</script>
+
+// === УЛУЧШЕННАЯ ФУНКЦИЯ: ожидание загрузки ВСЕХ изображений, включая внутри <picture> ===
+function waitForImages(container) {
+  const images = [];
+
+  // Находим все <img>, включая вложенные в <picture>
+  container.querySelectorAll('img').forEach(img => {
+    // Если изображение уже загружено и имеет высоту — пропускаем
+    if (img.complete && img.naturalHeight > 0) {
+      return;
+    }
+
+    // Создаём промис для загрузки
+    const promise = new Promise((resolve) => {
+      const onLoad = () => {
+        img.removeEventListener('load', onLoad);
+        img.removeEventListener('error', onError);
+        resolve();
+      };
+      const onError = () => {
+        img.removeEventListener('load', onLoad);
+        img.removeEventListener('error', onError);
+        resolve(); // даже при ошибке — продолжаем
+      };
+
+      img.addEventListener('load', onLoad, { once: true });
+      img.addEventListener('error', onError, { once: true });
+
+      // Принудительно запускаем декодирование, если lazy
+      if (img.loading === 'lazy') {
+        // Попытка "разленивить" — но это не всегда работает
+        img.setAttribute('loading', 'eager');
+        // Или просто ждём, когда браузер сам загрузит
+      }
+    });
+
+    images.push(promise);
+  });
+
+  return images.length ? Promise.all(images) : Promise.resolve();
+}
+
+// === ОСНОВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ СЛАЙДЕРОВ ===
+function appraisalSlider() {
+  const array_slider = document.querySelectorAll('.js--slider-construtor');
+
+  for (const item of array_slider) {
+    // Параметры по умолчанию
+    let data_space_between = { desctop: '16', tablet: '14', mobile: '0' };
+    let data_count_slide = { large_desctop: '4', desctop: '4', small_desctop: '3', tablet: '2', mobile: '1' };
+    let data_loop = { desctop: 'false', small_desctop: 'false', tablet: 'false', mobile: 'false' };
+    let data_simulation_touch = { desctop: 'false', tablet: 'false', mobile: 'true' };
+    let data_arrows = { arrow_left: '', arrow_right: '' };
+    let data_pagination = { pagination: '' };
+    let auto_height = false;
+
+    // Чтение атрибутов
+    if (item.hasAttribute('data-space-between')) {
+      data_space_between = JSON.parse(item.getAttribute('data-space-between'));
+    }
+    if (item.hasAttribute('data-count-slide')) {
+      data_count_slide = JSON.parse(item.getAttribute('data-count-slide'));
+    }
+    if (item.hasAttribute('data-loop')) {
+      data_loop = JSON.parse(item.getAttribute('data-loop'));
+    }
+    if (item.hasAttribute('data-simulation-touch')) {
+      data_simulation_touch = JSON.parse(item.getAttribute('data-simulation-touch'));
+    }
+    if (item.hasAttribute('data-arrows')) {
+      data_arrows = JSON.parse(item.getAttribute('data-arrows'));
+    }
+    if (item.hasAttribute('data-pagination')) {
+      data_pagination = JSON.parse(item.getAttribute('data-pagination'));
+    }
+    if (item.hasAttribute('auto-height')) {
+      auto_height = item.getAttribute('auto-height') === 'true';
+    }
+
+    // Создаём Swiper
+    const swiper = new Swiper(item, {
+      init: false, // ⚠️ НЕ инициализируем сразу!
+      observer: true,
+      observeParents: true,
+      observeSlideChildren: true,
+
+      slidesPerView: parseInt(data_count_slide.desctop, 10),
+      spaceBetween: parseInt(data_space_between.desctop, 10),
+      loop: false,
+      autoHeight: auto_height,
+      simulateTouch: true,
+      allowTouchMove: true,
+
+      pagination: data_pagination.pagination
+        ? {
+          el: data_pagination.pagination,
+          clickable: true,
+        }
+        : false,
+
+      navigation: data_arrows.arrow_left && data_arrows.arrow_right
+        ? {
+          prevEl: data_arrows.arrow_left,
+          nextEl: data_arrows.arrow_right,
+        }
+        : false,
+
+      breakpoints: {
+        0: {
+          slidesPerView: parseInt(data_count_slide.mobile, 10),
+          spaceBetween: parseInt(data_space_between.mobile, 10),
+          loop: JSON.parse(data_loop.mobile),
+          simulateTouch: JSON.parse(data_simulation_touch.mobile),
+          allowTouchMove: JSON.parse(data_simulation_touch.mobile),
+        },
+        590: {
+          slidesPerView: parseInt(data_count_slide.tablet, 10),
+          spaceBetween: parseInt(data_space_between.tablet, 10),
+          loop: JSON.parse(data_loop.tablet),
+          simulateTouch: JSON.parse(data_simulation_touch.tablet),
+          allowTouchMove: JSON.parse(data_simulation_touch.tablet),
+        },
+        768: {
+          slidesPerView: parseInt(data_count_slide.small_desctop, 10),
+          spaceBetween: parseInt(data_space_between.desctop, 10),
+          loop: JSON.parse(data_loop.small_desctop),
+          simulateTouch: JSON.parse(data_simulation_touch.desctop),
+          allowTouchMove: JSON.parse(data_simulation_touch.desctop),
+        },
+        1100: {
+          slidesPerView: parseInt(data_count_slide.desctop, 10),
+          spaceBetween: parseInt(data_space_between.desctop, 10),
+          loop: JSON.parse(data_loop.desctop),
+          simulateTouch: JSON.parse(data_simulation_touch.desctop),
+          allowTouchMove: JSON.parse(data_simulation_touch.desctop),
+        },
+        1360: {
+          slidesPerView: parseInt(data_count_slide.large_desctop, 10),
+          spaceBetween: parseInt(data_space_between.desctop, 10),
+          loop: JSON.parse(data_loop.desctop),
+          simulateTouch: JSON.parse(data_simulation_touch.desctop),
+          allowTouchMove: JSON.parse(data_simulation_touch.desctop),
+        },
+      },
+
+      on: {
+        afterInit: (el) => {
+          const wrapper = el.el.closest('.js--general-style-slider.before-init');
+          if (wrapper) {
+            wrapper.classList.remove('before-init');
+          }
+          paginationSlider_s(el);
+        },
+
+        resize: (el) => {
+          setTimeout(() => {
+            el.update();
+            if (auto_height) el.updateAutoHeight();
+            equalizeBlocksInSlideHeight();
+          }, 100);
+          paginationSlider_s(el);
+        },
+      },
+    });
+
+    // === КЛЮЧЕВОЙ МОМЕНТ: ждём загрузки изображений → инициализируем Swiper ===
+    waitForImages(item).then(() => {
+      swiper.init(); // Теперь инициализируем
+      equalizeBlocksInSlideHeight();
+
+      // После инициализации — обновляем высоту, если нужно
+      if (auto_height) {
+        // Swiper сам обновит высоту, но иногда нужно подождать рендер
+        setTimeout(() => {
+          swiper.updateAutoHeight(300);
+        }, 50);
+      }
+
+      // Отключаем свайп, если слайдов мало
+      if (swiper.slides && swiper.slides.length <= swiper.params.slidesPerView) {
+        swiper.allowTouchMove = false;
+      }
+
+      // Обновляем пагинацию
+      paginationSlider_s(swiper);
+    });
+  }
+}
+
+export default function slideConstructor() {
+  appraisalSlider();
+}
