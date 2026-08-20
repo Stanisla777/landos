@@ -1,4 +1,60 @@
-:class="{
-    'isEnd': isEnd,
-    'isBeginning': isBeginning
-  }"
+Uncaught TypeError: Cannot read properties of null (reading 'click')
+    at 4513.b56e6c27.bundle.js:714:28
+    at mitt.mjs:1:255
+    at Array.map (<anonymous>)
+    at Object.emit (mitt.mjs:1:226)
+    at Proxy.btnNext (TestButton.vue:30:7)
+    at $props.modal.$props.btn_next.$options.time_end.onClick._cache.<computed>._cache.<computed> (TestButton.vue:4:254)
+
+
+<template>
+  <div class="test-a__slider-btn-container">
+    <div class="test-a__slider-btn" v-if="modal===true">
+      <div class="btn_s black" v-if="btn_next&amp;&amp;((status_internet===true&amp;&amp;status_btn===false)||(status_internet===false&amp;&amp;status_btn===false)||(status_internet===true&amp;&amp;status_btn===true)) &amp;&amp;time_end!==true" @click="btnNext">Ответить</div>
+      <div class="btn_s black disabled" v-if="!btn_next||((status_btn&amp;&amp;status_internet===false) ) ||time_end===true ">Ответить</div>
+      <div class="btn_s transparent_black_border" v-if="time_end&amp;&amp;count_question!==current_slide" @click="btnNext">Следующий вопрос</div>
+      <div class="btn_s transparent_black_border" v-if="time_end&amp;&amp;count_question===current_slide" @click="btnNext">Завершить тест</div>
+    </div>
+    <p class="test-a__error-hint" v-if="status_internet===false">Нет интернета</p>
+    <p class="test-a__error-hint" v-if="error_sand_variant">{{error_sand_variant_text}}</p>
+  </div>
+</template>
+<script>
+import store from '../store';
+import eventBus from '../eventBus';
+
+export default {
+  name: 'buttom',
+  props:['modal','status_internet','btn_next','status_btn','btn_prev','error_sand_variant','error_sand_variant_text'],
+  data(){
+    return {
+
+
+    }
+  },
+  methods: {
+    btnNext(){
+      this.count=0
+      store.dispatch('ActionSendVariantPost')
+      eventBus.emit('eventbtnNext')
+    },
+  },
+  computed: {
+    time_end() {
+      return store.getters.TIMEEND;
+    },
+    count_question(){
+      return store.getters.COUNTQUESTION
+    },
+    current_slide(){
+      return store.getters.CURRENTSLIDE
+    },
+
+
+  },
+  mounted() {
+  },
+};
+</script>
+<style scoped>
+</style>
