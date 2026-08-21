@@ -1,228 +1,24 @@
-<template>
-  <div class="test-a__container marathon-new-last__test-vue-slider" ref="test_container">
-    <div class="test-a__body" ref="BodyLabel">
-      <div class="test-n-slider__line"></div>
-      <div class="test-n-slider__line right js--slider-line-right"></div>
-      
-      <div class="test-n-slider test-a__slider" ref="ContainerSlider">
-        <!-- Используем @vueform/slider. step="1" гарантирует прилипание к индексам -->
-        <Slider
-          ref="slider"
-          v-model="selectedIndex"
-          :min="0"
-          :max="optionsList.length - 1"
-          :step="1"
-          :tooltip="false"
-          :height="4"
-          :dot-size="24"
-          :disabled="time_end"
-          @end="onSliderRelease"
-          class="custom-vue-slider"
-        />
+:step="0.01"
 
-        <!-- Кастомные маркеры, позиционируемые равномерно -->
-        <div class="test-n-slider__marks" :class="{ 'is-disabled': time_end }">
-          <div
-            v-for="(option, index) in optionsList"
-            :key="option.id"
-            class="test-n-slider__mark"
-            :class="{ 'is-active': index === selectedIndex }"
-            :style="{ left: getEvenPosition(index) + '%' }"
-            @click.stop="selectByIndex(index)"
-          >
-            <span class="test-n-slider__mark-label">{{ option.name }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
+@click="onTrackClick"
 
-    <test-button
-      :modal="modal"
-      :status_internet="status_internet"
-      :btn_next="btn_next"
-      :status_btn="status_btn"
-      :btn_prev="btn_prev"
-      :error_sand_variant="error_sand_variant"
-      :error_sand_variant_text="error_sand_variant_text"
-    />
-  </div>
-</template>
+onTrackClick(event) {
+      if (this.isAnswered) return;
 
-<script>
-import Slider from '@vueform/slider';
-import store from '../store';
-import eventBus from '../eventBus';
-import TestButton from './TestButton.vue';
+      // Вычисляем, куда кликнули относительно ширины трека
+      const trackRect = this.$refs.slider.$el.getBoundingClientRect();
+      const clickX = event.clientX - trackRect.left;
+      const percent = Math.max(0, Math.min(1, clickX / trackRect.width));
 
-export default {
-  name: 'TextNSlider',
-  components: { 
-    Slider,
-    TestButton 
-  },
-  props: {
-    param_component: {
-      type: Object,
-      required: true
-    },
-    modal: {
-      type: Boolean,
-      default: false
-    }
-  },
-  data() {
-    return {
-      selectedIndex: 0, // Внутреннее значение слайдера (индекс массива)
-      answerValue: null, // Реальное значение id, которое уходит в Store
-      btn_next: true,
-      btn_prev: true,
-      count: 0,
-      count_slide: 0,
-    };
-  },
-  computed: {
-    // Безопасно получаем список опций, чтобы шаблон не падал, если данные еще грузятся
-    optionsList() {
-      return this.param_component?.options || [];
-    },
-    error_sand_variant() {
-      return store.getters.ERRORSANDVARIANT;
-    },
-    error_sand_variant_text() {
-      return store.getters.ERRORSANDVARIANTTEXT;
-    },
-    status_internet() {
-      return store.getters.STATUSINTERNET;
-    },
-    status_btn() {
-      return store.getters.STATUSBTN;
-    },
-    time_end() {
-      return store.getters.TIMEEND;
-    },
-    current_slide() {
-      return store.getters.CURRENTSLIDE;
-    },
-  },
-  watch: {
-    // Следим за изменением слайда, чтобы сбрасывать состояние (как в оригинале)
-    current_slide() {
-      const line = document.querySelectorAll('.js--slider-line-right');
-      line.forEach(item => item.classList.remove('active'));
-      
-      if (this.optionsList.length > 0) {
-        this.selectedIndex = 0;
-        this.answerValue = this.optionsList[0].id;
-        // Отправляем первое значение при инициализации слайда
-        store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
-      }
-    }
-  },
-  methods: {
-    // Равномерное распределение маркеров: 0%, 33.3%, 66.6%, 100%
-    getEvenPosition(index) {
-      if (this.optionsList.length <= 1) return 0;
-      return (index / (this.optionsList.length - 1)) * 100;
-    },
+      // Переводим процент в индекс и округляем до ближайшего маркера
+      const maxIndex = this.answersList.length - 1;
+      const nearest = Math.round(percent * maxIndex);
 
-    // Срабатывает при отпускании ползунка (благодаря step="1" он уже будет целым)
-    onSliderRelease() {
-      if (this.time_end) return;
-      this.updateStateFromIndex(this.selectedIndex);
-    },
-
-    // Клик по самому маркеру (тексту)
-    selectByIndex(index) {
-      if (this.time_end) return;
-      this.selectedIndex = index;
-      this.updateStateFromIndex(index);
-    },
-
-    // Центральная логика обновления состояния и отправки в Store
-    updateStateFromIndex(index) {
-      const selectedOption = this.optionsList[index];
-      if (!selectedOption) return;
-
-      this.answerValue = selectedOption.id;
-      this.setActiveLabel();
-
-      // Логика для правой линии (как в оригинальном коде)
-      const line = document.querySelectorAll('.js--slider-line-right');
-      if (this.optionsList.length - 1 === index) {
-        line.forEach(item => {
-          setTimeout(() => item.classList.add('active'), 200);
-        });
-      } else {
-        line.forEach(item => item.classList.remove('active'));
+      // Если значение изменилось — обновляем (запускает CSS-анимацию)
+      if (nearest !== this.selectedIndex) {
+        this.selectedIndex = nearest;
       }
 
-      // !!! СОХРАНЕНА ИСХОДНАЯ ОТПРАВКА В STORE !!!
-      store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
+      this.answerValue = this.answersList[nearest]?.value;
+      this.$emit('valuesIsChosen');
     },
-
-    // Подсветка активного лейбла (адаптировано под новую структуру)
-    setActiveLabel() {
-      // В новой верстке класс is-active вешается через :class в шаблоне, 
-      // но если вам нужна дополнительная логика для мобильных, она остается здесь.
-      if (document.documentElement.clientWidth <= 767) {
-        // Пример мобильной логики, если она требовалась ранее
-        const activeLabel = document.querySelector('.test-n-slider__mark.is-active .test-n-slider__mark-label');
-        if (activeLabel) {
-           // Можно добавить специфичную мобильную логику, если нужно
-        }
-      }
-    },
-
-    autoHeight() {
-      if (document.documentElement.clientWidth < 470) {
-        const container = this.$refs.test_container;
-        if (!container) return;
-        const parent = container.closest('.js--test-cont');
-        if (!parent) return;
-        
-        const title = parent.querySelector('.test-a__question');
-        const title_height = title ? title.offsetHeight : 0;
-        
-        const sliderContainer = parent.querySelector('.test-a__container');
-        if (sliderContainer) {
-          sliderContainer.setAttribute('style', `min-height:calc(100vh - 32px - 26px - 24px - ${title_height}px - 65px)`);
-        }
-      }
-    },
-
-    updateScreenWidth() {
-      this.autoHeight();
-    },
-    
-    btnPrev() {
-      this.count = 0;
-      eventBus.emit('eventbtnPrev');
-    },
-  },
-  mounted() {
-    // Инициализация первым значением при загрузке
-    if (this.optionsList.length > 0) {
-      this.selectedIndex = 0;
-      this.answerValue = this.optionsList[0].id;
-      store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
-    }
-    
-    this.updateScreenWidth();
-    window.addEventListener('resize', this.updateScreenWidth);
-  },
-  created() {
-    eventBus.on('slideReachBeginning', () => {
-      this.btn_prev = false;
-    });
-    eventBus.on('slideFromEdge', () => {
-      this.btn_prev = true;
-    });
-  },
-  // Vue 3 хук для очистки (важно для предотвращения утечек памяти и багов с eventBus)
-  unmounted() {
-    window.removeEventListener('resize', this.updateScreenWidth);
-    eventBus.off('slideReachBeginning');
-    eventBus.off('slideFromEdge');
-  }
-};
-</script>
