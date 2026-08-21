@@ -1,93 +1,78 @@
-
-<div class="test-n-slider" ref="ContainerSlider">
-  <!-- Обертка для перехвата кликов по треку -->
-  <div class="slider-wrapper" @pointerdown.capture="onPointerDownCapture">
-    <Slider
-      ref="slider"
-      :modelValue="dragValue"
-      @update:modelValue="onValueChange"
-      @dragstart="isDragging = true"
-      @dragend="isDragging = false"
-      :min="0"
-      :max="optionsList.length - 1"
-      :step="0.01"
-      :tooltip="false"
-      :height="4"
-      :dot-size="24"
-      :disabled="time_end"
-      class="test-n-slider__track"
-    />
-  </div>
-
-  <!-- Маркеры остаются снаружи обертки, чтобы их клики работали независимо -->
-  <div class="test-n-slider__marks" :class="{ 'is-disabled': time_end }">
-    <div
-      v-for="(option, index) in optionsList"
-      :key="option.id"
-      class="test-n-slider__mark"
-      :class="{ 'is-active': index === selectedIndex }"
-      :style="{ left: getEvenPosition(index) + '%' }"
-      @click.stop="selectByIndex(index)"
-    >
-      <span class="test-n-slider__mark-label">{{ option.name }}</span>
-    </div>
-  </div>
-</div>
----------------
+slider-base
 
 onPointerDownCapture(event) {
-  if (this.time_end || this.optionsList.length === 0) return;
-  
-  const target = event.target;
-  
-  // Проверяем, был ли клик на ползунке (handle/dot) — пропускаем, чтобы drag работал
-  // В @vueform/slider ползунок обычно имеет класс .slider-handle
-  const isHandle = target.closest('.slider-handle') || target.closest('.slider-dot');
-  if (isHandle) {
-    // Клик на ползунке — пропускаем, пусть библиотека обрабатывает drag
-    return;
-  }
-  
-  // Проверяем, был ли клик на треке (линии)
-  const isTrack = target.closest('.slider-rail') || target.closest('.slider-track');
-  if (!isTrack) {
-    // Клик на чем-то другом (например, на маркере) — пропускаем
-    return;
-  }
-  
-  // Клик по треку — перехватываем и обрабатываем сами
-  event.stopImmediatePropagation();
-  event.preventDefault();
-  
-  // Вычисляем координаты клика относительно трека
-  const rect = this.$refs.slider.$el.getBoundingClientRect();
-  const clickX = event.clientX - rect.left;
-  const percent = Math.max(0, Math.min(1, clickX / rect.width));
-  const clickedIndex = Math.round(percent * (this.optionsList.length - 1));
-  
-  if (clickedIndex === this.selectedIndex) {
-    // Клик рядом с текущим маркером — ничего не делаем, ползунок не двигается
-    return;
-  }
-  
-  // Клик далеко — перемещаемся к новому маркеру
-  this.selectedIndex = clickedIndex;
-  this.dragValue = clickedIndex;
-  this.updateStateFromIndex(clickedIndex);
-},
+      if (this.time_end || this.optionsList.length === 0) return;
 
-onValueChange(newValue) {
-  // Этот метод срабатывает ТОЛЬКО при перетаскивании (drag)
-  // или при программном изменении из onPointerDownCapture
-  
-  if (this.time_end || this.optionsList.length === 0) return;
-  
-  if (this.isDragging) {
-    // Пользователь тянет ползунок — просто обновляем значение для плавности
-    this.dragValue = newValue;
-    return;
-  }
-  
-  // Если не dragging, значит, это программное изменение из onPointerDownCapture
-  // Ничего не делаем, значение уже установлено
-},
+      const target = event.target;
+
+      // Проверяем, был ли клик на ползунке (handle/dot) — пропускаем, чтобы drag работал
+      // В @vueform/slider ползунок обычно имеет класс .slider-handle
+      const isHandle = target.closest('.slider-handle') || target.closest('.slider-dot');
+      if (isHandle) {
+        // Клик на ползунке — пропускаем, пусть библиотека обрабатывает drag
+        return;
+      }
+
+      // Проверяем, был ли клик на треке (линии)
+      const isTrack = target.closest('.slider-rail') || target.closest('.slider-track');
+      // if (!isTrack) {
+      //   // Клик на чем-то другом (например, на маркере) — пропускаем
+      //   return;
+      // }
+
+      // Клик по треку — перехватываем и обрабатываем сами
+      event.stopImmediatePropagation();
+      event.preventDefault();
+
+      // Вычисляем координаты клика относительно трека
+      const rect = this.$refs.slider.$el.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const percent = Math.max(0, Math.min(1, clickX / rect.width));
+      const clickedIndex = Math.round(percent * (this.optionsList.length - 1));
+
+      if (clickedIndex === this.selectedIndex) {
+        // Клик рядом с текущим маркером — ничего не делаем, ползунок не двигается
+        return;
+      }
+
+      // Клик далеко — перемещаемся к новому маркеру
+      this.selectedIndex = clickedIndex;
+      this.dragValue = clickedIndex;
+      this.updateStateFromIndex(clickedIndex);
+    },
+
+    onValueChange(newValue) {
+      // ЭТОТ ЛОГ ДОЛЖЕН ПОЯВИТЬСЯ ПРИ ЛЮБОМ ДВИЖЕНИИ ИЛИ КЛИКЕ!
+      console.log('Slider изменен. Новое значение:', newValue, '| Перетаскивание:', this.isDragging);
+
+      if (this.time_end || this.optionsList.length === 0) return;
+
+      if (this.isDragging) {
+        // Сценарий 1: Пользователь тянет ползунок.
+        // Просто разрешаем библиотеке обновлять визуальное значение для плавной анимации.
+        // В Store ничего не отправляем, пока пользователь не отпустит мышь.
+        this.dragValue = newValue;
+        return;
+      }
+
+      // Сценарий 2: Пользователь КЛИКНУЛ по треку (isDragging === false).
+      // Вычисляем ближайший индекс и жестко ограничиваем его границами массива
+      const targetIndex = Math.round(newValue);
+      const clampedIndex = Math.max(0, Math.min(this.optionsList.length - 1, targetIndex));
+
+      if (clampedIndex === this.selectedIndex) {
+        // Кликнули рядом с текущим маркером -> ОТМЕНЯЕМ изменение.
+        // $nextTick ждет, пока библиотека закончит свои внутренние расчеты,
+        // а затем принудительно возвращает ползунок на место без визуального "отскока".
+        this.$nextTick(() => {
+          this.dragValue = this.selectedIndex;
+        });
+      } else {
+        // Кликнули ближе к ДРУГОМУ маркеру -> ПРИНИМАЕМ изменение.
+        this.selectedIndex = clampedIndex;
+        this.dragValue = clampedIndex;
+
+        // !!! ВОТ ЗДЕСЬ ПРОИСХОДИТ ОТПРАВКА В STORE !!!
+        this.updateStateFromIndex(clampedIndex);
+      }
+    },
