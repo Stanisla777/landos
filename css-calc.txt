@@ -1,10 +1,10 @@
 <template>
   <div class="test-a__container marathon-new-last__test-vue-slider" ref="test_container">
     <div class="test-a__body" ref="BodyLabel">
-      <div class="test-n-slider__line"></div>
-      <div class="test-n-slider__line right js--slider-line-right"></div>
-      
-      <div class="test-n-slider test-a__slider" ref="ContainerSlider">
+<!--      <div class="test-n-slider__line"></div>-->
+<!--      <div class="test-n-slider__line right js&#45;&#45;slider-line-right"></div>-->
+
+      <div class="test-n-slider" ref="ContainerSlider">
         <Slider
           ref="slider"
           v-model="dragValue"
@@ -17,7 +17,7 @@
           :disabled="time_end"
           @drag-start="isDragging = true"
           @end="onSliderEnd"
-          class="custom-vue-slider"
+          class="test-n-slider__track"
         />
 
         <div class="test-n-slider__marks" :class="{ 'is-disabled': time_end }">
@@ -55,9 +55,9 @@ import TestButton from './TestButton.vue';
 
 export default {
   name: 'TextNSlider',
-  components: { 
+  components: {
     Slider,
-    TestButton 
+    TestButton
   },
   props: {
     param_component: {
@@ -71,10 +71,10 @@ export default {
   },
   data() {
     return {
-      selectedIndex: 0,   
-      dragValue: 0,       
-      answerValue: null,  
-      isDragging: false,  
+      selectedIndex: 0,
+      dragValue: 0,
+      answerValue: null,
+      isDragging: false,
       btn_next: true,
       btn_prev: true,
       count: 0,
@@ -108,7 +108,7 @@ export default {
     current_slide() {
       const line = document.querySelectorAll('.js--slider-line-right');
       line.forEach(item => item.classList.remove('active'));
-      
+
       if (this.optionsList.length > 0) {
         this.resetToFirstOption();
       }
@@ -132,7 +132,7 @@ export default {
       } else {
         // Сценарий 2: Клик по треку — умная логика
         const clickedIndex = Math.round(this.dragValue);
-        
+
         // Если клик рядом с текущим маркером — ничего не делаем
         if (clickedIndex === this.selectedIndex) {
           // Принудительно возвращаем dragValue к текущему selectedIndex,
@@ -189,10 +189,10 @@ export default {
         if (!container) return;
         const parent = container.closest('.js--test-cont');
         if (!parent) return;
-        
+
         const title = parent.querySelector('.test-a__question');
         const title_height = title ? title.offsetHeight : 0;
-        
+
         const sliderContainer = parent.querySelector('.test-a__container');
         if (sliderContainer) {
           sliderContainer.setAttribute('style', `min-height:calc(100vh - 32px - 26px - 24px - ${title_height}px - 65px)`);
@@ -203,7 +203,7 @@ export default {
     updateScreenWidth() {
       this.autoHeight();
     },
-    
+
     btnPrev() {
       this.count = 0;
       eventBus.emit('eventbtnPrev');
@@ -213,7 +213,7 @@ export default {
     if (this.optionsList.length > 0) {
       this.resetToFirstOption();
     }
-    
+
     this.updateScreenWidth();
     window.addEventListener('resize', this.updateScreenWidth);
   },
@@ -232,42 +232,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.custom-vue-slider {
-  margin-top: 10px;
-  margin-bottom: 40px;
-}
-
-.test-n-slider__marks {
-  position: relative;
-  height: 0;
-  margin-top: 15px;
-}
-
-.test-n-slider__mark {
-  position: absolute;
-  transform: translateX(-50%);
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 5px;
-}
-
-.test-n-slider__mark.is-active .test-n-slider__mark-label {
-  font-weight: bold;
-  color: #000;
-}
-
-.test-n-slider__mark-label {
-  font-size: 14px;
-  color: #666;
-  white-space: nowrap;
-  user-select: none;
-}
-
-.is-disabled .test-n-slider__mark {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-</style>
