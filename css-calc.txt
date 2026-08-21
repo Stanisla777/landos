@@ -1,28 +1,78 @@
-    onSliderEnd() {
+        <Slider
+          ref="slider"
+          :modelValue="dragValue"
+          @update:modelValue="onValueChange"
+          @dragstart="isDragging = true"
+          @dragend="isDragging = false"
+          :min="0"
+          :max="optionsList.length - 1"
+          :step="0.01"
+          :tooltip="false"
+          :height="4"
+          :dot-size="24"
+          :disabled="time_end"
+          class="test-n-slider__track"
+        />
+
+    onValueChange(newValue) {
+      // ЭТОТ ЛОГ ДОЛЖЕН ПОЯВИТЬСЯ ПРИ ЛЮБОМ ДВИЖЕНИИ ИЛИ КЛИКЕ!
+      console.log('Slider изменен. Новое значение:', newValue, '| Перетаскивание:', this.isDragging);
+
       if (this.time_end || this.optionsList.length === 0) return;
 
-      // 1. Вычисляем ближайший индекс и ОБЯЗАТЕЛЬНО ограничиваем его границами массива
-      // (защита от клика в самый край, который может дать индекс за пределами массива)
-      const rawIndex = Math.round(this.dragValue);
-      const targetIndex = Math.max(0, Math.min(this.optionsList.length - 1, rawIndex));
+      if (this.isDragging) {
+        // Сценарий 1: Пользователь тянет ползунок.
+        // Просто разрешаем библиотеке обновлять визуальное значение для плавной анимации.
+        // В Store ничего не отправляем, пока пользователь не отпустит мышь.
+        this.dragValue = newValue;
+        return;
+      }
 
-      // 2. Небольшая задержка (10-20 мс) позволяет библиотеке завершить 
-      // внутреннюю обработку события pointerup, после чего мы перехватываем управление.
-      setTimeout(() => {
-        if (targetIndex === this.selectedIndex) {
-          // Сценарий А: Кликнули рядом с текущим маркером.
-          // Принудительно возвращаем значение к текущему индексу.
-          // Это отменяет "прыжок" маркера в точку клика.
+      // Сценарий 2: Пользователь КЛИКНУЛ по треку (isDragging === false).
+      // Вычисляем ближайший индекс и жестко ограничиваем его границами массива
+      const targetIndex = Math.round(newValue);
+      const clampedIndex = Math.max(0, Math.min(this.optionsList.length - 1, targetIndex));
+
+      if (clampedIndex === this.selectedIndex) {
+        // Кликнули рядом с текущим маркером -> ОТМЕНЯЕМ изменение.
+        // $nextTick ждет, пока библиотека закончит свои внутренние расчеты, 
+        // а затем принудительно возвращает ползунок на место без визуального "отскока".
+        this.$nextTick(() => {
           this.dragValue = this.selectedIndex;
-        } else {
-          // Сценарий Б: Кликнули или перетащили к НОВОМУ маркеру.
-          // Фиксируем новый выбор.
-          this.selectedIndex = targetIndex;
-          this.dragValue = targetIndex;
-          this.updateStateFromIndex(targetIndex);
-        }
+        });
+      } else {
+        // Кликнули ближе к ДРУГОМУ маркеру -> ПРИНИМАЕМ изменение.
+        this.selectedIndex = clampedIndex;
+        this.dragValue = clampedIndex;
+        
+        // !!! ВОТ ЗДЕСЬ ПРОИСХОДИТ ОТПРАВКА В STORE !!!
+        this.updateStateFromIndex(clampedIndex);
+      }
+    },
 
-        // Сбрасываем флаг состояния для следующих взаимодействий
-        this.isDragging = false;
-      }, 15); 
+    selectByIndex(index) {
+      if (this.time_end) return;
+      this.selectedIndex = index;
+      this.dragValue = index;
+      this.updateStateFromIndex(index);
+    },
+
+    updateStateFromIndex(index) {
+      const selectedOption = this.optionsList[index];
+      if (!selectedOption) return;
+
+      this.answerValue = selectedOption.id;
+
+      // Логика для правой линии (как в оригинальном коде)
+      const line = document.querySelectorAll('.js--slider-line-right');
+      if (this.optionsList.length - 1 === index) {
+        line.forEach(item => {
+          setTimeout(() => item.classList.add('active'), 200);
+        });
+      } else {
+        line.forEach(item => item.classList.remove('active'));
+      }
+
+      // Ваша исходная отправка в Store
+      store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
     },
