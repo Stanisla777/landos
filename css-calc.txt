@@ -1,44 +1,4 @@
-onPointerDownCapture(event) {
-  if (this.time_end || this.optionsList.length === 0) return;
+optionsList:[{"id":1,"name":"10 000 Р"},{"id":2,"name":"20 000 Р"},{{"id":3,"name":"30 000 Р"},{"id":4,"name":"60 000 Р"}]
 
-  const target = event.target;
-
-  // 1. Игнорируем клик по самому ползунку (чтобы работал Drag)
-  const isHandle = target.closest('.slider-handle') || target.closest('.slider-dot');
-  if (isHandle) return;
-
-  // 2. Игнорируем клик по нашим кастомным текстовым маркерам 
-  // (они должны обрабатываться своим собственным @click.stop="selectByIndex")
-  const isMark = target.closest('.test-n-slider__mark');
-  if (isMark) return;
-
-  // 3. Проверяем, что клик был ИМЕННО по треку (линии). 
-  // Добавляем .slider-base, который вы нашли!
-  const isTrack = target.closest('.slider-base') || 
-                  target.closest('.slider-rail') || 
-                  target.closest('.slider-track');
-
-  // Если клик был НЕ по треку (например, по пустому месту в обертке), просто игнорируем
-  if (!isTrack) return;
-
-  // 4. ПЕРЕХВАТЫВАЕМ событие. Библиотека не узнает о клике и не будет двигать ползунок сама.
-  event.stopImmediatePropagation();
-  event.preventDefault();
-
-  // 5. Математика: вычисляем ближайший индекс на основе координат клика
-  const rect = this.$refs.slider.$el.getBoundingClientRect();
-  const clickX = event.clientX - rect.left;
-  const percent = Math.max(0, Math.min(1, clickX / rect.width));
-  const clickedIndex = Math.round(percent * (this.optionsList.length - 1));
-
-  // 6. ГЛАВНАЯ МАГИЯ: Если кликнули рядом с текущим маркером — НИЧЕГО НЕ ДЕЛАЕМ.
-  // Ползунок остается на месте, никакого визуального "отскока" нет!
-  if (clickedIndex === this.selectedIndex) {
-    return;
-  }
-
-  // 7. Если кликнули далеко (ближе к другому варианту) — перемещаем и отправляем в Store
-  this.selectedIndex = clickedIndex;
-  this.dragValue = clickedIndex;
-  this.updateStateFromIndex(clickedIndex);
-}
+<div class="test-n-slider__marks" :class="{ 'is-disabled': time_end }">....</div>
+<div class="test-n-slider__value">{{answerValue}}</div>
