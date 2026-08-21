@@ -1,78 +1,44 @@
-slider-base
-
 onPointerDownCapture(event) {
-      if (this.time_end || this.optionsList.length === 0) return;
+  if (this.time_end || this.optionsList.length === 0) return;
 
-      const target = event.target;
+  const target = event.target;
 
-      // Проверяем, был ли клик на ползунке (handle/dot) — пропускаем, чтобы drag работал
-      // В @vueform/slider ползунок обычно имеет класс .slider-handle
-      const isHandle = target.closest('.slider-handle') || target.closest('.slider-dot');
-      if (isHandle) {
-        // Клик на ползунке — пропускаем, пусть библиотека обрабатывает drag
-        return;
-      }
+  // 1. Игнорируем клик по самому ползунку (чтобы работал Drag)
+  const isHandle = target.closest('.slider-handle') || target.closest('.slider-dot');
+  if (isHandle) return;
 
-      // Проверяем, был ли клик на треке (линии)
-      const isTrack = target.closest('.slider-rail') || target.closest('.slider-track');
-      // if (!isTrack) {
-      //   // Клик на чем-то другом (например, на маркере) — пропускаем
-      //   return;
-      // }
+  // 2. Игнорируем клик по нашим кастомным текстовым маркерам 
+  // (они должны обрабатываться своим собственным @click.stop="selectByIndex")
+  const isMark = target.closest('.test-n-slider__mark');
+  if (isMark) return;
 
-      // Клик по треку — перехватываем и обрабатываем сами
-      event.stopImmediatePropagation();
-      event.preventDefault();
+  // 3. Проверяем, что клик был ИМЕННО по треку (линии). 
+  // Добавляем .slider-base, который вы нашли!
+  const isTrack = target.closest('.slider-base') || 
+                  target.closest('.slider-rail') || 
+                  target.closest('.slider-track');
 
-      // Вычисляем координаты клика относительно трека
-      const rect = this.$refs.slider.$el.getBoundingClientRect();
-      const clickX = event.clientX - rect.left;
-      const percent = Math.max(0, Math.min(1, clickX / rect.width));
-      const clickedIndex = Math.round(percent * (this.optionsList.length - 1));
+  // Если клик был НЕ по треку (например, по пустому месту в обертке), просто игнорируем
+  if (!isTrack) return;
 
-      if (clickedIndex === this.selectedIndex) {
-        // Клик рядом с текущим маркером — ничего не делаем, ползунок не двигается
-        return;
-      }
+  // 4. ПЕРЕХВАТЫВАЕМ событие. Библиотека не узнает о клике и не будет двигать ползунок сама.
+  event.stopImmediatePropagation();
+  event.preventDefault();
 
-      // Клик далеко — перемещаемся к новому маркеру
-      this.selectedIndex = clickedIndex;
-      this.dragValue = clickedIndex;
-      this.updateStateFromIndex(clickedIndex);
-    },
+  // 5. Математика: вычисляем ближайший индекс на основе координат клика
+  const rect = this.$refs.slider.$el.getBoundingClientRect();
+  const clickX = event.clientX - rect.left;
+  const percent = Math.max(0, Math.min(1, clickX / rect.width));
+  const clickedIndex = Math.round(percent * (this.optionsList.length - 1));
 
-    onValueChange(newValue) {
-      // ЭТОТ ЛОГ ДОЛЖЕН ПОЯВИТЬСЯ ПРИ ЛЮБОМ ДВИЖЕНИИ ИЛИ КЛИКЕ!
-      console.log('Slider изменен. Новое значение:', newValue, '| Перетаскивание:', this.isDragging);
+  // 6. ГЛАВНАЯ МАГИЯ: Если кликнули рядом с текущим маркером — НИЧЕГО НЕ ДЕЛАЕМ.
+  // Ползунок остается на месте, никакого визуального "отскока" нет!
+  if (clickedIndex === this.selectedIndex) {
+    return;
+  }
 
-      if (this.time_end || this.optionsList.length === 0) return;
-
-      if (this.isDragging) {
-        // Сценарий 1: Пользователь тянет ползунок.
-        // Просто разрешаем библиотеке обновлять визуальное значение для плавной анимации.
-        // В Store ничего не отправляем, пока пользователь не отпустит мышь.
-        this.dragValue = newValue;
-        return;
-      }
-
-      // Сценарий 2: Пользователь КЛИКНУЛ по треку (isDragging === false).
-      // Вычисляем ближайший индекс и жестко ограничиваем его границами массива
-      const targetIndex = Math.round(newValue);
-      const clampedIndex = Math.max(0, Math.min(this.optionsList.length - 1, targetIndex));
-
-      if (clampedIndex === this.selectedIndex) {
-        // Кликнули рядом с текущим маркером -> ОТМЕНЯЕМ изменение.
-        // $nextTick ждет, пока библиотека закончит свои внутренние расчеты,
-        // а затем принудительно возвращает ползунок на место без визуального "отскока".
-        this.$nextTick(() => {
-          this.dragValue = this.selectedIndex;
-        });
-      } else {
-        // Кликнули ближе к ДРУГОМУ маркеру -> ПРИНИМАЕМ изменение.
-        this.selectedIndex = clampedIndex;
-        this.dragValue = clampedIndex;
-
-        // !!! ВОТ ЗДЕСЬ ПРОИСХОДИТ ОТПРАВКА В STORE !!!
-        this.updateStateFromIndex(clampedIndex);
-      }
-    },
+  // 7. Если кликнули далеко (ближе к другому варианту) — перемещаем и отправляем в Store
+  this.selectedIndex = clickedIndex;
+  this.dragValue = clickedIndex;
+  this.updateStateFromIndex(clickedIndex);
+}
