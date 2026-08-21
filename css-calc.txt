@@ -5,10 +5,6 @@
       <div class="test-n-slider__line right js--slider-line-right"></div>
       
       <div class="test-n-slider test-a__slider" ref="ContainerSlider">
-        <!-- 
-          dragValue: хранит плавное дробное значение во время перетаскивания (step="0.01")
-          @end: срабатывает и при отпускании мыши, и при тапе. Здесь мы "примагничиваем" значение.
-        -->
         <Slider
           ref="slider"
           v-model="dragValue"
@@ -19,11 +15,11 @@
           :height="4"
           :dot-size="24"
           :disabled="time_end"
-          @end="onSliderRelease"
+          @drag-start="isDragging = true"
+          @end="onSliderEnd"
           class="custom-vue-slider"
         />
 
-        <!-- Кастомные маркеры, позиционируемые равномерно -->
         <div class="test-n-slider__marks" :class="{ 'is-disabled': time_end }">
           <div
             v-for="(option, index) in optionsList"
@@ -75,9 +71,10 @@ export default {
   },
   data() {
     return {
-      selectedIndex: 0,   // Логический индекс (0, 1, 2...) для бизнес-логики
-      dragValue: 0,       // Визуальное плавное значение для слайдера (0.00, 0.34, 1.00...)
-      answerValue: null,  // Реальный ID из options, который уходит в Store
+      selectedIndex: 0,   
+      dragValue: 0,       
+      answerValue: null,  
+      isDragging: false,  
       btn_next: true,
       btn_prev: true,
       count: 0,
@@ -118,34 +115,46 @@ export default {
     }
   },
   methods: {
-    // Равномерное распределение маркеров
     getEvenPosition(index) {
       if (this.optionsList.length <= 1) return 0;
       return (index / (this.optionsList.length - 1)) * 100;
     },
 
-    // ГЛАВНАЯ МАГИЯ: Срабатывает при отпускании (drag end) или тапе (click)
-    onSliderRelease() {
+    onSliderEnd() {
       if (this.time_end || this.optionsList.length === 0) return;
 
-      // 1. Округляем плавное значение до ближайшего целого индекса
-      const nearestIndex = Math.round(this.dragValue);
+      if (this.isDragging) {
+        // Сценарий 1: Перетаскивание — всегда примагничиваем к ближайшему
+        const nearestIndex = Math.round(this.dragValue);
+        this.selectedIndex = nearestIndex;
+        this.dragValue = nearestIndex;
+        this.updateStateFromIndex(nearestIndex);
+      } else {
+        // Сценарий 2: Клик по треку — умная логика
+        const clickedIndex = Math.round(this.dragValue);
+        
+        // Если клик рядом с текущим маркером — ничего не делаем
+        if (clickedIndex === this.selectedIndex) {
+          // Принудительно возвращаем dragValue к текущему selectedIndex,
+          // чтобы отменить изменение библиотеки и предотвратить "отскок"
+          this.dragValue = this.selectedIndex;
+        } else {
+          // Клик к другому варианту — перемещаемся к нему
+          this.selectedIndex = clickedIndex;
+          this.dragValue = clickedIndex;
+          this.updateStateFromIndex(clickedIndex);
+        }
+      }
 
-      // 2. Принудительно устанавливаем оба значения. 
-      // Это мгновенно "примагничивает" ползунок к центру маркера БЕЗ визуального отскока,
-      // так как взаимодействие (drag/click) уже завершено.
-      this.selectedIndex = nearestIndex;
-      this.dragValue = nearestIndex;
-
-      // 3. Обновляем состояние и отправляем в Store
-      this.updateStateFromIndex(nearestIndex);
+      setTimeout(() => {
+        this.isDragging = false;
+      }, 50);
     },
 
-    // Клик непосредственно по тексту маркера (обходной путь, если тап по треку не сработал)
     selectByIndex(index) {
       if (this.time_end) return;
       this.selectedIndex = index;
-      this.dragValue = index; // Синхронизируем для плавности
+      this.dragValue = index;
       this.updateStateFromIndex(index);
     },
 
@@ -155,7 +164,6 @@ export default {
 
       this.answerValue = selectedOption.id;
 
-      // Логика для правой линии (как в оригинальном коде)
       const line = document.querySelectorAll('.js--slider-line-right');
       if (this.optionsList.length - 1 === index) {
         line.forEach(item => {
@@ -165,7 +173,6 @@ export default {
         line.forEach(item => item.classList.remove('active'));
       }
 
-      // Отправка в Store (ваша исходная логика)
       store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
     },
 
@@ -244,17 +251,19 @@ export default {
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  padding: 5px;
 }
 
 .test-n-slider__mark.is-active .test-n-slider__mark-label {
   font-weight: bold;
-  color: #000; /* Ваш цвет активной темы */
+  color: #000;
 }
 
 .test-n-slider__mark-label {
   font-size: 14px;
   color: #666;
   white-space: nowrap;
+  user-select: none;
 }
 
 .is-disabled .test-n-slider__mark {
