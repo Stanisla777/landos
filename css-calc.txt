@@ -1,197 +1,101 @@
-//старое
 <template>
   <div class="test-a__container marathon-new-last__test-vue-slider" ref="test_container">
     <div class="test-a__body" ref="BodyLabel">
       <div class="test-n-slider__line"></div>
       <div class="test-n-slider__line right js--slider-line-right"></div>
+      
       <div class="test-n-slider test-a__slider" ref="ContainerSlider">
-        <vue-slider v-model="answerValue" ref="slider" :marks="this.array_param" :max="maxValue" :min="minValue" :process="true" :tooltip="'none'" :dot-size="24" :dot-style="{ height: '24px', width: '24px' }" :label-style="{ marginTop: '45px' }" :height="4" :disabled="time_end?true:false" @drag-end="onPriceChange" @drag-start="onPriceChangeStart" contained="contained" included="included" silent="silent"></vue-slider>
+        <!-- Используем @vueform/slider. step="1" гарантирует прилипание к индексам -->
+        <Slider
+          ref="slider"
+          v-model="selectedIndex"
+          :min="0"
+          :max="optionsList.length - 1"
+          :step="1"
+          :tooltip="false"
+          :height="4"
+          :dot-size="24"
+          :disabled="time_end"
+          @end="onSliderRelease"
+          class="custom-vue-slider"
+        />
+
+        <!-- Кастомные маркеры, позиционируемые равномерно -->
+        <div class="test-n-slider__marks" :class="{ 'is-disabled': time_end }">
+          <div
+            v-for="(option, index) in optionsList"
+            :key="option.id"
+            class="test-n-slider__mark"
+            :class="{ 'is-active': index === selectedIndex }"
+            :style="{ left: getEvenPosition(index) + '%' }"
+            @click.stop="selectByIndex(index)"
+          >
+            <span class="test-n-slider__mark-label">{{ option.name }}</span>
+          </div>
+        </div>
       </div>
     </div>
+
     <test-button
-      :modal='modal'
-      :status_internet='status_internet'
-      :btn_next='btn_next'
-      :status_btn='status_btn'
-      :btn_prev='btn_prev'
-      :error_sand_variant='error_sand_variant'
-      :error_sand_variant_text='error_sand_variant_text'
+      :modal="modal"
+      :status_internet="status_internet"
+      :btn_next="btn_next"
+      :status_btn="status_btn"
+      :btn_prev="btn_prev"
+      :error_sand_variant="error_sand_variant"
+      :error_sand_variant_text="error_sand_variant_text"
     />
   </div>
 </template>
 
 <script>
-import VueSlider from 'vue-slider-component';
+import Slider from '@vueform/slider';
 import store from '../store';
 import eventBus from '../eventBus';
 import TestButton from './TestButton.vue';
 
 export default {
   name: 'TextNSlider',
-
+  components: { 
+    Slider,
+    TestButton 
+  },
   props: {
-    param_component:Object,
-    modal:Boolean
+    param_component: {
+      type: Object,
+      required: true
+    },
+    modal: {
+      type: Boolean,
+      default: false
+    }
   },
   data() {
     return {
-      answerValue: null,
-      isAnswerValueCorrect: null,
-      btn_next:true,
-      btn_prev:true,
-      count:0,
-      count_slide:0,
-
-      array_param:{}
-
-    }
-  },
-  methods: {
-    onPriceChange(val){
-      const dot = this.$refs.slider.$el.querySelector('.vue-slider-dot')
-      let index = this.$refs.slider.getIndex();
-      console.log(this.param_component.options.length - 1 == index);
-      const line = document.querySelectorAll('.js--slider-line-right')
-      if(this.param_component.options.length -1 == index){
-        for (let item of line) {
-          setTimeout(()=>{
-            item.classList.add('active')
-          },200)
-        }
-      }
-      else {
-
-      }
-    },
-    onPriceChangeStart(val){
-      let index = this.$refs.slider.getIndex();
-      const line = document.querySelectorAll('.js--slider-line-right')
-
-        if(this.param_component.options.length -1 == index){
-          for (let item of line) {
-            item.classList.remove('active')
-        }
-      }
-
-    },
-
-    //В этом компоненте миксин расчёт высоты не подключал, так тут ингдивидуально
-
-    autoHeight() {
-      if (document.documentElement.clientWidth < 470) {
-        const parent = this.$refs.test_container.closest('.js--test-cont');
-        const title_height = parent.querySelector('.test-a__question').offsetHeight;
-        parent.querySelector('.test-a__container')
-          .setAttribute('style', `min-height:calc(100vh - 32px - 26px - 24px - ${title_height}px - 65px)`);
-      }
-    },
-    btnPrev(){
-      this.count=0
-      eventBus.emit('eventbtnPrev')
-    },
-    fullnessCheck(){
-      const array_label = this.$refs.BodyLabel.querySelectorAll('.js--percent-row input:checked');
-      if(array_label.length!==0){
-        this.btn_next=true
-      }
-    },
-    /**
-     * Проставляем класс active для лейбла выбранного значения, убираем у остальных
-     */
-    setActiveLabel() {
-      const sliderEl = this.$refs.slider.$el;
-      const labelEls = sliderEl.querySelectorAll('.vue-slider-mark-label');
-      const param = this.array_param[this.answerValue]
-
-      if (document.documentElement.clientWidth > 767) {
-        labelEls.forEach((labelEl) => {
-          labelEl.classList.remove('active');
-          const text = labelEl.textContent
-          if(text==param){
-            labelEl.classList.add('active')
-          }
-        });
-      }
-      else if(document.documentElement.clientWidth <= 767){
-        for(let i=0;i<labelEls.length;i++) {
-          labelEls[0].textContent=param;
-        }
-      }
-
-
-    },
-
-    mobileActiveLabel(){
-      const sliderEl = this.$refs.slider.$el;
-      const labelEls = sliderEl.querySelectorAll('.vue-slider-mark-label');
-      const param = this.array_param[this.answerValue]
-
-    },
-    checkAnswerValue() {
-      this.isAnswerValueCorrect = this.answerValue === this.options.correctAnswer;
-    },
-    setDefault() {
-      this.answerValue = null;
-      this.isAnswerValueCorrect = null;
-      this.$emit('valuesIsUnchosen');
-    },
-    /**
-     * Подготавливает необходимые данные и вызывает событие для отправки
-     */
-    prepareDataForSend() {
-      const data = {
-        answerValue: this.answerValue,
-        isAnswerValueCorrect: this.isAnswerValueCorrect
-      };
-      this.$emit('readyForDataSending', data);
-    },
-
-    dataTransformation(){
-      for(let i = 0; i<this.param_component.options.length;i++){
-        if (this.param_component.options[i].name) {
-          Vue.set(this.array_param,this.param_component.options[i].id,this.param_component.options[i].name)
-        }
-      }
-    }
-  },
-  watch: {
-    answerValue() {
-      this.setActiveLabel()
-      store.dispatch('ActionVariantSlider',[this.param_component.id,this.answerValue])
-    },
-    current_slide(){
-      const line = document.querySelectorAll('.js--slider-line-right')
-      for (let item of line) {
-        item.classList.remove('active')
-      }
-      this.dataTransformation();
-      store.dispatch('ActionVariantSlider',[this.param_component.id,this.param_component.options[0].id])
-    }
-
+      selectedIndex: 0, // Внутреннее значение слайдера (индекс массива)
+      answerValue: null, // Реальное значение id, которое уходит в Store
+      btn_next: true,
+      btn_prev: true,
+      count: 0,
+      count_slide: 0,
+    };
   },
   computed: {
-    minValue() {
-      return +Object.keys(this.array_param)[0]; // минимальное значение, первое значение из массива ответов
+    // Безопасно получаем список опций, чтобы шаблон не падал, если данные еще грузятся
+    optionsList() {
+      return this.param_component?.options || [];
     },
-    maxValue() {
-      return +Object.keys(this.array_param).at(-1); // максимальное значение, первое значение из массива ответов
-    },
-
     error_sand_variant() {
       return store.getters.ERRORSANDVARIANT;
     },
     error_sand_variant_text() {
       return store.getters.ERRORSANDVARIANTTEXT;
     },
-
     status_internet() {
       return store.getters.STATUSINTERNET;
     },
     status_btn() {
       return store.getters.STATUSBTN;
-    },
-    hint() {
-      return store.getters.HINT;
     },
     time_end() {
       return store.getters.TIMEEND;
@@ -199,264 +103,126 @@ export default {
     current_slide() {
       return store.getters.CURRENTSLIDE;
     },
-
-
-  },
-  mounted() {
-    this.dataTransformation();
-    this.updateScreenWidth();
-    window.addEventListener('resize', this.updateScreenWidth);
-    store.dispatch('ActionVariantSlider',[this.param_component.id,this.param_component.options[0].id])
-  },
-  created(){
-    eventBus.on('slideReachBeginning',()=>{
-      this.btn_prev=false
-    })
-    eventBus.on('slideFromEdge',()=>{
-      this.btn_prev=true
-    })
-  },
-
-  updated() {
-
-
-  },
-  components: {
-    VueSlider,
-    TestButton
-  },
-}
-</script>
-
-//данные
-{
-            'type': 'test_radiogroup',
-            'id': "раиокнопка-1", // id теста-вопроса (нужен в ответе фронт-приложения)
-            'name': 'Можете ли вы получить кредитные каникулы для военнослужащих?', // название вопроса
-            'description': '', // html-описание, где-то может и используется (необязателен)
-            "timeLimit": 5,
-            "totalCount": 20,
-            'options': [
-              {
-                'id': 1,
-                'name': '70 тыс. рублей'
-              },
-              {
-                'id': 2,
-                'name': '60 тыс. рублей'
-              }
-            ]
-
-          },
-
-//новое
-
-<template>
-  <div class="test-n-slider" :class="addClasses">
-
-    <Slider
-      ref="slider"
-      v-model="selectedIndex"
-      :min="0"
-      :max="answersList.length - 1"
-      :step="0.01"
-      :tooltip="false"
-      :height="15"
-      :dot-size="32"
-      :disabled="isAnswered"
-      @end="onSliderRelease"
-      @click="onTrackClick"
-      class="test-n-slider__track"
-    />
-
-    <!-- Маркеры позиционируются РАВНОМЕРНО -->
-    <div class="test-n-slider__marks" :class="{ 'is-disabled': isAnswered }">
-      <div
-        v-for="(item, index) in answersList"
-        :key="item.value"
-        class="test-n-slider__mark"
-        :class="{ 'is-active': index === selectedIndex }"
-        :style="{ left: getEvenPosition(index) + '%' }"
-        @click.stop="selectByIndex(index)"
-      >
-        <span class="test-n-slider__mark-label">{{ item.label }}</span>
-      </div>
-    </div>
-
-    <div class="test-n-slider__value">{{ currentValueLabel }}</div>
-  </div>
-</template>
-
-<script>
-import Slider from '@vueform/slider';
-
-export default {
-  name: 'TextNSlider',
-  components: { Slider },
-  props: {
-    options: { type: Object, required: true },
-    isAnswered: { type: Boolean, default: false }
-  },
-  data() {
-    return {
-      selectedIndex: 0,
-      answerValue: null,
-      isAnswerValueCorrect: null
-    }
-  },
-  computed: {
-    // Преобразуем объект {10000: "10k", 20000: "20k"} → массив [{value:10000, label:"10k"}, ...]
-    answersList() {
-      if (!this.options.answers) return [];
-      return Object.entries(this.options.answers).map(([val, label]) => ({
-        value: +val,
-        label
-      }));
-    },
-    addClasses() {
-      return {
-        'correct-answer': this.isAnswerValueCorrect === true,
-        'uncorrect-answer': this.isAnswerValueCorrect === false
-      }
-    },
-    currentValueLabel() {
-      const current = this.answersList[this.selectedIndex];
-      return current ? current.label : this.answersList[0]?.label;
-    }
   },
   watch: {
-    isAnswered(val) {
-      if (val) {
-        // Проверяем ответ только если значение уже установлено
-        if (this.answerValue !== null && this.answerValue !== undefined) {
-          this.checkAnswerValue();
-        }
-        this.prepareDataForSend();
-      } else {
-        this.setDefault();
+    // Следим за изменением слайда, чтобы сбрасывать состояние (как в оригинале)
+    current_slide() {
+      const line = document.querySelectorAll('.js--slider-line-right');
+      line.forEach(item => item.classList.remove('active'));
+      
+      if (this.optionsList.length > 0) {
         this.selectedIndex = 0;
+        this.answerValue = this.optionsList[0].id;
+        // Отправляем первое значение при инициализации слайда
+        store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
       }
     }
   },
   methods: {
-    // Равномерное распределение: 0%, 33.3%, 66.6%, 100%
+    // Равномерное распределение маркеров: 0%, 33.3%, 66.6%, 100%
     getEvenPosition(index) {
-      if (this.answersList.length <= 1) return 0;
-      return (index / (this.answersList.length - 1)) * 100;
+      if (this.optionsList.length <= 1) return 0;
+      return (index / (this.optionsList.length - 1)) * 100;
     },
 
-    // Срабатывает при отпускании ползунка
+    // Срабатывает при отпускании ползунка (благодаря step="1" он уже будет целым)
     onSliderRelease() {
-      if (this.isAnswered) return;
-
-      setTimeout(() => {
-        const nearest = Math.round(this.selectedIndex);
-        if (nearest !== this.selectedIndex) {
-          this.selectedIndex = nearest;
-        }
-
-        this.answerValue = this.answersList[nearest]?.value;
-
-        // Если уже нажата кнопка "Проверить" — сразу проверяем ответ
-        if (this.isAnswered) {
-          this.checkAnswerValue();
-        }
-
-        this.$emit('valuesIsChosen');
-      }, 0);
+      if (this.time_end) return;
+      this.updateStateFromIndex(this.selectedIndex);
     },
 
-    //клик по ползунку
-    onTrackClick(event) {
-      if (this.isAnswered) return;
+    // Клик по самому маркеру (тексту)
+    selectByIndex(index) {
+      if (this.time_end) return;
+      this.selectedIndex = index;
+      this.updateStateFromIndex(index);
+    },
 
-      // Вычисляем, куда кликнули относительно ширины трека
-      const trackRect = this.$refs.slider.$el.getBoundingClientRect();
-      const clickX = event.clientX - trackRect.left;
-      const percent = Math.max(0, Math.min(1, clickX / trackRect.width));
+    // Центральная логика обновления состояния и отправки в Store
+    updateStateFromIndex(index) {
+      const selectedOption = this.optionsList[index];
+      if (!selectedOption) return;
 
-      // Переводим процент в индекс и округляем до ближайшего маркера
-      const maxIndex = this.answersList.length - 1;
-      const nearest = Math.round(percent * maxIndex);
+      this.answerValue = selectedOption.id;
+      this.setActiveLabel();
 
-      // Если значение изменилось — обновляем (запускает CSS-анимацию)
-      if (nearest !== this.selectedIndex) {
-        this.selectedIndex = nearest;
+      // Логика для правой линии (как в оригинальном коде)
+      const line = document.querySelectorAll('.js--slider-line-right');
+      if (this.optionsList.length - 1 === index) {
+        line.forEach(item => {
+          setTimeout(() => item.classList.add('active'), 200);
+        });
+      } else {
+        line.forEach(item => item.classList.remove('active'));
       }
 
-      this.answerValue = this.answersList[nearest]?.value;
-      this.$emit('valuesIsChosen');
+      // !!! СОХРАНЕНА ИСХОДНАЯ ОТПРАВКА В STORE !!!
+      store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
     },
 
-    // Клик по маркеру
-    selectByIndex(index) {
-      if (this.isAnswered) return;
-      this.selectedIndex = index;
-      this.onSliderRelease();
+    // Подсветка активного лейбла (адаптировано под новую структуру)
+    setActiveLabel() {
+      // В новой верстке класс is-active вешается через :class в шаблоне, 
+      // но если вам нужна дополнительная логика для мобильных, она остается здесь.
+      if (document.documentElement.clientWidth <= 767) {
+        // Пример мобильной логики, если она требовалась ранее
+        const activeLabel = document.querySelector('.test-n-slider__mark.is-active .test-n-slider__mark-label');
+        if (activeLabel) {
+           // Можно добавить специфичную мобильную логику, если нужно
+        }
+      }
     },
 
-    checkAnswerValue() {
-      // Приводим оба значения к числу для надёжного сравнения
-      const selected = +this.answerValue;
-      const correct = +this.options.correctAnswer;
-
-      this.isAnswerValueCorrect = selected === correct;
-
-      // Для отладки (удалите после проверки)
-      console.log('✅ Проверка ответа:', {
-        selected,
-        correct,
-        isCorrect: this.isAnswerValueCorrect
-      });
+    autoHeight() {
+      if (document.documentElement.clientWidth < 470) {
+        const container = this.$refs.test_container;
+        if (!container) return;
+        const parent = container.closest('.js--test-cont');
+        if (!parent) return;
+        
+        const title = parent.querySelector('.test-a__question');
+        const title_height = title ? title.offsetHeight : 0;
+        
+        const sliderContainer = parent.querySelector('.test-a__container');
+        if (sliderContainer) {
+          sliderContainer.setAttribute('style', `min-height:calc(100vh - 32px - 26px - 24px - ${title_height}px - 65px)`);
+        }
+      }
     },
-    setDefault() {
-      this.selectedIndex = 0;
-      this.answerValue = this.answersList[0]?.value;
-      this.isAnswerValueCorrect = null;
-      this.$emit('valuesIsUnchosen');
+
+    updateScreenWidth() {
+      this.autoHeight();
     },
-    prepareDataForSend() {
-      this.$emit('readyForDataSending', {
-        answerValue: this.answerValue,
-        isAnswerValueCorrect: this.isAnswerValueCorrect
-      });
-    }
+    
+    btnPrev() {
+      this.count = 0;
+      eventBus.emit('eventbtnPrev');
+    },
   },
   mounted() {
-    this.selectedIndex = 0;
-    this.answerValue = this.answersList[0]?.value;
+    // Инициализация первым значением при загрузке
+    if (this.optionsList.length > 0) {
+      this.selectedIndex = 0;
+      this.answerValue = this.optionsList[0].id;
+      store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
+    }
+    
+    this.updateScreenWidth();
+    window.addEventListener('resize', this.updateScreenWidth);
+  },
+  created() {
+    eventBus.on('slideReachBeginning', () => {
+      this.btn_prev = false;
+    });
+    eventBus.on('slideFromEdge', () => {
+      this.btn_prev = true;
+    });
+  },
+  // Vue 3 хук для очистки (важно для предотвращения утечек памяти и багов с eventBus)
+  unmounted() {
+    window.removeEventListener('resize', this.updateScreenWidth);
+    eventBus.off('slideReachBeginning');
+    eventBus.off('slideFromEdge');
   }
-}
+};
 </script>
-
-<style scoped>
-</style>
-
-
-
-//данные
-const test_slider = JSON.stringify({
-"description": "<p>Что такое куча?</p>",
-"end_text": "<p>Парадокс кучи («Куча», «Сорит») — логический парадокс, сформулированный Евбулидом из Милета (IV век до н. э.)[1], связанный с неопределённостью предиката «быть кучей»[2].\n</p>\n<p>Формулировка парадокса основана на базисной предпосылке, согласно которой одно зёрнышко не образует кучи, и индуктивной предпосылке, по которой добавление одного зёрнышка к совокупности, кучей не являющейся, несущественно для образования кучи. При принятии этих предпосылок никакая совокупность из сколь угодно большого количества зёрен не будет образовывать кучи, что противоречит представлению о существовании кучи из зёрен.</p>",
-"end_title": "Ответить",
-"title": "Парадокс кучи",
-"colorTheme": "gray",
-"btn": "Ответить",
-"name": "my_poll_slider",
-"taglist": [{ "id": "dark", "title": "Тёмно-синее" }, { "id": "white", "title": "Белое" }, { "id": "gray", "title": "Серое" }],
-"answerlist": [{ "id": "yes", "title": "Да" }, { "id": "no", "title": "Нет" }],
-"settings": [],
-"layout": "0,0",
-"options": {
-"answers": {
-"10000": "10 000 ₽",
-"20000": "20 000 ₽",
-"30000": "30 000 ₽",
-"60000": "60 000 ₽"
-},
-"correctAnswer": "10000"
-},
-"typeOfTest": "slider"
-})
-
-//
