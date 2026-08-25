@@ -1,58 +1,38 @@
-&.hidden{
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    display: block;
-    padding-top: 0;
-    padding-bottom: 0;
-    border-bottom-color: transparent;
-    
-    // ВАЖНО: добавляем padding-bottom в transition
-    transition: 
-      max-height 0.5s ease, 
-      opacity 0.5s ease, 
-      padding-bottom 0.5s ease,
-      padding-top 0.5s ease;
-  }
-
--------------
-
 btn.addEventListener('click', () => {
   const hiddenItems = parent.querySelectorAll('.js-accordion-parent.hidden');
 
   hiddenItems.forEach(item => {
-    // 1. Сначала измеряем ПРАВИЛЬНУЮ высоту (с padding из CSS)
-    // Временно убираем hidden стили для измерения
+    // 1. СНАЧАЛА измеряем правильную высоту
     item.style.transition = 'none';
     item.style.maxHeight = 'none';
     item.style.opacity = '1';
-    item.style.paddingBottom = ''; // Берём из CSS (24px)
-    item.style.paddingTop = ''; // Берём из CSS
     
     const originalHeight = item.scrollHeight;
     
-    // 2. Возвращаем в начальное состояние для анимации
+    // 2. ВАЖНО: задаём inline стили СИНХРОННО перед удалением класса
+    // Это блокирует CSS значения из .hidden
     item.style.maxHeight = '0';
     item.style.opacity = '0';
     item.style.paddingBottom = '0';
     item.style.paddingTop = '0';
     
-    // 3. Убираем класс
+    // 3. Убираем класс (но inline стили блокируют CSS значения)
     item.classList.remove('hidden');
     
     // 4. Принудительный reflow
     void item.offsetHeight;
     
-    // 5. Запускаем анимацию
+    // 5. Теперь запускаем анимацию — inline стили уже установлены
     requestAnimationFrame(() => {
       item.style.transition = 'max-height 0.5s ease, opacity 0.5s ease, padding-bottom 0.5s ease, padding-top 0.5s ease';
       item.style.maxHeight = `${originalHeight}px`;
       item.style.opacity = '1';
-      item.style.paddingBottom = ''; // Плавно возвращается к CSS значению
-      item.style.paddingTop = ''; // Плавно возвращается к CSS значению
+      // Убираем inline стили — браузер плавно переходит к CSS значениям
+      item.style.paddingBottom = '';
+      item.style.paddingTop = '';
     });
 
-    // 6. Очистка после анимации
+    // 6. Очистка
     item.addEventListener('transitionend', function handler(e) {
       if (e.propertyName !== 'max-height') return;
       item.style.transition = '';
