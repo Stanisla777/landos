@@ -2,37 +2,36 @@ btn.addEventListener('click', () => {
   const hiddenItems = parent.querySelectorAll('.js-accordion-parent.hidden');
 
   hiddenItems.forEach(item => {
-    // 1. СНАЧАЛА измеряем правильную высоту
+    // 1. Измеряем правильную высоту (временно показываем)
     item.style.transition = 'none';
     item.style.maxHeight = 'none';
     item.style.opacity = '1';
+    item.style.paddingBottom = '';
+    item.style.paddingTop = '';
+    item.classList.remove('hidden');
     
     const originalHeight = item.scrollHeight;
     
-    // 2. ВАЖНО: задаём inline стили СИНХРОННО перед удалением класса
-    // Это блокирует CSS значения из .hidden
+    // 2. Возвращаем в сжатое состояние
     item.style.maxHeight = '0';
     item.style.opacity = '0';
     item.style.paddingBottom = '0';
     item.style.paddingTop = '0';
     
-    // 3. Убираем класс (но inline стили блокируют CSS значения)
-    item.classList.remove('hidden');
+    void item.offsetHeight; // reflow
     
-    // 4. Принудительный reflow
-    void item.offsetHeight;
-    
-    // 5. Теперь запускаем анимацию — inline стили уже установлены
+    // 3. Анимируем — класс уже убран, но инлайн-стили контролируют всё
     requestAnimationFrame(() => {
-      item.style.transition = 'max-height 0.5s ease, opacity 0.5s ease, padding-bottom 0.5s ease, padding-top 0.5s ease';
+      item.style.transition = 
+        'max-height 0.5s ease, opacity 0.5s ease, padding-bottom 0.5s ease, padding-top 0.5s ease';
+      
       item.style.maxHeight = `${originalHeight}px`;
       item.style.opacity = '1';
-      // Убираем inline стили — браузер плавно переходит к CSS значениям
       item.style.paddingBottom = '';
       item.style.paddingTop = '';
     });
 
-    // 6. Очистка
+    // 4. Очистка после анимации
     item.addEventListener('transitionend', function handler(e) {
       if (e.propertyName !== 'max-height') return;
       item.style.transition = '';
