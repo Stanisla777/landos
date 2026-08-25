@@ -1,134 +1,41 @@
-<div class="another-thing-2025__questions-answers js--questions-answers-accordion">
-<div class="advanced-editor__accordion not-first-item-top-border common-content">
-<div class="advanced-editor__accordion-container">
-<div class="advanced-editor__accordion-item js-accordion-parent">
-<div class="advanced-editor__accordion-item-wrapper own-styles js--dropDown-btn">
-    <p>Заголовок</p>
-</div>
-<div class="advanced-editor__accordion-item-wrapper-body js-accordion-body">
-    <div class="common-content">
-        <p>Фильм фильм фильм Фильм фильм фильм Фильм фильм фильм</p>
-        <ul>
-            <li>Привет-пока</li>
-            <li>Привет-пока</li>
-        </ul>
-    </div>
-</div>
-</div>
-</div>
-</div>
-<div class="another-thing-2025__questions-answers-btn js--btn-questions-answers">
-                        <div class="btn_s btn-icon-else transparent_black_border mobile-100">Показать ещё</div>
-                    </div>
-</div>
+btn.addEventListener('click', () => {
+  const hiddenItems = parent.querySelectorAll('.js-accordion-parent.hidden');
 
-.advanced-editor__accordion-item{
-      &.hidden{
-        max-height: 0;
-        overflow: hidden;
-        opacity: 0;
-        display: block; /* Важно для анимации */
-        transition: max-height 0.5s ease, opacity 0.5s ease;
-        padding: 0;
-      }
-    }
+  hiddenItems.forEach(item => {
+    // Сохраняем оригинальную высоту (теперь она правильная, так как padding на месте)
+    const originalHeight = item.scrollHeight;
 
+    // Убираем класс hidden, но временно блокируем анимацию
+    item.style.transition = 'none';
+    item.style.maxHeight = '0';
+    item.style.opacity = '0';
+    item.classList.remove('hidden');
 
-/* eslint-disable */
-function updateSize() {
-  const containers = document.querySelectorAll('.js--img-observe');
-  containers.forEach(container => {
-    // Сначала сбрасываем стили, чтобы получить реальные размеры
-    container.style.width = '';
-    container.style.height = '';
+    // Принудительный reflow чтобы transition: none сработал
+    void item.offsetHeight;
 
-    // Получаем текущие размеры
-    const w = Math.floor(container.clientWidth);
-    const h = Math.floor(container.clientHeight);
-
-    // Устанавливаем новые размеры
-    container.style.width = `${w}px`;
-    container.style.height = `${h}px`;
-  });
-}
-
-
-
-export default function accordeonHeight(el) {
-
-  const parent = document.querySelector('.js--questions-answers-accordion');
-  const btn = document.querySelector('.js--btn-questions-answers');
-
-  if (!parent || !btn) return;
-
-  const items = parent.querySelectorAll('.js-accordion-parent');
-
-  // Если элементов 5 или меньше - скрываем кнопку
-  if (items.length <= 5) {
-    btn.classList.add('btn-accordion-hidden');
-    return;
-  }
-
-  // Скрываем элементы, начиная с 6-го
-  items.forEach((item, index) => {
-    if (index >= 5) {
-      item.classList.add('hidden');
-    }
-  });
-
-  // Показываем кнопку
-  // btn.style.display = 'block';
-
-  // Обработчик клика на кнопку
-  btn.addEventListener('click', () => {
-    const hiddenItems = parent.querySelectorAll('.js-accordion-parent.hidden');
-
-    hiddenItems.forEach(item => {
-      // Сохраняем оригинальную высоту для плавной анимации
-      const originalHeight = item.scrollHeight;
-
-      // Временные стили для анимации
-      item.style.maxHeight = '0';
-      item.style.opacity = '0';
-      item.style.display = 'block';
-      item.classList.remove('hidden');
-
-      // Запуск анимации
-      requestAnimationFrame(() => {
-        item.style.transition = 'max-height 0.5s ease, opacity 0.5s ease';
-        item.style.maxHeight = `${originalHeight}px`;
-        item.style.opacity = '1';
-      });
-
-      // Очистка после анимации
-      item.addEventListener('transitionend', () => {
-        item.style.transition = '';
-        item.style.maxHeight = '';
-        item.style.opacity = '';
-        item.style.display = '';
-      }, { once: true });
+    // Возвращаем transition и запускаем анимацию
+    requestAnimationFrame(() => {
+      item.style.transition = '';
+      item.style.maxHeight = `${originalHeight}px`;
+      item.style.opacity = '1';
     });
 
-    // Скрываем кнопку после раскрытия
-    btn.classList.add('btn-accordion-hidden');
+    // Очистка после анимации
+    item.addEventListener('transitionend', () => {
+      item.style.transition = '';
+      item.style.maxHeight = '';
+      item.style.opacity = '';
+    }, { once: true });
   });
 
-  const resizeObserver = new ResizeObserver(updateSize);
+  btn.classList.add('btn-accordion-hidden');
+});
 
-  // Находим все элементы и подписываемся на их изменения
-  const containers = document.querySelectorAll('.js--img-observe');
-  containers.forEach(container => {
-    resizeObserver.observe(container);
-  });
+-*----------------------
 
-  // Также подписываемся на изменение размера окна на всякий случай
-  window.addEventListener('resize', updateSize);
-
-  // Инициализация при первом запуске
-  updateSize();
-
-
-
-
-}
-
+margin-bottom: -24px; /* Компенсируем padding-bottom */
+    
+    @include respondTo(small){
+      margin-bottom: -16px; /* Для мобильных */
+    }
