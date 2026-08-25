@@ -1,65 +1,60 @@
-max-height: 0;
+&.hidden{
+    max-height: 0;
     overflow: hidden;
     opacity: 0;
     display: block;
     padding-top: 0;
     padding-bottom: 0;
-    border-bottom-width: 0;          
-    border-bottom-color: transparent; 
-    transition: max-height 0.5s ease, opacity 0.5s ease;
+    border-bottom-color: transparent; // Анимируем только color, НЕ width
+    
+    transition: 
+      max-height 0.5s ease,
+      opacity 0.5s ease,
+      padding-bottom 0.5s ease,
+      border-bottom-color 0.5s ease;
+  }
 
-----------------
+-----------------
 btn.addEventListener('click', () => {
   const hiddenItems = parent.querySelectorAll('.js-accordion-parent.hidden');
 
-  hiddenItems.forEach((item) => {
-    // 1. Убираем класс — CSS-паддинги и бордер восстанавливаются
-    item.classList.remove('hidden');
+  // 1. Измеряем все высоты заранее
+  const heights = Array.from(hiddenItems).map(item => {
+    const original = item.style.maxHeight;
+    item.style.maxHeight = 'none';
+    const height = item.scrollHeight;
+    item.style.maxHeight = original;
+    return height;
+  });
 
-    // 2. Измеряем полную высоту (уже с padding-bottom из CSS)
-    const targetHeight = item.scrollHeight;
-
-    // 3. Мгновенно ставим начальные значения через inline-стили
-    //    (визуально элемент всё ещё "сжат")
+  // 2. Анимируем каждый элемент
+  hiddenItems.forEach((item, index) => {
+    const targetHeight = heights[index];
+    
+    // Начальное состояние через inline
     item.style.maxHeight = '0';
     item.style.opacity = '0';
     item.style.paddingBottom = '0';
-    item.style.borderBottomWidth = '0';
-    item.style.borderBottomColor = 'transparent';
-    item.style.overflow = 'hidden';
-
-    // 4. Запускаем анимацию
+    
+    // Убираем класс
+    item.classList.remove('hidden');
+    
+    // Запускаем анимацию
     requestAnimationFrame(() => {
-      item.style.transition =
-        'max-height 0.5s ease, opacity 0.5s ease, padding-bottom 0.5s ease, border-bottom-color 0.5s ease';
-
       item.style.maxHeight = `${targetHeight}px`;
       item.style.opacity = '1';
-
-      // Пустая строка → браузер берёт значение из CSS (24px / 16px)
-      // transition плавно анимирует от inline "0" до CSS-значения
-      item.style.paddingBottom = '';
-      item.style.borderBottomWidth = '';   // → 1px из CSS
-      item.style.borderBottomColor = '';   // → #dedede из CSS
+      item.style.paddingBottom = ''; // CSS вернёт 24px/16px
     });
 
-    // 5. Очистка inline-стилей после завершения анимации
+    // Очистка после анимации
     item.addEventListener('transitionend', function handler(e) {
-      // Ждём именно max-height, чтобы не сработать на первом попавшемся свойстве
       if (e.propertyName !== 'max-height') return;
-
-      item.style.transition = '';
       item.style.maxHeight = '';
       item.style.opacity = '';
       item.style.paddingBottom = '';
-      item.style.borderBottomWidth = '';
-      item.style.borderBottomColor = '';
-      item.style.overflow = '';
-
       item.removeEventListener('transitionend', handler);
     });
   });
 
-  // Скрываем кнопку
   btn.classList.add('btn-accordion-hidden');
 });
