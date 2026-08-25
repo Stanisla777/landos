@@ -1,60 +1,46 @@
-&.hidden{
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    display: block;
-    padding-top: 0;
-    padding-bottom: 0;
-    border-bottom-color: transparent; // Анимируем только color, НЕ width
-    
-    transition: 
-      max-height 0.5s ease,
-      opacity 0.5s ease,
-      padding-bottom 0.5s ease,
-      border-bottom-color 0.5s ease;
-  }
+.advanced-editor__accordion-item{
+      &.hidden{
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        display: block;
+        padding-top: 0;
+        padding-bottom: 0;
+        //border-bottom-width: 0;
+        border-bottom-color: transparent;
+        transition: max-height 0.5s ease, opacity 0.5s ease;
+      }
+    }
 
------------------
 btn.addEventListener('click', () => {
-  const hiddenItems = parent.querySelectorAll('.js-accordion-parent.hidden');
+    const hiddenItems = parent.querySelectorAll('.js-accordion-parent.hidden');
 
-  // 1. Измеряем все высоты заранее
-  const heights = Array.from(hiddenItems).map(item => {
-    const original = item.style.maxHeight;
-    item.style.maxHeight = 'none';
-    const height = item.scrollHeight;
-    item.style.maxHeight = original;
-    return height;
-  });
+    hiddenItems.forEach(item => {
+      // Сохраняем оригинальную высоту для плавной анимации
+      const originalHeight = item.scrollHeight;
 
-  // 2. Анимируем каждый элемент
-  hiddenItems.forEach((item, index) => {
-    const targetHeight = heights[index];
-    
-    // Начальное состояние через inline
-    item.style.maxHeight = '0';
-    item.style.opacity = '0';
-    item.style.paddingBottom = '0';
-    
-    // Убираем класс
-    item.classList.remove('hidden');
-    
-    // Запускаем анимацию
-    requestAnimationFrame(() => {
-      item.style.maxHeight = `${targetHeight}px`;
-      item.style.opacity = '1';
-      item.style.paddingBottom = ''; // CSS вернёт 24px/16px
+      // Временные стили для анимации
+      item.style.maxHeight = '0';
+      item.style.opacity = '0';
+      item.style.display = 'block';
+      item.classList.remove('hidden');
+
+      // Запуск анимации
+      requestAnimationFrame(() => {
+        item.style.transition = 'max-height 0.5s ease, opacity 0.5s ease';
+        item.style.maxHeight = `${originalHeight}px`;
+        item.style.opacity = '1';
+      });
+
+      // Очистка после анимации
+      item.addEventListener('transitionend', () => {
+        item.style.transition = '';
+        item.style.maxHeight = '';
+        item.style.opacity = '';
+        item.style.display = '';
+      }, { once: true });
     });
 
-    // Очистка после анимации
-    item.addEventListener('transitionend', function handler(e) {
-      if (e.propertyName !== 'max-height') return;
-      item.style.maxHeight = '';
-      item.style.opacity = '';
-      item.style.paddingBottom = '';
-      item.removeEventListener('transitionend', handler);
-    });
+    // Скрываем кнопку после раскрытия
+    btn.classList.add('btn-accordion-hidden');
   });
-
-  btn.classList.add('btn-accordion-hidden');
-});
