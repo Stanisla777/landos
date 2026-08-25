@@ -1,41 +1,65 @@
+max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    display: block;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom-width: 0;          
+    border-bottom-color: transparent; 
+    transition: max-height 0.5s ease, opacity 0.5s ease;
+
+----------------
 btn.addEventListener('click', () => {
   const hiddenItems = parent.querySelectorAll('.js-accordion-parent.hidden');
 
-  hiddenItems.forEach(item => {
-    // Сохраняем оригинальную высоту (теперь она правильная, так как padding на месте)
-    const originalHeight = item.scrollHeight;
-
-    // Убираем класс hidden, но временно блокируем анимацию
-    item.style.transition = 'none';
-    item.style.maxHeight = '0';
-    item.style.opacity = '0';
+  hiddenItems.forEach((item) => {
+    // 1. Убираем класс — CSS-паддинги и бордер восстанавливаются
     item.classList.remove('hidden');
 
-    // Принудительный reflow чтобы transition: none сработал
-    void item.offsetHeight;
+    // 2. Измеряем полную высоту (уже с padding-bottom из CSS)
+    const targetHeight = item.scrollHeight;
 
-    // Возвращаем transition и запускаем анимацию
+    // 3. Мгновенно ставим начальные значения через inline-стили
+    //    (визуально элемент всё ещё "сжат")
+    item.style.maxHeight = '0';
+    item.style.opacity = '0';
+    item.style.paddingBottom = '0';
+    item.style.borderBottomWidth = '0';
+    item.style.borderBottomColor = 'transparent';
+    item.style.overflow = 'hidden';
+
+    // 4. Запускаем анимацию
     requestAnimationFrame(() => {
-      item.style.transition = '';
-      item.style.maxHeight = `${originalHeight}px`;
+      item.style.transition =
+        'max-height 0.5s ease, opacity 0.5s ease, padding-bottom 0.5s ease, border-bottom-color 0.5s ease';
+
+      item.style.maxHeight = `${targetHeight}px`;
       item.style.opacity = '1';
+
+      // Пустая строка → браузер берёт значение из CSS (24px / 16px)
+      // transition плавно анимирует от inline "0" до CSS-значения
+      item.style.paddingBottom = '';
+      item.style.borderBottomWidth = '';   // → 1px из CSS
+      item.style.borderBottomColor = '';   // → #dedede из CSS
     });
 
-    // Очистка после анимации
-    item.addEventListener('transitionend', () => {
+    // 5. Очистка inline-стилей после завершения анимации
+    item.addEventListener('transitionend', function handler(e) {
+      // Ждём именно max-height, чтобы не сработать на первом попавшемся свойстве
+      if (e.propertyName !== 'max-height') return;
+
       item.style.transition = '';
       item.style.maxHeight = '';
       item.style.opacity = '';
-    }, { once: true });
+      item.style.paddingBottom = '';
+      item.style.borderBottomWidth = '';
+      item.style.borderBottomColor = '';
+      item.style.overflow = '';
+
+      item.removeEventListener('transitionend', handler);
+    });
   });
 
+  // Скрываем кнопку
   btn.classList.add('btn-accordion-hidden');
 });
-
--*----------------------
-
-margin-bottom: -24px; /* Компенсируем padding-bottom */
-    
-    @include respondTo(small){
-      margin-bottom: -16px; /* Для мобильных */
-    }
