@@ -1,60 +1,7 @@
-btn.addEventListener('click', () => {
-  const hiddenItems = parent.querySelectorAll('.js-accordion-parent.hidden');
-  
-  // Задержка между каждым блоком (в миллисекундах)
-  const staggerDelay = 100; // 100мс — оптимально
+/* В начале app.css или main.scss */
+html, body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
-  // ВАЖНО: измеряем высоты СРАЗУ для всех элементов
-  // (иначе внутри setTimeout scrollHeight будет неправильным)
-  const heights = Array.from(hiddenItems).map(item => {
-    item.style.transition = 'none';
-    item.style.maxHeight = 'none';
-    item.style.opacity = '1';
-    item.style.paddingBottom = '';
-    item.style.paddingTop = '';
-    item.classList.remove('hidden');
-    
-    const height = item.scrollHeight;
-    
-    // Возвращаем в сжатое состояние
-    item.style.maxHeight = '0';
-    item.style.opacity = '0';
-    item.style.paddingBottom = '0';
-    item.style.paddingTop = '0';
-    
-    return height;
-  });
-
-  hiddenItems.forEach((item, index) => {
-    const targetHeight = heights[index];
-    
-    // Запускаем каждый блок с задержкой
-    setTimeout(() => {
-      void item.offsetHeight; // reflow
-      
-      // Анимирую
-      requestAnimationFrame(() => {
-        item.style.transition =
-          'max-height 0.5s ease, opacity 0.5s ease, padding-bottom 0.5s ease, padding-top 0.5s ease';
-
-        item.style.maxHeight = `${targetHeight}px`;
-        item.style.opacity = '1';
-        item.style.paddingBottom = '';
-        item.style.paddingTop = '';
-      });
-
-      // Очистка после анимации
-      item.addEventListener('transitionend', function handler(e) {
-        if (e.propertyName !== 'max-height') return;
-        item.style.transition = '';
-        item.style.maxHeight = '';
-        item.style.opacity = '';
-        item.style.paddingBottom = '';
-        item.style.paddingTop = '';
-        item.removeEventListener('transitionend', handler);
-      });
-    }, index * staggerDelay);
-  });
-
-  btn.classList.add('btn-accordion-hidden');
-});
+/* Теперь весь сайт защищен от iOS Safari font boosting */
