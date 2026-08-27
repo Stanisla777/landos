@@ -1,14 +1,23 @@
-<template>
-  <div class="test-a__container marathon-new-last__test-vue-slider marathon" ref="test_container">
-    <div class="test-a__body" ref="BodyLabel">
-      <div class="test-n-slider marathon" ref="ContainerSlider">
-        
-        <!-- Убрали обертку с pointerdown.capture. Доверяем родным событиям слайдера -->
+  data() {
+    return {
+      selectedIndex: 0,
+      dragValue: 0,
+      answerValue: null,
+      isDragging: false,
+      disableTransition: false, // <-- НОВЫЙ ФЛАГ для управления анимацией
+      btn_next: true,
+      btn_prev: true,
+      count: 0,
+      count_slide: 0,
+    };
+  },
+
         <Slider
           ref="slider"
           v-model="dragValue"
+          :transition="disableTransition ? 'none' : 'all 0.2s ease'" 
           @update:modelValue="onValueChange"
-          @dragstart="isDragging = true"
+          @dragstart="onDragStart"
           @dragend="onDragEnd"
           :min="0"
           :max="optionsList.length - 1"
@@ -20,83 +29,65 @@
           class="test-n-slider__track"
         />
 
-        <div class="test-n-slider__marks" :class="{ 'is-disabled': time_end }">
-          <div
-            v-for="(option, index) in optionsList"
-            :key="option.id"
-            class="test-n-slider__mark"
-            :class="{ 'is-active': index === selectedIndex }"
-            :style="{ left: getEvenPosition(index) + '%' }"
-            @click.stop="selectByIndex(index)"
-          >
-            <span class="test-n-slider__mark-label">{{ option.name }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Значение для мобильной версии -->
-    <div class="test-n-slider__value">{{ currentValueName }}</div>
 
-    <test-button
-      :modal="modal"
-      :status_internet="status_internet"
-      :btn_next="btn_next"
-      :status_btn="status_btn"
-      :btn_prev="btn_prev"
-      :error_sand_variant="error_sand_variant"
-      :error_sand_variant_text="error_sand_variant_text"
-    />
-  </div>
-</template>
+-------------------------------
 
-----------------------------------------
-
-  methods: {
-    getEvenPosition(index) {
-      if (this.optionsList.length <= 1) return 0;
-      return (index / (this.optionsList.length - 1)) * 100;
+    // Гарантируем, что при начале перетаскивания анимация всегда включена
+    onDragStart() {
+      this.isDragging = true;
+      this.disableTransition = false;
     },
 
-    // Срабатывает при ЛЮБОМ изменении значения (и при драге, и при клике)
     onValueChange(newValue) {
       if (this.time_end || this.optionsList.length === 0) return;
 
       if (this.isDragging) {
-        // Во время перетаскивания просто разрешаем плавное визуальное обновление
+        // Сценарий 1: Перетаскивание. Просто обновляем значение для плавности.
         this.dragValue = newValue;
         return;
       }
 
-      // Если не перетаскиваем, значит это был чистый клик (tap)
-      this.processSnap(newValue);
-    },
-
-    // Срабатывает строго в момент отпускания пальца/мыши после перетаскивания
-    onDragEnd() {
-      this.isDragging = false;
-      // Принудительно запускаем логику примагничивания на основе текущего значения
-      this.processSnap(this.dragValue);
-    },
-
-    // Универсальная логика "примагничивания"
-    processSnap(value) {
-      const targetIndex = Math.round(value);
+      // Сценарий 2: Чистый клик (tap) по треку.
+      const targetIndex = Math.round(newValue);
       const clampedIndex = Math.max(0, Math.min(this.optionsList.length - 1, targetIndex));
 
       if (clampedIndex === this.selectedIndex) {
-        // Сценарий А: Кликнули или отпустили рядом с текущим маркером.
-        // Мы должны ОТМЕНИТЬ изменение, чтобы не было "отскока".
-        // setTimeout на 10мс надежнее, чем $nextTick, для перебивки внутренних анимаций библиотеки
-        setTimeout(() => {
-          this.dragValue = this.selectedIndex;
-        }, 10);
+        // Кликнули рядом с текущим маркером -> НЕВИДИМЫЙ ОТКАТ
+        // 1. Отключаем анимацию
+        this.disableTransition = true;
+        // 2. Мгновенно возвращаем значение на место
+        this.dragValue = this.selectedIndex;
+        // 3. Включаем анимацию обратно в следующем кадре, чтобы будущие действия были плавными
+        this.$nextTick(() => {
+          this.disableTransition = false;
+        });
       } else {
-        // Сценарий Б: Кликнули или дотянули до НОВОГО маркера.
-        // Принимаем изменение.
+        // Кликнули ближе к ДРУГОМУ маркеру -> ПЛАВНОЕ ПЕРЕМЕЩЕНИЕ
         this.selectedIndex = clampedIndex;
         this.dragValue = clampedIndex;
         this.updateStateFromIndex(clampedIndex);
+      }
+    },
+
+    onDragEnd() {
+      this.isDragging = false;
+      
+      // Логика "примагничивания" после окончания перетаскивания
+      const targetIndex = Math.round(this.dragValue);
+      const clampedIndex = Math.max(0, Math.min(this.optionsList.length - 1, targetIndex));
+
+      if (clampedIndex !== this.selectedIndex) {
+        // Дотянули до нового маркера
+        this.selectedIndex = clampedIndex;
+        this.dragValue = clampedIndex;
+        this.updateStateFromIndex(clampedIndex);
+      } else {
+        // Начали тянуть, но отпустили рядом с тем же маркером -> НЕВИДИМЫЙ ОТКАТ
+        this.disableTransition = true;
+        this.dragValue = this.selectedIndex;
+        this.$nextTick(() => {
+          this.disableTransition = false;
+        });
       }
     },
 
@@ -106,55 +97,3 @@
       this.dragValue = index;
       this.updateStateFromIndex(index);
     },
-
-    updateStateFromIndex(index) {
-      const selectedOption = this.optionsList[index];
-      if (!selectedOption) return;
-
-      this.answerValue = selectedOption.id;
-
-      const line = document.querySelectorAll('.js--slider-line-right');
-      if (this.optionsList.length - 1 === index) {
-        line.forEach(item => {
-          setTimeout(() => item.classList.add('active'), 200);
-        });
-      } else {
-        line.forEach(item => item.classList.remove('active'));
-      }
-
-      store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
-    },
-
-    resetToFirstOption() {
-      this.selectedIndex = 0;
-      this.dragValue = 0;
-      this.answerValue = this.optionsList[0].id;
-      store.dispatch('ActionVariantSlider', [this.param_component.id, this.answerValue]);
-    },
-
-    autoHeight() {
-      if (document.documentElement.clientWidth < 470) {
-        const container = this.$refs.test_container;
-        if (!container) return;
-        const parent = container.closest('.js--test-cont');
-        if (!parent) return;
-
-        const title = parent.querySelector('.test-a__question');
-        const title_height = title ? title.offsetHeight : 0;
-
-        const sliderContainer = parent.querySelector('.test-a__container');
-        if (sliderContainer) {
-          sliderContainer.setAttribute('style', `min-height:calc(100vh - 32px - 26px - 24px - ${title_height}px - 65px)`);
-        }
-      }
-    },
-
-    updateScreenWidth() {
-      // this.autoHeight();
-    },
-
-    btnPrev() {
-      this.count = 0;
-      eventBus.emit('eventbtnPrev');
-    },
-  },
