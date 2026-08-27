@@ -1,20 +1,35 @@
-    // Универсальная логика "примагничивания"
-    processSnap(value) {
-      const targetIndex = Math.round(value);
-      const clampedIndex = Math.max(0, Math.min(this.optionsList.length - 1, targetIndex));
+        <Slider
+          ref="slider"
+          v-model="dragValue"
+          @update:modelValue="onValueChange"
+          @dragstart="isDragging = true"
+          @dragend="onDragEnd"
+          :min="0"
+          :max="optionsList.length - 1"
+          :step="0.01"
+          :tooltip="false"
+          :height="4"
+          :dot-size="24"
+          :disabled="time_end"
+          :style="sliderCssVars" 
+          class="test-n-slider__track"
+        />
 
-      if (clampedIndex === this.selectedIndex) {
-        // Сценарий А: Кликнули или отпустили рядом с текущим маркером.
-        // requestAnimationFrame синхронизирует возврат с перерисовкой экрана,
-        // перебивая внутреннюю анимацию библиотеки до того, как глаз успеет заметить движение.
-        requestAnimationFrame(() => {
-          this.dragValue = this.selectedIndex;
-        });
-      } else {
-        // Сценарий Б: Кликнули или дотянули до НОВОГО маркера.
-        // Принимаем изменение и отправляем в Store.
-        this.selectedIndex = clampedIndex;
-        this.dragValue = clampedIndex;
-        this.updateStateFromIndex(clampedIndex);
-      }
+sliderCssVars() {
+      const max = this.optionsList.length - 1;
+      // Защита от деления на ноль, если вариантов ответа всего 1
+      const percentage = max > 0 ? (this.dragValue / max) * 100 : 0;
+      
+      return {
+        '--process-width': `${percentage}%`
+      };
     },
+
+.test-n-slider__track :deep(.slider-rail) {
+  background: linear-gradient(
+    to right, 
+    #4CAF50 var(--process-width), /* Ваш зелёный цвет */
+    #E0E0E0 var(--process-width)  /* Цвет неактивной части трекера (серый) */
+  ) !important;
+  border-radius: 2px; /* Опционально: скругление, чтобы соответствовало высоте 4px */
+}
