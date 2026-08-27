@@ -1,57 +1,25 @@
-.test-n-slider .test-n-slider__marks {
-    position: relative;
-    height: 36px;
-    pointer-events: none;
-}
-@media only screen and (max-width: 768px) {
-    .test-n-slider .test-n-slider__marks {
-        display: none;
-    }
-}
-
-.test-n-slider__value {
-    display: none;
-    font-family: "Gilroy-Medium", sans-serif;
-    font-size: 1rem;
-    left: 0;
-    line-height: 1.5;
-    position: absolute;
-    top: 2.25rem;
-    white-space: nowrap;
-}
-
-@media only screen and (max-width: 768px) {
-    .test-n-slider__value {
-        display: block;
-    }
-}
-
-
 <template>
   <div class="test-a__container marathon-new-last__test-vue-slider marathon" ref="test_container">
     <div class="test-a__body" ref="BodyLabel">
-<!--      <div class="test-n-slider__line"></div>-->
-<!--      <div class="test-n-slider__line right js&#45;&#45;slider-line-right"></div>-->
-
       <div class="test-n-slider marathon" ref="ContainerSlider">
-        <!-- Обертка для перехвата кликов по треку -->
-        <div class="slider-wrapper" @pointerdown.capture="onPointerDownCapture">
-          <Slider
-            ref="slider"
-            :modelValue="dragValue"
-            @update:modelValue="onValueChange"
-            @dragstart="isDragging = true"
-            @dragend="isDragging = false"
-            :min="0"
-            :max="optionsList.length - 1"
-            :step="0.01"
-            :tooltip="false"
-            :height="4"
-            :dot-size="24"
-            :disabled="time_end"
-            class="test-n-slider__track"
-          />
-        </div>
+        
+        <!-- Убрали обертку с pointerdown.capture. Доверяем родным событиям слайдера -->
+        <Slider
+          ref="slider"
+          v-model="dragValue"
+          @update:modelValue="onValueChange"
+          @dragstart="isDragging = true"
+          @dragend="onDragEnd"
+          :min="0"
+          :max="optionsList.length - 1"
+          :step="0.01"
+          :tooltip="false"
+          :height="4"
+          :dot-size="24"
+          :disabled="time_end"
+          class="test-n-slider__track"
+        />
+
         <div class="test-n-slider__marks" :class="{ 'is-disabled': time_end }">
           <div
             v-for="(option, index) in optionsList"
@@ -66,6 +34,8 @@
         </div>
       </div>
     </div>
+    
+    <!-- Значение для мобильной версии -->
     <div class="test-n-slider__value">{{ currentValueName }}</div>
 
     <test-button
@@ -80,171 +50,50 @@
   </div>
 </template>
 
-<script>
-import Slider from '@vueform/slider';
-import store from '../store';
-import eventBus from '../eventBus';
-import TestButton from './TestButton.vue';
+----------------------------------------
 
-export default {
-  name: 'TextNSlider',
-  components: {
-    Slider,
-    TestButton
-  },
-  props: {
-    param_component: {
-      type: Object,
-      required: true
-    },
-    modal: {
-      type: Boolean,
-      default: false
-    }
-  },
-  data() {
-    return {
-      selectedIndex: 0,
-      dragValue: 0,
-      answerValue: null,
-      isDragging: false,
-      btn_next: true,
-      btn_prev: true,
-      count: 0,
-      count_slide: 0,
-    };
-  },
-  computed: {
-    currentValueName() {
-      const currentOption = this.optionsList[this.selectedIndex];
-      return currentOption ? currentOption.name : 'Выберите вариант';
-    },
-    optionsList() {
-      return this.param_component?.options || [];
-    },
-    error_sand_variant() {
-      return store.getters.ERRORSANDVARIANT;
-    },
-    error_sand_variant_text() {
-      return store.getters.ERRORSANDVARIANTTEXT;
-    },
-    status_internet() {
-      return store.getters.STATUSINTERNET;
-    },
-    status_btn() {
-      return store.getters.STATUSBTN;
-    },
-    time_end() {
-      return store.getters.TIMEEND;
-    },
-    current_slide() {
-      return store.getters.CURRENTSLIDE;
-    },
-  },
-  watch: {
-    current_slide() {
-      const line = document.querySelectorAll('.js--slider-line-right');
-      line.forEach(item => item.classList.remove('active'));
-
-      if (this.optionsList.length > 0) {
-        this.resetToFirstOption();
-      }
-    }
-  },
   methods: {
     getEvenPosition(index) {
       if (this.optionsList.length <= 1) return 0;
       return (index / (this.optionsList.length - 1)) * 100;
     },
 
-    onSliderEnd() {
-      if (this.time_end || this.optionsList.length === 0) return;
-
-      // 1. Вычисляем ближайший индекс и ОБЯЗАТЕЛЬНО ограничиваем его границами массива
-      // (защита от клика в самый край, который может дать индекс за пределами массива)
-      const rawIndex = Math.round(this.dragValue);
-      const targetIndex = Math.max(0, Math.min(this.optionsList.length - 1, rawIndex));
-
-      // 2. Небольшая задержка (10-20 мс) позволяет библиотеке завершить
-      // внутреннюю обработку события pointerup, после чего мы перехватываем управление.
-      setTimeout(() => {
-        if (targetIndex === this.selectedIndex) {
-          // Сценарий А: Кликнули рядом с текущим маркером.
-          // Принудительно возвращаем значение к текущему индексу.
-          // Это отменяет "прыжок" маркера в точку клика.
-          this.dragValue = this.selectedIndex;
-        } else {
-          // Сценарий Б: Кликнули или перетащили к НОВОМУ маркеру.
-          // Фиксируем новый выбор.
-          this.selectedIndex = targetIndex;
-          this.dragValue = targetIndex;
-          this.updateStateFromIndex(targetIndex);
-        }
-
-        // Сбрасываем флаг состояния для следующих взаимодействий
-        this.isDragging = false;
-        console.log('helloworld')
-      }, 15);
-    },
-
-    onPointerDownCapture(event) {
-      if (this.time_end || this.optionsList.length === 0) return;
-
-      const target = event.target;
-
-      // Игнорирование клик по самому ползунку (чтобы работал Drag)
-      const isHandle = target.closest('.slider-handle') || target.closest('.slider-dot');
-      if (isHandle) return;
-
-      const isMark = target.closest('.test-n-slider__mark');
-      if (isMark) return;
-
-      // Проверяю, что клик был  по треку (линии).
-      const isTrack = target.closest('.slider-base') ||
-        target.closest('.slider-rail') ||
-        target.closest('.slider-track');
-
-      // Если клик был НЕ по треку (например, по пустому месту в обертке), просто игнорируем
-      if (!isTrack) return;
-
-      // перехватываю событие. Библиотека не узнает о клике и не будет двигать ползунок сама.
-      event.stopImmediatePropagation();
-      event.preventDefault();
-
-      // вычисляю ближайший индекс на основе координат клика
-      const rect = this.$refs.slider.$el.getBoundingClientRect();
-      const clickX = event.clientX - rect.left;
-      const percent = Math.max(0, Math.min(1, clickX / rect.width));
-      const clickedIndex = Math.round(percent * (this.optionsList.length - 1));
-
-      // Если кликнули рядом с текущим маркером — ничего не происходит Ползунок остается на месте
-      if (clickedIndex === this.selectedIndex) {
-        return;
-      }
-
-      // Если кликнуть далеко (ближе к другому варианту) — перемещаем и отправляем в Store
-      this.selectedIndex = clickedIndex;
-      this.dragValue = clickedIndex;
-      this.updateStateFromIndex(clickedIndex);
-    },
-
+    // Срабатывает при ЛЮБОМ изменении значения (и при драге, и при клике)
     onValueChange(newValue) {
-
       if (this.time_end || this.optionsList.length === 0) return;
 
       if (this.isDragging) {
+        // Во время перетаскивания просто разрешаем плавное визуальное обновление
         this.dragValue = newValue;
         return;
       }
 
-      const targetIndex = Math.round(newValue);
+      // Если не перетаскиваем, значит это был чистый клик (tap)
+      this.processSnap(newValue);
+    },
+
+    // Срабатывает строго в момент отпускания пальца/мыши после перетаскивания
+    onDragEnd() {
+      this.isDragging = false;
+      // Принудительно запускаем логику примагничивания на основе текущего значения
+      this.processSnap(this.dragValue);
+    },
+
+    // Универсальная логика "примагничивания"
+    processSnap(value) {
+      const targetIndex = Math.round(value);
       const clampedIndex = Math.max(0, Math.min(this.optionsList.length - 1, targetIndex));
 
       if (clampedIndex === this.selectedIndex) {
-        this.$nextTick(() => {
+        // Сценарий А: Кликнули или отпустили рядом с текущим маркером.
+        // Мы должны ОТМЕНИТЬ изменение, чтобы не было "отскока".
+        // setTimeout на 10мс надежнее, чем $nextTick, для перебивки внутренних анимаций библиотеки
+        setTimeout(() => {
           this.dragValue = this.selectedIndex;
-        });
+        }, 10);
       } else {
+        // Сценарий Б: Кликнули или дотянули до НОВОГО маркера.
+        // Принимаем изменение.
         this.selectedIndex = clampedIndex;
         this.dragValue = clampedIndex;
         this.updateStateFromIndex(clampedIndex);
@@ -309,26 +158,3 @@ export default {
       eventBus.emit('eventbtnPrev');
     },
   },
-  mounted() {
-    if (this.optionsList.length > 0) {
-      this.resetToFirstOption();
-    }
-
-    this.updateScreenWidth();
-    window.addEventListener('resize', this.updateScreenWidth);
-  },
-  created() {
-    eventBus.on('slideReachBeginning', () => {
-      this.btn_prev = false;
-    });
-    eventBus.on('slideFromEdge', () => {
-      this.btn_prev = true;
-    });
-  },
-  unmounted() {
-    window.removeEventListener('resize', this.updateScreenWidth);
-    eventBus.off('slideReachBeginning');
-    eventBus.off('slideFromEdge');
-  }
-};
-</script>
