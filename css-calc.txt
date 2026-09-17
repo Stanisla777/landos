@@ -1,25 +1,26 @@
+const maskInstances = new Map();
+
 function iMaskMail() {
   const input_status = document.querySelectorAll('.js--validate-mask-email');
   const maskOptions = {
     mask: /^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]*$/i
+    // enum: ' '
   };
-  
   for (const item of input_status) {
-    // 1️⃣ Уничтожаем старую маску, если есть
+    // Уничтожаю старую маску, если есть
     if (maskInstances.has(item)) {
       maskInstances.get(item).destroy();
       maskInstances.delete(item);
     }
-    
-    // 2️⃣ Создаём новую маску
+    // Создаю новую и сохраняем ссылку
     const mask = IMask(item, maskOptions);
     maskInstances.set(item, mask);
-    
-    // 3️⃣ 🔥 Обработчик изменения: добавляем/убираем класс у родителя
+
+    // Обработчик изменения: добавляем/убираем класс у родителя
     const toggleActiveClass = () => {
-      const parent = item.closest('.js--row');
+      const parent = item.closest('.js--story-input-field');
       if (!parent) return;
-      
+
       // mask.value — актуальное значение маски (не item.value!)
       if (mask.value.length > 0) {
         parent.classList.add('active');
@@ -27,11 +28,101 @@ function iMaskMail() {
         parent.classList.remove('active');
       }
     };
-    
+
     // Подписываемся на событие 'accept' (срабатывает при каждом изменении)
     mask.on('accept', toggleActiveClass);
-    
-    // 4️⃣ Проверяем начальное состояние (на случай автозаполнения браузера)
+
+    // Проверяю начальное состояние (на случай автозаполнения браузера)
     toggleActiveClass();
+
+
   }
 }
+
+-----------
+//маска для телефона
+function iMaskTel(){
+  const array_input_tel = document.querySelectorAll('.js--validate-mask-tel');
+  const maskOptions = {
+    mask: '+{7} 000 000 00 00',
+    prepare: (appended, masked) => {
+      if (appended === '8' && masked.value === '') {
+        return '';
+      }
+      return appended;
+    },
+  };
+  for (const item of array_input_tel) {
+    // Уничтожаю старую маску, если есть
+    if (maskInstances.has(item)) {
+      maskInstances.get(item).destroy();
+      maskInstances.delete(item);
+    }
+    // Создаю новую и сохраняем ссылку
+    const mask = IMask(item, maskOptions);
+    maskInstances.set(item, mask);
+  }
+}
+//маска для имени
+function iMaskName() {
+  const input_status = document.querySelectorAll('.js--validate-mask-name');
+  const maskOptions = {
+    mask: /^[а-яё-]+(?:\s[а-яё-]+)*\s?$/i
+  };
+  for (const item of input_status) {
+    // Уничтожаю старую маску, если есть
+    if (maskInstances.has(item)) {
+      maskInstances.get(item).destroy();
+      maskInstances.delete(item);
+    }
+    // Создаю новую и сохраняем ссылку
+    const mask = IMask(item, maskOptions);
+    maskInstances.set(item, mask);
+  }
+}
+//маска для текстовых полей
+function iMaskTextField() {
+  const input_status = document.querySelectorAll('.js--validate-mask-message');
+  const maskOptions = {
+    mask: /\S\s?$/
+  };
+  for (const item of input_status) {
+    // Уничтожаю старую маску, если есть
+    if (maskInstances.has(item)) {
+      maskInstances.get(item).destroy();
+      maskInstances.delete(item);
+    }
+    // Создаю новую и сохраняем ссылку
+    const mask = IMask(item, maskOptions);
+    maskInstances.set(item, mask);
+  }
+}
+//сброс Imask
+function iMaskReset(form = null){
+  const selector = '.js--validate-mask-tel, .js--validate-mask-name, .js--validate-mask-email, .js--validate-mask-message';
+  const inputs = form
+    ? form.querySelectorAll(selector)
+    : document.querySelectorAll(selector);
+
+  for (const input of inputs) {
+    if (maskInstances.has(input)) {
+      const mask = maskInstances.get(input);
+      mask.updateValue();
+      if (mask.value !== '') {
+        mask.value = '';
+      }
+    }
+  }
+}
+--------------------
+
+<div class="ds-input__field-wrapper feed_back__story-input-field-wrapper js--story-input-field">
+    <input type="text" inputmode="email" name="form_email_2" placeholder="Введите E-mail" value=""
+           class="ds-input__field js--validate-mask js--validate-mask-email  js--validate-required"
+           data-mask-hint="Недопустимый формат E-mail" data-maxlength="70"
+           data-maxlength-hint="Допустимое количество символов"
+           data-required-hint="Поле обязательно для заполнения" required="">
+    <button class="ds-input__clear js--story-clear-input" type="button" aria-label="Очистить поле">
+        
+    </button>
+</div>
