@@ -1,21 +1,37 @@
-/* Фикс исчезновения ползунка при перетаскивании на iOS */
-.slider-handle {
-  /* Принудительное аппаратное ускорение */
-  -webkit-transform: translateZ(0) !important;
-  transform: translateZ(0) !important;
+function iMaskMail() {
+  const input_status = document.querySelectorAll('.js--validate-mask-email');
+  const maskOptions = {
+    mask: /^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]*$/i
+  };
   
-  /* Подсказка браузеру, что этот элемент будет часто меняться */
-  will-change: transform !important;
-  
-  /* Гарантируем, что ползунок всегда поверх линии и прогресс-бара */
-  z-index: 10 !important;
-  
-  /* Дополнительный фикс для рендеринга на iOS */
-  -webkit-backface-visibility: hidden !important;
-  backface-visibility: hidden !important;
-}
-
-/* На всякий случай, убедимся, что область касания тоже не глючит */
-.slider-touch-area {
-  -webkit-tap-highlight-color: transparent;
+  for (const item of input_status) {
+    // 1️⃣ Уничтожаем старую маску, если есть
+    if (maskInstances.has(item)) {
+      maskInstances.get(item).destroy();
+      maskInstances.delete(item);
+    }
+    
+    // 2️⃣ Создаём новую маску
+    const mask = IMask(item, maskOptions);
+    maskInstances.set(item, mask);
+    
+    // 3️⃣ 🔥 Обработчик изменения: добавляем/убираем класс у родителя
+    const toggleActiveClass = () => {
+      const parent = item.closest('.js--row');
+      if (!parent) return;
+      
+      // mask.value — актуальное значение маски (не item.value!)
+      if (mask.value.length > 0) {
+        parent.classList.add('active');
+      } else {
+        parent.classList.remove('active');
+      }
+    };
+    
+    // Подписываемся на событие 'accept' (срабатывает при каждом изменении)
+    mask.on('accept', toggleActiveClass);
+    
+    // 4️⃣ Проверяем начальное состояние (на случай автозаполнения браузера)
+    toggleActiveClass();
+  }
 }
