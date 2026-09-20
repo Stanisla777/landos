@@ -1,67 +1,142 @@
-.feed_back__story-wr-search {
-    position: relative;
-    padding-right: 5px;        // отступ скролла от края окна
-}
+(function () {
+  function initCustomScrollbar(wrap) {
+    const scrollEl = wrap.querySelector('.js--scroll');
+    const scrollbar = wrap.querySelector('.js--scrollbar');
+    const thumb = wrap.querySelector('.js--scrollbar-thumb');
+    if (!scrollEl || !scrollbar || !thumb) return;
 
-.feed_back__story-scroll-inner {
-    max-height: 225px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    let hideTimer = null;
+    let isDragging = false;
+    let dragStartY = 0;
+    let dragStartScroll = 0;
+    let thumbHeight = 0;
 
-    // прячем системный скроллбар, но оставляем нативный скролл
-    scrollbar-width: none;              // Firefox
-    -ms-overflow-style: none;           // старый Edge/IE
-    &::-webkit-scrollbar {              // WebKit (Chrome, Safari, iOS)
-        width: 0;
-        height: 0;
-        display: none;
+    // ---- пересчёт размеров ----
+    function updateThumb() {
+      const { clientHeight, scrollHeight } = scrollEl;
+      const trackHeight = scrollbar.clientHeight;
+
+      if (scrollHeight <= clientHeight) {
+        // скролла нет — прячем полосу
+        scrollbar.style.display = 'none';
+        return;
+      }
+      scrollbar.style.display = '';
+
+      const ratio = clientHeight / scrollHeight;
+      thumbHeight = Math.max(ratio * trackHeight, 24); // минимум 24px
+      thumb.style.height = thumbHeight + 'px';
+
+      updateThumbPosition();
     }
 
-    // ❗ iOS Safari: включаем инерционный скролл и «резину»
-    -webkit-overflow-scrolling: touch;
-
-    @include respondTo(small) {
-        max-height: 287px;
-    }
-}
-
-.feed_back__story-scrollbar {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 5px;
-    height: 100%;
-    background: #fff;
-    border-radius: 50px;
-    pointer-events: none;   // по умолчанию не перехватывает клики
-    opacity: 0;
-    transition: opacity .2s;
-
-    // показываем, когда пользователь скроллит или навёл
-    .feed_back__story-wr-search.is-scrolling &,
-    .feed_back__story-wr-search:hover & {
-        opacity: 1;
+    function updateThumbPosition() {
+      const { scrollTop, scrollHeight, clientHeight } = scrollEl;
+      const trackHeight = scrollbar.clientHeight;
+      const maxScroll = scrollHeight - clientHeight;
+      const maxThumbY = trackHeight - thumbHeight;
+      const y = maxScroll > 0 ? (scrollTop / maxScroll) * maxThumbY : 0;
+      thumb.style.transform = `translateY(${y}px)`;
     }
 
-    @include respondTo(small) {
-        width: 1px;
+    // ---- показ/скрытие полосы при скролле ----
+    function showScrollbar() {
+      wrap.classList.add('is-scrolling');
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        if (!isDragging) wrap.classList.remove('is-scrolling');
+      }, 800);
     }
-}
 
-.feed_back__story-scrollbar-thumb {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: #dedede;
-    border-radius: 50px;
-    // height задаётся JS
-    // transform задаётся JS
-    will-change: transform;
-}
+    // ---- нативный скролл ----
+    scrollEl.addEventListener('scroll', () => {
+      updateThumbPosition();
+      showScrollbar();
+    }, { passive: true });
 
-// когда пользователь тянет thumb — включаем pointer-events,
-// чтобы не мешало наведению на пункты
-.feed_back__story-scrollbar.is-dragging {
-    pointer-events: auto;
-}
+    // пересчёт при изменении размеров
+    if (window.ResizeObserver) {
+      new ResizeObserver(updateThumb).observe(scrollEl);
+      new ResizeObserver(updateThumb).observe(scrollbar);
+    }
+    window.addEventListener('resize', updateThumb);
+
+    // ---- перетаскивание thumb мышью/пальцем ----
+    function onDragStart(e) {
+      e.preventDefault();
+      isDragging = true;
+      scrollbar.classList.add('is-dragging');
+      wrap.classList.add('is-scrolling');
+
+      const point = e.touches ? e.touches[0] : e;
+      dragStartY = point.clientY;
+      dragStartScroll = scrollEl.scrollTop;
+
+      document.addEventListener('mousemove', onDragMove);
+      document.addEventListener('mouseup', onDragEnd);
+      document.addEventListener('touchmove', onDragMove, { passive: false });
+      document.addEventListener('touchend', onDragEnd);
+    }
+
+    function onDragMove(e) {
+      if (!isDragging) return;
+
+      const point = e.touches ? e.touches[0] : e;
+      const deltaY = point.clientY - dragStartY;
+
+      const trackHeight = scrollbar.clientHeight;
+      const maxThumbY = trackHeight - thumbHeight;
+      const maxScroll = scrollEl.scrollHeight - scrollEl.clientHeight;
+
+      const scrollDelta = maxThumbY > 0
+        ? (deltaY / maxThumbY) * maxScroll
+        : 0;
+
+      scrollEl.scrollTop = dragStartScroll + scrollDelta;
+
+      // на тач-устройствах гасим нативный скролл страницы во время драга
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onDragEnd() {
+      isDragging = false;
+      scrollbar.classList.remove('is-dragging');
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => wrap.classList.remove('is-scrolling'), 800);
+
+      document.removeEventListener('mousemove', onDragMove);
+      document.removeEventListener('mouseup', onDragEnd);
+      document.removeEventListener('touchmove', onDragMove);
+      document.removeEventListener('touchend', onDragEnd);
+    }
+
+    // ❗ вешаем pointer-events: auto только когда пользователь
+    //   касается самой полосы, чтобы не блокировать клики по пунктам
+    scrollbar.addEventListener('mouseenter', () => {
+      scrollbar.style.pointerEvents = 'auto';
+    });
+    scrollbar.addEventListener('mouseleave', () => {
+      if (!isDragging) scrollbar.style.pointerEvents = 'none';
+    });
+    scrollbar.addEventListener('mousedown', onDragStart);
+    scrollbar.addEventListener('touchstart', onDragStart, { passive: false });
+
+    // ---- клик по треку — прыжок ----
+    scrollbar.addEventListener('mousedown', (e) => {
+      if (e.target !== thumb) {
+        // прыжок к позиции клика
+        const rect = scrollbar.getBoundingClientRect();
+        const clickY = e.clientY - rect.top;
+        const ratio = clickY / rect.height;
+        scrollEl.scrollTop = ratio * (scrollEl.scrollHeight - scrollEl.clientHeight);
+      }
+    });
+
+    // ---- инициализация ----
+    // ждём, пока контент отрисуется
+    requestAnimationFrame(updateThumb);
+  }
+
+  // автоинициализация по классу-обёртке
+  document.querySelectorAll('.js--scroll-wrap').forEach(initCustomScrollbar);
+})();
