@@ -1,14 +1,67 @@
-<div class="feed_back__story-wr-search js--scroll-wrap">
-    <div class="feed_back__story-scroll-inner js--scroll">
-        <div class="ds-multiselect__option-item js--openlist-item"
-             data-tab-value="Сначала популярные">
-            <p class="ds-multiselect__checkbox-label">Общие вопросы</p>
-        </div>
-        <!-- остальные пункты -->
-    </div>
+.feed_back__story-wr-search {
+    position: relative;
+    padding-right: 5px;        // отступ скролла от края окна
+}
 
-    <!-- кастомная полоса — только визуальный индикатор -->
-    <div class="feed_back__story-scrollbar js--scrollbar" aria-hidden="true">
-        <div class="feed_back__story-scrollbar-thumb js--scrollbar-thumb"></div>
-    </div>
-</div>
+.feed_back__story-scroll-inner {
+    max-height: 225px;
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    // прячем системный скроллбар, но оставляем нативный скролл
+    scrollbar-width: none;              // Firefox
+    -ms-overflow-style: none;           // старый Edge/IE
+    &::-webkit-scrollbar {              // WebKit (Chrome, Safari, iOS)
+        width: 0;
+        height: 0;
+        display: none;
+    }
+
+    // ❗ iOS Safari: включаем инерционный скролл и «резину»
+    -webkit-overflow-scrolling: touch;
+
+    @include respondTo(small) {
+        max-height: 287px;
+    }
+}
+
+.feed_back__story-scrollbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px;
+    height: 100%;
+    background: #fff;
+    border-radius: 50px;
+    pointer-events: none;   // по умолчанию не перехватывает клики
+    opacity: 0;
+    transition: opacity .2s;
+
+    // показываем, когда пользователь скроллит или навёл
+    .feed_back__story-wr-search.is-scrolling &,
+    .feed_back__story-wr-search:hover & {
+        opacity: 1;
+    }
+
+    @include respondTo(small) {
+        width: 1px;
+    }
+}
+
+.feed_back__story-scrollbar-thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #dedede;
+    border-radius: 50px;
+    // height задаётся JS
+    // transform задаётся JS
+    will-change: transform;
+}
+
+// когда пользователь тянет thumb — включаем pointer-events,
+// чтобы не мешало наведению на пункты
+.feed_back__story-scrollbar.is-dragging {
+    pointer-events: auto;
+}
