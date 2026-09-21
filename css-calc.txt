@@ -1,25 +1,33 @@
-clearBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+// Универсальная функция очистки поля
+function clearFieldWithValidation(input, maskInstance) {
+  const parentLabel = input.closest('label');
   
-  const parentLabel = item.closest('label');
+  // Очищаем маску
+  if (maskInstance) {
+    maskInstance.value = '';
+  } else {
+    input.value = '';
+  }
   
-  // 1️⃣ Очищаем маску
-  mask.value = '';
-  
-  // 2️⃣ 🔥 Удаляем ошибку формата (но не required — пусть появится, если поле обязательное и пустое)
+  // "Умное" удаление ошибок
   if (parentLabel) {
-    // Находим только ошибку формата (не required)
-    const formatError = parentLabel.querySelector('.js--input__error:not(.js--input__error_required)');
-    if (formatError) {
-      formatError.remove();
-    }
-    // Убираем стили ошибки, только если не осталось required-ошибки
+    // Удаляем только ошибки формата (не required)
+    parentLabel.querySelectorAll('.js--input__error:not(.js--input__error_required)')
+      .forEach(err => err.remove());
+    
+    // Убираем стили ошибки, если не осталось required
     if (!parentLabel.querySelector('.js--input__error_required')) {
       parentLabel.classList.remove('input_error', 'ds-checkbox--error');
     }
   }
   
-  // 3️⃣ Возвращаем фокус (опционально)
-  item.focus();
+  // Возвращаем фокус
+  input.focus();
+}
+
+// Использование в iMaskMail, iMaskTel и т.д.:
+clearBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  clearFieldWithValidation(item, mask); // mask — экземпляр IMask
 });
