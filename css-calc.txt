@@ -1,33 +1,28 @@
-// Универсальная функция очистки поля
-function clearFieldWithValidation(input, maskInstance) {
-  const parentLabel = input.closest('label');
-  
-  // Очищаем маску
-  if (maskInstance) {
-    maskInstance.value = '';
-  } else {
-    input.value = '';
-  }
-  
-  // "Умное" удаление ошибок
-  if (parentLabel) {
-    // Удаляем только ошибки формата (не required)
-    parentLabel.querySelectorAll('.js--input__error:not(.js--input__error_required)')
-      .forEach(err => err.remove());
-    
-    // Убираем стили ошибки, если не осталось required
-    if (!parentLabel.querySelector('.js--input__error_required')) {
-      parentLabel.classList.remove('input_error', 'ds-checkbox--error');
-    }
-  }
-  
-  // Возвращаем фокус
-  input.focus();
-}
+// 1️⃣ Объявляем в области, где доступны обе функции (глобально или в модуле)
+const skipValidation = new WeakSet();
 
-// Использование в iMaskMail, iMaskTel и т.д.:
+// 2️⃣ В вашем обработчике кнопки очистки (внутри цикла инициализации масок)
+clearBtn.addEventListener('pointerdown', () => {
+  skipValidation.add(item); // 🔥 Ставим флаг ДО потери фокуса
+});
+
 clearBtn.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
-  clearFieldWithValidation(item, mask); // mask — экземпляр IMask
+  mask.value = '';
+  skipValidation.delete(item); // Сбрасываем флаг
+  item.focus();
 });
+
+// 3️⃣ В вашей функции maskField, в самом начале onblur:
+item.onblur = (e) => {
+  const element = e.target;
+  
+  // 🔥 Если фокус ушёл из-за клика на очистку — пропускаем валидацию полностью
+  if (skipValidation.has(element)) return;
+  
+  // ... дальше ваша старая логика без изменений
+  const parent = element.closest('label');
+  if (!parent) return;
+  // ...
+};
