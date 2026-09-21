@@ -1,11 +1,195 @@
-// 2️⃣ Обработчик кнопки сброса (дочерний элемент)
-document.querySelectorAll('.js--multiselect-reset-btn').forEach(resetBtn => {
-  resetBtn.addEventListener('click', (e) => {
-    // 🔥 КЛЮЧЕВОЕ: останавливаем всплытие события
-    e.stopPropagation();  // 👈 ВОТ ОНО!
-    
-    // Ваша логика очистки
-    console.log('Очищаем значение...');
-    // clearSelection();
-  });
-});
+<div class="feedback__row" data-field-type="email">
+                        <label class="">
+                            <div class="ds-input__field-wrapper feed_back__story-input-field-wrapper js--story-input-field">
+                                <input type="text" inputmode="email" name="form_email_2" placeholder="Введите E-mail" value="" class="ds-input__field js--validate-mask js--validate-mask-email  js--validate-required" data-mask-hint="Недопустимый формат E-mail" data-maxlength="70" data-maxlength-hint="Допустимое количество символов" data-required-hint="Поле обязательно для заполнения" required="">
+                                <button class="ds-input__clear js--story-clear-input" type="button" aria-label="Очистить поле" data-clear-bound="true">
+                                    
+                                </button>
+                            </div>
+                        </label>
+                    </div>
+
+
+.ds-input__field-wrapper {
+    position: relative;
+}
+
+----------------------
+
+.ds-input__field {
+    display: block;
+    width: 100%;
+    height: 48px;
+    padding: 12px 40px 12px 24px;
+    outline: none;
+    border: 1px solid #000;
+    border-radius: 16px;
+    background: #fff;
+    color:#000;
+  
+    font-size: 16px;
+    box-sizing: border-box;
+}
+.ds-input__clear {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    display: flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ds-input-clear-color);
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+--------------------------------------------
+
+function iMaskMail() {
+  const input_status = document.querySelectorAll('.js--validate-mask-email');
+  const maskOptions = {
+    mask: /^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]*$/i
+    // enum: ' '
+  };
+  for (const item of input_status) {
+    // Уничтожаю старую маску, если есть
+    if (maskInstances.has(item)) {
+      maskInstances.get(item).destroy();
+      maskInstances.delete(item);
+    }
+    // Создаю новую и сохраняем ссылку
+    const mask = IMask(item, maskOptions);
+    maskInstances.set(item, mask);
+
+    // Обработчик изменения: добавляем/убираем класс у родителя
+    const toggleActiveClass = () => {
+      const parent = item.closest('.js--story-input-field');
+      if (!parent) return;
+
+      // mask.value — актуальное значение маски (не item.value!)
+      if (mask.value.length > 0) {
+        parent.classList.add('active');
+      } else {
+        parent.classList.remove('active');
+      }
+    };
+
+    // Подписываюсь на событие 'accept' (срабатывает при каждом изменении)
+    mask.on('accept', toggleActiveClass);
+
+    // Обработчик кнопки очистки
+    const clearBtn = item.closest('.js--story-input-field')?.querySelector('.js--story-clear-input');
+    if (clearBtn) {
+      // Удаляю старый слушатель
+      clearBtn.dataset.clearBound = 'true';
+
+      clearBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // очистка IMask:
+        mask.value = ''; // Очищаю отображаемое значение
+        // mask.unmaskedValue = '';
+        // mask.updateValue();
+
+        // Фокус на поле для удобства
+        item.focus();
+      });
+    }
+    toggleActiveClass();
+  }
+}
+
+-----------------------
+//метод вывода ошибок
+function maskField () {
+  const input_s = document.querySelectorAll('.js--validate-mask, .js--validate-required');
+  let count=0;
+  for(let item of input_s){
+    item.onblur = (e) => {
+      const element = e.target;
+      const parent = element.closest('label');
+      // const container = element.closest('.js--universal-form');
+      // const _form_bottom = container.querySelector('.js--feedback-bottom');
+
+      if(parent){
+        const array_error_required = parent.querySelectorAll('.js--input__error_required')
+        const array_error = parent.querySelectorAll('.js--input__error');
+        const array_error_space = parent.querySelectorAll('.js--input__error_space');
+
+        if(element.closest('label')&&element.closest('label').querySelector('.js--error-ml')){
+          element.closest('label').classList.remove('js--error-ml')
+          element.closest('label').querySelector('.js--error-ml').remove()
+        }
+
+        if (element.hasAttribute('required')) {
+          if (element.value.length === 0) {
+            deleteError(element, array_error, parent);
+            // alert('Появилась ошибка 2')
+            insertError(element, array_error_required, parent, 'data-required-hint', 'js--input__error_required');
+          }
+        }
+
+        if(element.classList.contains('js--validate-mask-email')){
+          if (!element.value.match(/^[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+(?:\.[a-z0-9@.!#$%&'*+\\/=?^_"`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i)
+            &&element.value.length!==0) {
+
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+
+          }
+        }
+        if(element.classList.contains('js--validate-mask-tel')){
+          if(element.value.length<16&&element.value.length!==0){
+            const array_error = parent.querySelectorAll('.js--input__error')
+            //вызов метода подстановки ошибки
+            insertError(element, array_error, parent, 'data-mask-hint', 'js--input__error');
+          }
+        }
+        if(element.classList.contains('js--validate-mask-message')||element.classList.contains('js--validate-mask-name')){
+          if(parent.querySelector('.js--input__error')&&element.value.length>0){
+            parent.classList.remove('input_error')
+            parent.querySelector('.js--input__error').remove()
+          }
+
+          deleteErrorSpase(element,parent,array_error_space)
+        }
+
+      }
+    };
+    item.onfocus = (e) => {
+      // // alert('Ушла ошибка 4')
+      const element = e.target;
+      const parent = element.closest('label');
+
+      if (parent) {
+        const array_error = parent.querySelector('.js--input__error_required');
+        if (array_error){
+          array_error.remove()
+        }
+        parent.classList.remove('input_error');
+      }
+
+    }
+  }
+}
+
+
+----------------
+
+//метод подстановки ошибки
+function insertError(element,array_error,parent,data_hint,class_error) {
+
+  parent.classList.add('input_error', 'ds-checkbox--error')
+  const error_ml = parent.querySelector('.js--error-ml')
+  if(array_error.length<1&&element.hasAttribute(data_hint)&&element.getAttribute(data_hint)!==''&&!error_ml){
+    const hint_mask = element.getAttribute(data_hint)
+    createElementError(class_error,hint_mask,parent)
+  }
+}
+
+
+
