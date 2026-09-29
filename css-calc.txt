@@ -1,13 +1,147 @@
-<div class="margin-between-blocks grid-forservices-landing">
-                <div class="grid-forservices-landing__item">
-                    
-                </div>
-            </div>
+.grid-forservices-landing {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 20px;
 
-//сетка 2/3, 2/3 - 1/3, 1/3 - 1/3 - 1/3, 2/3 - 1/3 - 1/3 - 2/3, 2/3 - 1/3 - 1/3 - 1/3 - 1/3,
-//      2/3 - 1/3 - 1/2 - 1/2 - 1/3 - 2/3, 2/3 - 1/3 - 1/3 - 1/3 - 1/3 - 1/2 - 1/2
+  &__item {
+    // базовые стили элемента (цвета, отступы, контент и т.д.)
+  }
 
+  /* ============================================================
+     ДЕСКТОП
+     ============================================================ */
 
-@include respondTo(mobile) {
-      flex-direction:column;
+  /* ---------- Раскладки для 1–7 блоков ---------- */
+
+  // 1 блок: [2/3]
+  &__item:nth-child(1):nth-last-child(1) {
+    grid-column: span 4;
+  }
+
+  // 2 блока: [2/3] [1/3]
+  &__item:nth-child(1):nth-last-child(2) {
+    grid-column: span 4;
+  }
+  &__item:nth-child(2):nth-last-child(1) {
+    grid-column: span 2;
+  }
+
+  // 3 блока: [1/3] [1/3] [1/3]
+  &__item:nth-child(1):nth-last-child(3),
+  &__item:nth-child(2):nth-last-child(2),
+  &__item:nth-child(3):nth-last-child(1) {
+    grid-column: span 2;
+  }
+
+  // 4 блока: [2/3] [1/3] / [1/3] [2/3]
+  &__item:nth-child(1):nth-last-child(4),
+  &__item:nth-child(4):nth-last-child(1) {
+    grid-column: span 4;
+  }
+  &__item:nth-child(2):nth-last-child(3),
+  &__item:nth-child(3):nth-last-child(2) {
+    grid-column: span 2;
+  }
+
+  // 5 блоков: [2/3] [1/3] / [1/3] [1/3] [1/3]
+  &__item:nth-child(1):nth-last-child(5) {
+    grid-column: span 4;
+  }
+  &__item:nth-child(2):nth-last-child(4),
+  &__item:nth-child(3):nth-last-child(3),
+  &__item:nth-child(4):nth-last-child(2),
+  &__item:nth-child(5):nth-last-child(1) {
+    grid-column: span 2;
+  }
+
+  // 6 блоков: [2/3] [1/3] / [1/2] [1/2] / [1/3] [2/3]
+  &__item:nth-child(1):nth-last-child(6),
+  &__item:nth-child(6):nth-last-child(1) {
+    grid-column: span 4;
+  }
+  &__item:nth-child(2):nth-last-child(5),
+  &__item:nth-child(5):nth-last-child(2) {
+    grid-column: span 2;
+  }
+  &__item:nth-child(3):nth-last-child(4),
+  &__item:nth-child(4):nth-last-child(3) {
+    grid-column: span 3;
+  }
+
+  // 7 блоков: [2/3] [1/3] / [1/3] [1/3] [1/3] / [1/2] [1/2]
+  &__item:nth-child(1):nth-last-child(7) {
+    grid-column: span 4;
+  }
+  &__item:nth-child(2):nth-last-child(6),
+  &__item:nth-child(3):nth-last-child(5),
+  &__item:nth-child(4):nth-last-child(4),
+  &__item:nth-child(5):nth-last-child(3) {
+    grid-column: span 2;
+  }
+  &__item:nth-child(6):nth-last-child(2),
+  &__item:nth-child(7):nth-last-child(1) {
+    grid-column: span 3;
+  }
+
+  /* ---------- Циклический паттерн для 8+ блоков ---------- */
+  // 8-й блок повторяет поведение 1-го, и так далее
+
+  // Позиции 1, 4, 8 в цикле — span 4 (2/3)
+  &__item:nth-child(8n+1),
+  &__item:nth-child(8n+4),
+  &__item:nth-child(8n) {
+    grid-column: span 4;
+  }
+
+  // Позиции 2, 3, 5, 6, 7 в цикле — span 2 (1/3)
+  &__item:nth-child(8n+2),
+  &__item:nth-child(8n+3),
+  &__item:nth-child(8n+5),
+  &__item:nth-child(8n+6),
+  &__item:nth-child(8n+7) {
+    grid-column: span 2;
+  }
+
+  /* ============================================================
+     ПЛАНШЕТ (780px)
+     2/3 → 100% (span 6)
+     1/3 → 50%  (span 3)
+     1/2 → 50%  (span 3)
+     ============================================================ */
+  @include respondTo(mobile) {
+    // По умолчанию все элементы по 50%
+    &__item {
+      grid-column: span 3;
     }
+
+    // --- 1–7 блоков: элементы, бывшие 2/3, теперь 100% ---
+    &__item:nth-child(1):nth-last-child(1), // 1 из 1
+    &__item:nth-child(1):nth-last-child(2), // 1 из 2
+    &__item:nth-child(1):nth-last-child(4), // 1 из 4
+    &__item:nth-child(4):nth-last-child(1), // 4 из 4
+    &__item:nth-child(1):nth-last-child(5), // 1 из 5
+    &__item:nth-child(1):nth-last-child(6), // 1 из 6
+    &__item:nth-child(6):nth-last-child(1), // 6 из 6
+    &__item:nth-child(1):nth-last-child(7)  // 1 из 7
+    {
+      grid-column: span 6;
+    }
+
+    // --- 8+ блоков: позиции 1, 4, 8 в цикле → 100% ---
+    &__item:nth-child(8n+1),
+    &__item:nth-child(8n+4),
+    &__item:nth-child(8n) {
+      grid-column: span 6;
+    }
+  }
+
+  /* ============================================================
+     МОБИЛЬНЫЙ (480px)
+     Все элементы на 100%
+     ============================================================ */
+  @include respondTo(small) {
+    &__item {
+      grid-column: 1 / -1 !important;
+    }
+  }
+}
