@@ -1,47 +1,49 @@
-<div
-                            class="element-banner element-banner__symbol element-banner__hover-symbol element-banner__symbol-color_yellow element-banner_large element-banner__photo-color_black">
-                            <div class="element-banner__hover">
-
-                            </div>
-                            <div class="element-banner__body">
-                                <p class="element-banner__title">Каталог жилищных программ с господдержкой</p>
-                                <div class="element-banner__img">
-                                   
-                                </div>
-                                <div class="element-banner__bottom normal-z-index">
-                                    <div class="round-billet__item">Подобрать программу</div>
-                                    <div class="element-bunner__icon"></div>
-                                </div>
-                            </div>
-                            <a class="element-banner__link" href="#"></a>
-                        </div>
-
+/* --- БАЗОВЫЕ СТИЛИ (Десктоп) --- */
 .element-banner {
     position: relative;
     width: 100%;
     display: block;
     transition-duration: 0.3s;
-    max-height: 496px;
     overflow: hidden;
     box-sizing: border-box;
     border-radius: 16px;
-}
-.element-banner_large:before {
-    content: "";
-    display: block;
-    padding-top: 100%;
+    
+    /* На десктопе высота строго 496px */
+    min-height: 496px;
+    max-height: 496px;
 }
 
+/* УДАЛИТЕ этот блок, он больше не нужен:
+.element-banner_large:before { ... }
+*/
+
+/* --- ПЛАНШЕТ (до 768px) --- */
 @media only screen and (max-width: 768px) {
-    .element-banner_large::before {
-        padding-top: clamp(180px, 25%, 496px);
+    .element-banner {
+        min-height: 344px;
+        max-height: 496px;
     }
 }
+
+/* --- МОБИЛЬНЫЙ (до 480px) --- */
+@media only screen and (max-width: 480px) {
+    .element-banner {
+        min-height: 180px;
+        max-height: 496px; 
+        /* Если на мобильном хотите, чтобы баннер мог расти бесконечно вниз, 
+           уберите max-height или поставьте max-height: none */
+    }
+}
+
+/* --- ВНУТРЕННИЕ ЭЛЕМЕНТЫ --- */
+
+/* Ховер-оверлей. Он абсолютно спозиционирован, 
+   поэтому автоматически растянется на новую динамическую высоту родителя */
 .element-banner__hover {
     position: absolute;
     width: 100%;
     height: 100%;
-    z-index: 0;
+    z-index: 1;
     top: 0;
     left: 0;
     opacity: 0;
@@ -49,18 +51,18 @@
     justify-content: center;
     transition-duration: 0.5s;
 }
+
+/* ГЛАВНОЕ ИЗМЕНЕНИЕ: убираем absolute, чтобы контент толкал высоту родителя */
 .element-banner__body {
-    position: absolute;
+    position: relative; /* Было absolute */
     width: 100%;
-    height: 100%;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+    /* Убираем height: 100%, top: 0, bottom: 0 и т.д. */
     padding: 24px;
     display: flex;
     flex-direction: column;
+    z-index: 2; /* Контент должен быть поверх ховера */
 }
+
 .element-banner__bottom {
     margin-top: auto;
     display: flex;
@@ -69,4 +71,11 @@
     column-gap: 15px;
     row-gap: 18px;
     position: relative;
+}
+
+/* Ссылка-оверлей (если она делает весь баннер кликабельным) */
+.element-banner__link {
+    position: absolute;
+    inset: 0; /* Растягивается на весь баннер */
+    z-index: 3; /* Должна быть поверх всего, чтобы кликалось */
 }
