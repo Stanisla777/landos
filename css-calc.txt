@@ -95,16 +95,18 @@
   &__item:nth-child(7):nth-last-child(1) { grid-column: span 3; }
 
 
-  // -------- Сетка: 8+ блоков (цикл 7) --------
+  // -------- Сетка: 8+ блоков (цикл начинается строго с 8-го блока) --------
+  // :nth-child(n+8) гарантирует, что эти правила НЕ затронут первые 7 блоков
 
-  &__item:nth-child(7n+1),
-  &__item:nth-child(7n+4) { grid-column: span 4; }
+  &__item:nth-child(7n+1):nth-child(n+8) { grid-column: span 4; } // 8, 15, 22... (как 1-й)
+  
+  &__item:nth-child(7n+2):nth-child(n+8),
+  &__item:nth-child(7n+3):nth-child(n+8),
+  &__item:nth-child(7n+4):nth-child(n+8),
+  &__item:nth-child(7n+5):nth-child(n+8) { grid-column: span 2; } // 9-12, 16-19... (как 2,3,4,5)
 
-  &__item:nth-child(7n+2),
-  &__item:nth-child(7n+3),
-  &__item:nth-child(7n+5),
-  &__item:nth-child(7n+6),
-  &__item:nth-child(7n) { grid-column: span 2; }
+  &__item:nth-child(7n+6):nth-child(n+8),
+  &__item:nth-child(7n):nth-child(n+8) { grid-column: span 3; } // 13-14, 20-21... (как 6,7)
 
 
   // Блоки 2/3 (span 4) — применяют миксин banner-style-2-3
@@ -116,10 +118,7 @@
   &__item:nth-child(1):nth-last-child(6),   // 6 блоков, 1-й
   &__item:nth-child(6):nth-last-child(1),   // 6 блоков, 6-й
   &__item:nth-child(1):nth-last-child(7),   // 7 блоков, 1-й
-
-  // 8+ блоки (цикл 7) с защитой от срабатывания на 1-7 блоках
-  &__item:nth-child(7n+1):not(:nth-child(1):nth-last-child(-n+7)),
-  &__item:nth-child(7n+4):not(:nth-child(4):nth-last-child(-n+4))
+  &__item:nth-child(7n+1):nth-child(n+8)    // 8+ блоки: только 1-й в цикле (8, 15...)
   {
     @include banner-style-2-3;
   }
@@ -128,7 +127,9 @@
   &__item:nth-child(3):nth-last-child(4),   // 6 блоков, 3-й
   &__item:nth-child(4):nth-last-child(3),   // 6 блоков, 4-й
   &__item:nth-child(6):nth-last-child(2),   // 7 блоков, 6-й
-  &__item:nth-child(7):nth-last-child(1)    // 7 блоков, 7-й
+  &__item:nth-child(7):nth-last-child(1),   // 7 блоков, 7-й
+  &__item:nth-child(7n+6):nth-child(n+8),   // 8+ блоки: 6-й в цикле (13, 20...)
+  &__item:nth-child(7n):nth-child(n+8)      // 8+ блоки: 7-й в цикле (14, 21...)
   {
     @include banner-style-1-2;
   }
@@ -170,15 +171,17 @@
     &__item:nth-child(6):nth-last-child(2),
     &__item:nth-child(7):nth-last-child(1) { grid-column: span 3; }
 
-    &__item:nth-child(7n+1),
-    &__item:nth-child(7n+4) { grid-column: span 6; }
+    // 8+ блоков на планшете (цикл начинается строго с 8-го блока)
+    &__item:nth-child(7n+1):nth-child(n+8) { grid-column: span 6; } // Был 2/3, стал 100%
 
-    &__item:nth-child(7n+2),
-    &__item:nth-child(7n+3),
-    &__item:nth-child(7n+5),
-    &__item:nth-child(7n+6),
-    &__item:nth-child(7n) { grid-column: span 3; }
+    &__item:nth-child(7n+2):nth-child(n+8),
+    &__item:nth-child(7n+3):nth-child(n+8),
+    &__item:nth-child(7n+4):nth-child(n+8),
+    &__item:nth-child(7n+5):nth-child(n+8),
+    &__item:nth-child(7n+6):nth-child(n+8),
+    &__item:nth-child(7n):nth-child(n+8) { grid-column: span 3; } // Все остальные стали 50%
   }
+  
   @include respondTo(small) {
     &__item {
       grid-column: 1 / -1 !important;
