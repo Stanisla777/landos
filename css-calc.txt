@@ -1,3 +1,7 @@
+// ============================================================
+// Миксины форм
+// ============================================================
+
 // Стили для блоков 2/3 (SVG шириной 1008px)
 @mixin banner-style-2-3 {
   &.banner-in-additional-block {
@@ -47,18 +51,20 @@
   }
 }
 
+// ============================================================
+// Сетка
+// ============================================================
 .grid-forservices-landing {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 20px;
-  grid-auto-flow: dense;
 
   &__item {
-
   }
 
-
-  // -------- Сетка: 1–7 блоков --------
+  // ------------------------------------------------------------
+  // 1–7 блоков: логика по количеству
+  // ------------------------------------------------------------
 
   &__item:nth-child(1):nth-last-child(1) { grid-column: span 4; }
 
@@ -95,59 +101,75 @@
   &__item:nth-child(6):nth-last-child(2),
   &__item:nth-child(7):nth-last-child(1) { grid-column: span 3; }
 
+  // ------------------------------------------------------------
+  // 8+ блоков: циклический паттерн по 7 (повторяет логику 1–7)
+  // Условие «всего ≥ 8»:
+  //   - сам 1-й блок: :nth-child(1):nth-last-child(n+8)
+  //   - остальные:     :nth-child(1):nth-last-child(n+8) ~ &__item
+  // ------------------------------------------------------------
 
-  // -------- Сетка: 8+ блоков --------
-  // Когда детей 8+, первые 7 блоков сохраняют свою структуру
-  &__item:nth-child(1):nth-last-child(n+8) { grid-column: span 4; }
-  &__item:nth-child(2):nth-last-child(n+8),
-  &__item:nth-child(3):nth-last-child(n+8),
-  &__item:nth-child(4):nth-last-child(n+8),
-  &__item:nth-child(5):nth-last-child(n+8) { grid-column: span 2; }
-  &__item:nth-child(6):nth-last-child(n+8),
-  &__item:nth-child(7):nth-last-child(n+8) { grid-column: span 3; }
+  // --- Позиция 1 цикла (1, 8, 15, 22...): span 4 ---
+  &__item:nth-child(1):nth-last-child(n+8),
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+1) {
+    grid-column: span 4;
+  }
 
-  // Начиная с 8-го блока, идёт цикл 7
-  &__item:nth-child(7n+1):nth-child(n+8) { grid-column: span 4; }
-  
-  &__item:nth-child(7n+2):nth-child(n+8),
-  &__item:nth-child(7n+3):nth-child(n+8),
-  &__item:nth-child(7n+4):nth-child(n+8),
-  &__item:nth-child(7n+5):nth-child(n+8) { grid-column: span 2; }
+  // --- Позиции 2–5 цикла (2,3,4,5, 9,10,11,12...): span 2 ---
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+2),
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+3),
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+4),
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+5) {
+    grid-column: span 2;
+  }
 
-  &__item:nth-child(7n+6):nth-child(n+8),
-  &__item:nth-child(7n):nth-child(n+8) { grid-column: span 3; }
+  // --- Позиции 6–7 цикла (6,7, 13,14...): span 3 ---
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+6),
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+7) {
+    grid-column: span 3;
+  }
 
+  // ------------------------------------------------------------
+  // Миксины форм
+  // ------------------------------------------------------------
 
-  // Блоки 2/3 (span 4) — применяют миксин banner-style-2-3
-  &__item:nth-child(1):nth-last-child(1),   // 1 блок
-  &__item:nth-child(1):nth-last-child(2),   // 2 блока, 1-й
-  &__item:nth-child(1):nth-last-child(4),   // 4 блока, 1-й
-  &__item:nth-child(4):nth-last-child(1),   // 4 блока, 4-й
-  &__item:nth-child(1):nth-last-child(5),   // 5 блоков, 1-й
-  &__item:nth-child(1):nth-last-child(6),   // 6 блоков, 1-й
-  &__item:nth-child(6):nth-last-child(1),   // 6 блоков, 6-й
-  &__item:nth-child(1):nth-last-child(7),   // 7 блоков, 1-й
-  &__item:nth-child(1):nth-last-child(n+8), // 8+ детей: 1-й блок
-  &__item:nth-child(7n+1):nth-child(n+8)    // 8+ блоков: 1-й в цикле (8, 15...)
-  {
+  // 2/3 (span 4) — для 1–7 блоков
+  &__item:nth-child(1):nth-last-child(1),
+  &__item:nth-child(1):nth-last-child(2),
+  &__item:nth-child(1):nth-last-child(4),
+  &__item:nth-child(4):nth-last-child(1),
+  &__item:nth-child(1):nth-last-child(5),
+  &__item:nth-child(1):nth-last-child(6),
+  &__item:nth-child(6):nth-last-child(1),
+  &__item:nth-child(1):nth-last-child(7) {
     @include banner-style-2-3;
   }
 
-  // Блоки 1/2 (span 3) — применяют миксин banner-style-1-2
-  &__item:nth-child(3):nth-last-child(4),   // 6 блоков, 3-й
-  &__item:nth-child(4):nth-last-child(3),   // 6 блоков, 4-й
-  &__item:nth-child(6):nth-last-child(2),   // 7 блоков, 6-й
-  &__item:nth-child(7):nth-last-child(1),   // 7 блоков, 7-й
-  &__item:nth-child(6):nth-last-child(n+8), // 8+ детей: 6-й блок
-  &__item:nth-child(7):nth-last-child(n+8), // 8+ детей: 7-й блок
-  &__item:nth-child(7n+6):nth-child(n+8),   // 8+ блоки: 6-й в цикле (13, 20...)
-  &__item:nth-child(7n):nth-child(n+8)      // 8+ блоки: 7-й в цикле (14, 21...)
-  {
+  // 2/3 (span 4) — для 8+ блоков
+  &__item:nth-child(1):nth-last-child(n+8),
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+1) {
+    @include banner-style-2-3;
+  }
+
+  // 1/2 (span 3) — для 1–7 блоков
+  &__item:nth-child(3):nth-last-child(4),
+  &__item:nth-child(4):nth-last-child(3),
+  &__item:nth-child(6):nth-last-child(2),
+  &__item:nth-child(7):nth-last-child(1) {
     @include banner-style-1-2;
   }
 
+  // 1/2 (span 3) — для 8+ блоков
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+6),
+  &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+7) {
+    @include banner-style-1-2;
+  }
+
+  // ============================================================
+  // MOBILE
+  // ============================================================
   @include respondTo(mobile) {
 
+    // --- 1–7 блоков ---
     &__item:nth-child(1):nth-last-child(1) { grid-column: span 6; }
 
     &__item:nth-child(1):nth-last-child(2),
@@ -183,26 +205,28 @@
     &__item:nth-child(6):nth-last-child(2),
     &__item:nth-child(7):nth-last-child(1) { grid-column: span 3; }
 
-    // 8+ детей: первые 7 блоков сохраняют структуру планшета
-    &__item:nth-child(1):nth-last-child(n+8) { grid-column: span 6; }
-    &__item:nth-child(2):nth-last-child(n+8),
-    &__item:nth-child(3):nth-last-child(n+8),
-    &__item:nth-child(4):nth-last-child(n+8),
-    &__item:nth-child(5):nth-last-child(n+8),
-    &__item:nth-child(6):nth-last-child(n+8),
-    &__item:nth-child(7):nth-last-child(n+8) { grid-column: span 3; }
+    // --- 8+ блоков: цикл по 7 ---
 
-    // 8+ блоков: цикл
-    &__item:nth-child(7n+1):nth-child(n+8) { grid-column: span 6; }
+    // Позиция 1 цикла (1, 8, 15...): на мобиле — во всю ширину (span 6)
+    &__item:nth-child(1):nth-last-child(n+8),
+    &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+1) {
+      grid-column: span 6;
+    }
 
-    &__item:nth-child(7n+2):nth-child(n+8),
-    &__item:nth-child(7n+3):nth-child(n+8),
-    &__item:nth-child(7n+4):nth-child(n+8),
-    &__item:nth-child(7n+5):nth-child(n+8),
-    &__item:nth-child(7n+6):nth-child(n+8),
-    &__item:nth-child(7n):nth-child(n+8) { grid-column: span 3; }
+    // Остальные позиции цикла (2–7): по половине (span 3)
+    &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+2),
+    &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+3),
+    &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+4),
+    &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+5),
+    &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+6),
+    &__item:nth-child(1):nth-last-child(n+8) ~ &__item:nth-child(7n+7) {
+      grid-column: span 3;
+    }
   }
-  
+
+  // ============================================================
+  // SMALL
+  // ============================================================
   @include respondTo(small) {
     &__item {
       grid-column: 1 / -1 !important;
