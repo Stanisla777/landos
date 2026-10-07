@@ -1,101 +1,73 @@
-btn[item_btn].onclick=(e)=>{
-      const captcha_id =  captchaInit(parent_form,item_btn);
-
-if (typeof recaptchaKey !== 'undefined' && recaptchaKey) {
-              window.smartCaptcha.execute(captcha_id);
-            }
-}
-
-
-
-function captchaInit(parent,index) {
-  if (!parent.querySelector('.captcha-element')){
-    const el = document.createElement('div')
-    el.classList.add('captcha-element')
-    el.setAttribute('id',`yandex-smart-captcha-${index}`)
-    parent.append(el);
-  }
-
-  if (parent.querySelector('.captcha-element')) {
-    const id_i = parent.querySelector('.captcha-element').id
-    return window.smartCaptcha.render(id_i, {
-      sitekey: conf.smartcaptcha_key,
-      invisible: true,
-      callback: (token) => {
-        submitForm(parent);
-      },
-    });
-  }
-}
-
-function submitForm(form){
-  if (!form) return false;
-
-----------------
-
-<form>
-<div class="captcha-element smart-captcha_invisible" id="yandex-smart-captcha-0" data-testid="smartCaptcha-container"><div style="display: none;"><iframe frameborder="0" src="https://smartcaptcha.yandexcloud.net/backend.ff5afafffccba0db.html?sitekey=ysc1_RmAxi48ZMwFAbUCE7fN4Pf2Mpo6HGPM3TXGFSJfddb8952ba&amp;theme=light&amp;hl=ru&amp;host=vhagar-5555.sprosi.dev.domsite.b2c.domrf.ru&amp;href=https%3A%2F%2Fvhagar-5555.sprosi.dev.domsite.b2c.domrf.ru%2F&amp;test=false&amp;webview=false&amp;hideChallengeContainer=false" allow="encrypted-media *; accelerometer" data-testid="backend-iframe" title="SmartCaptcha backend" aria-hidden="true" style="display: block; width: 100%; height: 100%; z-index: 0; transform: translate3d(0px, 0px, 0px);"></iframe></div><input type="hidden" name="smart-token" data-testid="smart-token" value="dD0xNzkxMzg0MDE1O2k9MTk1LjIzOC4yNTAuMjE2O0Q9MkM5RjlCN0FEQTNEMjU1QjM3RTUyNTEzRUI2NzdBNDMyOUZEOUMwQjYxOEE2MUYwNkQ4OENDNTI1QzM4NjAyNEY2QkNFRjIxNURBRTE0N0NDNjdEM0NBMjk1RUFBMTg1NTQyM0M2NTRGQUUxMDRDQkYzMDhDRjE1NjU2RDQ4MTc5OEU5QzVDNkY5NkU0MUU0RjMzREY2MjM0RDU0QjI0M0UxRkYzRkMyNTE5MkZGRkFBMjNBMEY5Q0M3QzE4M0Q5QkUzOUVGMDAyMEVBNEE1RDc5OEE0NTt1PTE3OTEzODQwMTU4MTgyNjI2MTY7aD02ZWY5YjgyY2ZlNWViOGYzODgyZjI1NjE3OTc5YmVlYw=="></div>
-
-</form>
-
-----------------------------------
-
-<div class="btn_s black" @click="sendingResult"></div>
-
-captchaInit() {
-      if (this.captcha_id !== null || !window.smartCaptcha) return;
-      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-mortgage', {
-        sitekey: conf?.smartcaptcha_key,
-        invisible: true,
-        callback: (token) => {
-          this.sendingResultToApi(token);
-        },
-      });
-    },
-
-    sendingResult() {
-      if (this.btn_active) {
-        store.dispatch('ActionStandingButton');
-        store.dispatch('ActionButtonActive', false);
-        // this.captchaInit();
-        const recaptchaKey = conf?.smartcaptcha_key;
-        if (recaptchaKey) {
-          window.smartCaptcha.execute(this.captcha_id);
-        }
-      }
-    },
-
-    sendingResultToApi(token) {...............}
- mounted() {
+export default {
+  data() {
+    return {
+      captchaId: null,
+      isCaptchaReady: false,
+    };
+  },
+  mounted() {
+    // $nextTick гарантирует, что DOM-элемент уже существует
     this.$nextTick(() => {
-      setTimeout(() => this.captchaInit(), 1500);
-      
+      this.initCaptcha();
     });
-}
-----------------------
+  },
+  beforeUnmount() { // или beforeDestroy для Vue 2
+    // ОЧЕНЬ ВАЖНО: очищаем капчу при удалении компонента, 
+    // чтобы React-инстанс Яндекс.Капчи не "завис" и не вызвал ошибку
+    if (this.captchaId !== null && window.smartCaptcha) {
+      window.smartCaptcha.reset(this.captchaId);
+      this.captchaId = null;
+    }
+  },
+  methods: {
+    initCaptcha() {
+      if (this.captchaId !== null || !window.smartCaptcha) return;
 
-captchaInit() {
-      if (this.captcha_id !== null || !window.smartCaptcha) return;
-      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-mortgage', {
+      // Получаем реальный DOM-элемент через ref
+      const container = this.$refs.captchaContainer;
+      if (!container) return;
+
+      this.captchaId = window.smartCaptcha.render(container, {
         sitekey: conf?.smartcaptcha_key,
         invisible: true,
         callback: (token) => {
           this.sendingResultToApi(token);
         },
       });
+      
+      this.isCaptchaReady = true;
     },
 
     sendingResult() {
-      if (this.btn_active) {
-        store.dispatch('ActionStandingButton');
-        store.dispatch('ActionButtonActive', false);
-        this.captchaInit();
-        const recaptchaKey = conf?.smartcaptcha_key;
-        if (recaptchaKey) {
-          window.smartCaptcha.execute(this.captcha_id);
-        }
+      if (!this.btn_active) return;
+
+      store.dispatch('ActionStandingButton');
+      store.dispatch('ActionButtonActive', false);
+      
+      // Если капча уже готова, просто выполняем её
+      if (this.isCaptchaReady && this.captchaId !== null) {
+        window.smartCaptcha.execute(this.captchaId);
+      } else {
+        // Если вдруг не успела инициализироваться, инициируем и выполняем
+        this.initCaptcha();
+        // Небольшая задержка, чтобы render успел отработать синхронно
+        this.$nextTick(() => {
+          if (this.captchaId !== null) {
+            window.smartCaptcha.execute(this.captchaId);
+          }
+        });
       }
     },
 
-    sendingResultToApi(token) {.............}
-
+    sendingResultToApi(token) {
+      // Ваша логика отправки с токеном
+      console.log('Token received:', token);
+      
+      // После успешной отправки рекомендуется сбросить капчу, 
+      // чтобы её можно было пройти снова при ошибке валидации
+      if (this.captchaId !== null && window.smartCaptcha) {
+        window.smartCaptcha.reset(this.captchaId);
+      }
+    }
+  }
+}
