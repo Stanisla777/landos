@@ -1,30 +1,25 @@
-captchaInit() {
-  if (this.captcha_id !== null) {
-    return; // уже создана
-  }
-  this.captcha_id = window.smartCaptcha.render('yandex-captcha-housing-appraisal', {
-    sitekey: conf.smartcaptcha_key,
-    invisible: true,
-    callback: (token) => {
-      if (!this.send_argument) {
-        this.apiConnect(token);
-        this.handlerBuildInfo(false);
-      } else {
-        this.handlerBuildInfo(true, token);
-      }
-    },
+mounted() {
+  this.$nextTick(() => {
+    setTimeout(() => this.captchaInit(), 1500);
   });
 },
 
-handlerBuildInfo(data, token) {
-  this.$nextTick(() => {
-    this.showBuildInfo = data;
-    this.showSocial = data;
-    if (data) {
-      setTimeout(this.appraisalSlider, 300);
-      this.getInfraApi(token);
-      this.closeBullet();
-      scrollIt(document.querySelector('#form'), 400, 'linear');
+methods: {
+  captchaInit() {
+    if (this.captcha_id !== null || !window.smartCaptcha) return;
+    this.captcha_id = window.smartCaptcha.render('captcha-container-id', {
+      sitekey: conf.smartcaptcha_key,
+      invisible: true,
+      callback: (token) => this.onCaptchaSuccess(token),
+    });
+  },
+
+  handlerSendForm() {
+    // ... валидация ...
+    if (this.captcha_id === null) {
+      this.$nextTick(() => this.captchaInit());
+      return;
     }
-  });
-},
+    window.smartCaptcha.execute(this.captcha_id, this.send_argument);
+  },
+}
