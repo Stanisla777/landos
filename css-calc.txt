@@ -1,27 +1,14 @@
-export default {
-  data() {
-    return {
-      captchaWidgetId: null,
-      captchaContainer: null,
-      isSending: false,
-    };
-  },
+<div v-else class="btn_s black" @click.prevent.stop="sendingResult" ref="btnSend" :class="preload_btn === true ? 'submitting' : ''">Проверить</div>
 
-  beforeUnmount() {
-    this.destroyCaptcha();
-  },
-
-  methods: {
-    handleSend() {
-      if (this.isSending || !this.btn_active) return;
-      this.isSending = true;
-
-      if (!this.captchaWidgetId) {
-        this.initCaptcha();
-        setTimeout(() => this.executeCaptcha(), 100);
-      } else {
-        this.executeCaptcha();
-      }
+captchaInit() {
+      if (this.captcha_id !== null || !window.smartCaptcha) return;
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-mortgage', {
+        sitekey: conf?.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          this.sendingResultToApi(token);
+        },
+      });
     },
 
     initCaptcha() {
@@ -31,7 +18,7 @@ export default {
         return;
       }
 
-      // 🔥 ПРОВЕРКА №1: Убедитесь, что ключ реально существует и это строка
+      // ключ реально существует и это строка
       const sitekey = conf?.smartcaptcha_key;
       if (!sitekey || typeof sitekey !== 'string' || sitekey.trim() === '') {
         console.error('КРИТИЧЕСКАЯ ОШИБКА: smartcaptcha_key отсутствует или пуст! Это вызывает краш React Яндекса.');
@@ -41,21 +28,19 @@ export default {
 
       const el = document.createElement('div');
       el.id = `yandex-captcha-ext-${Date.now()}`;
-      // Убираем display: none, иногда Яндекс крашится при рендере в полностью скрытый элемент
-      // Вместо этого сделаем его визуально незаметным, но присутствующим в потоке
       el.style.position = 'absolute';
       el.style.left = '-9999px';
       el.style.opacity = '0';
-      
+
       document.body.appendChild(el);
       this.captchaContainer = el;
 
       try {
         this.captchaWidgetId = window.smartCaptcha.render(el.id, {
           sitekey: sitekey,
-          invisible: true,
+          invisible: false,
           callback: (token) => {
-            // 🔥 ПРОВЕРКА №2: Даем React Яндекса завершить внутренний цикл (commit phase)
+            // Даем React Яндекса завершить внутренний цикл (commit phase)
             // перед тем, как мы начнем отправку и возможное удаление DOM.
             setTimeout(() => {
               this.submitToApi(token);
@@ -70,17 +55,46 @@ export default {
     },
 
     executeCaptcha() {
+      console.log("Пытаюсь выполнить капчу с ID:",this.captchaWidgetId, typeof this.captchaWidgetId)
       if (this.captchaWidgetId !== null && window.smartCaptcha) {
         window.smartCaptcha.execute(this.captchaWidgetId);
       } else {
         this.isSending = false;
       }
     },
+    destroyCaptcha() {
+      if (this.captchaWidgetId !== null && window.smartCaptcha) {
+        try {
+          window.smartCaptcha.reset(this.captchaWidgetId);
+        } catch (e) {}
+      }
 
-    submitToApi(token) {
+      if (this.captchaContainer && this.captchaContainer.parentNode) {
+        this.captchaContainer.parentNode.removeChild(this.captchaContainer);
+      }
+
+      this.captchaWidgetId = null;
+      this.captchaContainer = null;
+    },
+
+    sendingResult() {
+      if (!this.btn_active) return;
+
+      store.dispatch('ActionStandingButton');
+      store.dispatch('ActionButtonActive', false);
+
+      if (!this.captchaWidgetId) {
+        this.initCaptcha();
+        setTimeout(() => this.executeCaptcha(), 100);
+      } else {
+        this.executeCaptcha();
+      }
+    },
+
+    sendingResultToApi(token) {
       this.$refs.selectListWrapper?.classList.remove('open');
       this.closeBlock();
-      
+
       store.dispatch('ActionGetResult', [this.oktmo, token])
         .then(() => console.log('Успешно'))
         .catch((err) => console.error('Ошибка:', err))
@@ -90,20 +104,68 @@ export default {
           this.isSending = false;
         });
     },
+    submitToApi(token) {
+      this.$refs.selectListWrapper.classList.remove('open');
+      this.closeBlock();
 
-    destroyCaptcha() {
-      if (this.captchaWidgetId !== null && window.smartCaptcha) {
-        try {
-          window.smartCaptcha.reset(this.captchaWidgetId);
-        } catch (e) {}
-      }
-      
-      if (this.captchaContainer && this.captchaContainer.parentNode) {
-        this.captchaContainer.parentNode.removeChild(this.captchaContainer);
+      store.dispatch('ActionGetResult', [this.oktmo, token]);
+
+      // Сброс сразу — просто и работает
+      if (this.captchaId !== null && window.smartCaptcha) {
+        window.smartCaptcha.reset(this.captchaId);
+        this.captchaId = null;
       }
 
-      this.captchaWidgetId = null;
-      this.captchaContainer = null;
-    }
-  }
-}
+      this.isSending = false;
+    },
+
+-------------------------------
+
+[SmartCaptcha] `smartCaptcha.execute` cannot be called on not invisible widget
+execute @ captcha.js?render=explicit:2
+execute @ captcha.js?render=explicit:2
+executeCaptcha @ 2734.7402f334.bundle.js:1
+(anonymous) @ 2734.7402f334.bundle.js:1
+setTimeout
+sendingResult @ 2734.7402f334.bundle.js:1
+(anonymous) @ 2734.7402f334.bundle.js:1
+n.<computed>.n.<computed> @ bundle.js?cjMJnax0SjcNpiOQ:1
+t8 @ bundle.js?cjMJnax0SjcNpiOQ:1
+t7 @ bundle.js?cjMJnax0SjcNpiOQ:1
+s @ bundle.js?cjMJnax0SjcNpiOQ:1
+react-with-dom-and-polyfills.18.2.0.min.js:2 Uncaught Error: Minified React error #418; visit https://reactjs.org/docs/error-decoder.html?invariant=418 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at nv (react-with-dom-and-polyfills.18.2.0.min.js:2:71220)
+    at i9 (react-with-dom-and-polyfills.18.2.0.min.js:2:160922)
+    at rP (react-with-dom-and-polyfills.18.2.0.min.js:2:117964)
+    at rC (react-with-dom-and-polyfills.18.2.0.min.js:2:117834)
+    at rm (react-with-dom-and-polyfills.18.2.0.min.js:2:112934)
+    at m (react-with-dom-and-polyfills.18.2.0.min.js:2:32149)
+    at MessagePort.eu (react-with-dom-and-polyfills.18.2.0.min.js:2:34270)
+nv @ react-with-dom-and-polyfills.18.2.0.min.js:2
+i9 @ react-with-dom-and-polyfills.18.2.0.min.js:2
+rP @ react-with-dom-and-polyfills.18.2.0.min.js:2
+rC @ react-with-dom-and-polyfills.18.2.0.min.js:2
+rm @ react-with-dom-and-polyfills.18.2.0.min.js:2
+m @ react-with-dom-and-polyfills.18.2.0.min.js:2
+eu @ react-with-dom-and-polyfills.18.2.0.min.js:2
+postMessage
+ec @ react-with-dom-and-polyfills.18.2.0.min.js:2
+g @ react-with-dom-and-polyfills.18.2.0.min.js:2
+unstable_scheduleCallback @ react-with-dom-and-polyfills.18.2.0.min.js:2
+rh @ react-with-dom-and-polyfills.18.2.0.min.js:2
+rK @ react-with-dom-and-polyfills.18.2.0.min.js:2
+e.hydrateRoot @ react-with-dom-and-polyfills.18.2.0.min.js:2
+627 @ checkbox.007bdd87ab220bc5.js:2
+c @ checkbox.007bdd87ab220bc5.js:2
+(anonymous) @ checkbox.007bdd87ab220bc5.js:2
+(anonymous) @ checkbox.007bdd87ab220bc5.js:2
+react-with-dom-and-polyfills.18.2.0.min.js:2 Uncaught Error: Minified React error #423; visit https://reactjs.org/docs/error-decoder.html?invariant=423 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at i9 (react-with-dom-and-polyfills.18.2.0.min.js:2:160581)
+    at rP (react-with-dom-and-polyfills.18.2.0.min.js:2:117964)
+    at rC (react-with-dom-and-polyfills.18.2.0.min.js:2:117834)
+    at rv (react-with-dom-and-polyfills.18.2.0.min.js:2:114622)
+    at rm (react-with-dom-and-polyfills.18.2.0.min.js:2:113179)
+    at m (react-with-dom-and-polyfills.18.2.0.min.js:2:32149)
+    at MessagePort.eu (react-with-dom-and-polyfills.18.2.0.min.js:2:34270)
+
+Пытаюсь выполнить капчу с ID: 0 number
