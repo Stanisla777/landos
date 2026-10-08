@@ -1,105 +1,109 @@
-<div ref="captchaWrapper"></div>
+<script src="https://smartcaptcha.yandexcloud.net/captcha.js?render=explicit" defer></script>
+
+<div :id="captchaContainerId" class="captcha-container" v-once></div>
 
 export default {
   data() {
     return {
-      captchaId: null,
-      // Генерируем уникальный ID
-      containerId: `yandex-captcha-${Math.random().toString(36).substr(2, 9)}`,
-      isMobile: null,
-      flag: 0,
+      captchaId: null, // Хранит ID виджета после инициализации
+      // Генерируем уникальный ID, чтобы 15 приложений не конфликтовали друг с другом
+      captchaContainerId: `yandex-captcha-${Math.random().toString(36).substr(2, 9)}`,
+      isSending: false, // Флаг для защиты от двойного клика по кнопке
     };
   },
 
-  mounted() {
-    // 1. Создаем абсолютно чистый DOM-элемент вручную
-    const container = document.createElement('div');
-    container.id = this.containerId;
-    // ВАЖНО: Не добавляйте сюда классы вроде 'smart-captcha'! 
-    // Это триггерит авто-инициализацию Яндекса и вызывает двойной рендер.
-    container.className = 'captcha-element'; 
-    
-    // 2. Вставляем его в обертку, которой управляет Vue
-    if (this.$refs.captchaWrapper) {
-      this.$refs.captchaWrapper.appendChild(container);
-    }
-
-    // 3. Даем браузеру один кадр на отрисовку этого чистого узла, 
-    // прежде чем отдавать его React-движку Яндекса. 
-    // requestAnimationFrame надежнее setTimeout для таких задач.
-    requestAnimationFrame(() => {
-      this.initCaptcha();
-    });
-  },
-
+  // Очистка при удалении компонента (обязательно!)
   beforeUnmount() { // Используйте beforeDestroy, если у вас Vue 2
     if (this.captchaId !== null && window.smartCaptcha) {
       try {
         window.smartCaptcha.reset(this.captchaId);
-      } catch (e) {
-        // Игнорируем ошибки при уничтожении
-      }
+      } catch (e) {}
       this.captchaId = null;
     }
   },
 
   methods: {
+    // 1. Метод инициализации (вызывается только при необходимости)
     initCaptcha() {
-      if (this.captchaId !== null) return;
-      if (!window.smartCaptcha) {
-        console.warn('[SmartCaptcha] Скрипт еще не загружен');
-        return;
-      }
+      // Если уже инициализирована или скрипт не загружен — выходим
+      if (this.captchaId !== null || !window.smartCaptcha) return;
 
-      const container = document.getElementById(this.containerId);
+      const container = document.getElementById(this.captchaContainerId);
       if (!container) return;
 
-      // "Ядерная" очистка на всякий случай (защита от авто-инициализации)
-      while (container.firstChild) {
-        container.removeChild(container.firstChild);
-      }
+      // "Ядерная" очистка на случай, если что-то пошло не так
+      container.innerHTML = '';
 
       try {
-        this.captchaId = window.smartCaptcha.render(this.containerId, {
+        this.captchaId = window.smartCaptcha.render(this.captchaContainerId, {
           sitekey: conf?.smartcaptcha_key,
           invisible: true,
           callback: (token) => {
-            this.sendingResultToApi(token);
+            this.submitToApi(token);
           },
         });
-        console.log('[SmartCaptcha] Успешно инициализирована, ID:', this.captchaId);
       } catch (e) {
         console.error('[SmartCaptcha] Ошибка render:', e);
       }
     },
 
-    sendingResult() {
-      if (!this.btn_active) return;
+    // 2. Обработчик клика по кнопке "Отправить"
+    async handleSend() {
+      if (this.isSending || !this.btn_active) return;
+      this.isSending = true;
 
-      store.dispatch('ActionStandingButton');
-      store.dispatch('ActionButtonActive', false);
+      // Блокируем кнопку визуально (опционально, через ваш store или локально)
+      // store.dispatch('ActionButtonActive', false);
 
-      if (this.captchaId !== null && window.smartCaptcha) {
-        window.smartCaptcha.execute(this.captchaId);
-      } else {
-        // Fallback: пробуем инициализировать прямо сейчас
+      // Если капча еще не инициализирована, инициализируем её прямо сейчас
+      if (this.captchaId === null) {
         this.initCaptcha();
+        
+        // Даем React-движку Яндекса ~50 мс на то, чтобы "схватить" контейнер.
+        // Это безопаснее, чем большие setTimeout, и незаметно для пользователя.
         setTimeout(() => {
           if (this.captchaId !== null && window.smartCaptcha) {
             window.smartCaptcha.execute(this.captchaId);
+          } else {
+            // Если капча так и не инициализировалась (например, нет интернета), 
+            // решайте сами: либо разрешить отправку без неё, либо показать ошибку.
+            console.warn('Капча не инициализировалась');
+            this.isSending = false;
           }
-        }, 100);
+        }, 50);
+        return;
+      }
+
+      // Если капча УЖЕ инициализирована (второй и последующие клики), выполняем сразу
+      if (window.smartCaptcha) {
+        window.smartCaptcha.execute(this.captchaId);
       }
     },
 
-    sendingResultToApi(token) {
-      this.$refs.selectListWrapper?.classList.remove('open');
-      this.closeBlock();
-      store.dispatch('ActionGetResult', [this.oktmo, token]);
-      
-      // Сброс после отправки
-      if (this.captchaId !== null && window.smartCaptcha) {
-        window.smartCaptcha.reset(this.captchaId);
+    // 3. Метод, который вызывается после успешного прохождения капчи
+    async submitToApi(token) {
+      try {
+        // Ваша логика отправки
+        this.$refs.selectListWrapper?.classList.remove('open');
+        this.closeBlock();
+        
+        await store.dispatch('ActionGetResult', [this.oktmo, token]);
+        
+        console.log('Успешная отправка');
+        
+      } catch (error) {
+        console.error('Ошибка при отправке:', error);
+      } finally {
+        // ВАЖНО: Сбрасываем капчу в любом случае (успех или ошибка), 
+        // чтобы пользователь мог отправить форму снова с новым токеном.
+        if (this.captchaId !== null && window.smartCaptcha) {
+          window.smartCaptcha.reset(this.captchaId);
+          this.captchaId = null; // Обнуляем ID, чтобы следующий клик запустил чистую инициализацию
+        }
+        
+        // Возвращаем кнопку в активное состояние
+        this.isSending = false;
+        // store.dispatch('ActionButtonActive', true);
       }
     }
   }
