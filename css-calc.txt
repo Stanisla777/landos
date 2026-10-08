@@ -1,41 +1,56 @@
 <script src="https://smartcaptcha.yandexcloud.net/captcha.js?render=explicit" defer></script>
 
-<div :id="captchaContainerId" class="captcha-container" v-once></div>
-
 export default {
   data() {
     return {
-      captchaId: null, // Хранит ID виджета после инициализации
-      // Генерируем уникальный ID, чтобы 15 приложений не конфликтовали друг с другом
-      captchaContainerId: `yandex-captcha-${Math.random().toString(36).substr(2, 9)}`,
-      isSending: false, // Флаг для защиты от двойного клика по кнопке
+      captchaWidgetId: null,
+      captchaContainer: null, // Будем хранить ссылку на реальный DOM-элемент
+      isSending: false,
     };
   },
 
-  // Очистка при удалении компонента (обязательно!)
-  beforeUnmount() { // Используйте beforeDestroy, если у вас Vue 2
-    if (this.captchaId !== null && window.smartCaptcha) {
-      try {
-        window.smartCaptcha.reset(this.captchaId);
-      } catch (e) {}
-      this.captchaId = null;
-    }
+  // Гарантированная очистка при уходе со страницы
+  beforeUnmount() { // beforeDestroy для Vue 2
+    this.destroyCaptcha();
   },
 
   methods: {
-    // 1. Метод инициализации (вызывается только при необходимости)
+    handleSend() {
+      if (this.isSending || !this.btn_active) return;
+      this.isSending = true;
+
+      // Если капчи еще нет, создаем и инициализируем
+      if (!this.captchaWidgetId) {
+        this.initCaptcha();
+        // Даем React Яндекса 50-100 мс на монтирование в новый узел
+        setTimeout(() => {
+          this.executeCaptcha();
+        }, 100);
+      } else {
+        // Если уже есть, просто выполняем
+        this.executeCaptcha();
+      }
+    },
+
     initCaptcha() {
-      // Если уже инициализирована или скрипт не загружен — выходим
-      if (this.captchaId !== null || !window.smartCaptcha) return;
+      if (!window.smartCaptcha) {
+        console.error('Скрипт капчи не загружен');
+        this.isSending = false;
+        return;
+      }
 
-      const container = document.getElementById(this.captchaContainerId);
-      if (!container) return;
+      // 1. Создаем элемент ВНЕ Vue, прямо в body
+      const el = document.createElement('div');
+      // Уникальный ID на каждый раз
+      el.id = `yandex-captcha-external-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      el.style.display = 'none'; // Он невидимый, прячем его на всякий случай
+      
+      document.body.appendChild(el);
+      this.captchaContainer = el;
 
-      // "Ядерная" очистка на случай, если что-то пошло не так
-      container.innerHTML = '';
-
+      // 2. Инициализируем
       try {
-        this.captchaId = window.smartCaptcha.render(this.captchaContainerId, {
+        this.captchaWidgetId = window.smartCaptcha.render(el.id, {
           sitekey: conf?.smartcaptcha_key,
           invisible: true,
           callback: (token) => {
@@ -43,55 +58,57 @@ export default {
           },
         });
       } catch (e) {
-        console.error('[SmartCaptcha] Ошибка render:', e);
+        console.error('Ошибка инициализации капчи:', e);
+        this.destroyCaptcha();
+        this.isSending = false;
       }
     },
 
-    // 2. Обработчик клика по кнопке "Отправить"
-    async handleSend() {
-      if (this.isSending || !this.btn_active) return;
-      this.isSending = true;
-
-      // Блокируем кнопку визуально (опционально, через ваш store или локально)
-      // store.dispatch('ActionButtonActive', false);
-
-      // Если капча еще не инициализирована, инициализируем её прямо сейчас
-      if (this.captchaId === null) {
-        this.initCaptcha();
-        
-        // Даем React-движку Яндекса ~50 мс на то, чтобы "схватить" контейнер.
-        // Это безопаснее, чем большие setTimeout, и незаметно для пользователя.
-        setTimeout(() => {
-          if (this.captchaId !== null && window.smartCaptcha) {
-            window.smartCaptcha.execute(this.captchaId);
-          } else {
-            // Если капча так и не инициализировалась (например, нет интернета), 
-            // решайте сами: либо разрешить отправку без неё, либо показать ошибку.
-            console.warn('Капча не инициализировалась');
-            this.isSending = false;
-          }
-        }, 50);
-        return;
-      }
-
-      // Если капча УЖЕ инициализирована (второй и последующие клики), выполняем сразу
-      if (window.smartCaptcha) {
-        window.smartCaptcha.execute(this.captchaId);
+    executeCaptcha() {
+      if (this.captchaWidgetId !== null && window.smartCaptcha) {
+        window.smartCaptcha.execute(this.captchaWidgetId);
+      } else {
+        console.error('Не удалось выполнить капчу: widgetId отсутствует');
+        this.isSending = false;
       }
     },
 
-    // 3. Метод, который вызывается после успешного прохождения капчи
     submitToApi(token) {
-  this.$refs.selectListWrapper?.classList.remove('open');
-  this.closeBlock();
-  
-  store.dispatch('ActionGetResult', [this.oktmo, token]);
-  
-  // Сброс сразу — просто и работает
-  if (this.captchaId !== null && window.smartCaptcha) {
-    window.smartCaptcha.reset(this.captchaId);
-    this.captchaId = null;
+      // Ваша логика отправки
+      this.$refs.selectListWrapper?.classList.remove('open');
+      this.closeBlock();
+      
+      store.dispatch('ActionGetResult', [this.oktmo, token])
+        .then(() => {
+          console.log('Успешно');
+        })
+        .catch((err) => {
+          console.error('Ошибка отправки:', err);
+        })
+        .finally(() => {
+          // 3. ПОЛНОЕ УНИЧТОЖЕНИЕ после попытки отправки
+          this.destroyCaptcha();
+          this.isSending = false;
+          // store.dispatch('ActionButtonActive', true); // Если нужно разблокировать кнопку
+        });
+    },
+
+    destroyCaptcha() {
+      // Сбрасываем виджет
+      if (this.captchaWidgetId !== null && window.smartCaptcha) {
+        try {
+          window.smartCaptcha.reset(this.captchaWidgetId);
+        } catch (e) {}
+      }
+      
+      // Физически удаляем DOM-элемент из body, чтобы не оставлять мусор и "зомби" React
+      if (this.captchaContainer && this.captchaContainer.parentNode) {
+        this.captchaContainer.parentNode.removeChild(this.captchaContainer);
+      }
+
+      // Обнуляем ссылки
+      this.captchaWidgetId = null;
+      this.captchaContainer = null;
+    }
   }
-  
-  this.isSending = false;
 }
