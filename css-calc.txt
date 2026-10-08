@@ -1,33 +1,30 @@
-export default {
-  data() {
+bundle.js?GAUh7R2RzfDVffHy:1 Error: [SmartCaptcha] Widget with id `0` does not exist
+    at Object._validateId (captcha.js:2:156903)
+    at Object.execute (captcha.js:2:154469)
+    at Object.execute (captcha.js:2:254571)
+    at Proxy.sendingResult (8477.9e5d94b4.bundle.js:1:8186)
+    at S.btn_active.S.request_result.S.request_result.code.onClick.e.<computed>.e.<computed> (8477.9e5d94b4.bundle.js:1:18298)
+    at t8 (bundle.js?GAUh7R2RzfDVffHy:1:667717)
+    at t7 (bundle.js?GAUh7R2RzfDVffHy:1:667785)
+    at HTMLDivElement.s (bundle.js?GAUh7R2RzfDVffHy:1:740067)
+
+------------------------------------------------------
+
+
+
+
+data() {
     return {
-      captchaId: null,
+    
+      captcha_id: null,
       containerId: `yandex-captcha-${this._uid || Date.now()}`,
+      isMobile: null,
+      flag: 0,
     };
   },
-  
-  mounted() {
-    this.$nextTick(() => {
-      this.initCaptcha();
-    });
-  },
-  
-  beforeUnmount() {
-    if (this.captchaId !== null && window.smartCaptcha) {
-      try {
-        window.smartCaptcha.reset(this.captchaId);
-      } catch (e) {
-        // Игнорируем ошибки
-      }
-      this.captchaId = null;
-    }
-  },
-  
-  methods: {
-    initCaptcha() {
-      // Если уже инициализирована — выходим
-      if (this.captchaId !== null || !window.smartCaptcha) return;
 
+initCaptcha() {
+      if (this.captchaId !== null || !window.smartCaptcha) return;
       const container = document.getElementById(this.containerId);
       if (!container) return;
 
@@ -46,7 +43,7 @@ export default {
       store.dispatch('ActionStandingButton');
       store.dispatch('ActionButtonActive', false);
 
-      // Проверяем готовность капчи через captchaId
+      // Проверка готовности капчи через captchaId
       if (this.captchaId !== null) {
         window.smartCaptcha.execute(this.captchaId);
       } else {
@@ -61,11 +58,23 @@ export default {
     },
 
     sendingResultToApi(token) {
-      // Ваша логика отправки...
-      
-      if (this.captchaId !== null && window.smartCaptcha) {
+      this.$refs.selectListWrapper.classList.remove('open');
+      this.closeBlock();
+      store.dispatch('ActionGetResult', [this.oktmo, token]);
+    },
+
+beforeUnmount() {
+    if (this.captchaId !== null && window.smartCaptcha) {
+      try {
         window.smartCaptcha.reset(this.captchaId);
+      } catch (e) {
+
       }
+      this.captchaId = null;
     }
-  }
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.initCaptcha();
+    });
 }
