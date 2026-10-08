@@ -1,2 +1,71 @@
-Uncaught (in promise) Error: [SmartCaptcha] Widget with id `0` does not exist
-throw Error("[SmartCaptcha] Widget with id `".concat(e, "` does not exist"));
+export default {
+  data() {
+    return {
+      captchaId: null,
+      containerId: `yandex-captcha-${this._uid || Date.now()}`,
+    };
+  },
+  
+  mounted() {
+    this.$nextTick(() => {
+      this.initCaptcha();
+    });
+  },
+  
+  beforeUnmount() {
+    if (this.captchaId !== null && window.smartCaptcha) {
+      try {
+        window.smartCaptcha.reset(this.captchaId);
+      } catch (e) {
+        // Игнорируем ошибки
+      }
+      this.captchaId = null;
+    }
+  },
+  
+  methods: {
+    initCaptcha() {
+      // Если уже инициализирована — выходим
+      if (this.captchaId !== null || !window.smartCaptcha) return;
+
+      const container = document.getElementById(this.containerId);
+      if (!container) return;
+
+      this.captchaId = window.smartCaptcha.render(this.containerId, {
+        sitekey: conf?.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          this.sendingResultToApi(token);
+        },
+      });
+    },
+
+    sendingResult() {
+      if (!this.btn_active) return;
+
+      store.dispatch('ActionStandingButton');
+      store.dispatch('ActionButtonActive', false);
+
+      // Проверяем готовность капчи через captchaId
+      if (this.captchaId !== null) {
+        window.smartCaptcha.execute(this.captchaId);
+      } else {
+        // Если вдруг не успела инициализироваться
+        this.initCaptcha();
+        this.$nextTick(() => {
+          if (this.captchaId !== null) {
+            window.smartCaptcha.execute(this.captchaId);
+          }
+        });
+      }
+    },
+
+    sendingResultToApi(token) {
+      // Ваша логика отправки...
+      
+      if (this.captchaId !== null && window.smartCaptcha) {
+        window.smartCaptcha.reset(this.captchaId);
+      }
+    }
+  }
+}
