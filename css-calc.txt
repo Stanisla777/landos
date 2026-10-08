@@ -1,14 +1,39 @@
-setTimeout(() => {
-            if (this.captchaWidgetId !== null && window.smartCaptcha) {
-              try {
-                window.smartCaptcha.reset(this.captchaWidgetId);
-              } catch (e) {
-                // Игнорируем ошибки сброса, они не критичны
-              }
-            }
-            
-            // Обнуляем ID, чтобы следующий клик создал свежий виджет
-            this.captchaWidgetId = null; 
-            this.isSending = false;
-            // store.dispatch('ActionButtonActive', true); 
-          }, 100);
+<div v-else class="btn_s black" @click="sendingResult" ref="btnSend" :class="preload_btn === true ? 'submitting' : ''">Проверить</div>
+
+<div id="yandex-captcha-family-mortgage" class="captcha-element"></div>
+
+data() {
+    return {
+      captcha_id: null,
+      isMobile: null,
+      flag: 0,
+    };
+
+captchaInit() {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-mortgage', {
+        sitekey: conf?.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          this.sendingResultToApi(token);
+        },
+      });
+    },
+
+    sendingResult() {
+      if (this.btn_active) {
+        store.dispatch('ActionStandingButton');
+        store.dispatch('ActionButtonActive', false);
+        this.captchaInit();
+        const recaptchaKey = conf?.smartcaptcha_key;
+        if (recaptchaKey) {
+          window.smartCaptcha.execute(this.captcha_id);
+        }
+      }
+    },
+
+    sendingResultToApi(token) {
+      this.$refs.selectListWrapper.classList.remove('open');
+      this.closeBlock();
+      store.dispatch('ActionGetResult', [this.oktmo, token]);
+    },
+
