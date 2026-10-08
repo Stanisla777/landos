@@ -81,30 +81,17 @@ export default {
     },
 
     // 3. Метод, который вызывается после успешного прохождения капчи
-    async submitToApi(token) {
-      try {
-        // Ваша логика отправки
-        this.$refs.selectListWrapper?.classList.remove('open');
-        this.closeBlock();
-        
-        await store.dispatch('ActionGetResult', [this.oktmo, token]);
-        
-        console.log('Успешная отправка');
-        
-      } catch (error) {
-        console.error('Ошибка при отправке:', error);
-      } finally {
-        // ВАЖНО: Сбрасываем капчу в любом случае (успех или ошибка), 
-        // чтобы пользователь мог отправить форму снова с новым токеном.
-        if (this.captchaId !== null && window.smartCaptcha) {
-          window.smartCaptcha.reset(this.captchaId);
-          this.captchaId = null; // Обнуляем ID, чтобы следующий клик запустил чистую инициализацию
-        }
-        
-        // Возвращаем кнопку в активное состояние
-        this.isSending = false;
-        // store.dispatch('ActionButtonActive', true);
-      }
-    }
+    submitToApi(token) {
+  this.$refs.selectListWrapper?.classList.remove('open');
+  this.closeBlock();
+  
+  store.dispatch('ActionGetResult', [this.oktmo, token]);
+  
+  // Сброс сразу — просто и работает
+  if (this.captchaId !== null && window.smartCaptcha) {
+    window.smartCaptcha.reset(this.captchaId);
+    this.captchaId = null;
   }
+  
+  this.isSending = false;
 }
