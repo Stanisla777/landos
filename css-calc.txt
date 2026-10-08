@@ -1,38 +1,4 @@
-export default {
-  data() {
-    return {
-      captchaWidgetId: null,    // Только одна переменная для ID
-      captchaContainer: null,   // Только одна переменная для DOM-элемента
-      isSending: false,         // Защита от двойного клика
-    };
-  },
-
-  beforeUnmount() { // beforeDestroy для Vue 2
-    this.destroyCaptcha();
-  },
-
-  methods: {
-    // 1. Обработчик клика
-    sendingResult() {
-      if (!this.btn_active || this.isSending) return;
-      
-      this.isSending = true;
-      store.dispatch('ActionStandingButton');
-      store.dispatch('ActionButtonActive', false);
-
-      if (!this.captchaWidgetId) {
-        // Первый клик: создаем виджет
-        this.initCaptcha();
-        // Даем React Яндекса 150мс на инициализацию перед вызовом execute
-        setTimeout(() => this.executeCaptcha(), 150);
-      } else {
-        // Повторный клик: виджет уже есть, просто запускаем
-        this.executeCaptcha();
-      }
-    },
-
-    // 2. Создание виджета
-    initCaptcha() {
+initCaptcha() {
       if (!window.smartCaptcha) {
         console.error('Скрипт капчи не загружен');
         this.isSending = false;
@@ -52,14 +18,14 @@ export default {
       el.style.position = 'absolute';
       el.style.left = '-9999px';
       el.style.opacity = '0';
-      
+
       document.body.appendChild(el);
       this.captchaContainer = el;
 
       try {
         this.captchaWidgetId = window.smartCaptcha.render(el.id, {
           sitekey: sitekey,
-          invisible: true, // ⚠️ ОБЯЗАТЕЛЬНО true, так как мы используем .execute()
+          invisible: true,
           callback: (token) => {
             this.submitToApi(token);
           },
@@ -71,7 +37,6 @@ export default {
       }
     },
 
-    // 3. Запуск проверки
     executeCaptcha() {
       if (this.captchaWidgetId !== null && this.captchaWidgetId !== undefined && window.smartCaptcha) {
         window.smartCaptcha.execute(this.captchaWidgetId);
@@ -80,37 +45,6 @@ export default {
         this.isSending = false;
       }
     },
-
-    // 4. Обработка токена
-    submitToApi(token) {
-      this.$refs.selectListWrapper?.classList.remove('open');
-      this.closeBlock();
-
-      store.dispatch('ActionGetResult', [this.oktmo, token])
-        .then(() => {
-          console.log('Успешная отправка');
-        })
-        .catch((err) => {
-          console.error('Ошибка отправки:', err);
-        })
-        .finally(() => {
-          // ⚠️ ВАЖНО: Мы делаем ТОЛЬКО reset. 
-          // Мы НЕ удаляем элемент из DOM (не делаем removeChild) здесь!
-          // Удаление DOM-элемента во время работы callback'а вызывает ошибку React #418.
-          if (this.captchaWidgetId !== null && window.smartCaptcha) {
-            try {
-              window.smartCaptcha.reset(this.captchaWidgetId);
-            } catch (e) {}
-          }
-          
-          // Обнуляем ID, чтобы следующий клик создал свежий виджет
-          this.captchaWidgetId = null; 
-          this.isSending = false;
-          // store.dispatch('ActionButtonActive', true); // Раскомментируйте, если нужно
-        });
-    },
-
-    // 5. Полная очистка (вызывается ТОЛЬКО при уничтожении компонента Vue)
     destroyCaptcha() {
       if (this.captchaWidgetId !== null && window.smartCaptcha) {
         try {
@@ -125,6 +59,66 @@ export default {
 
       this.captchaWidgetId = null;
       this.captchaContainer = null;
-    }
-  }
-}
+    },
+
+    sendingResult() {
+      if (!this.btn_active || this.isSending) return;
+
+      this.isSending = true;
+      store.dispatch('ActionStandingButton');
+      store.dispatch('ActionButtonActive', false);
+
+      if (!this.captchaWidgetId) {
+        // Первый клик: создаем виджет
+        this.initCaptcha();
+        // Даем React Яндекса 150мс на инициализацию перед вызовом execute
+        setTimeout(() => this.executeCaptcha(), 150);
+      } else {
+        // Повторный клик: виджет уже есть, просто запускаем
+        this.executeCaptcha();
+      }
+    },
+
+    sendingResultToApi(token) {
+      this.$refs.selectListWrapper?.classList.remove('open');
+      this.closeBlock();
+
+      store.dispatch('ActionGetResult', [this.oktmo, token])
+        .then(() => console.log('Успешно'))
+        .catch((err) => console.error('Ошибка:', err))
+        .finally(() => {
+          // Уничтожаем только ПОСЛЕ того, как запрос завершен
+          this.destroyCaptcha();
+          this.isSending = false;
+        });
+    },
+    submitToApi(token) {
+      this.$refs.selectListWrapper?.classList.remove('open');
+      this.closeBlock();
+
+      store.dispatch('ActionGetResult', [this.oktmo, token])
+        .then(() => {
+          console.log('Успешная отправка');
+        })
+        .catch((err) => {
+          console.error('Ошибка отправки:', err);
+        })
+        .finally(() => {
+          // ⚠️ ВАЖНО: Мы делаем ТОЛЬКО reset.
+          // Мы НЕ удаляем элемент из DOM (не делаем removeChild) здесь!
+          // Удаление DOM-элемента во время работы callback'а вызывает ошибку React #418.
+          if (this.captchaWidgetId !== null && window.smartCaptcha) {
+            try {
+              window.smartCaptcha.reset(this.captchaWidgetId);
+            } catch (e) {}
+          }
+
+          // Обнуляем ID, чтобы следующий клик создал свежий виджет
+          this.captchaWidgetId = null;
+          this.isSending = false;
+          // store.dispatch('ActionButtonActive', true); // Раскомментируйте, если нужно
+        });
+    },
+beforeUnmount() {
+    this.destroyCaptcha();
+  },
