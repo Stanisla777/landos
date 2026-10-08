@@ -1,16 +1,13 @@
-<script src="https://smartcaptcha.yandexcloud.net/captcha.js?render=explicit" defer></script>
-
 export default {
   data() {
     return {
       captchaWidgetId: null,
-      captchaContainer: null, // Будем хранить ссылку на реальный DOM-элемент
+      captchaContainer: null,
       isSending: false,
     };
   },
 
-  // Гарантированная очистка при уходе со страницы
-  beforeUnmount() { // beforeDestroy для Vue 2
+  beforeUnmount() {
     this.destroyCaptcha();
   },
 
@@ -19,15 +16,10 @@ export default {
       if (this.isSending || !this.btn_active) return;
       this.isSending = true;
 
-      // Если капчи еще нет, создаем и инициализируем
       if (!this.captchaWidgetId) {
         this.initCaptcha();
-        // Даем React Яндекса 50-100 мс на монтирование в новый узел
-        setTimeout(() => {
-          this.executeCaptcha();
-        }, 100);
+        setTimeout(() => this.executeCaptcha(), 100);
       } else {
-        // Если уже есть, просто выполняем
         this.executeCaptcha();
       }
     },
@@ -39,26 +31,39 @@ export default {
         return;
       }
 
-      // 1. Создаем элемент ВНЕ Vue, прямо в body
+      // 🔥 ПРОВЕРКА №1: Убедитесь, что ключ реально существует и это строка
+      const sitekey = conf?.smartcaptcha_key;
+      if (!sitekey || typeof sitekey !== 'string' || sitekey.trim() === '') {
+        console.error('КРИТИЧЕСКАЯ ОШИБКА: smartcaptcha_key отсутствует или пуст! Это вызывает краш React Яндекса.');
+        this.isSending = false;
+        return;
+      }
+
       const el = document.createElement('div');
-      // Уникальный ID на каждый раз
-      el.id = `yandex-captcha-external-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      el.style.display = 'none'; // Он невидимый, прячем его на всякий случай
+      el.id = `yandex-captcha-ext-${Date.now()}`;
+      // Убираем display: none, иногда Яндекс крашится при рендере в полностью скрытый элемент
+      // Вместо этого сделаем его визуально незаметным, но присутствующим в потоке
+      el.style.position = 'absolute';
+      el.style.left = '-9999px';
+      el.style.opacity = '0';
       
       document.body.appendChild(el);
       this.captchaContainer = el;
 
-      // 2. Инициализируем
       try {
         this.captchaWidgetId = window.smartCaptcha.render(el.id, {
-          sitekey: conf?.smartcaptcha_key,
+          sitekey: sitekey,
           invisible: true,
           callback: (token) => {
-            this.submitToApi(token);
+            // 🔥 ПРОВЕРКА №2: Даем React Яндекса завершить внутренний цикл (commit phase)
+            // перед тем, как мы начнем отправку и возможное удаление DOM.
+            setTimeout(() => {
+              this.submitToApi(token);
+            }, 0); // 0 мс достаточно, чтобы передать управление в конец очереди событий
           },
         });
       } catch (e) {
-        console.error('Ошибка инициализации капчи:', e);
+        console.error('Ошибка render:', e);
         this.destroyCaptcha();
         this.isSending = false;
       }
@@ -68,45 +73,35 @@ export default {
       if (this.captchaWidgetId !== null && window.smartCaptcha) {
         window.smartCaptcha.execute(this.captchaWidgetId);
       } else {
-        console.error('Не удалось выполнить капчу: widgetId отсутствует');
         this.isSending = false;
       }
     },
 
     submitToApi(token) {
-      // Ваша логика отправки
       this.$refs.selectListWrapper?.classList.remove('open');
       this.closeBlock();
       
       store.dispatch('ActionGetResult', [this.oktmo, token])
-        .then(() => {
-          console.log('Успешно');
-        })
-        .catch((err) => {
-          console.error('Ошибка отправки:', err);
-        })
+        .then(() => console.log('Успешно'))
+        .catch((err) => console.error('Ошибка:', err))
         .finally(() => {
-          // 3. ПОЛНОЕ УНИЧТОЖЕНИЕ после попытки отправки
+          // Уничтожаем только ПОСЛЕ того, как запрос завершен
           this.destroyCaptcha();
           this.isSending = false;
-          // store.dispatch('ActionButtonActive', true); // Если нужно разблокировать кнопку
         });
     },
 
     destroyCaptcha() {
-      // Сбрасываем виджет
       if (this.captchaWidgetId !== null && window.smartCaptcha) {
         try {
           window.smartCaptcha.reset(this.captchaWidgetId);
         } catch (e) {}
       }
       
-      // Физически удаляем DOM-элемент из body, чтобы не оставлять мусор и "зомби" React
       if (this.captchaContainer && this.captchaContainer.parentNode) {
         this.captchaContainer.parentNode.removeChild(this.captchaContainer);
       }
 
-      // Обнуляем ссылки
       this.captchaWidgetId = null;
       this.captchaContainer = null;
     }
