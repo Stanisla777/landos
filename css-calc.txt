@@ -1,15 +1,27 @@
-<div v-else class="btn_s black" @click="sendingResult" ref="btnSend" :class="preload_btn === true ? 'submitting' : ''">Проверить</div>
-
-<div id="yandex-captcha-family-mortgage" class="captcha-element"></div>
-
-data() {
+<div id="yandex-captcha-family-mortgage" class="captcha-element" v-once></div>
+export default {
+  data() {
     return {
-      captcha_id: null,
-      isMobile: null,
-      flag: 0,
+      captcha_id: null, // Хранит ID виджета (число), пока он активен
+      // ... ваши остальные данные (isMobile, flag и т.д.)
     };
+  },
 
-captchaInit() {
+  // Очищаем при уходе со страницы, чтобы не было утечек памяти
+  beforeUnmount() { // Используйте beforeDestroy, если у вас Vue 2
+    if (this.captcha_id !== null && window.smartCaptcha) {
+      try {
+        window.smartCaptcha.reset(this.captcha_id);
+      } catch (e) {}
+    }
+  },
+
+  methods: {
+    captchaInit() {
+      // ПРАВИЛО №1: Если виджет уже создан, НЕ вызываем render повторно
+      if (this.captcha_id !== null) return;
+      if (!window.smartCaptcha) return;
+
       this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-mortgage', {
         sitekey: conf?.smartcaptcha_key,
         invisible: true,
@@ -20,20 +32,50 @@ captchaInit() {
     },
 
     sendingResult() {
-      if (this.btn_active) {
-        store.dispatch('ActionStandingButton');
-        store.dispatch('ActionButtonActive', false);
+      if (!this.btn_active) return;
+
+      store.dispatch('ActionStandingButton');
+      store.dispatch('ActionButtonActive', false);
+
+      if (this.captcha_id === null) {
+        // Первый клик: инициализируем
         this.captchaInit();
-        const recaptchaKey = conf?.smartcaptcha_key;
-        if (recaptchaKey) {
+        // Даем Яндексу 150мс на создание внутренней структуры перед запуском
+        setTimeout(() => {
+          if (this.captcha_id !== null && window.smartCaptcha) {
+            window.smartCaptcha.execute(this.captcha_id);
+          }
+        }, 150);
+      } else {
+        // Повторный клик: виджет уже есть, просто запускаем проверку
+        if (window.smartCaptcha) {
           window.smartCaptcha.execute(this.captcha_id);
         }
       }
     },
 
     sendingResultToApi(token) {
-      this.$refs.selectListWrapper.classList.remove('open');
+      this.$refs.selectListWrapper?.classList.remove('open');
       this.closeBlock();
-      store.dispatch('ActionGetResult', [this.oktmo, token]);
-    },
 
+      store.dispatch('ActionGetResult', [this.oktmo, token])
+        .then(() => {
+          console.log('Успешная отправка');
+        })
+        .catch((err) => {
+          console.error('Ошибка отправки:', err);
+        })
+        .finally(() => {
+          // ПРАВИЛО №2 и №3: Сбрасываем виджет и обнуляем ID
+          if (this.captcha_id !== null && window.smartCaptcha) {
+            try {
+              window.smartCaptcha.reset(this.captcha_id);
+            } catch (e) {}
+          }
+          // Обнуляем ID, чтобы при следующем нажатии кнопки 
+          // captchaInit() сработал заново и создал свежий виджет
+          this.captcha_id = null; 
+        });
+    }
+  }
+}
