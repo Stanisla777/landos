@@ -1,3 +1,4 @@
+В юнивёрсал жс
 
 function captchaInit(parent,index) {
   if (!parent.querySelector('.captcha-element')){
@@ -18,3 +19,121 @@ function captchaInit(parent,index) {
     });
   }
 }
+
+-----------------------------------
+
+В приложении с доп.параметрами
+captchaInit() {
+      if (this.captcha_id !== null) {
+        try {
+          window.smartCaptcha.destroy(this.captcha_id);
+        } catch (e) {
+        }
+      }
+
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-large-family-450', {
+        sitekey: conf?.smartcaptcha_key,
+        invisible: true,
+
+        callback: (token) => {
+          this.sendingApplicationNumberToApi(token);
+        }
+      });
+
+      try {
+        // Пользователь закрыл окно капчи
+        window.smartCaptcha.subscribe(this.captcha_id, 'challenge-hidden', () => {
+          store.dispatch('ActionBtnLoad', false);
+        });
+
+        // Токен истёк
+        window.smartCaptcha.subscribe(this.captcha_id, 'token-expired', () => {
+          console.warn('Токен капчи истёк');
+          store.dispatch('ActionBtnLoad', false);
+          store.dispatch('ActionModalContent', 'captcha_time_up');
+          store.dispatch('ActionOpenModal', true);
+        });
+
+        // Ошибка сети
+        window.smartCaptcha.subscribe(this.captcha_id, 'network-error', () => {
+          console.error('Ошибка сети при проверке капчи');
+          store.dispatch('ActionBtnLoad', false);
+          store.dispatch('ActionModalContent', 'security_check_error');
+          store.dispatch('ActionOpenModal', true);
+        });
+
+        // Ошибка JavaScript
+        window.smartCaptcha.subscribe(this.captcha_id, 'javascript-error', () => {
+          console.error('Ошибка JavaScript в капче');
+          store.dispatch('ActionBtnLoad', false);
+          store.dispatch('ActionModalContent', 'security_check_error');
+          store.dispatch('ActionOpenModal', true);
+        });
+      } catch (e) {
+        console.warn('Не удалось подписаться на события капчи', e);
+      }
+    },
+
+-------------------------------------------------------
+Как в приложении семья
+
+captchaInit() {
+      // Если виджет уже создан, не вызываю render повторно
+      if (this.captcha_id !== null) return;
+      if (!window.smartCaptcha) return;
+
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-mortgage', {
+        sitekey: conf?.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          this.sendingResultToApi(token);
+        },
+      });
+    },
+
+    sendingResult() {
+      if (!this.btn_active) return;
+
+      store.dispatch('ActionStandingButton');
+      store.dispatch('ActionButtonActive', false);
+
+      if (this.captcha_id === null) {
+        this.captchaInit();
+        setTimeout(() => {
+          if (this.captcha_id !== null && window.smartCaptcha) {
+            window.smartCaptcha.execute(this.captcha_id);
+          }
+        }, 150);
+      } else {
+        // Повторный клик: виджет уже есть, просто запускаем проверку
+        if (window.smartCaptcha) {
+          window.smartCaptcha.execute(this.captcha_id);
+        }
+      }
+    },
+
+
+
+    sendingResultToApi(token) {
+      this.$refs.selectListWrapper?.classList.remove('open');
+      this.closeBlock();
+
+      store.dispatch('ActionGetResult', [this.oktmo, token])
+        .then(() => {
+          console.log('Успешная отправка');
+        })
+        .catch((err) => {
+          console.error('Ошибка отправки:', err);
+        })
+        .finally(() => {
+          // сбрасываю виджет и обнуляю ID
+          if (this.captcha_id !== null && window.smartCaptcha) {
+            try {
+              window.smartCaptcha.reset(this.captcha_id);
+            } catch (e) {}
+          }
+          // Обнуляю ID, чтобы при следующем нажатии кнопки
+          // captchaInit() сработал заново и создал свежий виджет
+          this.captcha_id = null;
+        });
+    },
