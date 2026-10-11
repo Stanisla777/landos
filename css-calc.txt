@@ -1,118 +1,122 @@
-В юнивёрсал жс
+ref="captchaContainer"
 
-function captchaInit(parent,index) {
-  if (!parent.querySelector('.captcha-element')){
-    const el = document.createElement('div')
-    el.classList.add('captcha-element')
-    el.setAttribute('id',`yandex-smart-captcha-${index}`)
-    parent.append(el);
-  }
+captchaMixin.js
 
-  if (parent.querySelector('.captcha-element')) {
-    const id_i = parent.querySelector('.captcha-element').id
-    return window.smartCaptcha.render(id_i, {
-      sitekey: conf.smartcaptcha_key,
-      invisible: true,
-      callback: (token) => {
-        submitForm(parent);
-      },
-    });
-  }
-}
+export const captchaMixin = {
+  data() {
+    return {
+      captcha_id: null,
+      // Уникальный ID для каждого экземпляра, чтобы не было конфликтов
+      captchaContainerId: `yandex-captcha-${Math.random().toString(36).substr(2, 9)}`,
+    };
+  },
 
------------------------------------
+  mounted() {
+    // Создаем элемент внутри рефа, который предоставит компонент (как в вашем нативном JS)
+    const parent = this.$refs.captchaContainer;
+    if (parent && !parent.querySelector(`#${this.captchaContainerId}`)) {
+      const el = document.createElement('div');
+      el.id = this.captchaContainerId;
+      el.classList.add('captcha-element');
+      parent.append(el);
+    }
+  },
 
-В приложении с доп.параметрами
-captchaInit() {
-      if (this.captcha_id !== null) {
-        try {
-          window.smartCaptcha.destroy(this.captcha_id);
-        } catch (e) {
-        }
-      }
+  // Используйте beforeDestroy, если у вас Vue 2
+  beforeUnmount() { 
+    this.resetCaptcha(true); // true означает полное удаление DOM-элемента при уходе
+  },
 
-      this.captcha_id = window.smartCaptcha.render('yandex-captcha-large-family-450', {
-        sitekey: conf?.smartcaptcha_key,
-        invisible: true,
-
-        callback: (token) => {
-          this.sendingApplicationNumberToApi(token);
-        }
-      });
-
-      try {
-        // Пользователь закрыл окно капчи
-        window.smartCaptcha.subscribe(this.captcha_id, 'challenge-hidden', () => {
-          store.dispatch('ActionBtnLoad', false);
-        });
-
-        // Токен истёк
-        window.smartCaptcha.subscribe(this.captcha_id, 'token-expired', () => {
-          console.warn('Токен капчи истёк');
-          store.dispatch('ActionBtnLoad', false);
-          store.dispatch('ActionModalContent', 'captcha_time_up');
-          store.dispatch('ActionOpenModal', true);
-        });
-
-        // Ошибка сети
-        window.smartCaptcha.subscribe(this.captcha_id, 'network-error', () => {
-          console.error('Ошибка сети при проверке капчи');
-          store.dispatch('ActionBtnLoad', false);
-          store.dispatch('ActionModalContent', 'security_check_error');
-          store.dispatch('ActionOpenModal', true);
-        });
-
-        // Ошибка JavaScript
-        window.smartCaptcha.subscribe(this.captcha_id, 'javascript-error', () => {
-          console.error('Ошибка JavaScript в капче');
-          store.dispatch('ActionBtnLoad', false);
-          store.dispatch('ActionModalContent', 'security_check_error');
-          store.dispatch('ActionOpenModal', true);
-        });
-      } catch (e) {
-        console.warn('Не удалось подписаться на события капчи', e);
-      }
-    },
-
--------------------------------------------------------
-Как в приложении семья
-
-captchaInit() {
-      // Если виджет уже создан, не вызываю render повторно
+  methods: {
+    // 1. Инициализация (принимает callback, который выполнится при успехе)
+    initCaptcha(callback) {
       if (this.captcha_id !== null) return;
       if (!window.smartCaptcha) return;
 
-      this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-mortgage', {
+      this.captcha_id = window.smartCaptcha.render(this.captchaContainerId, {
         sitekey: conf?.smartcaptcha_key,
         invisible: true,
         callback: (token) => {
-          this.sendingResultToApi(token);
+          callback(token);
         },
       });
     },
 
-    sendingResult() {
-      if (!this.btn_active) return;
-
-      store.dispatch('ActionStandingButton');
-      store.dispatch('ActionButtonActive', false);
-
+    // 2. Запуск капчи (вызывается при клике на кнопку)
+    runCaptcha(callback) {
       if (this.captcha_id === null) {
-        this.captchaInit();
+        this.initCaptcha(callback);
         setTimeout(() => {
           if (this.captcha_id !== null && window.smartCaptcha) {
             window.smartCaptcha.execute(this.captcha_id);
           }
         }, 150);
       } else {
-        // Повторный клик: виджет уже есть, просто запускаем проверку
         if (window.smartCaptcha) {
           window.smartCaptcha.execute(this.captcha_id);
         }
       }
     },
 
+    // 3. Сброс капчи (для использования в .finally() вашего запроса)
+    resetCaptcha(destroyDom = false) {
+      if (this.captcha_id !== null && window.smartCaptcha) {
+        try {
+          window.smartCaptcha.reset(this.captcha_id);
+        } catch (e) {}
+        this.captcha_id = null; // Обнуляем ID для следующего раза
+      }
 
+      // Если нужно полностью удалить элемент из DOM (при уничтожении компонента)
+      if (destroyDom) {
+        const parent = this.$refs.captchaContainer;
+        if (parent) {
+          const el = parent.querySelector(`#${this.captchaContainerId}`);
+          if (el) el.remove();
+        }
+      }
+    },
+
+    // 4. ПОЛЕЗНЫЙ ХЕЛПЕР: Позволяет компоненту легко подписаться на события
+    subscribeCaptchaEvent(eventName, handler) {
+      if (this.captcha_id !== null && window.smartCaptcha) {
+        try {
+          window.smartCaptcha.subscribe(this.captcha_id, eventName, handler);
+        } catch (e) {
+          console.warn('Не удалось подписаться на событие капчи', e);
+        }
+      }
+    }
+  }
+};
+
+-----------------------
+
+import { captchaMixin } from '@/mixins/captchaMixin'; // Путь к вашему миксину
+
+export default {
+  mixins: [captchaMixin], // Подключаем миксин
+  
+  data() {
+    return {
+      btn_active: true,
+      oktmo: '...',
+      // ... остальные данные
+    };
+  },
+
+  methods: {
+    sendingResult() {
+      if (!this.btn_active) return;
+
+      store.dispatch('ActionStandingButton');
+      store.dispatch('ActionButtonActive', false);
+
+      // 1. Запускаем капчу через миксин
+      this.runCaptcha((token) => {
+        this.sendingResultToApi(token);
+      });
+    },
 
     sendingResultToApi(token) {
       this.$refs.selectListWrapper?.classList.remove('open');
@@ -126,14 +130,49 @@ captchaInit() {
           console.error('Ошибка отправки:', err);
         })
         .finally(() => {
-          // сбрасываю виджет и обнуляю ID
-          if (this.captcha_id !== null && window.smartCaptcha) {
-            try {
-              window.smartCaptcha.reset(this.captcha_id);
-            } catch (e) {}
-          }
-          // Обнуляю ID, чтобы при следующем нажатии кнопки
-          // captchaInit() сработал заново и создал свежий виджет
-          this.captcha_id = null;
+          // 2. Сбрасываем капчу через миксин (без удаления DOM, чтобы можно было отправить снова)
+          this.resetCaptcha(false); 
+          
+          // Возвращаем кнопку в исходное состояние (пример)
+          store.dispatch('ActionBtnLoad', false); 
         });
     },
+
+    // 3. НАСТРОЙКА СОБЫТИЙ (Вызывается после инициализации капчи)
+    setupCaptchaListeners() {
+      // Используем хелпер из миксина, чтобы подписаться на закрытие окна
+      this.subscribeCaptchaEvent('challenge-hidden', () => {
+        console.log('Пользователь закрыл окно капчи');
+        // Здесь вы делаете ТО, что нужно именно этому компоненту!
+        store.dispatch('ActionBtnLoad', false);
+        store.dispatch('ActionButtonActive', true); // Разблокируем кнопку
+      });
+
+      // При желании можно добавить и другие события, если нужно
+      this.subscribeCaptchaEvent('token-expired', () => {
+        console.warn('Токен капчи истёк');
+        store.dispatch('ActionBtnLoad', false);
+      });
+    }
+  },
+
+  // Хук, который срабатывает сразу после того, как миксин создал DOM и готов к работе
+  // Но лучше вызывать setupCaptchaListeners прямо после runCaptcha или в mounted, 
+  // если капча инициализируется заранее. 
+  // В вашем случае (инициализация по клику), подпишемся при монтировании, 
+  // но сработает это только когда captcha_id станет !== null.
+  mounted() {
+    // Чтобы подписка сработала гарантированно, мы можем использовать watcher 
+    // или просто вызывать эту функцию после того, как captcha_id появился.
+    // Простой способ: добавить watcher на captcha_id
+  },
+
+  watch: {
+    // Как только миксин инициализировал капчу и получил ID, настраиваем события
+    captcha_id(newId) {
+      if (newId !== null) {
+        this.setupCaptchaListeners();
+      }
+    }
+  }
+}
