@@ -1,3 +1,53 @@
-resetCaptcha(destroyDom = false) {
-  this._resetCaptchaState(destroyDom);
-},
+Новое приложение
+
+handlerSendForm() {
+      // Запускаю капчу через миксин
+      this.runCaptcha((token) => {
+        this.onSubmit(token);
+      });
+    },
+    onSubmit(token){
+      if(this.value.length === 0) return
+      let key = conf.smartcaptcha_key
+      this.isDisabled = true
+      axios.post('...', {
+        kadastr: this.value,
+        'smart-token': token,
+      },{
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+          Accept: 'application/json',
+        },
+      })
+        .then((response) => {
+          this.response = response.data.result
+          this.isDisabled = false
+        })
+        .catch((error) => {
+          const result = {
+            "status": '1',
+            "message": error.response.data.description
+          }
+          this.response = result
+          this.isDisabled = false
+        })
+    },
+
+Уже готовое
+
+sendingResultToApi(token) {
+      this.$refs.selectListWrapper?.classList.remove('open');
+      this.closeBlock();
+
+      store.dispatch('ActionGetResult', [this.oktmo, token])
+        .then(() => {
+        })
+        .catch((err) => {
+          console.error('Ошибка отправки:', err);
+        })
+        .finally(() => {
+          // Сбрасываю капчу через миксин (без удаления DOM, чтобы можно было отправить снова)
+          this.resetCaptcha(false);
+        });
+    },
