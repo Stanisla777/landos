@@ -1,10 +1,125 @@
-Ребят, просьба посмотреть по всем сайтам как у нас работает логика Яндекс.Капчи:
-Интересует что произойдет по трем сценариям:
-- Если перестанет загружаться скрипт Я.Капчи на фронте
-- Если перестанет отвечать бэк-сервис Я.Капчи на проверки
-- Если перестанут отвечать оба
-Вопросы:
-- Будут ли отправляться заявки?
-- Будет ли висеть фронт, ожидая загрузки скрипта, и не давать отправлять форму?
-Целевое поведение:
-Если оно все не отвечает, то пропускаем заявку как будто все окей
+export const captchaMixin = {
+  data() {
+    return {
+      captcha_id: null,
+      captchaContainerId: `yandex-captcha-${Math.random().toString(36).substr(2, 9)}`,
+      _captchaCallback: null,
+    };
+  },
+
+  mounted() {
+    const parent = this.$refs.captchaContainer;
+    if (parent && !parent.querySelector(`#${this.captchaContainerId}`)) {
+      const el = document.createElement('div');
+      el.id = this.captchaContainerId;
+      el.classList.add('captcha-element');
+      parent.append(el);
+    }
+  },
+
+  // Используйте beforeDestroy, если у вас Vue 2
+  beforeUnmount() { 
+    this._resetCaptchaState(true);
+  },
+
+  methods: {
+    initCaptcha() {
+      if (this.captcha_id !== null) return;
+      if (!window.smartCaptcha) return;
+
+      this.captcha_id = window.smartCaptcha.render(this.captchaContainerId, {
+        sitekey: conf?.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (typeof this._captchaCallback === 'function') {
+            this._captchaCallback(token);
+          }
+        },
+      });
+    },
+
+    runCaptcha(callback) {
+      if (typeof callback !== 'function') return;
+      this._captchaCallback = callback;
+
+      // СЦЕНАРИЙ 1 и 3: Скрипт не загрузился или сеть очень медленная
+      if (!window.smartCaptcha) {
+        console.warn('[CaptchaMixin] Скрипт капчи не найден. Ожидаем 1.5 сек на случай медленной сети...');
+        setTimeout(() => {
+          if (!window.smartCaptcha) {
+            console.error('[CaptchaMixin] Скрипт капчи так и не загрузился. Активируем режим обхода (Fallback).');
+            this._triggerFallback();
+          }
+        }, 1500); // 1.5 секунды - разумный компромисс между ожиданием и UX
+        return;
+      }
+
+      // Штатный сценарий
+      if (this.captcha_id === null) {
+        try {
+          this.initCaptcha();
+          setTimeout(() => {
+            if (this.captcha_id !== null && window.smartCaptcha) {
+              window.smartCaptcha.execute(this.captcha_id);
+            } else {
+              // СЦЕНАРИЙ 2: Скрипт есть, но render упал с ошибкой (например, проблема с ключом или сетью)
+              this._triggerFallback();
+            }
+          }, 150);
+        } catch (e) {
+          console.error('[CaptchaMixin] Ошибка при инициализации капчи:', e);
+          this._triggerFallback();
+        }
+      } else {
+        try {
+          window.smartCaptcha.execute(this.captcha_id);
+        } catch (e) {
+          console.error('[CaptchaMixin] Ошибка при execute:', e);
+          this._triggerFallback();
+        }
+      }
+    },
+
+    // 🔥 ГЛАВНЫЙ МЕХАНИЗМ ОБХОДА (Fallback)
+    _triggerFallback() {
+      console.warn('[CaptchaMixin] Отправка формы в обход капчи (Fallback mode).');
+      
+      // Передаем null (или строку 'FALLBACK_BYPASS', если бэкенд настроен на это)
+      const fallbackToken = null; 
+      
+      if (typeof this._captchaCallback === 'function') {
+        this._captchaCallback(fallbackToken);
+      }
+      
+      // Сбрасываем локальное состояние, чтобы кнопка разблокировалась
+      this._resetCaptchaState(false);
+    },
+
+    _resetCaptchaState(destroyDom = false) {
+      if (this.captcha_id !== null && window.smartCaptcha) {
+        try {
+          window.smartCaptcha.reset(this.captcha_id);
+        } catch (e) {}
+        this.captcha_id = null;
+      }
+
+      if (destroyDom) {
+        const parent = this.$refs.captchaContainer;
+        if (parent) {
+          const el = parent.querySelector(`#${this.captchaContainerId}`);
+          if (el) el.remove();
+        }
+      }
+      this._captchaCallback = null;
+    },
+
+    // Хелпер для подписки на события (остается без изменений)
+    subscribeCaptchaEvent(eventName, handler) {
+      if (this.captcha_id !== null && window.smartCaptcha) {
+        try {
+          window.smartCaptcha.subscribe(this.captcha_id, eventName, handler);
+        } catch (e) {}
+      }
+    }
+  }
+};
