@@ -1,20 +1,194 @@
-// Подключаем новый миксин капчи в этот миксин
-mixins: [captchaMixin], 
+<button
+                class="btn full"
+                :class="{ disabledWithClick: !isFormValid }"
+                @click.prevent="handlerSendForm(false)"
+              >
+                Оценить
+              </button>
 
-methods: {
-  sendingResult(flag) {
-    // Убираем старый вызов this.captchaInit(flag)
-    
-    // Вызываем метод из нового миксина и передаем туда функцию, 
-    // которая знает про flag благодаря замыканию
-    this.runCaptcha((token) => {
-      if (flag === 'result') {
-        this.sendingResultToApi(token);
-      } else if (flag === 'mail') {
-        this.sendingMailToApi(token);
+<p class="bullet__link-more" @click.prevent="handlerSendForm(true)">
+                подробнее о доме
+              </p>
+
+
+captchaInit() {
+      this.captcha_id = window.smartCaptcha.render('yandex-captcha-housing-appraisal', {
+        sitekey: conf.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (!this.send_argument) {
+            this.apiConnect(token);
+            this.handlerBuildInfo(false);
+          } else {
+            this.handlerBuildInfo(true, token);
+          }
+        },
+      });
+    },
+
+    handlerSendForm(argument) {
+      // 1. Валидация полей (пустые поля)
+      this.validateAllInputs();
+
+      if (!this.isValid) {
+        return; // Пустые поля
       }
-    });
-  },
 
-  // Метод captchaInit(flag) БОЛЬШЕ НЕ НУЖЕН, удаляем его.
-  // Логика инициализации теперь внутри captchaMixin.
+      // 2. Проверка: нашла ли Dadata хоть что-то по этому адресу?
+      if (!this.isAddressValid) {
+        this.inputs[0].isNotValid = true;
+        this.ocenkaMobiErrorText = 'Введите корректный адрес (город, улица, дом)';
+        this.showError();
+        return; //Адрес не похож на валидный
+      }
+
+      // Всё хорошо, отправляем (даже если пользователь не выбрал подсказку явно)
+      this.captchaInit();
+      this.send_argument = argument;
+      this.btnSendPress = true;
+
+      const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
+      let recaptchaKey = null;
+      if (typeof conf !== 'undefined') recaptchaKey = conf.smartcaptcha_key;
+
+      if ((typeof recaptchaKey !== 'undefined') && recaptchaKey !== null) {
+        window.smartCaptcha.execute(this.captcha_id, argument);
+      } else {
+        this.apiConnect('');
+      }
+    },
+    apiConnect(token) {
+      this.showPreloader = true;
+
+      const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
+      localaxios.get(localApiUrl, {
+        params: {
+          method: 'appraise/flat',
+          address: this.inputs[0].value,
+          area: this.inputs[1].value,
+          rooms: this.inputs[2].value,
+          // forceFlat: true,
+          'smart-token': token
+        },
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        }
+      })
+        .then((response) => {
+
+
+          if (response.data !== null && response.status === 200 && response.data.result === null) {
+            this.ocenkaMobiErrorText = 'Недостаточно данных, попробуйте изменить запрос';
+            this.showError();
+            return false;
+          }
+          if (response.data === null || response.status !== 200) {
+            if (response.data.description) {
+              this.ocenkaMobiErrorText = response.data.description;
+            }
+            this.showError();
+            return false;
+          }
+
+          if (response.data !== null && response.status === 200 && response.data.result !== null) {
+            this.resetData();
+
+            const result = response.data.result;
+            const stats = result.stats || {};
+            const bld = result.bld || {};
+
+            // === 1. Адрес: берём из bld.address или flat.address ===
+            this.bullet.address = result.flat?.address || result.bld?.address || result.address || '';
+
+            // === 2. Цены ===
+            this.bullet.priceMin = stats.median ?? stats.average ?? stats.min ?? 0;
+            this.bullet.price = stats.price ?? 0;
+            this.bullet.price_range = Array.isArray(stats.priceRange) ? stats.priceRange : [0, 0];
+
+            // === 3. Валидация ===
+            if (!this.bullet.price || !this.bullet.price_range.length) {
+              this.ocenkaMobiErrorText = 'Недостаточно данных о цене. Попробуйте изменить запрос';
+              this.showError();
+              return;
+            }
+
+            // === 4. Станции ===
+            if (bld.stations && Array.isArray(bld.stations)) {
+              this.bullet.stations = bld.stations;
+            }
+
+            // === 5. Показываем и заполняем ===
+            this.bullet.showBullet = true;
+            this.setData(result);
+          }
+
+        })
+        .catch((error) => {
+          console.log(error);
+          if (error && (error.request.status === 403 || error.request.status === 405)) {
+            this.ocenkaMobiErrorText = 'Сервер не отвечает, попробуйте перезагрузить страницу';
+            this.showErrorSearch = false
+            setTimeout(() => {
+              this.showError();
+            }, 500)
+
+          }
+          this.ocenkaMobiErrorText = this.ocenkaMobiErrorTextDefault;
+          this.showError();
+        })
+        .then(() => {
+          this.showPreloader = false;
+        });
+    },
+
+    handlerBuildInfo(data, token) {
+      this.showBuildInfo = data;
+      this.showSocial = data;
+      if (data) {
+        setTimeout(this.appraisalSlider, 300);
+        // запрос к инфраструктуре
+        this.getInfraApi(token);
+        this.closeBullet();
+        scrollIt(document.querySelector('#form'), 400, 'linear');
+      }
+    },
+
+    getInfraApi(token) {
+      this.showPreloader = true;
+      this.ocenkaMobiErrorText = this.ocenkaMobiErrorTextDefault;
+      const grecaptchaInput = document.getElementById('mobi-ocenka-subscribe');
+      grecaptchaInput.value = token;
+      localaxios.get(localApiUrl, {
+        params: {
+          method: 'search/infra',
+          lat: this.bldPos.lat,
+          lng: this.bldPos.lng,
+          'smart-token': token
+        },
+        headers: {
+          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
+        }
+      })
+        .then((response) => {
+          if ((response.data === null) || (response.status !== 200) || (!(Object.prototype.hasOwnProperty.call(response.data, 'result') && Object.prototype.hasOwnProperty.call(response.data.result, 'social')))) {
+            if (response.data.description) {
+              this.ocenkaMobiErrorText = response.data.description;
+            }
+            this.showError();
+            return false;
+          }
+          this.social = response.data.result.social;
+          this.setInfraBulletData(response.data.result.social[0].items[0]);
+          this.handlerInfraBullet(true);
+          this.setObjectToMap();
+        })
+        .catch((error) => {
+          this.ocenkaMobiErrorText = this.ocenkaMobiErrorTextDefault;
+          this.showError();
+          // handle error
+          console.log(error);
+        })
+        .then(() => {
+          this.showPreloader = false;
+        });
+    },
