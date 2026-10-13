@@ -1,44 +1,20 @@
-sendingResult(flag) {
-        this.captchaInit(flag);
-        const recaptchaKey = typeof conf !== 'undefined' ? conf.smartcaptcha_key : null;
-        if (recaptchaKey) { window.smartCaptcha.execute(this.captcha_id); }
-      },
+// Подключаем новый миксин капчи в этот миксин
+mixins: [captchaMixin], 
 
-      captchaInit(flag) {
-        this.captcha_id = window.smartCaptcha.render('yandex-captcha-family-calculator', {
-          sitekey: conf.smartcaptcha_key,
-          invisible: true,
-          callback: (token) => {
-            if (flag === 'result') this.sendingResultToApi(token);
-            else if (flag === 'mail') this.sendingMailToApi(token);
-          },
-        });
+methods: {
+  sendingResult(flag) {
+    // Убираем старый вызов this.captchaInit(flag)
+    
+    // Вызываем метод из нового миксина и передаем туда функцию, 
+    // которая знает про flag благодаря замыканию
+    this.runCaptcha((token) => {
+      if (flag === 'result') {
+        this.sendingResultToApi(token);
+      } else if (flag === 'mail') {
+        this.sendingMailToApi(token);
       }
-sendingResultToApi(token) {
-        const data = {
-          calculatorId: this.calculatorId,
-          answers: this.answersToSand,
-          'smart-token': token,
-        };
-        return new Promise((resolve, reject) => {
-          axios({
-            method: 'post',
-            url: '...',
+    });
+  },
 
-sendingMailToApi(token) {
-        const modal = this.$refs.dataModalMail;
-        if (!modal) return;
-        const modal_main_content = modal.querySelector('.js--modal-main-content');
-        const modal_success_content = modal.querySelector('.js--modal-wr-success');
-        const modal_failed_content = modal.querySelector('.js--modal-wr-failed');
-
-        const data = {
-          "userEmail": this.mask_mail?.value || '',
-          "smart-token": token,
-          "answersId": this.answersId,
-          "agree": this.check_agree_advertisement || false
-        };
-
-        axios({
-          method: 'post',
-          url: '...',
+  // Метод captchaInit(flag) БОЛЬШЕ НЕ НУЖЕН, удаляем его.
+  // Логика инициализации теперь внутри captchaMixin.
