@@ -1,14 +1,190 @@
-<input type="text" inputmode="email" placeholder="E-mail"
-                   ref="inputMail"
-                   @input="onInputMail"
-                   @blur="onInputMail"/>
+function captchaInit(parent,index) {
+  if (!parent.querySelector('.captcha-element')){
+    const el = document.createElement('div')
+    el.classList.add('captcha-element')
+    el.setAttribute('id',`yandex-smart-captcha-${index}`)
+    parent.append(el);
+  }
 
-<button class="btn_s black" type="button"
-              @click="sendingResult('mail',$event)"
-              v-if="check_agree_personal&&mail_fill">
-              Отправить
-            </button>
+  if (parent.querySelector('.captcha-element')) {
+    const id_i = parent.querySelector('.captcha-element').id
+    return window.smartCaptcha.render(id_i, {
+      sitekey: conf.smartcaptcha_key,
+      invisible: true,
+      callback: (token) => {
+        submitForm(parent);
+      },
+    });
+  }
+}
+function formSubmission() {
+  const btn = document.querySelectorAll('.js--btn-universal-form');
+  for(let item_btn = 0; item_btn<btn.length; item_btn++){
 
-export default {
-  name: 'v-modal-send-mail',
-  mixins: [shareMixin],
+    const parent_form = btn[item_btn].closest('.js--universal-form');
+
+    btn[item_btn].onclick=(e)=>{
+      const captcha_id =  captchaInit(parent_form,item_btn)
+      e.preventDefault();
+      e.stopPropagation();
+      let count_required = 0
+      const element = e.target
+      // const parent_form = element.closest('.js--universal-form')
+      if(parent_form){
+        if(count_required===0){
+          //вот тут команды в случае если всё хорошо
+          btn[item_btn].classList.add('submitting')
+          const _form_button =  parent_form.querySelector('.js--btn-universal-form')
+          if (_form_button){
+            _form_button.setAttribute('disabled','disabled')
+          }
+          try {
+            let recaptchaKey = null;
+            if(typeof conf !== 'undefined'){
+              recaptchaKey = conf.smartcaptcha_key
+            }
+
+
+            if (typeof recaptchaKey !== 'undefined' && recaptchaKey) {
+              window.smartCaptcha.execute(captcha_id);
+            } else {
+              // Отправка формы без капчи
+              // console.log('Отправка формы без капчи...');
+              submitForm(parent_form);
+            }
+          }
+       }
+     }
+   }
+  }
+}
+Родитель тут .js--universal-form в который нужно вставлять .captcha-element
+
+А вот наш миксин:
+export const captchaMixin = {
+  data() {
+    return {
+      captcha_id: null,
+      captchaContainerId: `yandex-captcha-${Math.random().toString(36).substr(2, 9)}`,
+      _captchaCallback: null,
+    };
+  },
+
+  mounted() {
+    const parent = this.$refs.captchaContainer;
+    if (parent && !parent.querySelector(`#${this.captchaContainerId}`)) {
+      const el = document.createElement('div');
+      el.id = this.captchaContainerId;
+      el.classList.add('captcha-element');
+      parent.append(el);
+    }
+  },
+
+  beforeUnmount() {
+    this._resetCaptchaState(true);
+  },
+
+  methods: {
+    initCaptcha() {
+      if (this.captcha_id !== null) return;
+      if (!window.smartCaptcha) return;
+
+      this.captcha_id = window.smartCaptcha.render(this.captchaContainerId, {
+        sitekey: conf?.smartcaptcha_key,
+        invisible: true,
+        callback: (token) => {
+          if (typeof this._captchaCallback === 'function') {
+            this._captchaCallback(token);
+          }
+        },
+      });
+    },
+
+    runCaptcha(callback) {
+      if (typeof callback !== 'function') return;
+      this._captchaCallback = callback;
+
+      //  Скрипт не загрузился или сеть очень медленная
+      if (!window.smartCaptcha) {
+        console.warn('[CaptchaMixin] Скрипт капчи не найден.');
+        setTimeout(() => {
+          if (!window.smartCaptcha) {
+            console.error('[CaptchaMixin] Скрипт капчи так и не загрузился. Активируется режим обхода.');
+            this._triggerFallback();
+          }
+        }, 1500);
+        return;
+      }
+
+      // Штатный сценарий
+      if (this.captcha_id === null) {
+        try {
+          this.initCaptcha();
+          setTimeout(() => {
+            if (this.captcha_id !== null && window.smartCaptcha) {
+              window.smartCaptcha.execute(this.captcha_id);
+            } else {
+              // Скрипт есть, но render упал с ошибкой (например, проблема с ключом или сетью)
+              this._triggerFallback();
+            }
+          }, 150);
+        } catch (e) {
+          console.error('[CaptchaMixin] Ошибка при инициализации капчи:', e);
+          this._triggerFallback();
+        }
+      } else {
+        try {
+          window.smartCaptcha.execute(this.captcha_id);
+        } catch (e) {
+          console.error('[CaptchaMixin] Ошибка при execute:', e);
+          this._triggerFallback();
+        }
+      }
+    },
+
+    // механизм обхода Fallback
+    _triggerFallback() {
+      console.warn('Отправка формы в обход капчи.');
+
+      // Передаю в бэк вместо значения token null (или какую-то другую строку типа 'FALLBACK_BYPASS', как скажет Артём)
+      const fallbackToken = null;
+
+      if (typeof this._captchaCallback === 'function') {
+        this._captchaCallback(fallbackToken);
+      }
+
+      // Сбрасываю локальное состояние, чтобы кнопка разблокировалась
+      this._resetCaptchaState(false);
+    },
+    resetCaptcha(destroyDom = false) {
+      this._resetCaptchaState(destroyDom);
+    },
+
+    _resetCaptchaState(destroyDom = false) {
+      if (this.captcha_id !== null && window.smartCaptcha) {
+        try {
+          window.smartCaptcha.reset(this.captcha_id);
+        } catch (e) {}
+        this.captcha_id = null;
+      }
+
+      if (destroyDom) {
+        const parent = this.$refs.captchaContainer;
+        if (parent) {
+          const el = parent.querySelector(`#${this.captchaContainerId}`);
+          if (el) el.remove();
+        }
+      }
+      this._captchaCallback = null;
+    },
+
+    // Хелпер для подписки на события вроде закрытия окна с каптчей по крестику или время токена истекло и так далее,
+    subscribeCaptchaEvent(eventName, handler) {
+      if (this.captcha_id !== null && window.smartCaptcha) {
+        try {
+          window.smartCaptcha.subscribe(this.captcha_id, eventName, handler);
+        } catch (e) {}
+      }
+    }
+  }
+};
