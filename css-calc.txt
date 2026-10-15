@@ -1,96 +1,135 @@
 import {
   createCaptchaContainer,
   runCaptcha,
-  resetCaptcha
+  resetCaptcha,
+  subscribeCaptcha
 } from './captchaCore.js';
 
 
 function initCaptchaForForm(form, containerId) {
-  // Создаем контейнер внутри формы
   const container = createCaptchaContainer(form, containerId);
 
-  // Запускаем капчу
   runCaptcha(container, (token) => {
-    // Вызываем отправку формы с токеном (или null при fallback)
     submitForm(form, token);
   }, {
-    sitekey: conf?.smartcaptcha_key
+    sitekey: conf?.smartcaptcha_key,
+    
+    // 🔥 Подписываемся на события СРАЗУ после создания виджета
+    onWidgetCreated: (widgetId) => {
+      // Пользователь закрыл окно капчи
+      subscribeCaptcha(container, 'challenge-hidden', () => {
+        console.log('Пользователь закрыл окно капчи');
+        const button = form.querySelector('.js--btn-universal-form');
+        if (button) {
+          button.classList.remove('submitting');
+          button.removeAttribute('disabled');
+        }
+        resetCaptcha(container, false);
+      });
+
+      // Токен истёк
+      subscribeCaptcha(container, 'token-expired', () => {
+        console.warn('Токен капчи истёк');
+        const button = form.querySelector('.js--btn-universal-form');
+        if (button) {
+          button.classList.remove('submitting');
+          button.removeAttribute('disabled');
+        }
+        resetCaptcha(container, false);
+      });
+    }
   });
 }
 
 
-
 function formSubmission() {
   const btn = document.querySelectorAll('.js--btn-universal-form');
-  for(let item_btn = 0; item_btn<btn.length; item_btn++){
-
+  
+  for (let item_btn = 0; item_btn < btn.length; item_btn++) {
     const parent_form = btn[item_btn].closest('.js--universal-form');
 
-    btn[item_btn].onclick=(e)=>{
-      // const captcha_id =  captchaInit(parent_form,item_btn)
+    btn[item_btn].onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      let count_required = 0
-      const element = e.target
-
-      // Уникальный ID контейнера для этой формы
+      
+      let count_required = 0;
       const containerId = `yandex-smart-captcha-${item_btn}`;
 
-      if(parent_form){
-       if(count_required===0){
-          //вот тут команды в случае если всё хорошо
-          btn[item_btn].classList.add('submitting')
-          const _form_button =  parent_form.querySelector('.js--btn-universal-form')
-          if (_form_button){
-            _form_button.setAttribute('disabled','disabled')
+      if (parent_form) {
+        if (count_required === 0) {
+          btn[item_btn].classList.add('submitting');
+          const _form_button = parent_form.querySelector('.js--btn-universal-form');
+          if (_form_button) {
+            _form_button.setAttribute('disabled', 'disabled');
           }
-          // Запускаем капчу
+          
           initCaptchaForForm(parent_form, containerId);
           return true;
         }
-     }
-   }
+      }
+    };
   }
 }
 
 
-function submitForm(form, token){
+function submitForm(form, token) {
   if (!form) return false;
 
-  // Вспомогательная функция для разблокировки (аналог .finally в аксиос)
   const cleanup = () => {
-    // Разблокируем кнопку
     const button = form.querySelector('.js--btn-universal-form');
     if (button) {
       button.classList.remove('submitting');
       button.removeAttribute('disabled');
     }
 
-    // Сбрасываю капчу
     const container = form.querySelector('.captcha-element');
     if (container) {
-      resetCaptcha(container, false); // false = не удалять DOM
+      resetCaptcha(container, false);
     }
   };
 
-  let formData = new URLSearchParams(Array.from(new FormData(form))).toString();
+  // 🔥 ИСПРАВЛЕНИЕ: Правильная работа с FormData
+  const formDataObj = new FormData(form);
+  
+  // Удаляем smart-token из формы (если Яндекс его создал), чтобы не дублировать
+  formDataObj.delete('smart-token');
+  
+  // Добавляем токен явно:
+  // - Если капча сработала: token = реальный токен от Яндекса
+  // - Если капча не работает: token = FALLBACK_TOKEN (например, 'FALLBACK_BYPASS')
+  // - Если token === null/undefined (FALLBACK_TOKEN = null): поле не добавляем
+  if (token !== null && token !== undefined) {
+    formDataObj.append('smart-token', token);
+  }
 
+  let formData = new URLSearchParams(Array.from(formDataObj)).toString();
 
-BX.ajax({
+  const _form_button = form.querySelector('.js--btn-universal-form');
+  const _form_bottom = form.querySelector('.js--form-bottom');
 
-  onfailure: function(){
-      _form_button.removeAttribute('disabled')
-      _form_button.classList.remove('submitting')
-      if (_form_bottom){
-        createElementError ('visible','Ошибка при отправке',_form_bottom)
+  BX.ajax({
+    url: '....',
+    data: formData,
+    method: 'POST',
+    dataType: 'json',
+    timeout: 30,
+    async: true,
+    processData: true,
+    scriptsRunFirst: true,
+    emulateOnload: true,
+    start: true,
+    cache: false,
+    
+    onsuccess: function(result) {
+      // Ваша логика успеха
+      cleanup();
+    },
+    
+    onfailure: function() {
+      if (_form_bottom) {
+        createElementError('visible', 'Ошибка при отправке', _form_bottom);
       }
       cleanup();
     }
-})
+  });
 }
-
-Скорее всего из-за этого что уббрал
-// Добавляю токен явно (если он есть и не null)
-  if (token) {
-    formData += `&smart-token=${encodeURIComponent(token)}`;
-  }
