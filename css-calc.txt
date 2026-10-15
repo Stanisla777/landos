@@ -1,79 +1,14 @@
-export function runCaptcha(container, callback, options = {}) {
-  const {
-    sitekey,
-    scriptTimeout = 1500,
-    initDelay = 150
-  } = options;
-
-  if (typeof callback !== 'function') {
-    console.error('[CaptchaCore] callback должен быть функцией');
-    return;
-  }
-
-  let state = widgetStates.get(container);
-
-  // Скрипт не загрузился
-  if (!window.smartCaptcha) {
-    console.warn('[CaptchaCore] Скрипт капчи не найден.');
-    
-    setTimeout(() => {
-      if (!window.smartCaptcha) {
-        console.error('[CaptchaCore] Скрипт капчи так и не загрузился. Режим обхода.');
-        callback(FALLBACK_TOKEN);
-      }
-    }, scriptTimeout);
-    
-    return;
-  }
-
-  // Виджета нет - создаем
-  if (!state) {
-    try {
-      const widgetId = window.smartCaptcha.render(container.id, {
-        sitekey,
-        invisible: true,
-        callback: (token) => {
-          callback(token);
-        }
-      });
-
-      // 🔥 ПРОВЕРКА: render должен вернуть валидный ID (число или строку, но не undefined/null/0)
-      if (!widgetId && widgetId !== 0) {
-        console.error('[CaptchaCore] render() вернул невалидный widgetId:', widgetId);
-        callback(FALLBACK_TOKEN);
-        return;
-      }
-
-      state = { widgetId };
-      widgetStates.set(container, state);
-
-      console.log('[CaptchaCore] Виджет создан с ID:', widgetId);
-
-      // Даем время на инициализацию
-      setTimeout(() => {
-        const currentState = widgetStates.get(container);
-        
-        if (currentState && currentState.widgetId && window.smartCaptcha) {
-          console.log('[CaptchaCore] Выполняем execute для widgetId:', currentState.widgetId);
-          window.smartCaptcha.execute(currentState.widgetId);
-        } else {
-          console.error('[CaptchaCore] Виджет не создался. Режим обхода.');
-          callback(FALLBACK_TOKEN);
-        }
-      }, initDelay);
-
-    } catch (e) {
-      console.error('[CaptchaCore] Ошибка при инициализации:', e);
-      callback(FALLBACK_TOKEN);
-    }
-  } else {
-    // Виджет уже есть
-    try {
-      console.log('[CaptchaCore] Виджет уже существует, выполняем execute для widgetId:', state.widgetId);
-      window.smartCaptcha.execute(state.widgetId);
-    } catch (e) {
-      console.error('[CaptchaCore] Ошибка при execute:', e);
-      callback(FALLBACK_TOKEN);
-    }
-  }
-}
+[CaptchaCore] Виджет создан с ID: 0
+bundle.js?sL6MbDf0EYAfGlJZ:1 [CaptchaCore] Виджет не создался. Режим обхода.
+(anonymous) @ bundle.js?sL6MbDf0EYAfGlJZ:1
+setTimeout
+o @ bundle.js?sL6MbDf0EYAfGlJZ:1
+runCaptcha @ 904.3f8512df.bundle.js:1
+sendingResult @ 904.3f8512df.bundle.js:1
+(anonymous) @ 904.3f8512df.bundle.js:1
+n.<computed>.n.<computed> @ bundle.js?sL6MbDf0EYAfGlJZ:1
+t8 @ bundle.js?sL6MbDf0EYAfGlJZ:1
+t7 @ bundle.js?sL6MbDf0EYAfGlJZ:1
+s @ bundle.js?sL6MbDf0EYAfGlJZ:1
+bundle.js?sL6MbDf0EYAfGlJZ:1 [CaptchaCore] Виджет создан с ID: 1
+bundle.js?sL6MbDf0EYAfGlJZ:1 [CaptchaCore] Выполняем execute для widgetId: 1
