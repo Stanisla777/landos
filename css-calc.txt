@@ -1,135 +1,49 @@
-import {
-  createCaptchaContainer,
-  runCaptcha,
-  resetCaptcha,
-  subscribeCaptcha
-} from './captchaCore.js';
+function CommentsFormValidation() {
+const form = document.querySelector('.js--form-comments')
+if (form) {
+if (!errorsValid.name && !errorsValid.check && !errorsValid.text) {
 
+        const captchaBlock = form.querySelector('[data-captcha-element="1"]');
+        const captchaId = window.smartCaptcha.render(captchaBlock, {
+          sitekey: conf.smartcaptcha_key,
+          invisible: true,
+          callback: (token) => {
+            let formData = new FormData(form);
+            sendComment(form, formData, errorsValid);
+          },
+          hideShield: true
+        })
 
-function initCaptchaForForm(form, containerId) {
-  const container = createCaptchaContainer(form, containerId);
-
-  runCaptcha(container, (token) => {
-    submitForm(form, token);
-  }, {
-    sitekey: conf?.smartcaptcha_key,
-    
-    // 🔥 Подписываемся на события СРАЗУ после создания виджета
-    onWidgetCreated: (widgetId) => {
-      // Пользователь закрыл окно капчи
-      subscribeCaptcha(container, 'challenge-hidden', () => {
-        console.log('Пользователь закрыл окно капчи');
-        const button = form.querySelector('.js--btn-universal-form');
-        if (button) {
-          button.classList.remove('submitting');
-          button.removeAttribute('disabled');
-        }
-        resetCaptcha(container, false);
-      });
-
-      // Токен истёк
-      subscribeCaptcha(container, 'token-expired', () => {
-        console.warn('Токен капчи истёк');
-        const button = form.querySelector('.js--btn-universal-form');
-        if (button) {
-          button.classList.remove('submitting');
-          button.removeAttribute('disabled');
-        }
-        resetCaptcha(container, false);
-      });
-    }
-  });
+        window.smartCaptcha.execute(captchaId)
+	    }
+   }
 }
 
+function sendComment(form, formData, errorsValid){
+  let request = BX.ajax.runComponentAction('local:comments.form', 'save', {
+    mode:'class',
+    data: formData
+  });
 
-function formSubmission() {
-  const btn = document.querySelectorAll('.js--btn-universal-form');
-  
-  for (let item_btn = 0; item_btn < btn.length; item_btn++) {
-    const parent_form = btn[item_btn].closest('.js--universal-form');
-
-    btn[item_btn].onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      let count_required = 0;
-      const containerId = `yandex-smart-captcha-${item_btn}`;
-
-      if (parent_form) {
-        if (count_required === 0) {
-          btn[item_btn].classList.add('submitting');
-          const _form_button = parent_form.querySelector('.js--btn-universal-form');
-          if (_form_button) {
-            _form_button.setAttribute('disabled', 'disabled');
-          }
-          
-          initCaptchaForForm(parent_form, containerId);
-          return true;
-        }
-      }
+  request.then(function(responce){
+    commentsPopupShow(responce.data.title, responce.data.message,  responce.status);
+    form.reset();
+    form.querySelector('.form-comments__button').classList.add('form-comments__button_disabled')
+    form.querySelector('.form-comments__button').classList.remove('submitting')
+    form.querySelector('.form-comments__button').removeAttribute('disabled')
+    errorsValid = {
+      name: false,
+      text: false,
+      check: false
     };
-  }
+    updateCountComments(responce);
+    updateCommentsList(responce.data.id, 0);
+  }, function (responce) {
+    commentsPopupShow('Ошибка',  responce.errors, responce.status);
+  })
 }
 
+<div data-captcha-element="1" id="captcha-element-comment-<?=$arParams['ELEMENT_ID']?>"></div>
 
-function submitForm(form, token) {
-  if (!form) return false;
-
-  const cleanup = () => {
-    const button = form.querySelector('.js--btn-universal-form');
-    if (button) {
-      button.classList.remove('submitting');
-      button.removeAttribute('disabled');
-    }
-
-    const container = form.querySelector('.captcha-element');
-    if (container) {
-      resetCaptcha(container, false);
-    }
-  };
-
-  // 🔥 ИСПРАВЛЕНИЕ: Правильная работа с FormData
-  const formDataObj = new FormData(form);
-  
-  // Удаляем smart-token из формы (если Яндекс его создал), чтобы не дублировать
-  formDataObj.delete('smart-token');
-  
-  // Добавляем токен явно:
-  // - Если капча сработала: token = реальный токен от Яндекса
-  // - Если капча не работает: token = FALLBACK_TOKEN (например, 'FALLBACK_BYPASS')
-  // - Если token === null/undefined (FALLBACK_TOKEN = null): поле не добавляем
-  if (token !== null && token !== undefined) {
-    formDataObj.append('smart-token', token);
-  }
-
-  let formData = new URLSearchParams(Array.from(formDataObj)).toString();
-
-  const _form_button = form.querySelector('.js--btn-universal-form');
-  const _form_bottom = form.querySelector('.js--form-bottom');
-
-  BX.ajax({
-    url: '....',
-    data: formData,
-    method: 'POST',
-    dataType: 'json',
-    timeout: 30,
-    async: true,
-    processData: true,
-    scriptsRunFirst: true,
-    emulateOnload: true,
-    start: true,
-    cache: false,
+<div id="captcha-element-comment-{captchaId}" data-captcha-element="1"></div>
     
-    onsuccess: function(result) {
-      // Ваша логика успеха
-      cleanup();
-    },
-    
-    onfailure: function() {
-      if (_form_bottom) {
-        createElementError('visible', 'Ошибка при отправке', _form_bottom);
-      }
-      cleanup();
-    }
-  });
-}
