@@ -1,141 +1,96 @@
+import {
+  createCaptchaContainer,
+  runCaptcha,
+  resetCaptcha
+} from './captchaCore.js';
 
-runCaptcha(callback) {
-      if (!this.captchaContainer) {
-        console.error('[CaptchaMixin] Контейнер не найден.');
-        if (typeof callback === 'function') callback(null);
-        return;
-      }
 
-      runCaptcha(this.captchaContainer, (token) => {
-        this.captcha_id = getWidgetId(this.captchaContainer);
-        if (typeof callback === 'function') {
-          callback(token);
+function initCaptchaForForm(form, containerId) {
+  // Создаем контейнер внутри формы
+  const container = createCaptchaContainer(form, containerId);
+
+  // Запускаем капчу
+  runCaptcha(container, (token) => {
+    // Вызываем отправку формы с токеном (или null при fallback)
+    submitForm(form, token);
+  }, {
+    sitekey: conf?.smartcaptcha_key
+  });
+}
+
+
+
+function formSubmission() {
+  const btn = document.querySelectorAll('.js--btn-universal-form');
+  for(let item_btn = 0; item_btn<btn.length; item_btn++){
+
+    const parent_form = btn[item_btn].closest('.js--universal-form');
+
+    btn[item_btn].onclick=(e)=>{
+      // const captcha_id =  captchaInit(parent_form,item_btn)
+      e.preventDefault();
+      e.stopPropagation();
+      let count_required = 0
+      const element = e.target
+
+      // Уникальный ID контейнера для этой формы
+      const containerId = `yandex-smart-captcha-${item_btn}`;
+
+      if(parent_form){
+       if(count_required===0){
+          //вот тут команды в случае если всё хорошо
+          btn[item_btn].classList.add('submitting')
+          const _form_button =  parent_form.querySelector('.js--btn-universal-form')
+          if (_form_button){
+            _form_button.setAttribute('disabled','disabled')
+          }
+          // Запускаем капчу
+          initCaptchaForForm(parent_form, containerId);
+          return true;
         }
-      }, {
-        sitekey: conf?.smartcaptcha_key
-      });
-    },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-captchaCore.js
-
-export function runCaptcha(container, callback, options = {}) {
-  const {
-    sitekey,
-    scriptTimeout = 1500,
-    initDelay = 150,
-    onWidgetCreated = null // 🔥 НОВЫЙ CALLBACK: вызывается сразу после создания виджета
-  } = options;
-
-  if (typeof callback !== 'function') {
-    console.error('[CaptchaCore] callback должен быть функцией');
-    return;
-  }
-
-  let state = widgetStates.get(container);
-
-  if (!window.smartCaptcha) {
-    console.warn('[CaptchaCore] Скрипт капчи не найден.');
-    
-    setTimeout(() => {
-      if (!window.smartCaptcha) {
-        console.error('[CaptchaCore] Скрипт капчи так и не загрузился. Режим обхода.');
-        callback(FALLBACK_TOKEN);
-      }
-    }, scriptTimeout);
-    
-    return;
-  }
-
-  if (!state) {
-    try {
-      const widgetId = window.smartCaptcha.render(container.id, {
-        sitekey,
-        invisible: true,
-        callback: (token) => {
-          callback(token);
-        }
-      });
-
-      if (widgetId === undefined || widgetId === null) {
-        console.error('[CaptchaCore] render() вернул невалидный widgetId:', widgetId);
-        callback(FALLBACK_TOKEN);
-        return;
-      }
-
-      state = { widgetId };
-      widgetStates.set(container, state);
-
-      console.log('[CaptchaCore] Виджет создан с ID:', widgetId);
-
-      // 🔥 ВЫЗЫВАЕМ CALLBACK СРАЗУ после создания виджета
-      // Это нужно для подписки на события ДО того, как пользователь закроет окно
-      if (typeof onWidgetCreated === 'function') {
-        onWidgetCreated(widgetId);
-      }
-
-      setTimeout(() => {
-        const currentState = widgetStates.get(container);
-        
-        if (currentState && currentState.widgetId !== undefined && currentState.widgetId !== null && window.smartCaptcha) {
-          console.log('[CaptchaCore] Выполняем execute для widgetId:', currentState.widgetId);
-          window.smartCaptcha.execute(currentState.widgetId);
-        } else {
-          console.error('[CaptchaCore] Виджет не создался. Режим обхода.');
-          callback(FALLBACK_TOKEN);
-        }
-      }, initDelay);
-
-    } catch (e) {
-      console.error('[CaptchaCore] Ошибка при инициализации:', e);
-      callback(FALLBACK_TOKEN);
-    }
-  } else {
-    try {
-      console.log('[CaptchaCore] Виджет уже существует, выполняем execute для widgetId:', state.widgetId);
-      window.smartCaptcha.execute(state.widgetId);
-    } catch (e) {
-      console.error('[CaptchaCore] Ошибка при execute:', e);
-      callback(FALLBACK_TOKEN);
-    }
+     }
+   }
   }
 }
 
-captchaMixin.js
+
+function submitForm(form, token){
+  if (!form) return false;
+
+  // Вспомогательная функция для разблокировки (аналог .finally в аксиос)
+  const cleanup = () => {
+    // Разблокируем кнопку
+    const button = form.querySelector('.js--btn-universal-form');
+    if (button) {
+      button.classList.remove('submitting');
+      button.removeAttribute('disabled');
+    }
+
+    // Сбрасываю капчу
+    const container = form.querySelector('.captcha-element');
+    if (container) {
+      resetCaptcha(container, false); // false = не удалять DOM
+    }
+  };
+
+  let formData = new URLSearchParams(Array.from(new FormData(form))).toString();
 
 
-runCaptcha(callback) {
-  if (!this.captchaContainer) {
-    console.error('[CaptchaMixin] Контейнер не найден.');
-    if (typeof callback === 'function') callback(null);
-    return;
+BX.ajax({
+
+  onfailure: function(){
+      _form_button.removeAttribute('disabled')
+      _form_button.classList.remove('submitting')
+      if (_form_bottom){
+        createElementError ('visible','Ошибка при отправке',_form_bottom)
+      }
+      cleanup();
+    }
+})
+}
+
+Скорее всего из-за этого что уббрал
+// Добавляю токен явно (если он есть и не null)
+  if (token) {
+    formData += `&smart-token=${encodeURIComponent(token)}`;
   }
-
-  runCaptcha(this.captchaContainer, (token) => {
-    if (typeof callback === 'function') {
-      callback(token);
-    }
-  }, {
-    sitekey: conf?.smartcaptcha_key,
-    onWidgetCreated: (widgetId) => {
-      this.captcha_id = widgetId;
-    }
-  });
-},
