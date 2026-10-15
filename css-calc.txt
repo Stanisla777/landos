@@ -1,115 +1,20 @@
-function submitForm(form, token) {
-  if (!form) return false;
-  
-  // Вспомогательная функция для разблокировки (аналог .finally)
-  const cleanup = () => {
-    // Разблокируем кнопку
-    const button = form.querySelector('.js--btn-universal-form');
-    if (button) {
-      button.classList.remove('submitting');
-      button.removeAttribute('disabled');
-    }
-    
-    // Сбрасываем капчу
-    const container = form.querySelector('.captcha-element');
-    if (container) {
-      resetCaptcha(container, false); // false = не удалять DOM
-    }
-  };
-  
-  // Собираем данные формы
-  let formData = new URLSearchParams(Array.from(new FormData(form))).toString();
-  
-  // Добавляем токен явно (если он есть и не null)
-  if (token) {
-    formData += `&smart-token=${encodeURIComponent(token)}`;
-  }
-  
-  // Ваш существующий переменные
-  const _form_button = form.querySelector('.js--btn-universal-form');
-  const _form_bottom = form.querySelector('.js--form-bottom'); // или как у вас называется
-  
-  BX.ajax({
-    url: '....',
-    data: formData,
-    method: 'POST',
-    dataType: 'json',
-    timeout: 30,
-    async: true,
-    processData: true,
-    scriptsRunFirst: true,
-    emulateOnload: true,
-    start: true,
-    cache: false,
-    
-    onsuccess: function(result) {
-      // Ваша логика успеха
-      if (result.status === 'success') {
-        // Успешная отправка
-        if (_form_bottom) {
-          createElementError('visible', 'Форма успешно отправлена', _form_bottom);
-        }
-        // Можно очистить форму
-        form.reset();
-      } else {
-        // Ошибка валидации от сервера
-        if (_form_bottom) {
-          createElementError('visible', result.message || 'Ошибка при отправке', _form_bottom);
-        }
-      }
-      
-      // Разблокируем кнопку и сбрасываем капчу
-      cleanup();
-    },
-    
-    onfailure: function(error) {
-      // Ваша логика ошибки
-      if (_form_bottom) {
-        createElementError('visible', 'Ошибка при отправке', _form_bottom);
-      }
-      
-      // Разблокируем кнопку и сбрасываем капчу
-      cleanup();
-    }
-  });
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Ядро: captchaCore.js
+captchaCore.js
 
 /**
  * Ядро работы с Яндекс.Капчей
  * Используется и в Vue-приложениях, и в нативных JS-формах
  */
 
-// WeakMap хранит состояние: containerElement -> { widgetId, callback }
-// Когда элемент удаляется из DOM, состояние автоматически очищается
+// 🔥 ГЛАВНАЯ НАСТРОЙКА: значение, которое отправляется на бэкенд,
+// если капча не загрузилась или не сработала.
+// Меняется ТОЛЬКО ЗДЕСЬ, в одном месте.
+const FALLBACK_TOKEN = 'FALLBACK_BYPASS';
+
+// WeakMap хранит состояние: containerElement -> { widgetId }
 const widgetStates = new WeakMap();
 
 /**
  * Создает контейнер для капчи внутри родителя
- * @param {HTMLElement} parent - Родительский элемент
- * @param {string} containerId - Уникальный ID контейнера
- * @returns {HTMLElement} - Контейнер для капчи
  */
 export function createCaptchaContainer(parent, containerId) {
   let container = parent.querySelector(`#${containerId}`);
@@ -126,12 +31,6 @@ export function createCaptchaContainer(parent, containerId) {
 
 /**
  * Запускает капчу с полной логикой: проверка скрипта, инициализация, fallback
- * @param {HTMLElement} container - Контейнер для капчи
- * @param {Function} callback - Функция, которая вызовется с токеном (или null при fallback)
- * @param {Object} options - Опции
- * @param {string} options.sitekey - Ключ капчи
- * @param {number} options.scriptTimeout - Время ожидания загрузки скрипта (мс)
- * @param {number} options.initDelay - Задержка перед execute после render (мс)
  */
 export function runCaptcha(container, callback, options = {}) {
   const {
@@ -145,7 +44,6 @@ export function runCaptcha(container, callback, options = {}) {
     return;
   }
 
-  // Получаем существующее состояние для этого контейнера
   let state = widgetStates.get(container);
 
   // Скрипт не загрузился - ждем и делаем fallback
@@ -155,7 +53,7 @@ export function runCaptcha(container, callback, options = {}) {
     setTimeout(() => {
       if (!window.smartCaptcha) {
         console.error('[CaptchaCore] Скрипт капчи так и не загрузился. Режим обхода.');
-        callback(null);
+        callback(FALLBACK_TOKEN); // ← Используется константа из ядра
       }
     }, scriptTimeout);
     
@@ -176,19 +74,18 @@ export function runCaptcha(container, callback, options = {}) {
       state = { widgetId };
       widgetStates.set(container, state);
 
-      // Даем время на инициализацию перед execute
       setTimeout(() => {
         if (state.widgetId && window.smartCaptcha) {
           window.smartCaptcha.execute(state.widgetId);
         } else {
           console.error('[CaptchaCore] Виджет не создался. Режим обхода.');
-          callback(null);
+          callback(FALLBACK_TOKEN); // ← Используется константа из ядра
         }
       }, initDelay);
 
     } catch (e) {
       console.error('[CaptchaCore] Ошибка при инициализации:', e);
-      callback(null);
+      callback(FALLBACK_TOKEN); // ← Используется константа из ядра
     }
   } else {
     // Виджет уже есть - просто выполняем
@@ -196,15 +93,13 @@ export function runCaptcha(container, callback, options = {}) {
       window.smartCaptcha.execute(state.widgetId);
     } catch (e) {
       console.error('[CaptchaCore] Ошибка при execute:', e);
-      callback(null);
+      callback(FALLBACK_TOKEN); // ← Используется константа из ядра
     }
   }
 }
 
 /**
  * Сбрасывает капчу для контейнера
- * @param {HTMLElement} container - Контейнер капчи
- * @param {boolean} destroyDom - Удалить контейнер из DOM
  */
 export function resetCaptcha(container, destroyDom = false) {
   const state = widgetStates.get(container);
@@ -224,9 +119,6 @@ export function resetCaptcha(container, destroyDom = false) {
 
 /**
  * Подписывается на события капчи
- * @param {HTMLElement} container - Контейнер капчи
- * @param {string} eventName - Имя события
- * @param {Function} handler - Обработчик
  */
 export function subscribeCaptcha(container, eventName, handler) {
   const state = widgetStates.get(container);
@@ -239,9 +131,7 @@ export function subscribeCaptcha(container, eventName, handler) {
 }
 
 /**
- * Возвращает ID виджета для контейнера (если нужен для watch во Vue)
- * @param {HTMLElement} container - Контейнер капчи
- * @returns {string|null} - ID виджета или null
+ * Возвращает ID виджета для контейнера
  */
 export function getWidgetId(container) {
   const state = widgetStates.get(container);
@@ -249,7 +139,7 @@ export function getWidgetId(container) {
 }
 
 
-Обновленный Vue-миксин: captchaMixin.js
+captchaMixin.js
 
 import {
   createCaptchaContainer,
@@ -259,12 +149,14 @@ import {
   getWidgetId
 } from './captchaCore.js';
 
+// Больше НИЧЕГО настраивать не нужно — всё берётся из ядра
+
 export const captchaMixin = {
   data() {
     return {
-      captcha_id: null, // Для реактивности и watch
+      captcha_id: null,
       captchaContainerId: `yandex-captcha-${Math.random().toString(36).substr(2, 9)}`,
-      captchaContainer: null, // Ссылка на DOM-элемент
+      captchaContainer: null,
     };
   },
 
@@ -282,21 +174,15 @@ export const captchaMixin = {
   },
 
   methods: {
-    /**
-     * Запускает капчу
-     * @param {Function} callback - Функция, которая вызовется с токеном
-     */
     runCaptcha(callback) {
       if (!this.captchaContainer) {
-        console.error('[CaptchaMixin] Контейнер не найден. Добавьте ref="captchaContainer" в шаблон.');
+        console.error('[CaptchaMixin] Контейнер не найден.');
         if (typeof callback === 'function') callback(null);
         return;
       }
 
       runCaptcha(this.captchaContainer, (token) => {
-        // Обновляем captcha_id для реактивности
         this.captcha_id = getWidgetId(this.captchaContainer);
-        
         if (typeof callback === 'function') {
           callback(token);
         }
@@ -305,10 +191,6 @@ export const captchaMixin = {
       });
     },
 
-    /**
-     * Сбрасывает капчу
-     * @param {boolean} destroyDom - Удалить контейнер из DOM
-     */
     resetCaptcha(destroyDom = false) {
       if (this.captchaContainer) {
         resetCaptcha(this.captchaContainer, destroyDom);
@@ -316,11 +198,6 @@ export const captchaMixin = {
       }
     },
 
-    /**
-     * Подписывается на события капчи
-     * @param {string} eventName - Имя события
-     * @param {Function} handler - Обработчик
-     */
     subscribeCaptchaEvent(eventName, handler) {
       if (this.captchaContainer) {
         subscribeCaptcha(this.captchaContainer, eventName, handler);
@@ -329,7 +206,8 @@ export const captchaMixin = {
   }
 };
 
-Обновленный нативный JS код
+
+Нативный JS
 
 import {
   createCaptchaContainer,
@@ -337,98 +215,16 @@ import {
   resetCaptcha
 } from './captchaCore.js';
 
-/**
- * Инициализация и запуск капчи для формы
- * @param {HTMLElement} form - Элемент формы
- * @param {string} containerId - Уникальный ID контейнера
- */
+// Больше НИЧЕГО настраивать не нужно — всё берётся из ядра
+
 function initCaptchaForForm(form, containerId) {
-  // Создаем контейнер внутри формы
   const container = createCaptchaContainer(form, containerId);
   
-  // Запускаем капчу
   runCaptcha(container, (token) => {
-    // Вызываем отправку формы с токеном (или null при fallback)
     submitForm(form, token);
   }, {
     sitekey: conf?.smartcaptcha_key
   });
 }
 
-/**
- * Обработчик отправки форм
- */
-function formSubmission() {
-  const buttons = document.querySelectorAll('.js--btn-universal-form');
-  
-  buttons.forEach((button, index) => {
-    button.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const form = button.closest('.js--universal-form');
-      
-      if (!form) {
-        console.error('[FormSubmission] Форма не найдена');
-        return;
-      }
-      
-      // Блокируем кнопку
-      button.classList.add('submitting');
-      button.setAttribute('disabled', 'disabled');
-      
-      // Уникальный ID контейнера для этой формы
-      const containerId = `yandex-smart-captcha-${index}`;
-      
-      // Запускаем капчу
-      initCaptchaForForm(form, containerId);
-    };
-  });
-}
-
-/**
- * Отправка формы
- * @param {HTMLElement} form - Элемент формы
- * @param {string|null} token - Токен капчи (или null при fallback)
- */
-function submitForm(form, token) {
-  // Собираем данные формы
-  const formData = new FormData(form);
-  
-  // Добавляем токен (может быть null при fallback)
-  if (token) {
-    formData.append('smart-token', token);
-  }
-  
-  // Ваш AJAX-запрос (пример с fetch)
-  fetch('/api/endpoint', {
-    method: 'POST',
-    body: formData
-  })
-    .then(response => response.json())
-    .then(data => {
-      console.log('Успех:', data);
-      // Ваша логика успеха
-    })
-    .catch(error => {
-      console.error('Ошибка:', error);
-      // Ваша логика ошибки
-    })
-    .finally(() => {
-      // Разблокируем кнопку
-      const button = form.querySelector('.js--btn-universal-form');
-      if (button) {
-        button.classList.remove('submitting');
-        button.removeAttribute('disabled');
-      }
-      
-      // Сбрасываем капчу
-      const container = form.querySelector('.captcha-element');
-      if (container) {
-        resetCaptcha(container, false); // false = не удалять DOM
-      }
-    });
-}
-
-// Инициализация при загрузке DOM
-document.addEventListener('DOMContentLoaded', formSubmission);
+// ... остальной код форм
