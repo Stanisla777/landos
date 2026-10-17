@@ -1,109 +1,113 @@
-function CommentsFormValidationAnswer() {
-  const forms = document.querySelectorAll('.js--comments__item-form-answer:not(.js--comments__item-form-answer-init)');
-  
-  if (!forms) return;
-  
-  forms.forEach((form) => {
-    form.classList.add('js--comments__item-form-answer-init');
-    
-    form.addEventListener('submit', (event) => {
-      event.preventDefault();
-      
-      const button = form.querySelector('.form-comments__button');
-      if (button) {
-        button.classList.add('submitting');
-        button.setAttribute('disabled', 'disabled');
-      }
+document.addEventListener('click', (e) => {
+    const button = e.target.closest('.comments__item-button-answer');
+    if (!button) return;
 
-      if (!errors.name && !errors.check && !errors.text) {
-        // Создаём уникальный ID для каждой формы ответа
-        const containerId = `captcha-reply-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        const container = createCaptchaContainer(form, containerId);
-        
-        // Запускаем капчу через наш модуль
-        runCaptcha(container, (token) => {
-          let formData = new FormData(form);
-          
-          // Добавляем токен (реальный или fallback)
-          if (token !== null && token !== undefined) {
-            formData.append('smart-token', token);
-          }
-          
-          sendReply(form, formData, errors);
-        }, {
-          sitekey: conf?.smartcaptcha_key,
-          
-          // Подписываемся на события капчи
-          onWidgetCreated: (widgetId) => {
-            // Пользователь закрыл окно капчи
-            subscribeCaptcha(container, 'challenge-hidden', () => {
-              console.log('Пользователь закрыл окно капчи');
-              if (button) {
-                button.classList.remove('submitting');
-                button.removeAttribute('disabled');
-              }
-              resetCaptcha(container, false);
-            });
+    e.preventDefault();
 
-            // Токен истёк
-            subscribeCaptcha(container, 'token-expired', () => {
-              console.warn('Токен капчи истёк');
-              if (button) {
-                button.classList.remove('submitting');
-                button.removeAttribute('disabled');
-              }
-              resetCaptcha(container, false);
-            });
-          }
-        });
+    const commentItem = button.closest('.comments__item');
+    const commentContainer  = button.closest('.comments__container')
+    if (!commentContainer && !commentItem) return;
+
+    const parentId = commentItem.dataset.id;
+    const titleEl = commentItem.querySelector('.comments__item-title');
+    const authorName = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
+
+    const elementIdInput = document.querySelector('.js--form-comments .form-comments__container input[name="elementId"]');
+    const captchaId = elementIdInput && elementIdInput.value ? elementIdInput.value : `S${Date.now()}`;
+
+    const nameModerator = commentContainer.getAttribute('data-moderator-name');
+    const maxLength = commentContainer.getAttribute('data-comment-maxlength');
+
+    // 1. Закрываем и удаляем другие открытые формы
+    document.querySelectorAll('.comments__item-form-answer_active').forEach((form) => {
+      const currentReplyForm = commentItem.querySelector('.comments__item-form-answer');
+      if (form !== currentReplyForm) {
+        removeReplyForm(form);
       }
     });
-  });
+
+    // 2. Проверяем, есть ли уже форма
+    let replyForm = commentItem.querySelector('.comments__item-form-answer');
+
+    if (!replyForm) {
+      let formHTML = '';
+      if (typeof window.REPLY_FORM_TEMPLATE === 'string') {
+        formHTML = window.REPLY_FORM_TEMPLATE
+          .replace(/{captchaId}/g, captchaId)
+          .replace(/{parentId}/g, parentId)
+          .replace(/{authorName}/g, authorName)
+          .replace(/{moderatorName}/g, nameModerator)
+          .replace(/{maxlength}/g, maxLength);
+      }
+
+      const itemInfo = commentItem.querySelector('.comments__item-info');
+      if (itemInfo) {
+        itemInfo.insertAdjacentHTML('beforeend', formHTML);
+        replyForm = itemInfo.querySelector('.comments__item-form-answer');
+
+        // Инициализация валидации
+        if (typeof CommentsFormValidationAnswer === 'function') {
+          CommentsFormValidationAnswer();
+        }
+      }
+    }
+
+    // 3. Показываем форму
+    if (replyForm) {
+      replyForm.classList.add('comments__item-form-answer_active');
+
+      // Фокус на textarea
+      const textarea = replyForm.querySelector('.js--form-comments-text');
+      if (textarea) {
+        // setTimeout(() => textarea.focus(), 100);
+      }
+    }
+  })
 }
 
-function sendReply(form, formData, errors) {
-  const button = form.querySelector('.form-comments__button');
-  
-  let request = BX.ajax.runComponentAction('local:comments.form', 'save', {
-    mode: 'class',
-    data: formData
-  });
+----------------------
 
-  request.then(function(response) {
-    commentsPopupShow(response.data.title, response.data.message, response.status);
-    form.reset();
+Это в отправке
+if (!errors.name && !errors.check && !errors.text) {
+          // Создаём уникальный ID для каждой формы ответа
+          const containerId = `captcha-reply-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+          const container = CaptchaCore.createCaptchaContainer(form, containerId);
 
-    if (button) {
-      button.classList.add('form-comments__button_disabled');
-      button.classList.remove('submitting');
-      button.removeAttribute('disabled');
-    }
+          // Запускаем капчу через наш модуль
+          CaptchaCore.runCaptcha(container, (token) => {
+            let formData = new FormData(form);
+            formData.delete('smart-token');
 
-    // Удаляем форму после успешной отправки
-    removeReplyForm(form);
+            // Добавляем токен (реальный или fallback)
+            if (token !== null && token !== undefined) {
+              formData.append('smart-token', token);
+            }
 
-    errors = {
-      name: false,
-      text: false,
-      check: false
-    };
-    
-    updateCountComments(response);
-    updateCommentsList(response.data.id, formData.get('parent_id'));
-    
-  }, function(response) {
-    commentsPopupShow('Ошибка', response.errors, response.status);
+            sendReply(form, formData, errors);
+          }, {
+            sitekey: conf?.smartcaptcha_key,
 
-    // Разблокируем кнопку при ошибке
-    if (button) {
-      button.classList.remove('submitting');
-      button.removeAttribute('disabled');
-    }
-    
-    // Сбрасываем капчу при ошибке
-    const container = form.querySelector('.captcha-element');
-    if (container) {
-      resetCaptcha(container, false);
-    }
-  });
-}
+            // Подписываемся на события капчи
+            onWidgetCreated: (widgetId) => {
+              // Пользователь закрыл окно капчи
+              CaptchaCore.subscribeCaptcha(container, 'challenge-hidden', () => {
+                console.log('Пользователь закрыл окно капчи');
+                if (item.querySelector('.form-comments__button')) {
+                  item.querySelector('.form-comments__button').classList.remove('submitting')
+                  item.querySelector('.form-comments__button').removeAttribute('disabled','disabled')
+                }
+                CaptchaCore.resetCaptcha(container, false);
+              });
+
+              // Токен истёк
+              CaptchaCore.subscribeCaptcha(container, 'token-expired', () => {
+                console.warn('Токен капчи истёк');
+                if (item.querySelector('.form-comments__button')) {
+                  item.querySelector('.form-comments__button').classList.remove('submitting')
+                  item.querySelector('.form-comments__button').removeAttribute('disabled','disabled')
+                }
+                CaptchaCore.resetCaptcha(container, false);
+              });
+            }
+          });
+        }
