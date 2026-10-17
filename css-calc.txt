@@ -1,113 +1,42 @@
-document.addEventListener('click', (e) => {
-    const button = e.target.closest('.comments__item-button-answer');
-    if (!button) return;
-
-    e.preventDefault();
-
-    const commentItem = button.closest('.comments__item');
-    const commentContainer  = button.closest('.comments__container')
-    if (!commentContainer && !commentItem) return;
-
-    const parentId = commentItem.dataset.id;
-    const titleEl = commentItem.querySelector('.comments__item-title');
-    const authorName = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
-
-    const elementIdInput = document.querySelector('.js--form-comments .form-comments__container input[name="elementId"]');
-    const captchaId = elementIdInput && elementIdInput.value ? elementIdInput.value : `S${Date.now()}`;
-
-    const nameModerator = commentContainer.getAttribute('data-moderator-name');
-    const maxLength = commentContainer.getAttribute('data-comment-maxlength');
-
-    // 1. Закрываем и удаляем другие открытые формы
-    document.querySelectorAll('.comments__item-form-answer_active').forEach((form) => {
-      const currentReplyForm = commentItem.querySelector('.comments__item-form-answer');
-      if (form !== currentReplyForm) {
-        removeReplyForm(form);
-      }
-    });
-
-    // 2. Проверяем, есть ли уже форма
-    let replyForm = commentItem.querySelector('.comments__item-form-answer');
-
-    if (!replyForm) {
-      let formHTML = '';
-      if (typeof window.REPLY_FORM_TEMPLATE === 'string') {
-        formHTML = window.REPLY_FORM_TEMPLATE
-          .replace(/{captchaId}/g, captchaId)
-          .replace(/{parentId}/g, parentId)
-          .replace(/{authorName}/g, authorName)
-          .replace(/{moderatorName}/g, nameModerator)
-          .replace(/{maxlength}/g, maxLength);
+if (replyForm) {
+        const containerId = `captcha-reply-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        const container = CaptchaCore.createCaptchaContainer(replyForm, containerId);
+        
+        // Сохраняем ID контейнера в data-атрибуте формы для последующего использования
+        replyForm.dataset.captchaContainerId = containerId;
       }
 
-      const itemInfo = commentItem.querySelector('.comments__item-info');
-      if (itemInfo) {
-        itemInfo.insertAdjacentHTML('beforeend', formHTML);
-        replyForm = itemInfo.querySelector('.comments__item-form-answer');
+function CommentsFormValidationAnswer() {
 
-        // Инициализация валидации
-        if (typeof CommentsFormValidationAnswer === 'function') {
-          CommentsFormValidationAnswer();
+if (!errors.name && !errors.check && !errors.text) {
+        // 🔥 ПОЛУЧАЕМ УЖЕ СОЗДАННЫЙ КОНТЕЙНЕР
+        const containerId = form.dataset.captchaContainerId;
+        if (!containerId) {
+          console.error('Контейнер капчи не найден');
+          return;
         }
-      }
-    }
-
-    // 3. Показываем форму
-    if (replyForm) {
-      replyForm.classList.add('comments__item-form-answer_active');
-
-      // Фокус на textarea
-      const textarea = replyForm.querySelector('.js--form-comments-text');
-      if (textarea) {
-        // setTimeout(() => textarea.focus(), 100);
-      }
-    }
-  })
+        
+        const container = form.querySelector(`#${containerId}`);
+        if (!container) {
+          console.error('Элемент контейнера капчи не найден');
+          return;
+        }
 }
 
-----------------------
+}
 
-Это в отправке
-if (!errors.name && !errors.check && !errors.text) {
-          // Создаём уникальный ID для каждой формы ответа
-          const containerId = `captcha-reply-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-          const container = CaptchaCore.createCaptchaContainer(form, containerId);
-
-          // Запускаем капчу через наш модуль
-          CaptchaCore.runCaptcha(container, (token) => {
-            let formData = new FormData(form);
-            formData.delete('smart-token');
-
-            // Добавляем токен (реальный или fallback)
-            if (token !== null && token !== undefined) {
-              formData.append('smart-token', token);
-            }
-
-            sendReply(form, formData, errors);
-          }, {
-            sitekey: conf?.smartcaptcha_key,
-
-            // Подписываемся на события капчи
-            onWidgetCreated: (widgetId) => {
-              // Пользователь закрыл окно капчи
-              CaptchaCore.subscribeCaptcha(container, 'challenge-hidden', () => {
-                console.log('Пользователь закрыл окно капчи');
-                if (item.querySelector('.form-comments__button')) {
-                  item.querySelector('.form-comments__button').classList.remove('submitting')
-                  item.querySelector('.form-comments__button').removeAttribute('disabled','disabled')
-                }
-                CaptchaCore.resetCaptcha(container, false);
-              });
-
-              // Токен истёк
-              CaptchaCore.subscribeCaptcha(container, 'token-expired', () => {
-                console.warn('Токен капчи истёк');
-                if (item.querySelector('.form-comments__button')) {
-                  item.querySelector('.form-comments__button').classList.remove('submitting')
-                  item.querySelector('.form-comments__button').removeAttribute('disabled','disabled')
-                }
-                CaptchaCore.resetCaptcha(container, false);
-              });
-            }
-          });
-        }
+function removeReplyForm(form) {
+  if (!form) return;
+  
+  // 🔥 СБРАСЫВАЕМ И УДАЛЯЕМ КОНТЕЙНЕР КАПЧИ
+  const containerId = form.dataset.captchaContainerId;
+  if (containerId) {
+    const container = form.querySelector(`#${containerId}`);
+    if (container) {
+      CaptchaCore.resetCaptcha(container, true); // true = удалить DOM-элемент
+    }
+  }
+  
+  // Удаляем саму форму
+  form.remove();
+}
