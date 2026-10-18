@@ -1,90 +1,146 @@
-function sendLikeAction(container, like = 1, token = ''){
-  if(container.dataset.elementId && container.dataset.commentId){
-    let request = BX.ajax.runComponentAction('local:comments.list', 'like', {
-      mode:'class',
-      data: {
-        elementId: container.dataset.elementId,
-        commentId: container.dataset.commentId,
-        like: like,
-        'smart-token': token
-      }
-    });
+function sendLikeAction(container, like = 1, token = '') {
+  if (!container.dataset.elementId || !container.dataset.commentId) return;
 
-    request.then(function(responce){
-      //console.log(responce)
-    }, function (responce) {
-      //console.log(responce)
-    });
-  }
-}
-function makeCaptchaInit(parent, index, callback) {
-  if (!parent.querySelector('.captcha-element')){
-    const el = document.createElement('div')
-    el.classList.add('captcha-element')
-    el.setAttribute('id',`yandex-smart-captcha-${index}`)
-    parent.append(el);
+  const requestData = {
+    elementId: container.dataset.elementId,
+    commentId: container.dataset.commentId,
+    like: like
+  };
+
+  // Добавляем токен (реальный или fallback)
+  if (token !== null && token !== undefined) {
+    requestData['smart-token'] = token;
   }
 
-  if (parent.querySelector('.captcha-element')) {
-    const captchaBlockId = parent.querySelector('.captcha-element').id
-    return window.smartCaptcha.render(captchaBlockId, {
-      sitekey: conf.smartcaptcha_key,
-      invisible: true,
-      callback: callback
-    });
-  }
+  let request = BX.ajax.runComponentAction('local:comments.list', 'like', {
+    mode: 'class',
+    data: requestData
+  });
+
+  request.then(function(response) {
+    console.log('Лайк отправлен успешно', response);
+    
+    // Сбрасываем капчу после успешной отправки
+    const captchaContainer = container.querySelector('.captcha-element');
+    if (captchaContainer) {
+      CaptchaCore.resetCaptcha(captchaContainer, false);
+    }
+  }, function(response) {
+    console.error('Ошибка отправки лайка', response);
+    
+    // Сбрасываем капчу при ошибке
+    const captchaContainer = container.querySelector('.captcha-element');
+    if (captchaContainer) {
+      CaptchaCore.resetCaptcha(captchaContainer, false);
+    }
+  });
 }
-function checkLike(){
-  const likeContainer = document.querySelectorAll('.comments__item-buttons-like:not(.comments__item-buttons-like-init)')
-  likeContainer.forEach((item) => {
+
+-------------------
+
+function checkLike() {
+  const likeContainers = document.querySelectorAll('.comments__item-buttons-like:not(.comments__item-buttons-like-init)');
+  
+  likeContainers.forEach((item) => {
     item.classList.add('comments__item-buttons-like-init');
-    const buttonLike = item.querySelector('.comments__item-button-like-plus')
-    const buttonDislike = item.querySelector('.comments__item-button-like-minus')
-    const likeCount = item.querySelector('.comments__item-button-like-plus-count')
-    const disLikeCount = item.querySelector('.comments__item-button-like-minus-count')
+    
+    const buttonLike = item.querySelector('.comments__item-button-like-plus');
+    const buttonDislike = item.querySelector('.comments__item-button-like-minus');
+    const likeCount = item.querySelector('.comments__item-button-like-plus-count');
+    const disLikeCount = item.querySelector('.comments__item-button-like-minus-count');
+    
+    // 🔥 СОХРАНЯЕМ ОРИГИНАЛЬНЫЙ ФОРМАТ ID
     const index = `like-elem-${item.dataset.elementId}-comment-${item.dataset.commentId}`;
+    const containerId = `yandex-smart-captcha-${index}`;
+    
+    // 🔥 СОЗДАЁМ КОНТЕЙНЕР КАПЧИ ОДИН РАЗ при инициализации
+    const captchaContainer = CaptchaCore.createCaptchaContainer(item, containerId);
 
+    // Функция обновления UI после успешного ответа
+    function updateLikeUI(isLike) {
+      if (isLike) {
+        // Лайк
+        if (buttonDislike.classList.contains('comments__item-button-like_active')) {
+          buttonDislike.classList.remove('comments__item-button-like_active');
+          disLikeCount.innerHTML = Number(disLikeCount.innerHTML) - 1;
+        }
+        if (buttonLike.classList.contains('comments__item-button-like_active')) {
+          buttonLike.classList.remove('comments__item-button-like_active');
+          likeCount.innerHTML = Number(likeCount.innerHTML) - 1;
+        } else {
+          buttonLike.classList.add('comments__item-button-like_active');
+          likeCount.innerHTML = Number(likeCount.innerHTML) + 1;
+        }
+      } else {
+        // Дизлайк
+        if (buttonLike.classList.contains('comments__item-button-like_active')) {
+          buttonLike.classList.remove('comments__item-button-like_active');
+          likeCount.innerHTML = Number(likeCount.innerHTML) - 1;
+        }
+        if (buttonDislike.classList.contains('comments__item-button-like_active')) {
+          buttonDislike.classList.remove('comments__item-button-like_active');
+          disLikeCount.innerHTML = Number(disLikeCount.innerHTML) - 1;
+        } else {
+          buttonDislike.classList.add('comments__item-button-like_active');
+          disLikeCount.innerHTML = Number(disLikeCount.innerHTML) + 1;
+        }
+      }
+    }
+
+    // 🔥 ОБРАБОТЧИК ЛАЙКА
     buttonLike.addEventListener('click', (e) => {
       e.preventDefault();
 
-      const captchaId = makeCaptchaInit(item, index, (token) => {
+      CaptchaCore.runCaptcha(captchaContainer, (token) => {
+        // Обновляем UI СРАЗУ (оптимистичное обновление)
+        updateLikeUI(true);
+        // Отправляем запрос
         sendLikeAction(item, 1, token);
-      })
-      window.smartCaptcha.execute(captchaId)
+      }, {
+        sitekey: conf?.smartcaptcha_key,
+        
+        // Подписываемся на события капчи
+        onWidgetCreated: (widgetId) => {
+          // Пользователь закрыл окно капчи
+          CaptchaCore.subscribeCaptcha(captchaContainer, 'challenge-hidden', () => {
+            console.log('Пользователь закрыл окно капчи (лайк)');
+            CaptchaCore.resetCaptcha(captchaContainer, false);
+          });
 
-      if(buttonDislike.classList.contains('comments__item-button-like_active')){
-        buttonDislike.classList.remove('comments__item-button-like_active')
-        disLikeCount.innerHTML = Number(disLikeCount.innerHTML) - 1;
-      }
-      if(buttonLike.classList.contains('comments__item-button-like_active')){
-        buttonLike.classList.remove('comments__item-button-like_active')
-        likeCount.innerHTML = Number(likeCount.innerHTML) - 1;
-      } else {
-        buttonLike.classList.add('comments__item-button-like_active')
-        likeCount.innerHTML = Number(likeCount.innerHTML) + 1;
-      }
-    })
+          // Токен истёк
+          CaptchaCore.subscribeCaptcha(captchaContainer, 'token-expired', () => {
+            console.warn('Токен капчи истёк (лайк)');
+            CaptchaCore.resetCaptcha(captchaContainer, false);
+          });
+        }
+      });
+    });
 
+    // 🔥 ОБРАБОТЧИК ДИЗЛАЙКА
     buttonDislike.addEventListener('click', (e) => {
       e.preventDefault();
 
-      const captchaId = makeCaptchaInit(item, index, (token) => {
+      CaptchaCore.runCaptcha(captchaContainer, (token) => {
+        // Обновляем UI СРАЗУ (оптимистичное обновление)
+        updateLikeUI(false);
+        // Отправляем запрос
         sendLikeAction(item, 0, token);
-      })
-      window.smartCaptcha.execute(captchaId)
+      }, {
+        sitekey: conf?.smartcaptcha_key,
+        
+        // Подписываемся на события капчи
+        onWidgetCreated: (widgetId) => {
+          CaptchaCore.subscribeCaptcha(captchaContainer, 'challenge-hidden', () => {
+            console.log('Пользователь закрыл окно капчи (дизлайк)');
+            CaptchaCore.resetCaptcha(captchaContainer, false);
+          });
 
-      if (buttonLike.classList.contains('comments__item-button-like_active')) {
-        buttonLike.classList.remove('comments__item-button-like_active')
-        likeCount.innerHTML = Number(likeCount.innerHTML) - 1;
-      }
-      if (buttonDislike.classList.contains('comments__item-button-like_active')) {
-        buttonDislike.classList.remove('comments__item-button-like_active')
-        disLikeCount.innerHTML = Number(disLikeCount.innerHTML) - 1;
-      } else {
-        buttonDislike.classList.add('comments__item-button-like_active')
-        disLikeCount.innerHTML = Number(disLikeCount.innerHTML) + 1;
-      }
-    })
-
-  })
+          CaptchaCore.subscribeCaptcha(captchaContainer, 'token-expired', () => {
+            console.warn('Токен капчи истёк (дизлайк)');
+            CaptchaCore.resetCaptcha(captchaContainer, false);
+          });
+        }
+      });
+    });
+  });
 }
