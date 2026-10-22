@@ -1,108 +1,13 @@
-Vue 3 плагин для реактивного отслеживания ширины экрана. Используется внутри компонентов библиотеки (DsDatepicker, DsMultiSelect) для переключения между мобильным и десктопным режимами.
-
-Подключение в проекте 
-js
-import { createApp } from 'vue'
-import { ScreenWidthPlugin } from '@ringsites/ui-components'
-import App from './App.vue'
-
-const app = createApp(App)
-app.use(ScreenWidthPlugin)
-app.mount('#app')
-
-
-
-DsDatepicker.js:10234 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'isMobile')
-ругается здесь
-computed: {
-    isMobile() {
-      return this.$screenWidth.isMobile;
-    },
-
-
-//В компоненте календаря
-computed: {
-        isMobile() {
-            return this.$screenWidth.isMobile;
-        },
-
-//Часть кода $screenWidth
-install(o, r = {}) {
-    const m = {
-      mobile: 768,
-      tablet: 1024,
-      desktop: 1024
-    }, { mobile: e, tablet: s, desktop: n } = { ...m, ...r }, t = S({
-      width: window.innerWidth,
-      isMobile: window.innerWidth < e,
-      isTablet: window.innerWidth >= e && window.innerWidth < s,
-      isDesktop: window.innerWidth >= n
-    }), c = ((d, a) => {
-      let i;
-      return function(...l) {
-        const f = () => {
-          clearTimeout(i), d(...l);
-        };
-        clearTimeout(i), i = setTimeout(f, a);
-      };
-    })(() => {
-      t.width = window.innerWidth, t.isMobile = window.innerWidth < e, t.isTablet = window.innerWidth >= e && window.innerWidth < s, t.isDesktop = window.innerWidth >= n;
-    }, 250);
-    window.addEventListener("resize", c), o.config.globalProperties.$screenWidth = t, o.provide("screenWidth", t);
-
-//Мой компоеннт
-<template>
-  <div class="calculator__container-block">
-    <div class="input-story-container">
-      <ds-datepicker
+<ds-datepicker
         color-theme="light"
         :is-range="false"
+        :month-picker="true"
+        :clearable="false"
         v-model="singleValue"
+        label-position="inside"
+        label="Год регистрации права собственности"
+        hint="Для ДДУ — год подписания акта передачи"
+        minDate="2014-01-01"
+        maxDate=new Date().getFullYear()
+
       />
-    </div>
-
-  </div>
-</template>
-<script>
-import store from "../store";
-import { DsDatepicker } from '@ringsites/ui-components'
-
-import { ScreenWidthPlugin } from '@ringsites/ui-components'
-
-
-
-export default {
-  name: 'component-calendar',
-  mixins: [],
-  data(){
-    return {
-      singleValue:''
-    }
-  },
-  methods:{
-
-
-
-  },
-  mounted(){
-    
-
-  },
-  computed:{
-    // answers(){
-    //   return store.getters.ANSWERS || null;
-    // },
-  },
-  watch:{
-  },
-  components: {
-    DsDatepicker,
-    ScreenWidthPlugin
-  },
-
-
-
-};
-</script>
-<style scoped>
-</style>
