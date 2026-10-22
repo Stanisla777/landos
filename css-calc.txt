@@ -1,40 +1,86 @@
-<div v-else class="btn_s black" @click.prevent.stop="sendingResult" ref="btnSend" :class="preload_btn === true ? 'submitting' : ''">Проверить</div>
-
-
-<form ref="captchaContainer" class="status-kadastr-block__form" @submit.prevent="handlerSendForm">
-<input @input="onInput" />
-
-<button type="submit" :class="isDisabled ? 'status-kadastr-block__submit_disabled' : ''" class="status-kadastr-block__submit">
-        Проверить
-      </button>
-
-onSubmit(token){
-      if(this.value.length === 0) return
-      let key = conf.smartcaptcha_key
-      this.isDisabled = true
-      axios.post('', {
-        kadastr: this.value,
-        'smart-token': token,
-      },{
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-          Accept: 'application/json',
+//В компоненте календаря
+computed: {
+        isMobile() {
+            return this.$screenWidth.isMobile;
         },
-      })
-        .then((response) => {
-          this.response = response.data.result
-        })
-        .catch((error) => {
-          const result = {
-            "status": '1',
-            "message": error.response.data.description
-          }
-          this.response = result
-        })
-        .finally(() => {
-          this.isDisabled = false
-          // Сбрасываю капчу через миксин (без удаления DOM, чтобы можно было отправить снова)
-          this.resetCaptcha(false);
-        });
-    },
+
+//Часть кода $screenWidth
+install(o, r = {}) {
+    const m = {
+      mobile: 768,
+      tablet: 1024,
+      desktop: 1024
+    }, { mobile: e, tablet: s, desktop: n } = { ...m, ...r }, t = S({
+      width: window.innerWidth,
+      isMobile: window.innerWidth < e,
+      isTablet: window.innerWidth >= e && window.innerWidth < s,
+      isDesktop: window.innerWidth >= n
+    }), c = ((d, a) => {
+      let i;
+      return function(...l) {
+        const f = () => {
+          clearTimeout(i), d(...l);
+        };
+        clearTimeout(i), i = setTimeout(f, a);
+      };
+    })(() => {
+      t.width = window.innerWidth, t.isMobile = window.innerWidth < e, t.isTablet = window.innerWidth >= e && window.innerWidth < s, t.isDesktop = window.innerWidth >= n;
+    }, 250);
+    window.addEventListener("resize", c), o.config.globalProperties.$screenWidth = t, o.provide("screenWidth", t);
+
+//Мой компоеннт
+<template>
+  <div class="calculator__container-block">
+    <div class="input-story-container">
+      <ds-datepicker
+        color-theme="light"
+        :is-range="false"
+        v-model="singleValue"
+      />
+    </div>
+
+  </div>
+</template>
+<script>
+import store from "../store";
+import { DsDatepicker } from '@ringsites/ui-components'
+
+import { ScreenWidthPlugin } from '@ringsites/ui-components'
+
+
+
+export default {
+  name: 'component-calendar',
+  mixins: [],
+  data(){
+    return {
+      singleValue:''
+    }
+  },
+  methods:{
+
+
+
+  },
+  mounted(){
+    
+
+  },
+  computed:{
+    // answers(){
+    //   return store.getters.ANSWERS || null;
+    // },
+  },
+  watch:{
+  },
+  components: {
+    DsDatepicker,
+    ScreenWidthPlugin
+  },
+
+
+
+};
+</script>
+<style scoped>
+</style>
