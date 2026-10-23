@@ -1,31 +1,46 @@
-average_monthly_ncome_man:[
-      {field_1:''},
-      {field_2:''},
-      {field_3:''},
-    ],
-getters:{
-AVERAGEMONTHLYNCOMEMAN(state) {
-      return state.average_monthly_ncome_man
-    },
+<template>
+  <div>
+    <div 
+      v-for="(item, index) in average_monthly_ncome_man" 
+      :key="index" 
+      class="input-story-container"
+    >
+      <DsInput 
+        :placeholder="'Поле ' + (index + 1)" 
+        v-model="fields[item]" 
+      />
+    </div>
+  </div>
+</template>
 
-<div v-for="(item,index) in average_monthly_ncome_man" :key="index"  class="input-story-container">
-<input v-model="" />
-</div>
-
-data(){
+<script>
+export default {
+  data() {
     return {
-      dataField:false,
-      income:{
-        field_1:'',
-        field_2:'',
-        field_3:'',
+      // Один объект вместо отдельных переменных
+      fields: {
+        field_1: '',
+        field_2: '',
+        field_3: ''
       }
     }
   },
 
-computed:{
-    average_monthly_ncome_man(){
-      return store.getters.AVERAGEMONTHLYNCOMEMAN
+  computed: {
+    average_monthly_ncome_man() {
+      return this.$store.getters.AVERAGEMONTHLYNCOMEMAN
     }
-
   },
+
+  watch: {
+    // Следим за объектом fields
+    fields: {
+      handler(newFields) {
+        // Отправляем весь объект в store
+        this.$store.dispatch('ActionInput', newFields)
+      },
+      deep: true // обязательно для отслеживания изменений внутри объекта
+    }
+  }
+}
+</script>
