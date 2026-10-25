@@ -1,103 +1,6 @@
-<template>
-  <div>
-    <!-- Чекбокс -->
-    <div class="calculator__row small-margin">
-      <div class="input-story-container">
-        <DsCheckbox
-          v-model="dataField"
-          label="Есть районный коэффициент или северная надбавка"
-          :show-text="true"
-          size="large"
-        />
-      </div>
-    </div>
+@update:modelValue="(newValue) => handleUserInput(item.modelInput, newValue)"
 
-    <!-- Доходы по годам -->
-    <div class="calculator__row small-margin">
-      <div class="calc-tax-deduc-new__row-grid-auto-column">
-        <!-- ИСПРАВЛЕНО: :key="item.id" вместо index.id -->
-        <div v-for="item in visibleBlockIncomePeriod" :key="item.id" class="input-story-container">
-          
-          <!-- ИСПРАВЛЕНО: Разделяем v-model на :value и @update:modelValue (или @input), 
-               чтобы избежать бесконечного цикла с watch -->
-          <DsInput
-            class="height-56"
-            :value="fieldsIncomeMan[item.modelInput]"
-            @update:modelValue="(newValue) => handleUserInput(item.modelInput, newValue)"
-            :placeholder="item.placeholder"
-            type="text"
-            :clearable="true"
-            :maxlength="100"
-            autocomplete="off"
-          />
-          
-        </div>
-      </div
-    </div>
-  </div>
-</template>
-
-<script>
-import store from "../store";
-import { DsInput } from '@ringsites/ui-components/DsInput';
-import { DsCheckbox } from '@ringsites/ui-components';
-
-export default {
-  name: 'component-income',
-  
-  data() {
-    return {
-      dataField: false,
-      fieldsIncomeMan: {},
-    }
-  },
-
-  computed: {
-    array_all_income_period() {
-      return store.getters.ARRAYALLINCOMEPERIODMAN;
-    },
-
-    visibleBlockIncomePeriod() {
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
-      if (activeIndex === -1) return [];
-      return this.array_all_income_period.slice(
-        0, 
-        // Если нужно выводить только до активного включительно:
-        activeIndex + 1
-      );
-    }
-  },
-
-  watch: {
-    // ⚠️ УДАЛИ watcher на fieldsIncomeMan отсюда! 
-    // Он вызывает бесконечный цикл или скачки курсора при программном изменении.
-
-    // ✅ ПРАВИЛЬНЫЙ watcher: следим за изменениями в Store
-    array_all_income_period: {
-      handler() {
-        // При любом изменении в массиве store (включая очистку value),
-        // пересобираем локальный объект для инпутов
-        this.initializeFieldsIncomeFromStore();
-      },
-      deep: true // <-- ВОТ ЭТО ГЛАВНОЕ! Без этого изменения value внутри объектов не отловятся
-    }
-  },
-
-  created() {
-    this.initializeFieldsIncomeFromStore();
-  },
-
-  methods: {
-    initializeFieldsIncomeFromStore() {
-      const fields = {};
-      this.array_all_income_period.forEach(tab => {
-        fields[tab.modelInput] = tab.value || '';
-      });
-      this.fieldsIncomeMan = fields;
-    },
-
-    // Этот метод вызывается ТОЛЬКО когда пользователь реально печатает в инпуте
-    handleUserInput(modelInputKey, newValue) {
+handleUserInput(modelInputKey, newValue) {
       // 1. Мгновенно обновляем локальное состояние, чтобы UI был отзывчивым
       this.fieldsIncomeMan[modelInputKey] = newValue;
       
@@ -111,11 +14,15 @@ export default {
       // ВАЖНО: Убедись, что твой ActionInputIncomeMan и мутация теперь принимают 
       // объект { key: 'field_1', value: '...' }, а не весь массив newFields.
     }
-  },
 
-  components: {
-    DsInput,
-    DsCheckbox
-  }
-};
-</script>
+mutationInputIncomeMan(state, payload) {
+      // 1. Ищем в массиве объект, у которого modelInput совпадает с переданным ключом
+      const targetItem = state.array_all_income_period_man.find(
+        item => item.modelInput === payload.key
+      );
+
+      // 2. Если такой элемент найден, обновляем только его значение
+      if (targetItem) {
+        targetItem.value = payload.value;
+      }
+    },
