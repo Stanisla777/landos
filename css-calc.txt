@@ -1,28 +1,29 @@
-@update:modelValue="(newValue) => handleUserInput(item.modelInput, newValue)"
+mutationInputIncomeMan(state, received_perem) {
+      // 1. Получаем массив всех ключей из пришедшего объекта: ['field_1', 'field_2', 'field_3']
+      Object.keys(received_perem).forEach(key => {
 
-handleUserInput(modelInputKey, newValue) {
-      // 1. Мгновенно обновляем локальное состояние, чтобы UI был отзывчивым
-      this.fieldsIncomeMan[modelInputKey] = newValue;
-      
-      // 2. Отправляем в Store только измененное поле (лучше через commit, но можно и dispatch)
-      // Если у тебя там action, который внутри делает commit:
-      store.dispatch('ActionInputIncomeMan', { 
-        key: modelInputKey, 
-        value: newValue 
+        // 2. Ищем в массиве store объект, у которого modelInput совпадает с ключом
+        const targetItem = state.array_all_income_period_man.find(
+          item => item.modelInput === key
+        );
+
+        // 3. Если такой объект найден, обновляем его значение
+        if (targetItem) {
+          targetItem.value = received_perem[key];
+        }
+
       });
-      
-      // ВАЖНО: Убедись, что твой ActionInputIncomeMan и мутация теперь принимают 
-      // объект { key: 'field_1', value: '...' }, а не весь массив newFields.
+      console.log('state.array_all_income_period_man');
+      console.log(state.array_all_income_period_man);
     }
 
-mutationInputIncomeMan(state, payload) {
-      // 1. Ищем в массиве объект, у которого modelInput совпадает с переданным ключом
-      const targetItem = state.array_all_income_period_man.find(
-        item => item.modelInput === payload.key
-      );
-
-      // 2. Если такой элемент найден, обновляем только его значение
-      if (targetItem) {
-        targetItem.value = payload.value;
-      }
+watch:{
+    // Следим за объектом fieldsIncomeMan
+    fieldsIncomeMan: {
+      handler(newFields) {
+        // Отправляю весь объект в store
+        store.dispatch('ActionInputIncomeMan', newFields)
+      },
+      deep: true // нужно для отслеживания изменений внутри объекта
     },
+}
