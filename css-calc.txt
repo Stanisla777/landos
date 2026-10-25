@@ -1,202 +1,121 @@
 <template>
-  <!--Чекбокс есть районные коэффициенты или северная надбавка-->
-  <div class="calculator__row small-margin">
-    <div class="input-story-container">
-      <DsCheckbox
-        v-model="dataField"
-        :label="'Есть районный коэффициент или северная надбавка '"
-        :show-text="true"
-        :size="'large'"
-        :disabled="false"
-        :indeterminate="false"
-        :error="false"
-        :error-text="'Обязательное поле'"
-        :dark-mode="false"
-        :locked="false"
-      />
-    </div>
-  </div>
-
-  <!--Доходы по годам-->
-  <div class="calculator__row small-margin">
-    <div class="calc-tax-deduc-new__row-grid-auto-column">
-      <div v-for="(item,index) in visibleBlockIncomePeriod" :key="index.id"  class="input-story-container">
-        <DsInput
-          class="height-56"
-          v-model="fieldsIncomeMan[item.modelInput]"
-          :placeholder="item.placeholder"
-          :name="'example'"
-          :type="'text'"
-          :id="'example-input'"
-          :form-code="''"
-          :disabled="false"
-          :readonly="false"
-          :error="false"
-          :error-text="'Поле заполнено неверно'"
-          :clearable="true"
-          :dark-mode="false"
-          :maxlength="100"
-          :autocomplete="'off'"
-        />
-      </div>
-
-    </div>
-  </div>
-
-  <!--Предыдущие вычеты-->
-  <div class="calculator__row small-margin">
-    <div class="calculator__row-title-container">
-      <p class="calculator__row-title">Предыдущие вычеты</p>
-    </div>
-    <div class="calc-tax-deduc-new__row-grid-auto-column">
+  <div>
+    <!-- Чекбокс -->
+    <div class="calculator__row small-margin">
       <div class="input-story-container">
-        <DsInput
-          class="height-56"
-          v-model="previousPayments.deduction_purchase"
-          :placeholder="'Вычет за покупку недвижимости, ₽'"
-          :name="'example'"
-          :type="'text'"
-          :id="'example-input'"
-          :form-code="''"
-          :disabled="false"
-          :readonly="false"
-          :error="false"
-          :error-text="'Поле заполнено неверно'"
-          :clearable="true"
-          :dark-mode="false"
-          :maxlength="100"
-          :autocomplete="'off'"
+        <DsCheckbox
+          v-model="dataField"
+          label="Есть районный коэффициент или северная надбавка"
+          :show-text="true"
+          size="large"
         />
       </div>
+    </div>
 
-      <div class="input-story-container">
-        <DsInput
-          class="height-56"
-          v-model="previousPayments.deduction_interest"
-          :placeholder="'Вычет за проценты по ипотеке, ₽'"
-          :name="'example'"
-          :type="'text'"
-          :id="'example-input'"
-          :form-code="''"
-          :disabled="false"
-          :readonly="false"
-          :error="false"
-          :error-text="'Поле заполнено неверно'"
-          :clearable="true"
-          :dark-mode="false"
-          :maxlength="100"
-          :autocomplete="'off'"
-        />
-      </div>
-
-      <div class="input-story-container">
-        <DsInput
-          class="height-56"
-          v-model="previousPayments.other_deductions"
-          :placeholder="'Другие вычеты, ₽'"
-          :name="'example'"
-          :type="'text'"
-          :id="'example-input'"
-          :form-code="''"
-          :disabled="false"
-          :readonly="false"
-          :error="false"
-          :error-text="'Поле заполнено неверно'"
-          :clearable="true"
-          :dark-mode="false"
-          :maxlength="100"
-          :autocomplete="'off'"
-        />
-      </div>
-
+    <!-- Доходы по годам -->
+    <div class="calculator__row small-margin">
+      <div class="calc-tax-deduc-new__row-grid-auto-column">
+        <!-- ИСПРАВЛЕНО: :key="item.id" вместо index.id -->
+        <div v-for="item in visibleBlockIncomePeriod" :key="item.id" class="input-story-container">
+          
+          <!-- ИСПРАВЛЕНО: Разделяем v-model на :value и @update:modelValue (или @input), 
+               чтобы избежать бесконечного цикла с watch -->
+          <DsInput
+            class="height-56"
+            :value="fieldsIncomeMan[item.modelInput]"
+            @update:modelValue="(newValue) => handleUserInput(item.modelInput, newValue)"
+            :placeholder="item.placeholder"
+            type="text"
+            :clearable="true"
+            :maxlength="100"
+            autocomplete="off"
+          />
+          
+        </div>
+      </div
     </div>
   </div>
 </template>
+
 <script>
 import store from "../store";
-import { DsInput } from '@ringsites/ui-components/DsInput'
-import { DsCheckbox } from '@ringsites/ui-components'
-
+import { DsInput } from '@ringsites/ui-components/DsInput';
+import { DsCheckbox } from '@ringsites/ui-components';
 
 export default {
   name: 'component-income',
-  mixins: [],
-  data(){
+  
+  data() {
     return {
-      //чекбокс районный коэффициент или северная надбавка
-      dataField:false,
-      //поля средний доход по годам, заполняется в created
+      dataField: false,
       fieldsIncomeMan: {},
-      //предыдущие выплаты
-      previousPayments : {
-        deduction_purchase:'', //вычет за покупку
-        deduction_interest:'', //вычет за проценты
-        other_deductions:'', //другие вычеты
-      }
     }
   },
-  methods:{
-    //заполнеия поля fieldsIncomeMan при загрузке из store
-    initializeFieldsIncomeFromStore() {
-      const fields = {}
-      // Проходим по ВСЕМ табам (не только видимым, чтобы сохранить данные всех полей)
-      this.array_all_income_period.forEach(tab => {
-        fields[tab.modelInput] = tab.value || ''
-      })
-      this.fieldsIncomeMan = fields
-    },
 
-  },
-
-  computed:{
-    average_monthly_income_man(){ //это похоже не нужно
-      return store.getters.AVERAGEMONTHLYINCOMEMAN
-    },
-    array_all_income_period(){
-      return store.getters.ARRAYALLINCOMEPERIODMAN
+  computed: {
+    array_all_income_period() {
+      return store.getters.ARRAYALLINCOMEPERIODMAN;
     },
 
     visibleBlockIncomePeriod() {
-      // Ищем индекс первого элемента, у которого isActive === true
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
-
-      // Если такой элемент не найден — возвращаю пустой массив
-      if (activeIndex === -1) return []
-
-      // Беру все элементы от начала до активного включительно
-      return this.array_all_income_period.slice(0, activeIndex + 1)
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
+      if (activeIndex === -1) return [];
+      return this.array_all_income_period.slice(
+        0, 
+        // Если нужно выводить только до активного включительно:
+        activeIndex + 1
+      );
     }
-
   },
-  watch:{
-    // Следим за объектом fieldsIncomeMan
-    fieldsIncomeMan: {
-      handler(newFields) {
-        // Отправляю весь объект в store
-        store.dispatch('ActionInputIncomeMan', newFields)
+
+  watch: {
+    // ⚠️ УДАЛИ watcher на fieldsIncomeMan отсюда! 
+    // Он вызывает бесконечный цикл или скачки курсора при программном изменении.
+
+    // ✅ ПРАВИЛЬНЫЙ watcher: следим за изменениями в Store
+    array_all_income_period: {
+      handler() {
+        // При любом изменении в массиве store (включая очистку value),
+        // пересобираем локальный объект для инпутов
+        this.initializeFieldsIncomeFromStore();
       },
-      deep: true // нужно для отслеживания изменений внутри объекта
-    },
-    array_all_income_period(){
-      this.fieldsIncomeMan = {}
-      this.initializeFieldsIncomeFromStore();
+      deep: true // <-- ВОТ ЭТО ГЛАВНОЕ! Без этого изменения value внутри объектов не отловятся
     }
   },
-  mounted(){
 
-
-  },
   created() {
     this.initializeFieldsIncomeFromStore();
   },
+
+  methods: {
+    initializeFieldsIncomeFromStore() {
+      const fields = {};
+      this.array_all_income_period.forEach(tab => {
+        fields[tab.modelInput] = tab.value || '';
+      });
+      this.fieldsIncomeMan = fields;
+    },
+
+    // Этот метод вызывается ТОЛЬКО когда пользователь реально печатает в инпуте
+    handleUserInput(modelInputKey, newValue) {
+      // 1. Мгновенно обновляем локальное состояние, чтобы UI был отзывчивым
+      this.fieldsIncomeMan[modelInputKey] = newValue;
+      
+      // 2. Отправляем в Store только измененное поле (лучше через commit, но можно и dispatch)
+      // Если у тебя там action, который внутри делает commit:
+      store.dispatch('ActionInputIncomeMan', { 
+        key: modelInputKey, 
+        value: newValue 
+      });
+      
+      // ВАЖНО: Убедись, что твой ActionInputIncomeMan и мутация теперь принимают 
+      // объект { key: 'field_1', value: '...' }, а не весь массив newFields.
+    }
+  },
+
   components: {
     DsInput,
     DsCheckbox
-  },
-
-
-
+  }
 };
 </script>
-<style scoped>
-</style>
