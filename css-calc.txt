@@ -1,27 +1,27 @@
-<DsTab v-for="item in array_all_income_period"
-         :data-id="item.id"
-         :text="item.text"
-         @click="tabsClick"
-         :class="item.isActive ? '_active' : ''"
-      />
-
-methods:{
-    tabsClick(event) {
-      // const element = event.currentTarget;
-      // const tab = this.$refs.Tabs.querySelector('.ds-tab._active');
-      // if (tab){
-      //   this.$refs.Tabs.querySelector('.ds-tab._active').classList.remove('_active')
-      // }
-      // element.classList.add('_active');
-      store.dispatch('ActionTabTimeMan',element.getAttribute('data-id'))
-    }
-
 mutationTabTimeMan(state, received_perem) {
-      state.tax_refund_period = parseInt(received_perem);
-      state.array_all_income_period_man.forEach(item => {
-        item.isActive = false
-        if (parseInt(item.id) === parseInt(received_perem)) {
-          item.isActive = true
+    // 1. Приводим к строке для надежного сравнения (так как из DOM часто приходит строка)
+    const targetId = String(received_perem);
+    
+    // 2. Находим индекс элемента, на который кликнули
+    const activeIndex = state.array_all_income_period_man.findIndex(
+      item => String(item.id) === targetId
+    );
+
+    // 3. Проходим по всему массиву и применяем логику
+    state.array_all_income_period_man.forEach((item, index) => {
+      if (index === activeIndex) {
+        // Это тот элемент, на который кликнули
+        item.isActive = true;
+        // Его value НЕ трогаем, оставляем как есть
+      } else {
+        // Это все остальные элементы
+        item.isActive = false;
+        
+        // ГЛАВНОЕ УСЛОВИЕ: если индекс текущего элемента больше индекса активного,
+        // значит он идет ПОСЛЕ него в массиве. Очищаем его.
+        if (index > activeIndex) {
+          item.value = ''; 
         }
-      })
-    },
+      }
+    });
+  }
