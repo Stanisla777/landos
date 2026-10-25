@@ -1,27 +1,202 @@
-mutationTabTimeMan(state, received_perem) {
-    // 1. Приводим к строке для надежного сравнения (так как из DOM часто приходит строка)
-    const targetId = String(received_perem);
-    
-    // 2. Находим индекс элемента, на который кликнули
-    const activeIndex = state.array_all_income_period_man.findIndex(
-      item => String(item.id) === targetId
-    );
+<template>
+  <!--Чекбокс есть районные коэффициенты или северная надбавка-->
+  <div class="calculator__row small-margin">
+    <div class="input-story-container">
+      <DsCheckbox
+        v-model="dataField"
+        :label="'Есть районный коэффициент или северная надбавка '"
+        :show-text="true"
+        :size="'large'"
+        :disabled="false"
+        :indeterminate="false"
+        :error="false"
+        :error-text="'Обязательное поле'"
+        :dark-mode="false"
+        :locked="false"
+      />
+    </div>
+  </div>
 
-    // 3. Проходим по всему массиву и применяем логику
-    state.array_all_income_period_man.forEach((item, index) => {
-      if (index === activeIndex) {
-        // Это тот элемент, на который кликнули
-        item.isActive = true;
-        // Его value НЕ трогаем, оставляем как есть
-      } else {
-        // Это все остальные элементы
-        item.isActive = false;
-        
-        // ГЛАВНОЕ УСЛОВИЕ: если индекс текущего элемента больше индекса активного,
-        // значит он идет ПОСЛЕ него в массиве. Очищаем его.
-        if (index > activeIndex) {
-          item.value = ''; 
-        }
+  <!--Доходы по годам-->
+  <div class="calculator__row small-margin">
+    <div class="calc-tax-deduc-new__row-grid-auto-column">
+      <div v-for="(item,index) in visibleBlockIncomePeriod" :key="index.id"  class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncomeMan[item.modelInput]"
+          :placeholder="item.placeholder"
+          :name="'example'"
+          :type="'text'"
+          :id="'example-input'"
+          :form-code="''"
+          :disabled="false"
+          :readonly="false"
+          :error="false"
+          :error-text="'Поле заполнено неверно'"
+          :clearable="true"
+          :dark-mode="false"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+      </div>
+
+    </div>
+  </div>
+
+  <!--Предыдущие вычеты-->
+  <div class="calculator__row small-margin">
+    <div class="calculator__row-title-container">
+      <p class="calculator__row-title">Предыдущие вычеты</p>
+    </div>
+    <div class="calc-tax-deduc-new__row-grid-auto-column">
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="previousPayments.deduction_purchase"
+          :placeholder="'Вычет за покупку недвижимости, ₽'"
+          :name="'example'"
+          :type="'text'"
+          :id="'example-input'"
+          :form-code="''"
+          :disabled="false"
+          :readonly="false"
+          :error="false"
+          :error-text="'Поле заполнено неверно'"
+          :clearable="true"
+          :dark-mode="false"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+      </div>
+
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="previousPayments.deduction_interest"
+          :placeholder="'Вычет за проценты по ипотеке, ₽'"
+          :name="'example'"
+          :type="'text'"
+          :id="'example-input'"
+          :form-code="''"
+          :disabled="false"
+          :readonly="false"
+          :error="false"
+          :error-text="'Поле заполнено неверно'"
+          :clearable="true"
+          :dark-mode="false"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+      </div>
+
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="previousPayments.other_deductions"
+          :placeholder="'Другие вычеты, ₽'"
+          :name="'example'"
+          :type="'text'"
+          :id="'example-input'"
+          :form-code="''"
+          :disabled="false"
+          :readonly="false"
+          :error="false"
+          :error-text="'Поле заполнено неверно'"
+          :clearable="true"
+          :dark-mode="false"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+      </div>
+
+    </div>
+  </div>
+</template>
+<script>
+import store from "../store";
+import { DsInput } from '@ringsites/ui-components/DsInput'
+import { DsCheckbox } from '@ringsites/ui-components'
+
+
+export default {
+  name: 'component-income',
+  mixins: [],
+  data(){
+    return {
+      //чекбокс районный коэффициент или северная надбавка
+      dataField:false,
+      //поля средний доход по годам, заполняется в created
+      fieldsIncomeMan: {},
+      //предыдущие выплаты
+      previousPayments : {
+        deduction_purchase:'', //вычет за покупку
+        deduction_interest:'', //вычет за проценты
+        other_deductions:'', //другие вычеты
       }
-    });
-  }
+    }
+  },
+  methods:{
+    //заполнеия поля fieldsIncomeMan при загрузке из store
+    initializeFieldsIncomeFromStore() {
+      const fields = {}
+      // Проходим по ВСЕМ табам (не только видимым, чтобы сохранить данные всех полей)
+      this.array_all_income_period.forEach(tab => {
+        fields[tab.modelInput] = tab.value || ''
+      })
+      this.fieldsIncomeMan = fields
+    },
+
+  },
+
+  computed:{
+    average_monthly_income_man(){ //это похоже не нужно
+      return store.getters.AVERAGEMONTHLYINCOMEMAN
+    },
+    array_all_income_period(){
+      return store.getters.ARRAYALLINCOMEPERIODMAN
+    },
+
+    visibleBlockIncomePeriod() {
+      // Ищем индекс первого элемента, у которого isActive === true
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
+
+      // Если такой элемент не найден — возвращаю пустой массив
+      if (activeIndex === -1) return []
+
+      // Беру все элементы от начала до активного включительно
+      return this.array_all_income_period.slice(0, activeIndex + 1)
+    }
+
+  },
+  watch:{
+    // Следим за объектом fieldsIncomeMan
+    fieldsIncomeMan: {
+      handler(newFields) {
+        // Отправляю весь объект в store
+        store.dispatch('ActionInputIncomeMan', newFields)
+      },
+      deep: true // нужно для отслеживания изменений внутри объекта
+    },
+    array_all_income_period(){
+      this.fieldsIncomeMan = {}
+      this.initializeFieldsIncomeFromStore();
+    }
+  },
+  mounted(){
+
+
+  },
+  created() {
+    this.initializeFieldsIncomeFromStore();
+  },
+  components: {
+    DsInput,
+    DsCheckbox
+  },
+
+
+
+};
+</script>
+<style scoped>
+</style>
