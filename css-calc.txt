@@ -1,29 +1,59 @@
-mutationInputIncomeMan(state, received_perem) {
-      // 1. Получаем массив всех ключей из пришедшего объекта: ['field_1', 'field_2', 'field_3']
-      Object.keys(received_perem).forEach(key => {
-
-        // 2. Ищем в массиве store объект, у которого modelInput совпадает с ключом
-        const targetItem = state.array_all_income_period_man.find(
-          item => item.modelInput === key
-        );
-
-        // 3. Если такой объект найден, обновляем его значение
-        if (targetItem) {
-          targetItem.value = received_perem[key];
-        }
-
-      });
-      console.log('state.array_all_income_period_man');
-      console.log(state.array_all_income_period_man);
-    }
-
-watch:{
-    // Следим за объектом fieldsIncomeMan
-    fieldsIncomeMan: {
-      handler(newFields) {
-        // Отправляю весь объект в store
-        store.dispatch('ActionInputIncomeMan', newFields)
-      },
-      deep: true // нужно для отслеживания изменений внутри объекта
+computed: {
+    array_all_income_period() {
+      return store.getters.ARRAYALLINCOMEPERIODMAN;
+ is true
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
+      if (activeIndex === -1) return [];
+      return this.array_all_income_period.slice(0, activeIndex + 1);
     },
-}
+
+
+    fieldsIncomeMan: {
+      // 1. ЧТЕНИЕ: Всегда берем свежие данные из Store
+      get() {
+        const fields = {};
+        this.array_all_income_period.forEach(tab => {
+          fields[tab.modelInput] = tab.value || '';
+        });
+        return fields;
+      },
+      
+      // 2. ЗАПИСЬ: Срабатывает ТОЛЬКО когда v-model пытается что-то изменить (ввод пользователя)
+      set(newFieldsObj) {
+        // newFieldsObj - это весь объект, который пытается записать v-model
+        
+        // Проходим по всем известным нам полям из Store
+        this.array_all_income_period.forEach(tab => {
+          const key = tab.modelInput;
+          const newValue = newFieldsObj[key];
+          
+          // проверка: Если новое значение отличается от того, что уже лежит в Store
+          if (tab.value !== newValue) {
+            // Значит, это реальное действие пользователя! 
+            // Отправляем в Store только это конкретное изменение.
+            store.dispatch('ActionInputIncomeMan', { 
+              key: key, 
+              value: newValue 
+            });
+          }
+        });
+      }
+    }
+  }
+
+
+
+
+
+
+
+
+mutationInputIncomeMan(state, payload) {
+    // payload = { key: 'field_1', value: '55 000' }
+    const targetItem = state.array_all_income_period_man.find(
+      item => item.modelInput === payload.key
+    );
+    if (targetItem) {
+      targetItem.value = payload.value;
+    }
+  }
