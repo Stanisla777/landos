@@ -1,45 +1,18 @@
-fieldsIncomeMan: {
-      handler(newFields) {
-        // Отправляем весь объект в store
-        store.dispatch('ActionInputIncomeMan', newFields)
-      },
-      deep: true // нужно для отслеживания изменений внутри объекта
-    },
-
-array_all_income_period_man:[
-      {
-        "id": "1",
-        "text": "1 год",
-        "isActive": false,
-        //касается полей input
-        "modelInput":'field_1',
-        "placeholder": "Среднемесячный доход в 2023 году, ₽",
-        value:'50 000'
-      },
-      {
-        "id": "2",
-        "text": "2 года",
-        "isActive": false,
-        //касается полей input
-        modelInput: 'field_2',
-        placeholder: "Среднемесячный доход в 2024 году, ₽",
-        value:'50 000'
-      },
-      {
-        "id": "3",
-        "text": "3 года",
-        "isActive": true,
-        //касается полей input
-        modelInput: 'field_3',
-        placeholder: "Среднемесячный доход в 2025 году, ₽",
-        value:'50 000'
-      },
-
-ActionInputIncomeMan({commit,state}, param) {
-      commit('mutationInputIncomeMan', param)
-    },
-
 mutationInputIncomeMan(state, received_perem) {
-      console.log('received_perem');
-      console.log(received_perem);
-    },
+    // received_perem выглядит так: { field_1: '55 000', field_2: '50 000', field_3: '50 000' }
+    
+    // 1. Получаем массив всех ключей из пришедшего объекта: ['field_1', 'field_2', 'field_3']
+    Object.keys(received_perem).forEach(key => {
+      
+      // 2. Ищем в массиве store объект, у которого modelInput совпадает с ключом
+      const targetItem = state.array_all_income_period_man.find(
+        item => item.modelInput === key
+      );
+      
+      // 3. Если такой объект найден, обновляем его значение
+      if (targetItem) {
+        targetItem.value = received_perem[key];
+      }
+      
+    });
+  }
