@@ -1,13 +1,173 @@
-watch: {
+store
+
+state:{
+    //табы 1 год 2года 3года для мужа + поля доходов за года
+    array_all_income_period_man:[
+      {
+        "id": "1",
+        "text": "1 год",
+        "isActive": false,
+        //касается полей input
+        modelInput:'field_1',
+        "placeholder": "Среднемесячный доход в 2023 году, ₽",
+        value:'50 000',
+        //касается дополнительных полей при районных коффициентах или северных надбавках
+        additionalCoefficient : {
+          modelInput:'field_coefficient_1',
+          districtCoefficient:{
+            value:'1.5',
+            placeholder:'Районный коэффициент'
+          },
+          northernAllowance:{
+            value:'10',
+            placeholder:'Северная надбавка, %'
+          }
+        }
+      },
+      {
+        "id": "2",
+        "text": "2 года",
+        "isActive": false,
+        //касается полей input
+        modelInput: 'field_2',
+        placeholder: "Среднемесячный доход в 2024 году, ₽",
+        value:'50 000',
+        additionalCoefficient : {
+          "modelInput":'field_coefficient_2',
+          districtCoefficient:{
+            value:'1.5',
+            placeholder:'Районный коэффициент'
+          },
+          northernAllowance:{
+            value:'10',
+            placeholder:'Северная надбавка, %'
+          }
+        }
+      },
+      {
+        "id": "3",
+        "text": "3 года",
+        "isActive": true,
+        //касается полей input
+        modelInput: 'field_3',
+        placeholder: "Среднемесячный доход в 2025 году, ₽",
+        value:'50 000',
+        additionalCoefficient : {
+          "modelInput":'field_coefficient_3',
+          districtCoefficient:{
+            value:'1.5',
+            placeholder:'Районный коэффициент'
+          },
+          northernAllowance:{
+            value:'10',
+            placeholder:'Северная надбавка, %'
+          }
+        }
+      },
+    ],
+
+компонент без доп.полей
+<template>
+
+
+  <!--Доходы по годам, когда не выбран чекбокс Есть районный коэффициент-->
+  <div v-if="!check_district_coefficient" class="calculator__row small-margin">
+    <div class="calc-tax-deduc-new__row-grid-auto-column">
+      <div v-for="(item,index) in visibleBlockIncomePeriod" :key="item.id"  class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncomeMan[item.modelInput]"
+          :placeholder="item.placeholder"
+          :name="'example'"
+          :type="'text'"
+          :id="'example-input'"
+          :form-code="''"
+          :disabled="false"
+          :readonly="false"
+          :error="false"
+          :error-text="'Поле заполнено неверно'"
+          :clearable="true"
+          :dark-mode="false"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+      </div>
+    </div>
+  </div>
+
+
+</template>
+<script>
+import store from "../store";
+import { DsInput } from '@ringsites/ui-components/DsInput'
+import { DsCheckbox } from '@ringsites/ui-components'
+import ComponentincomeWithAdditionalCoefficient from './component-income-with-additional-coefficient';
+
+
+export default {
+  name: 'component-income',
+  mixins: [],
+  data(){
+    return {
+      //чекбокс районный коэффициент или северная надбавка
+      dataField:false,
+      //поля средний доход по годам, заполняется в created
+      fieldsIncomeMan: {},
+      isUpdatingFromStore:false, //флаг
+      //предыдущие выплаты
+      previousPayments : {
+        deduction_purchase:'', //вычет за покупку
+        deduction_interest:'', //вычет за проценты
+        other_deductions:'', //другие вычеты
+      }
+    }
+  },
+  methods:{
+
+
+    //заполнеия поля fieldsIncomeMan при загрузке из store
+    initializeFieldsIncomeFromStore() {
+      const fields = {}
+      // Проходим по ВСЕМ табам (не только видимым, чтобы сохранить данные всех полей)
+      this.array_all_income_period.forEach(tab => {
+        fields[tab.modelInput] = tab.value || ''
+      })
+      this.fieldsIncomeMan = fields
+    },
+
+  },
+
+  computed:{
+
+    array_all_income_period(){
+      return store.getters.ARRAYALLINCOMEPERIODMAN
+    },
+
+    visibleBlockIncomePeriod() {
+      // Ищем индекс первого элемента, у которого isActive === true
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
+
+      // Если такой элемент не найден — возвращаю пустой массив
+      if (activeIndex === -1) return []
+
+      // Беру все элементы от начала до активного включительно
+      return this.array_all_income_period.slice(0, activeIndex + 1)
+    },
+    check_district_coefficient(){
+      return store.getters.CHECKDISTRICTCOEFFICIENT
+    },
+
+  },
+  watch: {
     // 1. Следим за изменениями в Store (например, очистка полей при клике на таб)
     array_all_income_period: {
       handler() {
         // Поднимаем флаг перед обновлением локальных данных
         this.isUpdatingFromStore = true;
-        
+
         // Обновляем локальный объект на основе Store
         this.initializeFieldsIncomeFromStore();
-        
+
         // Сбрасываем флаг на следующем тике Vue, когда DOM уже обновился
         this.$nextTick(() => {
           this.isUpdatingFromStore = false;
@@ -19,13 +179,201 @@ watch: {
     // 2. Следим за изменениями в локальных полях (когда печатает пользователь)
     fieldsIncomeMan: {
       handler(newFields) {
-        // ⭐ ГЛАВНАЯ ЗАЩИТА: 
+        // ⭐ ГЛАВНАЯ ЗАЩИТА:
         // Если изменение пришло из Store (клик по табу), мы НЕ отправляем данные обратно
         if (this.isUpdatingFromStore) return;
-        
+
         // Если флаг опущен, значит это реальный ввод пользователя. Отправляем в Store.
         store.dispatch('ActionInputIncomeMan', newFields);
       },
-      deep: true 
+      deep: true
+    },
+    //Изменение чекбокса районный коэффициент
+    dataField() {
+      store.dispatch('ActionCheckDistrictCoefficient', this.dataField);
     }
   },
+  mounted(){
+
+
+  },
+  created() {
+    this.initializeFieldsIncomeFromStore();
+  },
+  components: {
+    DsInput,
+    DsCheckbox,
+    ComponentincomeWithAdditionalCoefficient
+  },
+
+
+
+};
+</script>
+<style scoped>
+</style>
+
+
+компонент с доп.полями
+
+<template>
+  <div class="" v-for="(item,index) in visibleBlockIncomePeriod" :key="item.id">
+
+
+    <div class="calc-tax-deduc-new__row-three-column">
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncomeMan[item.modelInput]"
+          :placeholder="item.placeholder"
+          :name="'example'"
+          :type="'text'"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+      </div>
+
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncomeMan[item.modelInput]"
+          :placeholder="item.additionalCoefficient.districtCoefficient.placeholder"
+          :name="'example'"
+          :type="'text'"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+      </div>
+
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncomeMan[item.modelInput]"
+          :placeholder="item.additionalCoefficient.northernAllowance.placeholder"
+          :name="'example'"
+          :type="'text'"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+      </div>
+    </div>
+
+
+  </div>
+
+
+
+
+
+</template>
+<script>
+import store from "../store";
+import { DsInput } from '@ringsites/ui-components/DsInput'
+import { DsCheckbox } from '@ringsites/ui-components'
+
+
+export default {
+  name: 'component-income-with-additional-coefficient',
+  mixins: [],
+  data(){
+    return {
+      //чекбокс районный коэффициент или северная надбавка
+      dataField:false,
+      //поля средний доход по годам, заполняется в created
+      fieldsIncomeMan: {},
+      isUpdatingFromStore:false, //флаг
+    }
+  },
+  methods:{
+
+
+    //заполнеия поля fieldsIncomeMan при загрузке из store
+    initializeFieldsIncomeFromStore() {
+      const fields = {}
+      console.log('fields');
+      console.log(fields);
+      // Проходим по ВСЕМ табам (не только видимым, чтобы сохранить данные всех полей)
+      this.array_all_income_period.forEach(tab => {
+        fields[tab.modelInput] = tab.value || ''
+      })
+      this.fieldsIncomeMan = fields
+    },
+
+  },
+
+  computed:{
+
+    array_all_income_period(){
+      return store.getters.ARRAYALLINCOMEPERIODMAN
+    },
+
+    //этот компьютед не только получает со стор массив полей, но и вычисляет какие инпуты показывать в зависимости от выбранных лет
+    //на основе него по циклу формируются поля с доходом
+    visibleBlockIncomePeriod() {
+      // Ищем индекс первого элемента, у которого isActive === true
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
+
+      // Если такой элемент не найден — возвращаю пустой массив
+      if (activeIndex === -1) return []
+
+      // Беру все элементы от начала до активного включительно
+      return this.array_all_income_period.slice(0, activeIndex + 1)
+    },
+    check_district_coefficient(){
+      return store.getters.CHECKDISTRICTCOEFFICIENT
+    },
+
+  },
+  watch: {
+    // 1. Следим за изменениями в Store (например, очистка полей при клике на таб)
+    array_all_income_period: {
+      handler() {
+        // Поднимаем флаг перед обновлением локальных данных
+        this.isUpdatingFromStore = true;
+
+        // Обновляем локальный объект на основе Store
+        this.initializeFieldsIncomeFromStore();
+
+        // Сбрасываем флаг на следующем тике Vue, когда DOM уже обновился
+        this.$nextTick(() => {
+          this.isUpdatingFromStore = false;
+        });
+      },
+      deep: true
+    },
+
+    // 2. Следим за изменениями в локальных полях (когда печатает пользователь)
+    fieldsIncomeMan: {
+      handler(newFields) {
+        // ⭐ ГЛАВНАЯ ЗАЩИТА:
+        // Если изменение пришло из Store (клик по табу), мы НЕ отправляем данные обратно
+        if (this.isUpdatingFromStore) return;
+
+        // Если флаг опущен, значит это реальный ввод пользователя. Отправляем в Store.
+        store.dispatch('ActionInputIncomeMan', newFields);
+      },
+      deep: true
+    },
+    //Изменение чекбокса районный коэффициент
+    dataField() {
+      store.dispatch('ActionCheckDistrictCoefficient', this.dataField);
+    }
+  },
+  mounted(){
+
+
+  },
+  created() {
+    this.initializeFieldsIncomeFromStore();
+  },
+  components: {
+    DsInput,
+    DsCheckbox
+  },
+
+
+
+};
+</script>
+<style scoped>
+</style>
