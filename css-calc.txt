@@ -1,6 +1,11 @@
 store
 
-state:{
+/* eslint-disable */
+import { createStore } from 'vuex';
+import Vue from "vue";
+
+export default createStore({
+  state:{
     //табы 1 год 2года 3года для мужа + поля доходов за года
     array_all_income_period_man:[
       {
@@ -65,6 +70,486 @@ state:{
         }
       },
     ],
+    //период за сколько хотят вернуть налог мужчина 1 значит за один год, 2 - за два года, 3 - за три года
+    tax_refund_period:3,
+
+    check_calculate_together:false, // состояние чекбокса рассчитать вместе с супругой
+    check_district_coefficient:false, // состояние чекбокса районный коэффициент или Северные надбавки
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //новое
+    region_data:null, //объект, который я получаю с бэка ({"ВОронеж":[232,23,23],"Москва":[232,23,23]})
+    massive_region:[], //маасив из областей (["Воронеж","Москва"])
+    family_income:null, //доход семьи нужен для итогового вычисления
+    family_count:null, //количество членов семьи нужен для итогового вычисления
+    whom_counting:'child', //кого рвссчитываем - ребёнок до 17 лет(child) или беременную женщину(pregnant)
+    selected_region:null, //выбранный регион
+    cost_living_capital:null, //прожиточный минимум на душу населения
+
+    //расчёты
+    average_family_income:null, //Среднедушевой доход семьи
+
+    benefits_child:{ //пособия для детей
+      min:null,
+      max:null
+    },
+    benefits_pregnant:{  //пособия для беременных
+      min:null,
+      max:null
+    },
+    allow_benifit:null, //выдавать пособие или нет
+    result_bth:false, //
+    region_not:false, // регион, коорым деляться есть или нет
+    some_thing_null:true,
+    transfer_tooltip:null, //все тултипы
+    modal_mail_send_status:false, //true - модалка с отправкой почты открывается, false - модалка закрывается
+    answers:null, //если расчётами делятся другие пользователи
+    answers_to_send: {}, //то, что собираю для поделиться
+    answers_link:{},//ссылки на соцсети и страницу, когда ей делятся
+    can_share:0,//можно ли делиться
+    calculator_id:0,//калькулятор Id
+    answers_id:null,//вопрос Id
+    description_after_sand:null,//описание после отправки
+    answers_expired:0,//истёк или нет срок хранения данных калькулятора
+  },
+  getters:{
+
+    ARRAYALLINCOMEPERIODMAN(state) {
+      return state.array_all_income_period_man
+    },
+    CHECKCALCULATETOGETHER(state) {
+      return state.check_calculate_together
+    },
+    TAXREFUNDPERIOD(state) {
+      return state.tax_refund_period
+    },
+    CHECKDISTRICTCOEFFICIENT(state) {
+      return state.check_district_coefficient
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//-----------------------------------------------------------------
+    MASSIVEREGION(state){
+      return state.massive_region
+    },
+    FAMILYINCOME(state){
+      return state.family_income
+    },
+    FAMILYCOUNT(state){
+      return state.family_count
+    },
+
+    AVERAGEFAMILYINCOME(state){
+      return state.average_family_income
+    },
+    COSTLIVINGCAPITAL(state){
+      return state.cost_living_capital
+    },
+    SELECTEDREGION(state){
+      return state.selected_region
+    },
+    WHOMCOUNTING(state){
+      return state.whom_counting
+    },
+    BENEFITSCHILD(state){
+      return state.benefits_child
+    },
+    BENEFITSPREGNANT(state){
+      return state.benefits_pregnant
+    },
+    ALLOWBENIFIT(state){
+      return state.allow_benifit
+    },
+    REGIONNOT(state){
+      return state.region_not
+    },
+    SOMETHINGNULL(state){
+      return state.some_thing_null
+    },
+    TRANSFERTOOLTIP(state){
+      return state.transfer_tooltip
+    },
+    MODALMAILSENDSTATUS(state){
+      return state.modal_mail_send_status
+    },
+
+    ANSWERS(state){
+      return state.answers
+    },
+    ANSWERSTOSEND(state){
+      return state.answers_to_send
+    },
+    ANSWERSLINK(state){
+      return state.answers_link
+    },
+    CANSHARE(state){
+      return state.can_share
+    },
+    CALCULATORID(state){
+      return state.calculator_id
+    },
+    ANSWERSID(state){
+      return state.answers_id
+    },
+    DESCRIPTIONAFTERSAND(state){
+      return state.description_after_sand
+    },
+    ANSWERSEXPIRED(state){
+      return state.answers_expired
+    },
+  },
+  mutations:{
+    // состояние чекбокса рассчитать вместе с супругой
+    mutationCheckCalculateTogether(state, received_perem) {
+      state.check_calculate_together = received_perem
+    },
+    // был выбран период за сколько хотят вернуть налог мужчина
+    mutationTabTimeMan(state, received_perem) {
+      // 1. Приводим к строке для надежного сравнения (так как из DOM часто приходит строка)
+      const targetId = String(received_perem);
+
+      // 2. Находим индекс элемента, на который кликнули
+      const activeIndex = state.array_all_income_period_man.findIndex(
+        item => String(item.id) === targetId
+      );
+
+      // 3. Проходим по всему массиву и применяем логику
+      state.array_all_income_period_man.forEach((item, index) => {
+        if (index === activeIndex) {
+          // Это тот элемент, на который кликнули
+          item.isActive = true;
+          // Его value НЕ трогаем, оставляем как есть
+        } else {
+          // Это все остальные элементы
+          item.isActive = false;
+
+          // ГЛАВНОЕ УСЛОВИЕ: если индекс текущего элемента больше индекса активного,
+          // значит он идет ПОСЛЕ него в массиве. Очищаем его.
+          if (index > activeIndex) {
+            item.value = '';
+          }
+        }
+      });
+    },
+    //что-то изменилось в input период за сколько хотят вернуть налог мужчина
+
+    mutationInputIncomeMan(state, received_perem) {
+      // 1. Получаем массив всех ключей из пришедшего объекта: ['field_1', 'field_2', 'field_3']
+      Object.keys(received_perem).forEach(key => {
+
+        // 2. Ищем в массиве store объект, у которого modelInput совпадает с ключом
+        const targetItem = state.array_all_income_period_man.find(
+          item => item.modelInput === key
+        );
+
+        // 3. Если такой объект найден, обновляем его значение
+        if (targetItem) {
+          targetItem.value = received_perem[key];
+        }
+
+      });
+    },
+
+    //Изменение чекбокса районный коэффициент
+    mutationCheckDistrictCoefficient(state, received_perem) {
+      state.check_district_coefficient = received_perem
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //новое
+    mutationRegionData(state,received_perem){
+      state.region_data = received_perem
+      state.massive_region=Object.keys(state.region_data)
+    },
+    mutationIncome(state, received_perem) {
+      if (received_perem !== null && received_perem !== '') {
+        // Заменяем запятую на точку, чтобы parseFloat мог распарсить дробь
+        const normalized = String(received_perem).replace(',', '.');
+        state.family_income = parseFloat(normalized);
+      } else {
+        state.family_income = null; // или 0, в зависимости от логики
+      }
+    },
+    mutationICountFamily(state,received_perem){
+      if (received_perem!==null) {
+        state.family_count = parseInt(received_perem)
+      }
+      else {
+        state.family_count = received_perem
+      }
+    },
+    mutationwhomCounting(state,received_perem){
+      state.whom_counting = received_perem
+    },
+    //расчёт параметров на овнове полученного региона
+    mutationcalCalcParametersBasedSelectedRegion(state,received_perem){
+      state.selected_region = received_perem //выбранный регион
+    },
+    // ИТОГОВЫЙ РАССЧЁТ
+    mutationCalculateResult(state){
+      state.average_family_income = (state.family_income / 12) / state.family_count // Cреднедушевой доход семьи
+      if (state.selected_region!==null) {
+        state.cost_living_capital = state.region_data[state.selected_region][0] // Прожиточный минимум на душу населения
+        if (state.average_family_income > state.cost_living_capital) {
+          state.allow_benifit=false
+        }
+        else {
+          state.allow_benifit=true
+        }
+        //прожточные минимумы для детей и беременных
+        state.benefits_child.min = state.region_data[state.selected_region][2] * 0.5;
+        state.benefits_child.max = state.region_data[state.selected_region][2];
+        state.benefits_pregnant.min = state.region_data[state.selected_region][1] * 0.5;
+        state.benefits_pregnant.max = state.region_data[state.selected_region][1];
+      }
+
+      state.answers_to_send.region = state.selected_region;
+      state.answers_to_send.numberFamily = state.family_count;
+      state.answers_to_send.familyIncome = state.family_income;
+      state.answers_to_send.benefitFor = state.whom_counting;
+      state.some_thing_null=false
+    },
+    //какое-то поле стало null - например что-то стёрли
+    mutationTransferTooltip(state,received_perem){
+      state.transfer_tooltip = received_perem
+    },
+    mutationSomeThingNull(state,received_perem){
+      state.some_thing_null = true
+    },
+    mutationOpenModalMailStatus(state,received_perem){
+      state.modal_mail_send_status = received_perem
+    },
+    mutationAnswers(state,received_perem){
+      state.answers = received_perem
+    },
+    mutationAnswerLink(state,received_perem){
+      state.answers_link = received_perem
+
+    },
+    mutationCanShare(state,received_perem){
+      state.can_share = parseInt(received_perem)
+    },
+    mutationCalculatorId(state,received_perem){
+      state.calculator_id = received_perem
+    },
+    mutationAnswersId(state,received_perem){
+      state.answers_id = received_perem
+    },
+    mutationDescriptionAfterSand(state,received_perem){
+      state.description_after_sand = received_perem
+    },
+    mutationAnswersExpired(state,received_perem){
+      state.answers_expired = parseInt(received_perem)
+    },
+    mutationActionRegionNot(state,received_perem){
+      state.region_not = received_perem
+    },
+    mutationOpenModalStatus(state,received_perem){
+      state.modal_tooltip_status = received_perem
+    },
+  },
+  actions:{
+    // состояние чекбокса рассчитать вместе с супругой
+    ActionCheckCalculateTogether({commit,state}, param) {
+      commit('mutationCheckCalculateTogether', param)
+    },
+
+    // был выбран перио за сколько хотят вернуть налог мужчина
+    ActionTabTimeMan({commit,state}, param) {
+      commit('mutationTabTimeMan', param)
+    },
+    // что-то изменилось в input период за сколько хотят вернуть налог мужчина
+    ActionInputIncomeMan({commit,state}, param) {
+      commit('mutationInputIncomeMan', param)
+    },
+    //Изменение чекбокса районный коэффициент
+    ActionCheckDistrictCoefficient({commit,state}, param) {
+      commit('mutationCheckDistrictCoefficient', param)
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //получаю данные по регионам
+    ActionRegionData({commit,state},param){
+      commit('mutationRegionData',param)
+    },
+    //получаю доход семьи
+    ActionIncome({commit,state},param){
+      commit('mutationIncome',param)
+    },
+    //получаю количество членов семьи
+    ActionCountFamily({commit,state},param){
+      commit('mutationICountFamily',param)
+    },
+    //кого рвссчитываем - ребёнок до 17 лет или беременную женщину
+    ActionwhomCounting({commit,state},param){
+      commit('mutationwhomCounting',param)
+    },
+    //выбранный регион
+    ActionGetRegion({commit,state},param){
+      commit('mutationcalCalcParametersBasedSelectedRegion',param)
+    },
+    //нажата кнопка рассчитать
+    ActionCalculateResult({commit,state}){
+      commit('mutationCalculateResult')
+    },
+    //получаю все тултипы
+    ActionTransferTooltip({commit,state,dispatch},param){
+      commit('mutationTransferTooltip',param)
+    },
+    //открыть или закрыть модалку с тултипами(true или false)
+    ActionOpenModalStatus({commit,state,dispatch},param){
+      commit('mutationOpenModalStatus',param)
+    },
+    //открыть или закрыть модалку с отправкой почты(true или false)
+    ActionOpenModalMailStatus({commit,state,dispatch},param){
+      commit('mutationOpenModalMailStatus',param)
+    },
+    //когда расчётами делятся другие пользователи
+    ActionAnswers({commit,state,dispatch},param){
+      commit('mutationAnswers',param)
+    },
+    //ссылки на соцсети и страницу, когда ей делятся
+    ActionAnswerLink({commit,state,dispatch},param){
+      commit('mutationAnswerLink',param)
+    },
+    //можно ли делиться
+    ActionCanShare({commit,state,dispatch},param){
+      commit('mutationCanShare',param)
+    },
+    //калькулятор Id
+    ActionCalculatorId({commit,state,dispatch},param){
+      commit('mutationCalculatorId',param)
+    },
+    //калькулятор Id
+    ActionAnswersId({commit,state,dispatch},param){
+      commit('mutationAnswersId',param)
+    },
+    //описание после отправки
+    ActionDescriptionAfterSand({commit,state,dispatch},param){
+      commit('mutationDescriptionAfterSand',param)
+    },
+    //истёк или нет срок хранения данных калькулятора
+    ActionAnswersExpired({commit,state,dispatch},param){
+      commit('mutationAnswersExpired',param)
+    },
+    //региона, которым делятся нет
+    ActionRegionNot({commit,state,dispatch},param){
+      commit('mutationActionRegionNot',param)
+    },
+  },
+  plugins: [
+    store => {
+
+      // Также сохраняем общий watch для пересчета графика платежей
+      store.watch(
+        state => [state.family_income, state.family_count, state.whom_counting,state.selected_region],
+        ([family_income, family_count, whom_counting,selected_region]) => {
+          if (family_income !==null && family_count !==null && whom_counting !==null && selected_region !==null) {
+            store.commit('mutationCalculateResult');
+          }
+        },
+        { deep: true, immediate: false }
+      );
+      store.watch(
+        state => [state.family_income, state.family_count, state.whom_counting,state.selected_region],
+        ([family_income, family_count, whom_counting,selected_region]) => {
+          if (family_income ===null || family_count ===null || whom_counting ===null || selected_region ===null) {
+            store.commit('mutationSomeThingNull');
+          }
+        },
+        { deep: true, immediate: false }
+      );
+    }
+  ],
+});
+
 
 компонент без доп.полей
 <template>
