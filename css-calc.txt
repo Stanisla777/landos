@@ -1,7 +1,32 @@
-watch:{
-    dataField() {
-      const cleanValue = parseInt(this.dataField.replace(/\s/g, ''),10) || 0
-      store.dispatch('ActionApartmentPrice',cleanValue)
-    }
+debounce.js
 
-  },
+export function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+
+import { debounce } from '@/utils/debounce';
+
+watch: {
+    dataField: {
+      // ⭐ Debounced-обработчик
+      handler: debounce(function (newValue) {
+        const cleanValue = parseInt(String(newValue).replace(/\s/g, ''), 10) || 0;
+        
+        // Показываем лоадер
+        this.isCalculating = true;
+        
+        // Отправляем в Store
+        store.dispatch('ActionApartmentPrice', cleanValue)
+          .then(() => {
+            // Когда вычисления закончились — прячем лоадер
+            this.isCalculating = false;
+          });
+      }, 500), // 500мс задержка
+      
+      immediate: false // не срабатывает при инициализации
+    }
+  }
