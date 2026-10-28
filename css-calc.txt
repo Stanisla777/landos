@@ -1,93 +1,97 @@
-mutationInputIncomeMan(state, received_perem) {
-      // received_perem выглядит так: { field_1: '50000', field_coefficient_1_district: '1.5', ... }
+// src/utils/debounce.js
+export function debounce(func, delay) {
+  let timeoutId;
+  const debounced = function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+  
+  // Добавляем возможность отмены
+  debounced.cancel = function () {
+    clearTimeout(timeoutId);
+  };
+  
+  return debounced;
+}
 
-      Object.keys(received_perem).forEach(key => {
-        const newValue = received_perem[key];
+import { debounce } from '@/utils/debounce'; // Укажите правильный путь
+import store from "../store";
 
-        // Ищем нужный год в массиве
-        state.array_all_income_period_man.forEach(item => {
-          // Вариант А: это основной доход
-          if (item.modelInput === key) {
-            item.value = newValue;
-          }
-          // Вариант Б: это районный коэффициент
-          else if (item.additionalCoefficient && (item.additionalCoefficient.modelInput + '_district') === key) {
-            item.additionalCoefficient.districtCoefficient.value = newValue;
-          }
-          // Вариант В: это северная надбавка
-          else if (item.additionalCoefficient && (item.additionalCoefficient.modelInput + '_northern') === key) {
-            item.additionalCoefficient.northernAllowance.value = newValue;
-          }
-        });
-      });
-      console.log('state.array_all_income_period_man');
-      console.log(state.array_all_income_period_man);
-    },
+export default {
+  // ... data, computed и т.д.
 
-
-watch: {
-  fieldsIncomeMan: {
-    // Используем обычную function, чтобы сохранить контекст this компонента
-    handler: debounce(function (newFields) {
-      // 1. ГЛАВНАЯ ЗАЩИТА: если обновление пришло из Store (клик по табу), прерываем выполнение
+  created() {
+    // Создаем debounce-функцию один раз при создании компонента
+    this.debouncedIncomeUpdate = debounce((newFields) => {
+      // Эта проверка всё ещё нужна как последний рубеж обороны
       if (this.isUpdatingFromStore) return;
 
-      // 2. (Опционально) Очищаем значения объекта от пробелов перед отправкой
       const cleanedFields = {};
       for (const key in newFields) {
-        // Превращаем "8 000 000" в 8000000. Если там уже число или пусто, будет корректно
         cleanedFields[key] = parseInt(String(newFields[key]).replace(/\s/g, ''), 10) || 0;
       }
 
-      // 3. Показываем лоадер
       store.dispatch('ActionShowLoader', true);
 
-      // 4. Отправляем очищенный объект в Store
+      // Используем .finally() вместо .then().catch() - это чище и гарантирует выполнение
       store.dispatch('ActionInputIncomeMan', cleanedFields)
-        .then(() => {
-          // 5. Прячем лоадер после завершения
-          store.dispatch('ActionShowLoader', false);
-        })
-        .catch(() => {
-          // На случай ошибки тоже нужно убрать лоадер
+        .finally(() => {
           store.dispatch('ActionShowLoader', false);
         });
+    }, 500);
+  },
 
-    }, 500), // Задержка 500мс
-    
-    deep: true,
-    immediate: false
-  }
-}
+  watch: {
+    // 1. Следим за вводом пользователя
+    fieldsIncomeMan: {
+      handler(newFields) {
+        // Просто передаем данные в нашу debounce-функцию
+        this.debouncedIncomeUpdate(newFields);
+      },
+      deep: true,
+      immediate: false
+    },
 
---------------------
+    // 2. Следим за изменениями в Store (клик по табу и т.д.)
+    array_all_income_period: {
+      handler() {
+        this.isUpdatingFromStore = true;
 
-watch: {
-  previousPayments: {
-    handler: debounce(function (newValue) {
-      // newValue выглядит так: { deduction_purchase: '1 000 000', deduction_interest: '500 000' }
-      
-      // 1. Создаем новый объект с очищенными числами
-      const cleanedPayments = {};
-      for (const key in newValue) {
-        cleanedPayments[key] = parseInt(String(newValue[key]).replace(/\s/g, ''), 10) || 0;
-      }
+        // ⭐ ГЛАВНОЕ ИСПРАВЛЕНИЕ: Отменяем любой запланированный вызов debounce!
+        // Если пользователь печатал, и мы кликнули на таб, старый таймер уничтожается.
+        if (this.debouncedIncomeUpdate) {
+          this.debouncedIncomeUpdate.cancel();
+        }
 
-      // 2. Показываем лоадер
-      store.dispatch('ActionShowLoader', true);
+        this.initializeFieldsIncomeFromStore();
 
-      // 3. Отправляем очищенный объект в Store
-      store.dispatch('ActionInputPreviousPaymentsMan', cleanedPayments)
-        .then(() => {
-          store.dispatch('ActionShowLoader', false);
-        })
-        .catch(() => {
-          store.dispatch('ActionShowLoader', false);
+        this.$nextTick(() => {
+          this.isUpdatingFromStore = false;
         });
+      },
+      deep: true
+    }
+  },
 
-    }, 500),
-    
-    deep: true,
-    immediate: false
+  // Хорошая практика: очищать таймер при уничтожении компонента
+  beforeUnmount() {
+    if (this.debouncedIncomeUpdate) {
+      this.debouncedIncomeUpdate.cancel();
+    }
+  },
+
+  methods: {
+    initializeFieldsIncomeFromStore() {
+      const fields = {};
+      this.array_all_income_period.forEach(tab => {
+        fields[tab.modelInput] = tab.value || '';
+        if (tab.additionalCoefficient) {
+          const baseKey = tab.additionalCoefficient.modelInput;
+          fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
+          fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
+        }
+      });
+      this.fieldsIncomeMan = fields;
+    }
   }
 }
