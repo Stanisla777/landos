@@ -6,3 +6,180 @@ component-income-wit…l-coefficient.vue:9 [Vue warn]: Invalid prop: type check 
   at <TaxDeductionCalculatorApartmentNew instanceId="tax-deduction-calculator-apartment-new-0" > 
   at <AsyncComponentWrapper instanceId="tax-deduction-calculator-apartment-new-0" > 
   at <TaxDeductionCalculatorApartmentNewLazy instanceId="tax-deduction-calculator-apartment-new-0" >
+
+
+
+
+<template>
+  <div class="calculator__row extra-small" v-for="(item, index) in visibleBlockIncomePeriod" :key="item.id">
+    <div class="calc-tax-deduc-new__row-three-column">
+
+      <!-- Основной доход -->
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncome[item.modelInput]"
+          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
+          preset="amount"
+          labelPosition="inside"
+          :unit="''"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+
+      </div>
+
+      <!--Районный коэффициент-->
+      <div class="input-story-container">
+        <ds-multi-select
+          class="height-56"
+          v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_district']"
+          :options="item.additionalCoefficient.districtCoefficient.variant"
+          :flat="true"
+          :singleSelect="true"
+          :placeholder="''"
+          :label="item.additionalCoefficient.districtCoefficient.placeholder"
+          :label-position="'inside'"
+        />
+      </div>
+
+      <!-- Северная надбавка -->
+      <div class="input-story-container">
+        <ds-multi-select
+          class="height-56"
+          v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_northern']"
+          :options="item.additionalCoefficient.northernAllowance.variant"
+          :flat="true"
+          :singleSelect="true"
+          :placeholder="''"
+          :label="item.additionalCoefficient.northernAllowance.placeholder"
+          :label-position="'inside'"
+        />
+      </div>
+
+    </div>
+  </div>
+
+
+</template>
+<script>
+import store from "../store";
+import { DsInput } from '@ringsites/ui-components/DsInput'
+import { DsMultiSelect } from '@ringsites/ui-components'
+
+export default {
+  name: 'component-income-with-additional-coefficient',
+  mixins: [],
+  props:['view'],
+  data(){
+    return {
+      //поля средний доход по годам, заполняется в created
+      fieldsIncome: {},
+      isUpdatingFromStore:false, //флаг
+      options:[],
+      selected:''
+    }
+  },
+  methods:{
+    //заполнеия поля fieldsIncome при загрузке из store
+    initializeFieldsIncomeFromStore() {
+      const fields = {};
+
+      this.array_all_income_period.forEach(tab => {
+        // 1. Основной доход
+        fields[tab.modelInput] = tab.value || '';
+
+        // 2. Районный коэффициент (если он есть в структуре)
+        if (tab.additionalCoefficient) {
+          const baseCoeffKey = tab.additionalCoefficient.modelInput;
+          fields[baseCoeffKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
+          fields[baseCoeffKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
+        }
+      });
+
+      this.fieldsIncome = fields;
+    },
+  },
+
+  computed:{
+    data_year() {
+      return store.getters.DATAYEAR;
+    },
+
+    array_all_income_period(){
+      if (this.view === 'man') {
+        return store.getters.ARRAYALLINCOMEPERIODMAN
+      } else {
+        return store.getters.ARRAYALLINCOMEPERIODWIFE
+      }
+
+    },
+
+    //этот компьютед не только получает со стор массив полей, но и вычисляет какие инпуты показывать в зависимости от выбранных лет
+    //на основе него по циклу формируются поля с доходом
+    visibleBlockIncomePeriod() {
+      // Ищем индекс первого элемента, у которого isActive === true
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
+
+      // Если такой элемент не найден — возвращаю пустой массив
+      if (activeIndex === -1) return []
+
+      // Беру все элементы от начала до активного включительно
+      return this.array_all_income_period.slice(0, activeIndex + 1)
+    },
+
+  },
+  watch: {
+    // 1. Следим за изменениями в Store (например, очистка полей при клике на таб)
+    array_all_income_period: {
+      handler() {
+        // Поднимаем флаг перед обновлением локальных данных
+        this.isUpdatingFromStore = true;
+
+        // Обновляем локальный объект на основе Store
+        this.initializeFieldsIncomeFromStore();
+
+        // Сбрасываем флаг на следующем тике Vue, когда DOM уже обновился
+        this.$nextTick(() => {
+          this.isUpdatingFromStore = false;
+        });
+      },
+      deep: true
+    },
+
+    // 2. Следим за изменениями в локальных полях (когда печатает пользователь)
+    fieldsIncome: {
+      handler(newFields) {
+        // Если изменение пришло из Store (клик по табу), мы НЕ отправляем данные обратно
+        if (this.isUpdatingFromStore) return;
+
+        // Если флаг опущен, значит это реальный ввод пользователя. Отправляем в Store.
+        if (this.view === 'man') {
+          store.dispatch('ActionInputIncomeMan', newFields);
+        } else {
+          store.dispatch('ActionInputIncomeWife', newFields);
+        }
+      },
+      deep: true
+    },
+
+  },
+  mounted(){
+
+
+  },
+  created() {
+    this.initializeFieldsIncomeFromStore();
+  },
+  components: {
+    DsInput,
+    DsMultiSelect
+  },
+
+
+
+};
+</script>
+<style scoped>
+</style>
+
