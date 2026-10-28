@@ -1,1 +1,1682 @@
-const yearNumber = parseInt(value.date_from.split('-')[0], 10); // 2020
+<div class="container">
+    <div class="comments__complain-overlay">
+        <div class="comments__complain-popup comments__response-complain-popup">
+            <button class="comments__complain-popup-close comments__popupclose">
+                
+            </button>
+            <form class="comments__complain-form js--comments__item-form-complain" novalidate>
+                <h3 class="comments__complain-form-title">
+                    Пожаловаться на комментарий
+                </h3>
+                <div class="comments__complain-form-select-container">
+                    <div data-captcha-element="1" id="captcha-element-complain"></div>
+                    <input class="comments__complain-comment" type="hidden" name="id" value=""/>
+                    <input class="comments__complain-form-select-input js--form-comments-select" type="text"
+                           name="reason" required>
+                    <p class="comments__complain-form-select-title"><span>Выберите причину</span></p>
+                    <div class="comments__complain-form-select-options">
+                        <?php foreach ($arResult['REPORT_REASON'] as $reason): ?>
+                            <p class="comments__complain-form-select-option"><?= $reason; ?></p>
+                        <?php endforeach; ?>
+                    </div>
+                    <span class="input-text"></span>
+                </div>
+                <div class="form-comments__wr-textarea js--wr-form-comments-text">
+                    <textarea class="form-comments__textarea js--form-comments-text-modal" name="text"
+                              placeholder="Комментарий"></textarea>
+                </div>
+                <div class="comments__complain-form-buttons">
+                    <button class="comments__complain-form-button comments__complain-form-button_exit">
+                        Отмена
+                    </button>
+                    <button
+                        class="comments__complain-form-button comments__complain-form-button_submit comments__complain-form-button_disabled">
+                        Отправить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="comments comments__container" data-element-id="<?= $arParams['ELEMENT_ID']; ?>"
+         data-moderator-name="<?= $arResult['MODERATOR_NAME']; ?>"
+         data-comment-maxlength="<?= $arResult['MAX_COMMENT_LENGTH']; ?>"
+         data-comments-closed="<?=$arParams['COMMENTS_CLOSED']?'1':'0'?>"
+    >
+        <?php if (!empty($arResult['COMMENTS'])): ?>
+
+            <?php if (($arResult['COMMENTS_COUNT'] > 1) && (isset($arResult['ORDER']) && !empty($arResult['ORDER']))): ?>
+                <div class="comments__container-tabs">
+                    <?php
+                    if (!empty($arParams['COMMENTS_CLOSED']) && isset($arResult['COMMENTS_COUNT']) && ($arResult['COMMENTS_COUNT'] > 0)) {
+                        ?>
+                        <div class="comments__title">
+                            <?
+                            $declension = new \Bitrix\Main\Grid\Declension('комментарий', 'комментария', 'комментариев');
+                            echo $arResult['COMMENTS_COUNT'] . ' ' . $declension->get($arResult['COMMENTS_COUNT']);
+                            ?>
+                        </div>
+                        <?
+                    } ?>
+                    <div class="comments__tabs">
+                        <?php foreach ($arResult['ORDER'] as $propId => $arOrder): ?>
+                            <div
+                                class="btn comments__tab<?php if ($arOrder['ACTIVE'] == 'Y'): ?> comments__tab_active<?php endif; ?>"
+                                data-order="<?= $propId; ?>"
+                            >
+                                <?= $arOrder['TITLE']; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="comments__tab-select-container">
+                    <input class="comments__tab-select-input" type="text">
+                    <div class="comments__tab-select-title comments__tab-select-title_mob">
+                        <p class="">
+                            <span> <?= $arResult['ORDER'][$arParams['ORDER']]['TITLE']; ?></span>
+                        </p>
+                    </div>
+                    <div class="comments__tab-select-options">
+                        <?php foreach ($arResult['ORDER'] as $propId => $arOrder): ?>
+                            <p class="comments__tab-select-option" data-order="<?= $propId; ?>">
+                                <?= $arOrder['TITLE']; ?>
+                            </p>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
+        <div class="comments__container-tree">
+            <?php if (!empty($arResult['COMMENTS'])): ?>
+                <?php foreach ($arResult['COMMENTS'] as $arComment): ?>
+                    <?php
+                    $additionalClass = '';
+                    if (isset($arComment['IS_NEW'])) {
+                        $additionalClass = ' comments__item_new';
+                    }
+                    if ($arComment['DEPTH_LEVEL'] > 0) {
+                        $additionalClass .= ' comments__item_depth-level-' . $arComment['DEPTH_LEVEL'];
+                    }
+                    ?>
+                    <?php if ($arComment['ACTIVE'] == 0): ?>
+                        <div class="comments__item comments__item-delete<?= $additionalClass; ?>">
+                            <div class="comments__item-info">
+                                <div class="comments__item-image-container">
+                                    <p class="comments__item-image comments__item-image_delete"><span></span></p>
+                                    <h4 class="comments__item-title">Комментарий удален модератором</h4>
+                                </div>
+                            </div>
+                        </div>
+                    <?php elseif ($arComment['NEED_MODERATE'] == 1): ?>
+                        <div class="comments__item comments__item-moderation<?= $additionalClass; ?>">
+                            <div class="comments__item-info">
+                                <div class="comments__item-image-container">
+                                    <p class="comments__item-image comments__item-image_moderation"><span></span></p>
+                                    <h4 class="comments__item-title">Комментарий на модерации</h4>
+                                </div>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <div class="comments__item<?= $additionalClass; ?>" data-id="<?= $arComment['ID'] ?>">
+                            <div class="comments__item-info">
+                                <div class="comments__item-image-container">
+                                    <?php if (isset($arComment['PHOTO']) && !empty($arComment['PHOTO'])): ?>
+                                        <img class="comments__item-image-picture" src="<?= $arComment['PHOTO']; ?>"
+                                             alt="">
+                                    <?php else: ?>
+                                        <p class="comments__item-image"><?= $arComment['INITIALS']; ?></p>
+                                    <?php endif; ?>
+                                    <div>
+                                        <h4 class="comments__item-title"><?= $arComment['NAME'] ?></h4>
+                                        <p class="comments__item-time"><?= $arComment['FORMATTED_DATE'] ?></p>
+                                    </div>
+                                </div>
+                                <div class="comments__item-text">
+                                    <?= $arComment['TEXT'] ?>
+                                </div>
+                                <div class="comments__item-buttons">
+                                    <div class="comments__item-buttons-form">
+                                        <button class="comments__item-button comments__item-button-answer">Ответить
+                                        </button>
+                                        <button class="comments__item-button comments__item-button-complain"
+                                                data-id="<?= $arComment['ID'] ?>">Пожаловаться
+                                        </button>
+                                    </div>
+                                    <div class="comments__item-buttons-like"
+                                         data-element-id="<?= $arComment['ELEMENT_ID'] ?>"
+                                         data-comment-id="<?= $arComment['ID'] ?>">
+                                        <button class="comments__item-button comments__item-button-like-plus">
+                                            
+                                            <p class="comments__item-button-like-plus-count"><?= $arComment['LIKES'] ?></p>
+                                        </button>
+                                        <button class="comments__item-button comments__item-button-like-minus">
+                                            
+                                            <p class="comments__item-button-like-minus-count"><?= $arComment['DISLIKES'] ?></p>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="comments__item-button-more"></button>
+                            <div class="comments__item-more comments__item-button-complain"
+                                 data-id="<?= $arComment['ID'] ?>">
+                                <span></span>
+                                <p>Пожаловаться</p>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+                <?php if (isset($arResult['NEXT_COMMENT_ID'])): ?>
+                    <button class="comments__all-button" data-next-comment-id="<?= $arResult['NEXT_COMMENT_ID']; ?>">
+                        Показать еще комментарии
+                    </button>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div> <? // comments__container-tree. Контейнер должен быть всегда, иначе первый комментарий не может отобразиться корректно, некуда добавляться ?>
+
+    </div>
+</div>
+
+---------------------------
+
+function AddClassBody() {
+  document.body.classList.add('body-modal');
+  document.body.classList.add('body-additional-class');
+  document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+  document.ontouchmove = (e) => {
+    e.preventDefault();
+  };
+}
+function RemoveClassBody() {
+  if (!document.body.classList.contains('body-modal-modals')) {
+    document.body.classList.remove('body-modal');
+    document.body.classList.remove('body-additional-class');
+  }
+  const scrollY = document.body.style.top;
+  document.body.style.position = '';
+  document.body.style.top = '';
+  window.scrollTo(0, parseInt(scrollY || '0') * -1);
+}
+
+
+//Новая
+
+if (typeof window.REPLY_FORM_TEMPLATE === 'undefined') {
+  window.REPLY_FORM_TEMPLATE = `
+    <form class="comments__item-form-answer js--comments__item-form-answer" novalidate>
+      <div id="captcha-element-comment-{captchaId}" data-captcha-element="1"></div>
+      <div class="form-comments__container">
+        <input type="hidden" name="elementId" value="{captchaId}">
+        <input class="form-comments__input js--form-comments-title" maxlength="40" type="text" name="name" placeholder="Введите имя и фамилию" value="{moderatorName}" required>
+        <span class="input-text"></span>
+        <span class="textarea">Максимальное количество символов 40</span>
+        <div class="form-comments__wr-textarea js--wr-form-comments-text">
+          <textarea class="form-comments__textarea js--form-comments-text" name="text" maxlength="{maxlength}"
+          placeholder="Напишите комментарий..." required>{authorName},</textarea>
+        </div>
+        <span class="textarea">Максимальное количество символов {maxlength}</span>
+        <div class="form-comments__checkbox-container">
+          <label class="form-comments__checkbox-label">
+            <input class="form-comments__checkbox js--form-comments-check" type="checkbox" required>
+            <div></div>
+            <span class="form-comments__checkbox-span">
+              Согласен с <a href="/user-agreement/#moderationrule" target="_blank">правилами модерации</a> на сайте
+            </span>
+          </label>
+          <span class="checkbox">Согласитесь с условиями</span>
+        </div>
+        <input type="hidden" name="parent_id" value="{parentId}">
+        <button class="form-comments__button btn form-comments__button_disabled" disabled>Отправить</button>
+      </div>
+    </form>
+  `;
+}
+
+// Удаляю форму
+function removeReplyForm(form) {
+  if (!form) return;
+
+  // Добавить в стили
+  if (form.style.transition) {
+    form.style.transition = 'opacity 0.2s ease';
+    form.style.opacity = '0';
+    setTimeout(() => {
+      if (form.parentNode) {
+        form.remove();
+      }
+    }, 200);
+  } else {
+    // Мгновенное удаление, если анимация не нужна
+    form.remove();
+  }
+}
+
+function initCommentsAnswerDelegation() {
+  // Защита от повторной инициализации
+  if (window.commentsAnswerDelegationInitialized) return;
+  window.commentsAnswerDelegationInitialized = true;
+
+  document.addEventListener('click', (e) => {
+    const button = e.target.closest('.comments__item-button-answer');
+    if (!button) return;
+
+    e.preventDefault();
+
+    const commentItem = button.closest('.comments__item');
+    const commentContainer  = button.closest('.comments__container')
+    if (!commentContainer && !commentItem) return;
+
+    const parentId = commentItem.dataset.id;
+    const titleEl = commentItem.querySelector('.comments__item-title');
+    const authorName = titleEl && titleEl.textContent ? titleEl.textContent.trim() : '';
+
+    const elementIdInput = document.querySelector('.js--form-comments .form-comments__container input[name="elementId"]');
+    const captchaId = elementIdInput && elementIdInput.value ? elementIdInput.value : `S${Date.now()}`;
+
+    const nameModerator = commentContainer.getAttribute('data-moderator-name');
+    const maxLength = commentContainer.getAttribute('data-comment-maxlength');
+
+    // 1. Закрываем и удаляем другие открытые формы
+    document.querySelectorAll('.comments__item-form-answer_active').forEach((form) => {
+      const currentReplyForm = commentItem.querySelector('.comments__item-form-answer');
+      if (form !== currentReplyForm) {
+        removeReplyForm(form);
+      }
+    });
+
+    // 2. Проверяем, есть ли уже форма
+    let replyForm = commentItem.querySelector('.comments__item-form-answer');
+
+    if (!replyForm) {
+      let formHTML = '';
+      if (typeof window.REPLY_FORM_TEMPLATE === 'string') {
+        formHTML = window.REPLY_FORM_TEMPLATE
+          .replace(/{captchaId}/g, captchaId)
+          .replace(/{parentId}/g, parentId)
+          .replace(/{authorName}/g, authorName)
+          .replace(/{moderatorName}/g, nameModerator)
+          .replace(/{maxlength}/g, maxLength);
+      }
+
+      const itemInfo = commentItem.querySelector('.comments__item-info');
+      if (itemInfo) {
+        itemInfo.insertAdjacentHTML('beforeend', formHTML);
+        replyForm = itemInfo.querySelector('.comments__item-form-answer');
+
+        // Инициализация валидации
+        if (typeof CommentsFormValidationAnswer === 'function') {
+          CommentsFormValidationAnswer();
+        }
+      }
+    }
+
+    // 3. Показываем форму
+    if (replyForm) {
+      replyForm.classList.add('comments__item-form-answer_active');
+
+      // Фокус на textarea
+      const textarea = replyForm.querySelector('.js--form-comments-text');
+      if (textarea) {
+        // setTimeout(() => textarea.focus(), 100);
+      }
+    }
+  })
+}
+
+function initCommentsComplainDelegation() {
+  // Защита от повторной инициализации
+  if (window.commentsComplainDelegationInitialized) return;
+  window.commentsComplainDelegationInitialized = true;
+
+  document.addEventListener('click', (e) => {
+    const complainBtn = e.target.closest('.comments__item-button-complain');
+    if (!complainBtn) return;
+
+    e.preventDefault();
+
+    if (complainBtn.dataset.id) {
+      const complainInput = document.querySelector('.comments__complain-comment');
+      const complainOverlay = document.querySelector('.comments__complain-overlay');
+
+      if (complainInput && complainOverlay) {
+        complainInput.value = complainBtn.dataset.id;
+        complainOverlay.classList.add('comments__complain-overlay_active');
+
+        if (!document.body.classList.contains('modal-opened')) {
+          document.body.classList.add('modal-opened', 'body-modal-not-remove-else', 'body-modal-not-remove');
+          AddClassBody();
+        }
+      }
+    }
+  });
+}
+
+
+function sendLikeAction(container, like = 1, token = ''){
+  if(container.dataset.elementId && container.dataset.commentId){
+    let request = BX.ajax.runComponentAction('local:comments.list', 'like', {
+      mode:'class',
+      data: {
+        elementId: container.dataset.elementId,
+        commentId: container.dataset.commentId,
+        like: like,
+        'smart-token': token
+      }
+    });
+
+    request.then(function(responce){
+      //console.log(responce)
+    }, function (responce) {
+      //console.log(responce)
+    });
+  }
+}
+function makeCaptchaInit(parent, index, callback) {
+  if (!parent.querySelector('.captcha-element')){
+    const el = document.createElement('div')
+    el.classList.add('captcha-element')
+    el.setAttribute('id',`yandex-smart-captcha-${index}`)
+    parent.append(el);
+  }
+
+  if (parent.querySelector('.captcha-element')) {
+    const captchaBlockId = parent.querySelector('.captcha-element').id
+    return window.smartCaptcha.render(captchaBlockId, {
+      sitekey: conf.smartcaptcha_key,
+      invisible: true,
+      callback: callback
+    });
+  }
+}
+function checkLike(){
+  const likeContainer = document.querySelectorAll('.comments__item-buttons-like:not(.comments__item-buttons-like-init)')
+  likeContainer.forEach((item) => {
+    item.classList.add('comments__item-buttons-like-init');
+    const buttonLike = item.querySelector('.comments__item-button-like-plus')
+    const buttonDislike = item.querySelector('.comments__item-button-like-minus')
+    const likeCount = item.querySelector('.comments__item-button-like-plus-count')
+    const disLikeCount = item.querySelector('.comments__item-button-like-minus-count')
+    const index = `like-elem-${item.dataset.elementId}-comment-${item.dataset.commentId}`;
+
+    buttonLike.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      const captchaId = makeCaptchaInit(item, index, (token) => {
+        sendLikeAction(item, 1, token);
+      })
+      window.smartCaptcha.execute(captchaId)
+
+      if(buttonDislike.classList.contains('comments__item-button-like_active')){
+        buttonDislike.classList.remove('comments__item-button-like_active')
+        disLikeCount.innerHTML = Number(disLikeCount.innerHTML) - 1;
+      }
+      if(buttonLike.classList.contains('comments__item-button-like_active')){
+        buttonLike.classList.remove('comments__item-button-like_active')
+        likeCount.innerHTML = Number(likeCount.innerHTML) - 1;
+      } else {
+        buttonLike.classList.add('comments__item-button-like_active')
+        likeCount.innerHTML = Number(likeCount.innerHTML) + 1;
+      }
+    })
+
+    buttonDislike.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      const captchaId = makeCaptchaInit(item, index, (token) => {
+        sendLikeAction(item, 0, token);
+      })
+      window.smartCaptcha.execute(captchaId)
+
+      if (buttonLike.classList.contains('comments__item-button-like_active')) {
+        buttonLike.classList.remove('comments__item-button-like_active')
+        likeCount.innerHTML = Number(likeCount.innerHTML) - 1;
+      }
+      if (buttonDislike.classList.contains('comments__item-button-like_active')) {
+        buttonDislike.classList.remove('comments__item-button-like_active')
+        disLikeCount.innerHTML = Number(disLikeCount.innerHTML) - 1;
+      } else {
+        buttonDislike.classList.add('comments__item-button-like_active')
+        disLikeCount.innerHTML = Number(disLikeCount.innerHTML) + 1;
+      }
+    })
+
+  })
+}
+
+function setLikes(jsData){
+  const likeContainer = document.querySelectorAll('.comments__item-buttons-like')
+  likeContainer.forEach((item) => {
+    if(item.dataset.commentId){
+      const commentId = Number(item.dataset.commentId);
+      const buttonLike = item.querySelector('.comments__item-button-like-plus')
+      const buttonDislike = item.querySelector('.comments__item-button-like-minus')
+
+      if(jsData[commentId]){
+        if(jsData[commentId] == '1'){
+          buttonLike.classList.add('comments__item-button-like_active')
+        }
+        else{
+          buttonDislike.classList.add('comments__item-button-like_active')
+        }
+      }
+    }
+  })
+}
+
+function commentsEdit() {
+  // eslint-disable-next-line no-unused-vars,camelcase
+  // eslint-disable-next-line no-restricted-syntax
+  const buttons = document.querySelectorAll('.comments__item');
+  if (buttons) {
+    buttons.forEach((item) => {
+      if(item.querySelector('.comments__item-button-edit')){
+        item.querySelector('.comments__item-button-edit').addEventListener('click', (e) => {
+          e.preventDefault();
+          buttons.forEach((element) => {
+            if(element.querySelector('.comments__item-form-edit')){
+              if (element.querySelector('.comments__item-form-edit').classList.contains('comments__item-form-edit_active')) {
+                element.querySelector('.comments__item-form-edit').classList.remove('comments__item-form-edit_active');
+              }
+            }
+
+          })
+          item.querySelector('.comments__item-form-edit').classList.add('comments__item-form-edit_active');
+        });
+      }
+
+    });
+  }
+}
+
+function commentsComplain() {
+  const buttonClassClose = ['.comments__complain-form-button_exit','.comments__complain-popup-close']
+  buttonClassClose.forEach((el) => {
+    document.querySelector(el).addEventListener('click', (e) => {
+      e.preventDefault()
+      document.querySelector('.comments__complain-comment').value = '';
+      document.querySelector('.comments__complain-overlay').classList.remove('comments__complain-overlay_active');
+      document.body.classList.remove('modal-opened');
+      if (!document.body.classList.contains('non-scroll-for-body')&&document.body.classList.contains('body-additional-class')) {
+        RemoveClassBody();
+      }
+      document.body.classList.remove('body-modal-not-remove')
+      document.body.classList.remove('body-modal-not-remove-else')
+    })
+  })
+}
+
+function commentsComplainSelector(){
+  const complainSelect = document.querySelector('.comments__complain-form-select-title')
+  const complainInput = document.querySelector('.comments__complain-form-select-input')
+  if(complainSelect){
+    const complainSelectBlock = document.querySelector('.comments__complain-form-select-container')
+    complainSelect.addEventListener('click', () => {
+      complainSelectBlock.classList.toggle('comments__complain-form-select-container_active')
+    })
+    complainSelectBlock.querySelectorAll('.comments__complain-form-select-option').forEach((item) => {
+      item.addEventListener('click', () => {
+        complainSelectBlock.classList.remove('comments__complain-form-select-container_active')
+        complainSelect.textContent = item.textContent
+        complainInput.value = item.textContent
+        if(document.querySelector('.comments__complain-form-button_submit').classList.contains('comments__complain-form-button_disabled'))
+        {	document.querySelector('.comments__complain-form-button_submit').classList.remove('comments__complain-form-button_disabled')}
+      })
+    })
+  }
+}
+function commentsMore() {
+  // eslint-disable-next-line no-unused-vars,camelcase
+  // eslint-disable-next-line no-restricted-syntax
+  const buttons = document.querySelectorAll('.comments__item');
+  if (buttons) {
+    buttons.forEach((item) => {
+      const btnMore = item.querySelector('.comments__item-button-more:not(.comments__item-button-more-init)');
+      if (btnMore){
+        btnMore.classList.add('comments__item-button-more-init')
+        function closeMore(){
+          item.querySelector('.comments__item-more').classList.remove('comments__item-more_active');
+          //document.removeEventListener('click', closeMore(el))
+        }
+        document.addEventListener('click', (e) => {
+          if(!e.target.classList.contains('comments__item-button-more')){
+            const itemMore = item.querySelector('.comments__item-more');
+            if(itemMore){
+              itemMore.classList.remove('comments__item-more_active');
+            }
+          }
+        })
+        btnMore.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (item.querySelector('.comments__item-more').classList.contains('comments__item-more_active')) {
+            buttons.forEach((element) => {
+              if (element.querySelector('.comments__item-more')) {
+                if (element.querySelector('.comments__item-more').classList.contains('comments__item-more_active')) {
+                  element.querySelector('.comments__item-more').classList.remove('comments__item-more_active');
+                }
+              }
+            })
+            item.querySelector('.comments__item-more').classList.remove('comments__item-more_active');
+          } else {
+            buttons.forEach((element) => {
+              if (element.querySelector('.comments__item-more')) {
+                if (element.querySelector('.comments__item-more').classList.contains('comments__item-more_active')) {
+                  element.querySelector('.comments__item-more').classList.remove('comments__item-more_active');
+                }
+              }
+
+            })
+            item.querySelector('.comments__item-more').classList.add('comments__item-more_active');
+          }
+
+        });
+      }
+    });
+  }
+}
+function commentsTabSelect() {
+  const complainSelectBlock = document.querySelector('.comments__tab-select-container:not(.comments__tab-select-container-init)')
+  const commentsContainer = document.querySelector('.comments__container')
+
+  if (complainSelectBlock && commentsContainer) {
+    complainSelectBlock.classList.add('comments__tab-select-container-init')
+    const complainSelect = commentsContainer.querySelector('.comments__tab-select-title')
+    const complainInput = commentsContainer.querySelector('.comments__tab-select-input')
+    const commentsClosed = commentsContainer.getAttribute('data-comments-closed');
+    complainSelect.addEventListener('click', () => {
+      complainSelectBlock.classList.toggle('comments__tab-select-container_active')
+      complainSelectBlock.querySelectorAll('.comments__tab-select-option').forEach((item) => {
+        item.addEventListener('click', () => {
+          if(commentsContainer.dataset.elementId && item.dataset.order){
+            let request = BX.ajax.runComponentAction('local:comments.list', 'get', {
+              mode:'class',
+              data: {
+                elementId: commentsContainer.dataset.elementId,
+                order: item.dataset.order,
+                commentsClosed: commentsClosed,
+              }
+            });
+
+            request.then(function(responce){
+              commentsContainer.outerHTML = responce.data.html;
+              initListScripts();
+              /*
+        if(document.querySelector('.comments__all-button')){
+          document.querySelector('.comments__all-button').style.display = 'none';
+        }
+        */
+            }, function (responce) {
+              console.log(responce)
+            });
+          }
+
+          complainSelectBlock.classList.remove('comments__tab-select-container_active')
+          complainSelect.textContent = item.textContent
+          complainInput.value = item.textContent
+        })
+      })
+    })
+
+  }
+}
+
+function commentsTabOrder() {
+  const commentsContainer = document.querySelector('.comments__container')
+  const commentTabLink = document.querySelectorAll('.comments__tab:not(.comments__tab-init)')
+  const commentsClosed = commentsContainer.getAttribute('data-comments-closed');
+  if (commentsContainer) {
+    commentTabLink.forEach((item) => {
+      item.classList.add('comments__tab-init');
+      item.addEventListener('click', () => {
+        if(commentsContainer.dataset.elementId && item.dataset.order){
+          let request = BX.ajax.runComponentAction('local:comments.list', 'get', {
+            mode:'class',
+            data: {
+              elementId: commentsContainer.dataset.elementId,
+              order: item.dataset.order,
+              commentsClosed: commentsClosed,
+            }
+          });
+
+          request.then(function(responce){
+            commentsContainer.outerHTML = responce.data.html;
+            initListScripts();
+            /*
+			 if(document.querySelector('.comments__all-button')){
+				document.querySelector('.comments__all-button').style.display = 'none';
+			}
+             */
+
+          }, function (responce) {
+            console.log(responce)
+          });
+        }
+      })
+    })
+  }
+}
+function CommentsCheck_old2(){
+  const itemsContainer = document.querySelectorAll('.comments__container-tree');
+  const items = document.querySelectorAll('.comments__item');
+  let count = 0;
+	if(itemsContainer){
+		if(itemsContainer.length === 1){
+			itemsContainer.querySelectorAll('.comments__item').forEach((item, index) => {
+			  count++
+			  if (index > 9) {
+				item.classList.add('comments__item_hidden');
+			  }
+			});
+			return;
+		  }
+    }else{
+    return;
+    }
+
+  if (items) {
+    items.forEach((item, index) => {
+      if (index > 9) {
+        item.closest('.comments__container-tree').classList.add('comments__item_hidden');
+      }
+    });
+	const button = document.querySelector('.comments__all-button')
+	if(button){
+		button.addEventListener('click', (event) => {
+			  event.preventDefault();
+			  items.forEach((item, index) => {
+				if (item.classList.contains('comments__item_hidden')) {
+				  item.classList.remove('comments__item_hidden');
+				}
+			  });
+			  button.style.display = 'none';
+			})
+	}
+
+
+  }
+}
+function CommentsCheck_old3(){
+  const itemsContainer = document.querySelectorAll('.comments__container-tree');
+  const items = document.querySelectorAll('.comments__item');
+  let count = 0;
+	if(typeof itemsContainer !== 'undefined'){
+		if(itemsContainer.length === 1){
+			itemsContainer[0].querySelectorAll('.comments__item').forEach((item, index) => {
+			  count++
+			  if (index > 9) {
+				item.classList.add('comments__item_hidden');
+			  }
+			});
+			return;
+		  }
+    }else{
+    	return;
+    }
+    if(itemsContainer.length === 1){
+      itemsContainer[0].querySelectorAll('.comments__item').forEach((item, index) => {
+        count++
+		if(window.matchMedia("(max-width: 768px)").matches){
+				if (index > 4) {
+					item.classList.add('comments__item_hidden');
+				}
+		} else {
+				if (index > 9) {
+					item.classList.add('comments__item_hidden');
+				}
+		}
+
+      });
+      return;
+    }
+    if (items) {
+      items.forEach((item, index) => {
+		if(window.matchMedia("(max-width: 768px)").matches){
+			if (index > 4) {
+          item.closest('.comments__container-tree').classList.add('comments__item_hidden');
+        }
+	  }else{
+		if (index > 9) {
+          item.closest('.comments__container-tree').classList.add('comments__item_hidden');
+        }
+	}
+
+      });
+itemsContainer.forEach((item,index) => {
+
+		if(window.matchMedia("(max-width: 768px)").matches){
+			if (index < 5) {
+        item.classList.remove('comments__item_hidden');
+        }
+	  }else{
+		if(index < 10){
+			item.classList.remove('comments__item_hidden');
+		}
+	}
+
+	})
+      const button = document.querySelector('.comments__all-button')
+		if(button){
+			if(window.matchMedia("(max-width: 768px)").matches){
+			if(itemsContainer.length < 6){
+			 button.style="display:none";
+			}
+			  } else {
+				if(itemsContainer.length < 11){
+				 button.style="display:none";
+			}
+		}
+		}
+
+
+      if(button){
+          button.addEventListener('click', (event) => {
+                event.preventDefault();
+                items.forEach((item, index) => {
+                  if (item.classList.contains('comments__item_hidden')) {
+                    item.classList.remove('comments__item_hidden');
+                  }
+                });
+                itemsContainer.forEach((item, index) => {
+                  if (item.classList.contains('comments__item_hidden')) {
+                    item.classList.remove('comments__item_hidden');
+                  }
+                });
+                button.style.display = 'none';
+              })
+      }
+    }
+}
+function CommentsCheck(){
+  const loadMoreButton = document.querySelector('.comments__all-button:not(.comments__all-button-init)')
+
+  if(loadMoreButton){
+    const commentsContainer = document.querySelector('.comments__container')
+    const commentsContainerTree = commentsContainer.querySelector('.comments__container-tree')
+    const commentsTabActive = document.querySelector('.comments__tab_active')
+    const commentsClosed = commentsContainer.getAttribute('data-comments-closed');
+    loadMoreButton.classList.add('comments__all-button-init');
+
+    loadMoreButton.addEventListener('click', (event) => {
+      event.preventDefault();
+
+      if(commentsContainer.dataset.elementId && commentsTabActive.dataset.order && loadMoreButton.dataset.nextCommentId){
+        let request = BX.ajax.runComponentAction('local:comments.list', 'get', {
+          mode:'class',
+          data: {
+            elementId: commentsContainer.dataset.elementId,
+            order: commentsTabActive.dataset.order,
+            commentId: loadMoreButton.dataset.nextCommentId,
+            commentsClosed: commentsClosed,
+          }
+        });
+
+        request.then(function(responce){
+          const tmpElement = document.createElement('div');
+          tmpElement.innerHTML = responce.data.html;
+          const commentList = tmpElement.querySelector('.comments__container-tree').innerHTML;
+          tmpElement.remove();
+
+          if(commentList && commentsContainerTree){
+            commentsContainerTree.insertAdjacentHTML('beforeEnd', commentList);
+            loadMoreButton.remove();
+            initListScripts();
+          }
+        }, function (responce) {
+          console.log(responce)
+        });
+      }
+    })
+  }
+}
+
+function CheckOtherButton(){
+  const treeItemsSecondTree = document.querySelectorAll('.comments__container-tree-child-one-2')
+  const treeItemsFirstTree = document.querySelectorAll('.comments__container-tree-child-one-1')
+  if(treeItemsSecondTree){
+    treeItemsSecondTree.forEach((elem) => {
+
+      const treeItemsCount = elem.querySelectorAll('.comments__item_child-2')
+      const treeModeration = elem.querySelectorAll('.comments__item-moderation')
+      const button = elem.querySelector('.comments__other-button_second')
+      let bool = false;
+      treeItemsCount.forEach((treeItem, index) => {
+        if(treeItem.classList.contains('comments__item_new')){
+          bool = true;
+        }
+      })
+      treeModeration.forEach((treeItem, index) => {
+        if(treeItem.classList.contains('comments__item_new')){
+          bool = true;
+        }
+      })
+      if(bool){
+        button.style.display = 'none'
+        return
+      }
+      treeItemsCount.forEach((treeItem, index) => {
+        if(index > 1){
+          treeItem.style.display = 'none';
+        }
+      })
+
+      if(treeItemsCount.length < 3){
+        button.style.display = 'none'
+      }
+      button.textContent =  treeItemsCount.length - 2  + (treeItemsCount.length - 2 <= 4 ?  treeItemsCount.length - 2 === 1 ? ' ответ' : ' ответа' : ' ответов');
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        treeItemsCount.forEach((treeItem, index) => {
+          treeItem.style.display = 'flex'
+          button.style.display = 'none'
+        })
+      })
+    })
+
+
+  }
+  if(treeItemsFirstTree){
+    treeItemsFirstTree.forEach((elem) => {
+      const treeItemsCount = elem.querySelectorAll('.comments__item_child-1')
+      const treeModeration = elem.querySelectorAll('.comments__item-moderation')
+      const button = elem.querySelector('.comments__other-button_first')
+      let bool = false;
+      treeItemsCount.forEach((treeItem, index) => {
+        if(treeItem.classList.contains('comments__item_new')){
+          bool = true;
+        }
+      })
+      treeModeration.forEach((treeItem, index) => {
+        if(treeItem.classList.contains('comments__item_new')){
+          bool = true;
+        }
+      })
+      if(bool){
+        button.style.display = 'none'
+        return
+      }
+      treeItemsCount.forEach((treeItem, index) => {
+        if(treeItem.classList.contains('comments__item_new')){
+          return true;
+        }
+        if(index > 1){
+          treeItem.style.display = 'none';
+        }
+      })
+
+      if(treeItemsCount.length < 3){
+        button.style.display = 'none'
+      }
+      button.textContent = treeItemsCount.length - 2  + (treeItemsCount.length - 2 <= 4 ?  treeItemsCount.length - 2 === 1 ? ' ответ' : ' ответа' : ' ответов');
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        treeItemsCount.forEach((treeItem, index) => {
+          treeItem.style.display = 'flex'
+          button.style.display = 'none'
+        })
+        elem.classList.add('comments__item-container-open')
+      })
+    })
+
+
+  }
+}
+function CommentsCheck_old () {
+  const items = document.querySelectorAll('.comments__item')
+  if (items) {
+    items.forEach((item, index) => {
+      if (index > 9) {
+        item.classList.add('comments__item_hidden')
+      }
+    })
+    const button = document.querySelector('.comments__all-button')
+    button.addEventListener('click', (event) => {
+      event.preventDefault()
+      items.forEach((item, index) => {
+        if (item.classList.contains('comments__item_hidden')) {
+          item.classList.remove('comments__item_hidden')
+        }
+      })
+      button.style.display = 'none'
+    })
+  }
+}
+
+
+function CommentsFormValidationAnswer() {
+  const form = document.querySelectorAll('.js--comments__item-form-answer:not(.js--comments__item-form-answer-init)')
+  if (form) {
+    form.forEach((item) => {
+      item.classList.add('js--comments__item-form-answer-init');
+      const name = item.querySelector('.js--form-comments-title')
+      const text = item.querySelector('.js--form-comments-text')
+      const check = item.querySelector('.js--form-comments-check')
+
+      let errors = {
+        name: false,
+        text: false,
+        check: false
+      };
+
+      function checkValidName(name, errors){
+        let maxLength = name.maxLength;
+        name.value = name.value.replace(/[a-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/gi,'');
+        if (name.value.length > maxLength) {
+          errors.name = false;
+
+        } else if (name.value.length === 0) {
+          errors.name = false;
+        } else {
+          errors.name = true;
+        }
+
+        return errors;
+      }
+
+      function checkButton(){
+        checkValidName(name, errors);
+
+        name.addEventListener('input', () => {
+          checkValidName(name, errors);
+          const button = item.querySelector('.form-comments__button');
+          if (errors.name && errors.check && errors.text) {
+            button.classList.remove('form-comments__button_disabled');
+            button.removeAttribute('disabled');
+          } else {
+            button.classList.add('form-comments__button_disabled');
+            button.setAttribute('disabled', 'disabled');
+          }
+        })
+        function auto_layout_keyboard( str ) {
+			 replacer = {
+				"q":"й", "w":"ц", "e":"у", "r":"к", "t":"е", "y":"н", "u":"г",
+				"i":"ш", "o":"щ", "p":"з", "[":"х", "]":"ъ", "a":"ф", "s":"ы",
+				"d":"в", "f":"а", "g":"п", "h":"р", "j":"о", "k":"л", "l":"д",
+				";":"ж", "'":"э", "z":"я", "x":"ч", "c":"с", "v":"м", "b":"и",
+				"n":"т", "m":"ь", ",":",", ".":".", "/":"."
+			};
+
+          return str.replace(/[A-z/,.;\'\]\[]/g, function ( x ){
+            const string = x.toLowerCase() ? replacer[ x ] : replacer[ x.toLowerCase() ].toUpperCase();
+			return string !== undefined ? string : x;
+          });
+        }
+        text.addEventListener('keyup', () => {
+          let maxLength = text.maxLength;
+          text.value = auto_layout_keyboard(text.value)
+          if (text.value.length > maxLength) {
+            errors.text = false;
+
+          } else if (text.value.length === 0) {
+            errors.text = false;
+          } else {
+            errors.text = true;
+          }
+          const button = item.querySelector('.form-comments__button');
+          if (errors.name && errors.check && errors.text) {
+            button.classList.remove('form-comments__button_disabled');
+            button.removeAttribute('disabled');
+          } else {
+            button.classList.add('form-comments__button_disabled');
+            button.setAttribute('disabled', 'disabled');
+          }
+        })
+        check.addEventListener('change', () => {
+          if (!(check.checked)) {
+            errors.check = false;
+
+          } else {
+            errors.check = true;
+          }
+          const button = item.querySelector('.form-comments__button');
+          if (errors.name && errors.check && errors.text) {
+            button.classList.remove('form-comments__button_disabled');
+            button.removeAttribute('disabled');
+          } else {
+            button.classList.add('form-comments__button_disabled');
+            button.setAttribute('disabled', 'disabled');
+          }
+        })
+
+      }
+      checkButton();
+      textValidator(text);
+      item.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (item.querySelector('.form-comments__button')) {
+          item.querySelector('.form-comments__button').classList.add('submitting')
+          item.querySelector('.form-comments__button').setAttribute('disabled','disabled')
+        }
+
+
+        errors = {
+          name: false,
+          text: false,
+          check: false
+        };
+
+        let nameMaxLength = name.maxLength;
+        let textMaxLength = text.maxLength;
+
+        if (text.value.length > textMaxLength) {
+          errors.text = true;
+          text.nextElementSibling.innerHTML = 'Максимальное количество символов' + textMaxLength;
+          text.nextElementSibling.classList.add('textarea_error');
+        } else if (text.value.length === 0) {
+          errors.text = true;
+          text.nextElementSibling.innerHTML = 'Это поле обязательно для заполнения';
+          text.nextElementSibling.classList.add('textarea_error');
+        } else {
+          // text.nextElementSibling.classList.remove('textarea_error');
+          if (text.nextElementSibling !== null) {
+            text.nextElementSibling.classList.remove('textarea_error');
+          }
+        }
+
+        if (name.value.length > nameMaxLength) {
+          errors.name = true;
+          name.nextElementSibling.innerHTML = 'Максимальное количество символов ' + nameMaxLength;
+          name.nextElementSibling.classList.add('input-text_error');
+        } else if (name.value.length === 0) {
+          errors.name = true;
+          name.nextElementSibling.innerHTML = 'Это поле обязательно для заполнения';
+          name.nextElementSibling.classList.add('input-text_error');
+        } else {
+          name.nextElementSibling.classList.remove('input-text_error');
+        }
+
+        if (!(check.checked)) {
+          errors.check = true;
+          item.querySelector('.checkbox').classList.add('checkbox_error');
+        } else {
+          item.querySelector('.checkbox').classList.remove('checkbox_error');
+        }
+
+        if (!errors.name && !errors.check && !errors.text) {
+          const captchaBlock = item.querySelector('[data-captcha-element="1"]');
+          const captchaId = window.smartCaptcha.render(captchaBlock, {
+            sitekey: conf.smartcaptcha_key,
+            invisible: true,
+            callback: (token) => {
+              let formData = new FormData(item);
+              sendReply(item, formData, errors);
+            },
+            hideShield: true
+          })
+          window.smartCaptcha.execute(captchaId)
+        }
+      })
+    })
+  }
+}
+function sendReply(item, formData, errors) {
+  let request = BX.ajax.runComponentAction('local:comments.form', 'save', {
+    mode: 'class',
+    data: formData
+  });
+
+  request.then(function(responce){
+    commentsPopupShow(responce.data.title, responce.data.message, responce.status);
+    item.reset();
+
+    //Сбрасываю состояние кнопки
+    const button = item.querySelector('.form-comments__button');
+    if (button) {
+      button.classList.add('form-comments__button_disabled');
+      button.classList.remove('submitting');
+      button.setAttribute('disabled', 'disabled');
+    }
+
+    // Удаляю форму после успешной отправки
+    removeReplyForm(item);
+
+    // 5. Сбрасываем локальные ошибки, хоть форму и удалил уже
+    errors = {
+      name: false,
+      text: false,
+      check: false
+    };
+    updateCountComments(responce);
+    updateCommentsList(responce.data.id, formData.get('parent_id'));
+
+  }, function (responce) {
+    // При ошибке форму не удаляю
+    commentsPopupShow('Ошибка', responce.errors, responce.status);
+
+    // Разблокирую кнопку, если она была в состоянии submitting
+    const button = item.querySelector('.form-comments__button');
+    if (button) {
+      button.classList.remove('submitting');
+    }
+  });
+}
+function CommentsFormValidationComplain() {
+  const complainOverlay = document.querySelector('.comments__complain-overlay');
+  const form = document.querySelector('.js--comments__item-form-complain')
+  if (form) {
+    const select = form.querySelector('.js--form-comments-select')
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (form.querySelector('.comments__complain-form-button')) {
+        form.querySelector('.comments__complain-form-button_submit').classList.add('submitting')
+        form.querySelector('.comments__complain-form-button_submit').setAttribute('disabled','disabled')
+      }
+
+      const errors = {
+        select: false,
+      };
+      if (select.value.length === 0) {
+        errors.select = true;
+        form.querySelector('.input-text').innerHTML = 'Выберите причину';
+        form.querySelector('.input-text').classList.add('input-text_error');
+      } else {
+        form.querySelector('.input-text').classList.remove('input-text_error');
+      }
+
+      if (!errors.select) {
+
+        const captchaBlock = form.querySelector('[data-captcha-element="1"]');
+        const captchaId = window.smartCaptcha.render(captchaBlock, {
+          sitekey: conf.smartcaptcha_key,
+          invisible: true,
+          callback: (token) => {
+            let formData = new FormData(form);
+            sendReport(form, formData, complainOverlay);
+          },
+          hideShield: true
+        })
+        window.smartCaptcha.execute(captchaId)
+      }
+    })
+  }
+}
+function sendReport(form, formData, complainOverlay){
+  let request = BX.ajax.runComponentAction('local:comments.list', 'report', {
+    mode:'class',
+    data: formData
+  });
+
+  request.then(function(responce){
+    form.querySelector('.comments__complain-form-select-title').innerHTML = 'Выберите причину';
+    form.reset();
+    form.querySelector('.comments__complain-form-button_submit').classList.remove('submitting')
+    form.querySelector('.comments__complain-form-button_submit').removeAttribute('disabled')
+    updateCommentsList(responce.data.id, responce.data.id, true);
+    complainOverlay.classList.remove('comments__complain-overlay_active')
+    // document.body.classList.remove('modal-opened');
+    // if (!document.body.classList.contains('non-scroll-for-body')&&document.body.classList.contains('body-additional-class')) {
+    //   RemoveClassBody();
+    // }
+    // document.body.classList.remove('body-modal-not-remove')
+    // document.body.classList.remove('body-modal-not-remove-else')
+    commentsPopupShow('Ваша жалоба отправлена', '',  responce.status);
+    document.querySelector('.comments__complain-form-button_submit').classList.add('comments__complain-form-button_disabled')
+
+  }, function (responce) {
+    form.querySelector('.comments__complain-form-select-title').innerHTML = 'Выберите причину';
+    form.reset();
+    complainOverlay.classList.remove('comments__complain-overlay_active')
+    document.body.classList.remove('modal-opened');
+    // if (!document.body.classList.contains('non-scroll-for-body')&&document.body.classList.contains('body-additional-class')) {
+    //   RemoveClassBody();
+    // }
+    // document.body.classList.remove('body-modal-not-remove')
+    // document.body.classList.remove('body-modal-not-remove-else')
+    commentsPopupShow('Ошибка при отправке жалобы', '',  responce.status);
+    document.querySelector('.comments__complain-form-button_submit').classList.add('comments__complain-form-button_disabled')
+  });
+}
+function closeCommentsPopup() {
+  if (document.querySelector('.comments__response-overlay')) {
+    document.querySelector('.comments__response-overlay').classList.remove('comments__response-overlay_active');
+  }
+  document.body.classList.remove('modal-opened');
+  if (!document.body.classList.contains('non-scroll-for-body')&&document.body.classList.contains('body-additional-class')) {
+    RemoveClassBody();
+  }
+  document.body.classList.remove('body-modal-not-remove')
+  document.body.classList.remove('body-modal-not-remove-else')
+}
+function closeCommentsPopupClickWindow() {
+  const modalWindows = document.querySelectorAll('.comments__response-overlay_active');
+  for (let item of modalWindows) {
+    item.onclick = function (e) {
+      if (e.target.classList.contains('comments__response-overlay_active') && document.querySelector('.comments__response-overlay')){
+        closeCommentsPopup()
+      }
+    };
+  }
+}
+function closeComplainPopupClickWindow() {
+  const modalWindows = document.querySelectorAll('.comments__complain-overlay');
+  for (let item of modalWindows) {
+    item.onclick = function (e) {
+      if (e.target.classList.contains('comments__complain-overlay') && document.querySelector('.comments__complain-overlay')){
+        document.querySelector('.comments__complain-overlay').classList.remove('comments__complain-overlay_active');
+        document.body.classList.remove('modal-opened');
+        if (!document.body.classList.contains('non-scroll-for-body')&&document.body.classList.contains('body-additional-class')) {
+          RemoveClassBody();
+        }
+        document.body.classList.remove('body-modal-not-remove')
+        document.body.classList.remove('body-modal-not-remove-else')
+      }
+    };
+  }
+}
+
+function commentsPopupResponse () {
+  const buttonClassClose = ['.comments__response-popup-close']
+  buttonClassClose.forEach((el) => {
+    document.querySelector(el).addEventListener('click', (e) => {
+      e.preventDefault()
+      closeCommentsPopup()
+    })
+  })
+}
+
+function initListScripts(needMore = true) {
+  commentsEdit();
+  commentsMore();
+  CommentsCheck();
+	commentsComplain()
+  commentsTabSelect();
+  commentsTabOrder();
+  CheckOtherButton();
+  commentsPopupResponse();
+  closeCommentsPopupClickWindow();
+  closeComplainPopupClickWindow();
+  checkLike();
+  if(typeof userLikes !== 'undefined'){
+    setLikes(userLikes);
+  }
+	CommentsFormValidationAnswer();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initCommentsAnswerDelegation();
+  initCommentsComplainDelegation();
+  initListScripts();
+  commentsComplainSelector();
+  commentsComplain();
+  CommentsFormValidationComplain();
+});
+
+
+----------------------------------
+
+<?php
+if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) {
+    die();
+}
+
+/**
+ * @var $arResult
+ * @var $arParams
+ * @global CMain $APPLICATION
+ */
+
+
+?>
+
+<div class="container">
+    <div class="comments__response-overlay">
+        <div class="comments__response-popup comments__response-complain-popup">
+            <button class="comments__response-popup-close comments__popupclose">
+                <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                          d="M0.357542 15.3637C-0.0329827 15.7543 -0.0329827 16.3874 0.357542 16.778C0.748066 17.1685 1.38123 17.1685 1.77176 16.778L8.13551 10.4142L14.4995 16.7782C14.89 17.1687 15.5232 17.1687 15.9137 16.7782C16.3042 16.3876 16.3042 15.7545 15.9137 15.364L9.54972 8.99999L15.9139 2.63582C16.3044 2.24529 16.3044 1.61213 15.9139 1.2216C15.5234 0.83108 14.8902 0.83108 14.4997 1.2216L8.13551 7.58577L1.77156 1.22182C1.38104 0.8313 0.747871 0.8313 0.357346 1.22182C-0.0331781 1.61235 -0.0331778 2.24551 0.357346 2.63604L6.7213 8.99999L0.357542 15.3637Z"></path>
+                </svg>
+            </button>
+            <div class="comments__response-container">
+                <img class="comments__response-image" src="/dist/img/Success-circle.png">
+                <h3 class="comments__response-title">Спасибо за ваш комментарий!</h3>
+                <p class="comments__response-subtitle">
+                    Ваш комментарий принят
+                </p>
+            </div>
+        </div>
+    </div>
+    <? //if (empty($arParams['COMMENTS_CLOSED'])): ?>
+        <div class="comments" <?=!empty($arParams['COMMENTS_CLOSED'])?' style="display:none;"':''?>>
+            <?php $APPLICATION->ShowViewContent('CommentsCountBlock'); ?>
+            <form class="form-comments js--form-comments" novalidate>
+                <div data-captcha-element="1" id="captcha-element-comment-<?= $arParams['ELEMENT_ID'] ?>"></div>
+                <div class="form-comments__container">
+                    <input type="hidden" name="elementId" value="<?= $arParams['ELEMENT_ID']; ?>"/>
+                    <input maxlength="40" class="form-comments__input js--form-comments-title"
+                           onpaste="(e) => {console.log(e.value)}" type="text" name="name"
+                           placeholder="Введите имя и фамилию" value="<?= $arResult['MODERATOR_NAME']; ?>" required>
+                    <span class="textarea">Максимальное количество символов 40</span>
+                    <span class="input-text"></span>
+                    <div class="form-comments__wr-textarea js--wr-form-comments-text">
+                        <textarea maxlength="<?= $arResult['MAX_COMMENT_LENGTH']; ?>"
+                                  class="form-comments__textarea js--form-comments-text" name="text"
+                                  placeholder="Напишите комментарий..." required></textarea>
+                    </div>
+                    <span
+                        class="textarea">Максимальное количество символов <?= $arResult['MAX_COMMENT_LENGTH']; ?></span>
+                    <div class="form-comments__checkbox-container">
+                        <label class="form-comments__checkbox-label">
+                            <input class="form-comments__checkbox js--form-comments-check" type="checkbox" required>
+                            <div></div>
+                            <span class="form-comments__checkbox-span">
+                                Согласен с <a href="/user-agreement/#moderationrule"
+                                              target="_blank">правилами модерации </a> на сайте</span>
+                        </label>
+                        <span class="checkbox">Согласитесь с условиями</span>
+                    </div>
+                    <button class="form-comments__button btn form-comments__button_disabled">Отправить</button>
+                </div>
+            </form>
+        </div>
+    <?// else: ?>
+        <!-- Новые комментарии закрыты -->
+    <?// endif; ?>
+</div>
+
+-------------------
+
+function AddClassBody() {
+  document.body.classList.add('body-modal');
+  document.body.classList.add('body-additional-class');
+  document.body.setAttribute('style', `top:-${window.scrollY}px;position: fixed;`);
+  document.ontouchmove = (e) => {
+    e.preventDefault();
+  };
+}
+
+
+function textValidator(fld) {
+  const field = fld;
+
+  field.addEventListener('input', () => {
+    if (field.value[0] === ' ') {
+      field.value = '';
+    }
+  });
+}
+function CommentsFormValidation() {
+  const form = document.querySelector('.js--form-comments')
+  const totalComments = document.querySelector('.comments__title-count')
+
+  if (form) {
+    const name = form.querySelector('.js--form-comments-title')
+    const text = form.querySelector('.js--form-comments-text')
+    const check = form.querySelector('.js--form-comments-check')
+	  let errorsValid = {
+			name: false,
+			text: false,
+			check: false
+		};
+
+    function checkValidName(name, errorsValid){
+      let maxLength = name.maxLength;
+      name.value = name.value.replace(/[a-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/gi,'');
+      if (name.value.length > maxLength) {
+        errorsValid.name = false;
+
+      } else if (name.value.length === 0) {
+        errorsValid.name = false;
+      } else {
+        errorsValid.name = true;
+      }
+
+      return errorsValid;
+    }
+
+	function checkButton(){
+    checkValidName(name, errorsValid);
+
+		name.addEventListener('input', () => {
+      checkValidName(name, errorsValid);
+      if(errorsValid.name && errorsValid.check && errorsValid.text){
+        if(form.querySelector('.form-comments__button').classList.contains('form-comments__button_disabled')) {
+          form.querySelector('.form-comments__button').classList.remove('form-comments__button_disabled')
+        }
+      }
+      else{
+        form.querySelector('.form-comments__button').classList.add('form-comments__button_disabled')
+      }
+    })
+		function auto_layout_keyboard( str ) {
+        replacer = {
+            "q":"й", "w":"ц", "e":"у", "r":"к", "t":"е", "y":"н", "u":"г",
+            "i":"ш", "o":"щ", "p":"з", "[":"х", "]":"ъ", "a":"ф", "s":"ы",
+            "d":"в", "f":"а", "g":"п", "h":"р", "j":"о", "k":"л", "l":"д",
+            ";":"ж", "'":"э", "z":"я", "x":"ч", "c":"с", "v":"м", "b":"и",
+			"n":"т", "m":"ь", ",":",", ".":".", "/":".", "_" : "_"
+        };
+
+        return str.replace(/[A-z/,.;\'\]\[]/g, function ( x ){
+			const string = x.toLowerCase() ? replacer[ x ] : replacer[ x.toLowerCase() ].toUpperCase();
+			return string !== undefined ? string : x;
+        });
+}
+    text.addEventListener('keyup', () => {
+      let maxLength = text.maxLength;
+      text.value = auto_layout_keyboard(text.value)
+      if (text.value.length > maxLength) {
+        errorsValid.text = false;
+
+      } else if (text.value.length === 0) {
+        errorsValid.text = false;
+      } else {
+        errorsValid.text = true;
+      }
+      if(errorsValid.name && errorsValid.check && errorsValid.text){
+        if(form.querySelector('.form-comments__button').classList.contains('form-comments__button_disabled')) {
+          form.querySelector('.form-comments__button').classList.remove('form-comments__button_disabled')
+        }
+      }
+      else{
+        form.querySelector('.form-comments__button').classList.add('form-comments__button_disabled')
+      }
+    })
+		check.addEventListener('change', () => {
+			if (!(check.checked)) {
+				errorsValid.check = false;
+
+			  } else {
+				errorsValid.check = true;
+			  }
+			if(errorsValid.name && errorsValid.check && errorsValid.text){
+        if(form.querySelector('.form-comments__button').classList.contains('form-comments__button_disabled')) {
+          form.querySelector('.form-comments__button').classList.remove('form-comments__button_disabled')
+        }
+      }
+      else{
+        form.querySelector('.form-comments__button').classList.add('form-comments__button_disabled')
+      }
+		})
+
+	}
+	checkButton();
+    textValidator(text);
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (form.querySelector('.form-comments__button')) {
+        form.querySelector('.form-comments__button').classList.add('submitting')
+        form.querySelector('.form-comments__button').setAttribute('disabled','disabled')
+      }
+
+
+      errorsValid = {
+        name: false,
+        text: false,
+        check: false
+      };
+
+      let nameMaxLength = name.maxLength;
+      let textMaxLength = text.maxLength;
+
+      if (text.value.length > textMaxLength) {
+        errorsValid.text = true;
+        if (text.closest('.js--wr-form-comments-text')) {
+          text.closest('.js--wr-form-comments-text').nextElementSibling.innerHTML = 'Максимальное количество символов ' + textMaxLength;
+          text.closest('.js--wr-form-comments-text').nextElementSibling.classList.add('textarea_error');
+        }
+        else{
+          text.nextElementSibling.innerHTML = 'Максимальное количество символов ' + textMaxLength;
+          text.nextElementSibling.classList.add('textarea_error');
+        }
+      } else if (text.value.length === 0) {
+        errorsValid.text = true;
+        if (text.closest('.js--wr-form-comments-text')) {
+          text.closest('.js--wr-form-comments-text').nextElementSibling.innerHTML = 'Это поле обязательно для заполнения';
+          text.closest('.js--wr-form-comments-text').nextElementSibling.classList.add('textarea_error');
+        }
+        else {
+          text.nextElementSibling.innerHTML = 'Это поле обязательно для заполнения';
+          text.nextElementSibling.classList.add('textarea_error');
+        }
+      } else {
+        if (text.closest('.js--wr-form-comments-text')) {
+          text.closest('.js--wr-form-comments-text').nextElementSibling.classList.remove('textarea_error');
+        }
+        else {
+          text.nextElementSibling.classList.remove('textarea_error');
+        }
+      }
+
+      if (!(check.checked)) {
+        errorsValid.check = true;
+        form.querySelector('.form-comments__checkbox-label').nextElementSibling.classList.add('checkbox_error');
+      } else {
+        form.querySelector('.form-comments__checkbox-label').nextElementSibling.classList.remove('checkbox_error');
+      }
+
+      if (!errorsValid.name && !errorsValid.check && !errorsValid.text) {
+
+        const captchaBlock = form.querySelector('[data-captcha-element="1"]');
+        const captchaId = window.smartCaptcha.render(captchaBlock, {
+          sitekey: conf.smartcaptcha_key,
+          invisible: true,
+          callback: (token) => {
+            let formData = new FormData(form);
+            sendComment(form, formData, errorsValid);
+          },
+          hideShield: true
+        })
+
+        window.smartCaptcha.execute(captchaId)
+	    }
+    })
+  }
+}
+function sendComment(form, formData, errorsValid){
+  let request = BX.ajax.runComponentAction('local:comments.form', 'save', {
+    mode:'class',
+    data: formData
+  });
+
+  request.then(function(responce){
+    commentsPopupShow(responce.data.title, responce.data.message,  responce.status);
+    form.reset();
+    form.querySelector('.form-comments__button').classList.add('form-comments__button_disabled')
+    form.querySelector('.form-comments__button').classList.remove('submitting')
+    form.querySelector('.form-comments__button').removeAttribute('disabled')
+    errorsValid = {
+      name: false,
+      text: false,
+      check: false
+    };
+    updateCountComments(responce);
+    updateCommentsList(responce.data.id, 0);
+  }, function (responce) {
+    commentsPopupShow('Ошибка',  responce.errors, responce.status);
+  })
+}
+
+function commentsPopupShow(title, subtitle, status = 'error') {
+  const popup = document.querySelector('.comments__response-popup');
+
+  if(typeof subtitle === 'object'){
+    const errors = Object.values(subtitle).map(error => error.message);
+    subtitle = errors.join(', ');
+  }
+
+  let imageSrc = '/dist/img/Success-circle.png';
+
+  if(status == 'error'){
+    imageSrc = '/dist/img/Cancel.png';
+  }
+
+  popup.querySelector('.comments__response-image').src  = imageSrc;
+  popup.querySelector('.comments__response-title').innerHTML = title;
+  popup.querySelector('.comments__response-subtitle').innerHTML = subtitle;
+
+  document.querySelector('.comments__response-overlay').classList.add('comments__response-overlay_active');
+  if (!document.body.classList.contains('modal-opened')) {
+    document.body.classList.add('modal-opened', 'body-modal-not-remove-else', 'body-modal-not-remove');
+    AddClassBody();
+  }
+}
+function updateCommentsList(id, parent_id, replace = false){
+  const commentsContainer = document.querySelector('.comments__container')
+
+  let request = BX.ajax.runComponentAction('local:comments.form', 'get', {
+    mode:'class',
+    data: {
+      elementId: commentsContainer.dataset.elementId,
+      id: id,
+    }
+  });
+
+  request.then(function(responce){
+    const tmpElement = document.createElement('div');
+    tmpElement.innerHTML = responce.data.html;
+    const commentItem = tmpElement.querySelector('.comments__item');
+    tmpElement.remove();
+
+    if(parent_id > 0){
+      const parentElement = document.querySelector(".comments__item[data-id='"+ parent_id +"']");
+      if(parentElement){
+        let additionalClass = 'comments__item_depth-level-1';
+        if(parentElement.classList.contains('comments__item_depth-level-1') || parentElement.classList.contains('comments__item_depth-level-2')){
+          additionalClass = 'comments__item_depth-level-2';
+        }
+
+        commentItem.classList.add(additionalClass);
+
+        if(replace){
+          parentElement.innerHTML = commentItem.innerHTML;
+        }
+        else{
+          parentElement.insertAdjacentElement('afterEnd', commentItem);
+          parentElement.querySelector('.comments__item-form-answer').classList.remove('comments__item-form-answer_active');
+        }
+
+      }
+    }
+    else{
+      commentsContainer.querySelector('.comments__container-tree').insertAdjacentElement('afterbegin', commentItem);
+    }
+
+    initFormScripts();
+    initListScripts();
+/*
+	 if(document.querySelector('.comments__all-button')){
+		document.querySelector('.comments__all-button').style.display = 'none';
+	}
+	*/
+
+
+  }, function (responce) {
+    console.log(responce)
+  });
+}
+
+function updateCountComments(responce){
+  const commentsTitle = document.querySelector('.comments__title');
+  if(commentsTitle && responce.data.count.CNT && responce.data.count.TEXT){
+    const countText = responce.data.count.CNT + ' ' + responce.data.count.TEXT;
+    commentsTitle.innerHTML = countText;
+  }
+}
+function initFormScripts() {
+  commentsPopupResponse();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initFormScripts();
+  CommentsFormValidation();
+});
+
+
