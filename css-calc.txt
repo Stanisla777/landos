@@ -1,3 +1,30 @@
+mutationInputIncomeMan(state, received_perem) {
+      // received_perem выглядит так: { field_1: '50000', field_coefficient_1_district: '1.5', ... }
+
+      Object.keys(received_perem).forEach(key => {
+        const newValue = received_perem[key];
+
+        // Ищем нужный год в массиве
+        state.array_all_income_period_man.forEach(item => {
+          // Вариант А: это основной доход
+          if (item.modelInput === key) {
+            item.value = newValue;
+          }
+          // Вариант Б: это районный коэффициент
+          else if (item.additionalCoefficient && (item.additionalCoefficient.modelInput + '_district') === key) {
+            item.additionalCoefficient.districtCoefficient.value = newValue;
+          }
+          // Вариант В: это северная надбавка
+          else if (item.additionalCoefficient && (item.additionalCoefficient.modelInput + '_northern') === key) {
+            item.additionalCoefficient.northernAllowance.value = newValue;
+          }
+        });
+      });
+      console.log('state.array_all_income_period_man');
+      console.log(state.array_all_income_period_man);
+    },
+
+
 watch: {
   fieldsIncomeMan: {
     // Используем обычную function, чтобы сохранить контекст this компонента
