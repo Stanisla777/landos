@@ -13,7 +13,8 @@ export default {
     return {
       dataFieldCheckbox: false,
       fieldsIncomeMan: {},
-      isUpdatingFromStore: false, // Флаг-предохранитель
+      isUpdatingFromStore: false, 
+      isInitialized: false, // ⭐ НОВЫЙ ФЛАГ: готов ли компонент к отправке данных
       previousPayments: {
         deduction_purchase: '',
         deduction_interest: '',
@@ -23,18 +24,33 @@ export default {
   },
 
   created() {
-    // 1. Инициализируем данные при загрузке
+    // 1. Сначала заполняем данные из Store
     this.initializeFieldsIncomeFromStore();
 
-    // 2. Создаем debounce-функцию ОДИН раз.
-    // Это позволяет нам использовать метод .cancel() при необходимости.
+    // 2. ⭐ ТОЛЬКО ТЕПЕРЬ говорим компоненту, что инициализация завершена.
+    // Все изменения до этой строки игнорируются вотчером.
+    this.isInitialized = true;
+
+    // 3. Создаем debounce-функцию
     this.debouncedIncomeUpdate = debounce((newFields) => {
-      // Последний рубеж обороны (на всякий случай)
       if (this.isUpdatingFromStore) return;
 
       const cleanedFields = {};
       for (const key in newFields) {
-        cleanedFields[key] = parseInt(String(newFields[key]).replace(/\s/g, ''), 10) || 0;
+        const val = newFields[key];
+
+        // Умная очистка: не ломаем массивы/объекты от select
+        if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
+          cleanedFields[key] = val;
+        } else {
+          const cleanStr = String(val).replace(/\s/g, '');
+          if (cleanStr === '') {
+            cleanedFields[key] = '';
+          } else {
+            const num = parseFloat(cleanStr);
+            cleanedFields[key] = isNaN(num) ? cleanStr : num;
+          }
+        }
       }
 
       store.dispatch('ActionShowLoader', true);
@@ -46,21 +62,17 @@ export default {
   },
 
   watch: {
-    // === СЛУШАТЕЛЬ 1: Реагируем на изменения в Store (например, клик по табу) ===
+    // === СЛУШАТЕЛЬ 1: Реагируем на изменения в Store (клик по табу) ===
     array_all_income_period: {
       handler() {
-        // 1. Поднимаем флаг, чтобы заблокировать отправку данных обратно
         this.isUpdatingFromStore = true;
 
-        // 2. ОТМЕНЯЕМ таймер debounce, если пользователь в этот момент печатал
         if (this.debouncedIncomeUpdate) {
           this.debouncedIncomeUpdate.cancel();
         }
 
-        // 3. Обновляем локальные поля из Store
         this.initializeFieldsIncomeFromStore();
 
-        // 4. Сбрасываем флаг после того, как Vue обновил DOM
         this.$nextTick(() => {
           this.isUpdatingFromStore = false;
         });
@@ -68,13 +80,13 @@ export default {
       deep: true
     },
 
-    // === СЛУШАТЕЛЬ 2: Реагируем на ввод пользователя в поля доходов ===
+    // === СЛУШАТЕЛЬ 2: Реагируем на ввод пользователя ===
     fieldsIncomeMan: {
       handler(newFields) {
-        // ⭐ ГЛАВНОЕ ИСПРАВЛЕНИЕ: Синхронная проверка.
-        // Если обновление инициировано Store (см. Слушатель 1), мы прерываем выполнение
-        // НЕМЕДЛЕННО, не давая запуститься новому таймеру debounce.
-        if (this.isUpdatingFromStore) return;
+        // ⭐ ДВОЙНАЯ ЗАЩИТА:
+        // 1. Игнорируем, если это обновление пришло из Store (клик по табу)
+        // 2. Игнорируем, если компонент еще не закончил начальную инициализацию
+        if (this.isUpdatingFromStore || !this.isInitialized) return;
 
         this.debouncedIncomeUpdate(newFields);
       },
@@ -82,17 +94,22 @@ export default {
       immediate: false
     },
 
-    // === СЛУШАТЕЛЬ 3: Чекбокс районного коэффициента ===
+    // === СЛУШАТЕЛЬ 3: Чекбокс ===
     dataFieldCheckbox() {
       store.dispatch('ActionCheckDistrictCoefficientMan', this.dataFieldCheckbox);
     },
 
-    // === СЛУШАТЕЛЬ 4: Предыдущие вычеты (тут цикл Store->Component не грозит, поэтому inline debounce ок) ===
+    // === СЛУШАТЕЛЬ 4: Предыдущие вычеты ===
     previousPayments: {
       handler: debounce(function (newValue) {
+        // Здесь тоже добавим защиту на всякий случай
+        if (!this.isInitialized) return;
+
         const cleanedPayments = {};
         for (const key in newValue) {
-          cleanedPayments[key] = parseInt(String(newValue[key]).replace(/\s/g, ''), 10) || 0;
+          const val = newValue[key];
+          const cleanStr = String(val).replace(/\s/g, '');
+          cleanedPayments[key] = cleanStr === '' ? '' : (isNaN(parseFloat(cleanStr)) ? cleanStr : parseFloat(cleanStr));
         }
 
         store.dispatch('ActionShowLoader', true);
@@ -107,7 +124,6 @@ export default {
   },
 
   beforeUnmount() {
-    // Очищаем память при уходе со страницы
     if (this.debouncedIncomeUpdate) {
       this.debouncedIncomeUpdate.cancel();
     }
@@ -118,10 +134,8 @@ export default {
       const fields = {};
 
       this.array_all_income_period.forEach(tab => {
-        // 1. Основной доход
         fields[tab.modelInput] = tab.value || '';
 
-        // 2. Дополнительные коэффициенты (ОБЯЗАТЕЛЬНО, чтобы они не пропадали!)
         if (tab.additionalCoefficient) {
           const baseKey = tab.additionalCoefficient.modelInput;
           fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
@@ -161,21 +175,3 @@ export default {
   },
 };
 </script>
-<style scoped>
-</style>
-
-
-array_all_income_period_man:[
-      {
-        "id": "1",
-        "text": "1 год",
-        "isActive": false,
-        //касается полей input
-        modelInput:'field_1',
-        placeholder: `Среднемесячный доход в 2023 году, ₽`,
-        value:60000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
-        //касается дополнительных полей при районных коффициентах или северных надбавках
-        additionalCoefficient : {
-          modelInput:'field_coefficient_1',
-          districtCoefficient:{
-            value:[{id: 1,label: '0.1'}]
