@@ -1,61 +1,66 @@
-fieldsIncomeMan: {
-      handler(newFields) {
-        console.log('newFields');
-        console.log(newFields);
-        // Если изменение пришло из Store (клик по табу), данные обратно не отправляются
-        if (this.isUpdatingFromStore) return;
+watch: {
+  fieldsIncomeMan: {
+    // Используем обычную function, чтобы сохранить контекст this компонента
+    handler: debounce(function (newFields) {
+      // 1. ГЛАВНАЯ ЗАЩИТА: если обновление пришло из Store (клик по табу), прерываем выполнение
+      if (this.isUpdatingFromStore) return;
 
-        // Если флаг опущен, значит это реальный ввод. Отправляем в Store.
-        store.dispatch('ActionInputIncomeMan', newFields);
-      },
-      deep: true
-    },
-
-
-с подключением debounce как здесь
- dataField: {
-      handler: debounce(function (newValue) {
-        const cleanValue = parseInt(String(newValue).replace(/\s/g, ''), 10) || 0;
-
-        // Показываем лоадер
-        store.dispatch('ActionShowLoader', true)
-
-        // Отправляем в Store
-        store.dispatch('ActionApartmentPrice', cleanValue)
-          .then(() => {
-            // Когда вычисления закончились — прячем лоадер
-            store.dispatch('ActionShowLoader', false)
-          });
-      }, 500), // 500мс задержка
-
-      immediate: false // не срабатывает при инициализации
-    }
-
-попробовал так на другой переменной с для input но возвращает ноль, там у меня собраны в объект:
-previousPayments : {
-        deduction_purchase:'', //вычет за покупку
-        deduction_interest:'', //вычет за проценты
-        other_deductions:'', //другие вычеты
+      // 2. (Опционально) Очищаем значения объекта от пробелов перед отправкой
+      const cleanedFields = {};
+      for (const key in newFields) {
+        // Превращаем "8 000 000" в 8000000. Если там уже число или пусто, будет корректно
+        cleanedFields[key] = parseInt(String(newFields[key]).replace(/\s/g, ''), 10) || 0;
       }
 
+      // 3. Показываем лоадер
+      store.dispatch('ActionShowLoader', true);
+
+      // 4. Отправляем очищенный объект в Store
+      store.dispatch('ActionInputIncomeMan', cleanedFields)
+        .then(() => {
+          // 5. Прячем лоадер после завершения
+          store.dispatch('ActionShowLoader', false);
+        })
+        .catch(() => {
+          // На случай ошибки тоже нужно убрать лоадер
+          store.dispatch('ActionShowLoader', false);
+        });
+
+    }, 500), // Задержка 500мс
+    
+    deep: true,
+    immediate: false
+  }
+}
+
+--------------------
+
 watch: {
-//изменения в предыдущих вычетах
-    previousPayments: {
-      handler: debounce(function (newValue) {
-        const cleanValue = parseInt(String(newValue).replace(/\s/g, ''), 10) || 0;
+  previousPayments: {
+    handler: debounce(function (newValue) {
+      // newValue выглядит так: { deduction_purchase: '1 000 000', deduction_interest: '500 000' }
+      
+      // 1. Создаем новый объект с очищенными числами
+      const cleanedPayments = {};
+      for (const key in newValue) {
+        cleanedPayments[key] = parseInt(String(newValue[key]).replace(/\s/g, ''), 10) || 0;
+      }
 
-        // Показываем лоадер
-        store.dispatch('ActionShowLoader', true)
+      // 2. Показываем лоадер
+      store.dispatch('ActionShowLoader', true);
 
-        // Отправляем в Store
-        store.dispatch('ActionInputPreviousPaymentsMan', cleanValue)
-          .then(() => {
-            // Когда вычисления закончились — прячем лоадер
-            store.dispatch('ActionShowLoader', false)
-          });
-      }, 500), // 500мс задержка
+      // 3. Отправляем очищенный объект в Store
+      store.dispatch('ActionInputPreviousPaymentsMan', cleanedPayments)
+        .then(() => {
+          store.dispatch('ActionShowLoader', false);
+        })
+        .catch(() => {
+          store.dispatch('ActionShowLoader', false);
+        });
 
-      immediate: false, // не срабатывает при инициализации
-      deep: true
-
-    },
+    }, 500),
+    
+    deep: true,
+    immediate: false
+  }
+}
