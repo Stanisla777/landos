@@ -1,48 +1,25 @@
-// Вспомогательная функция для обновления табов и очистки последующих полей
-function updateIncomePeriodArray(array, targetId) {
-  // Находим индекс активного элемента ОДИН раз (оптимизация)
-  const activeIndex = targetId !== null 
-    ? array.findIndex(item => String(item.id) === String(targetId)) 
-    : -1;
-
-  array.forEach((item, index) => {
-    if (targetId === null) {
-      // Если текущий год, все табы неактивны
-      item.isActive = false;
-    } else {
-      // Иначе активируем только нужный таб
-      item.isActive = (String(item.id) === String(targetId));
-
-      // Очищаем данные у всех табов, которые идут ПОСЛЕ активного
-      if (index > activeIndex) {
-        item.value = '';
-        if (item.additionalCoefficient) {
-          item.additionalCoefficient.districtCoefficient.value = '';
-          item.additionalCoefficient.northernAllowance.value = '';
-        }
+ array_all_income_period_man:[
+      {
+        //касается табов
+        "id": "1",
+        "text": "1 год",
+        "isActive": false,
+        "isShow":true,
+         ..........
+      },
+      {
+        //касается табов
+        "id": "2",
+        "text": "2 год",
+        "isActive": false,
+        "isShow":true,
+         ..........
+      },
+      {
+        //касается табов
+        "id": "3",
+        "text": "3 год",
+        "isActive": false,
+        "isShow":true,
+         ..........
       }
-    }
-  });
-}
-
-
-mutationCalendarYear(state, received_perem) {
-    // 1. Сохраняем выбранный год
-    state.data_year = received_perem;
-
-    // 2. Вычисляем, какой таб должен быть активен
-    const currentYear = new Date().getFullYear();
-    const diff = currentYear - received_perem;
-    
-    let targetId = null;
-    if (diff === 0) targetId = null;       // Текущий год
-    else if (diff === 1) targetId = "1";   // Прошлый год
-    else if (diff === 2) targetId = "2";   // Два года назад
-    else if (diff >= 3) targetId = "3";    // Три и более лет назад
-
-    // 3. Применяем логику ОДНОЙ строкой для каждого массива!
-    updateIncomePeriodArray(state.array_all_income_period_man, targetId);
-    updateIncomePeriodArray(state.array_all_income_period_wife, targetId);
-
-    console.log('Год изменен на:', state.data_year, '| Активный таб ID:', targetId);
-  },
