@@ -10,26 +10,27 @@ function updateIncomePeriodArray(array, targetId) {
     : -1;
 
   array.forEach((item, index) => {
+    // 1. УПРАВЛЕНИЕ ВИДИМОСТЬЮ И АКТИВНОСТЬЮ
     if (targetId === null) {
-      // Сценарий 1: Текущий год. Всё скрыто и неактивно.
+      // Текущий год: всё скрыто и неактивно
       item.isActive = false;
       item.isShow = false;
     } else {
-      // Сценарий 2: Прошлые годы.
-      
-      // 1. Управляем isActive (только у выбранного таба true)
+      // Прошлые годы: показываем текущий и предыдущие, активируем только выбранный
       item.isActive = (String(item.id) === String(targetId));
-
-      // 2. Управляем isShow (показываем текущий и все предыдущие табы)
       item.isShow = (index <= activeIndex);
+    }
 
-      // 3. Очищаем данные у табов, которые скрыты (идут ПОСЛЕ активного)
-      if (index > activeIndex) {
-        item.value = '';
-        if (item.additionalCoefficient) {
-          item.additionalCoefficient.districtCoefficient.value = '';
-          item.additionalCoefficient.northernAllowance.value = '';
-        }
+    // 2. ЕДИНАЯ ЛОГИКА ОЧИСТКИ ДАННЫХ
+    // Очищаем, если это текущий год ИЛИ если элемент идет после активного (скрыт)
+    const shouldClear = (targetId === null) || (index > activeIndex);
+
+    if (shouldClear) {
+      item.value = '';
+      
+      if (item.additionalCoefficient) {
+        item.additionalCoefficient.districtCoefficient.value = '';
+        item.additionalCoefficient.northernAllowance.value = '';
       }
     }
   });
