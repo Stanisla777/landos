@@ -1,48 +1,50 @@
-mutationCalendarYear(state, received_perem) {
-      state.data_year = received_perem
-      console.log(state.data_year);
-    },
+mutations: {
+  mutationCalendarYear(state, received_perem) {
+    // 1. Сохраняем выбранный год
+    state.data_year = received_perem;
 
-mutationTabTimeMan(state, received_perem) {
-      const targetId = String(received_perem);
-      const activeIndex = state.array_all_income_period_man.findIndex(
-        item => String(item.id) === targetId
-      );
+    // 2. Вычисляем разницу между текущим годом и выбранным
+    const currentYear = new Date().getFullYear();
+    const diff = currentYear - received_perem;
+    
+    let targetId = null; // По умолчанию ни один таб не активен
 
-      state.array_all_income_period_man.forEach((item, index) => {
-        if (index === activeIndex) {
-          item.isActive = true;
-        } else {
-          item.isActive = false;
+    // 3. Определяем, какой таб должен быть активен по вашим правилам
+    if (diff === 0) {
+      targetId = null; // Текущий год: все isActive = false
+    } else if (diff === 1) {
+      targetId = "1"; // Прошлый год: активен 1-й таб
+    } else if (diff === 2) {
+      targetId = "2"; // Два года назад: активен 2-й таб
+    } else if (diff >= 3) {
+      targetId = "3"; // Три и более лет назад: активен 3-й таб
+    }
 
-          // ГЛАВНОЕ: если год идет ПОСЛЕ выбранного, очищаем ВСЮ сущность целиком
-          if (index > activeIndex) {
-            item.value = '';
+    // 4. Применяем состояние к массиву табов
+    state.array_all_income_period_man.forEach((item, index) => {
+      if (targetId === null) {
+        // Если текущий год, все табы неактивны
+        item.isActive = false;
+      } else {
+        // Иначе активируем только нужный таб
+        item.isActive = (item.id === targetId);
 
-            if (item.additionalCoefficient) {
-              item.additionalCoefficient.districtCoefficient.value = '';
-              item.additionalCoefficient.northernAllowance.value = '';
-            }
+       
+        // если мы автоматически активировали таб, очищаем данные у всех табов, 
+        // которые идут ПОСЛЕ него в массиве.
+        const activeIndex = state.array_all_income_period_man.findIndex(i => i.id === targetId);
+        if (index > activeIndex) {
+          item.value = '';
+          if (item.additionalCoefficient) {
+            item.additionalCoefficient.districtCoefficient.value = '';
+            item.additionalCoefficient.northernAllowance.value = '';
           }
         }
-      });
-    },
+      }
+    });
 
+    console.log('Год изменен на:', state.data_year, '| Разница лет:', diff, '| Активный таб ID:', targetId);
+  },
 
-state:{
-//год в календаре
-    data_year: new Date().getFullYear() - 3,
-
+  // ... ваши остальные мутации (mutationTabTimeMan и т.д.)
 }
-
-array_all_income_period_man:[
-      {
-        //касается табов
-        "id": "1",
-        "text": "1 год",
-        "isActive": false,
-        "isShow":true,
-        //касается полей input
-        modelInput:'field_1',
-        placeholder: `Среднемесячный доход в 2023 году, ₽`,
-        value:60000,
