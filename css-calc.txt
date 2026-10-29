@@ -1,177 +1,43 @@
-<script>
-import store from "../store";
-import { DsInput } from '@ringsites/ui-components/DsInput';
-import { DsCheckbox } from '@ringsites/ui-components';
-import ComponentincomeWithAdditionalCoefficient from './component-income-with-additional-coefficient';
-import ComponenTabsTimeInterval from './component-tabs-time-interval';
-import { debounce } from "../../../modules/debounce";
+mutationTabTimeMan(state, received_perem) {
+      const targetId = String(received_perem);
+      const activeIndex = state.array_all_income_period_man.findIndex(
+        item => String(item.id) === targetId
+      );
 
-export default {
-  name: 'component-income-man',
-
-  data() {
-    return {
-      dataFieldCheckbox: false,
-      fieldsIncomeMan: {},
-      isUpdatingFromStore: false, 
-      isInitialized: false, // ⭐ НОВЫЙ ФЛАГ: готов ли компонент к отправке данных
-      previousPayments: {
-        deduction_purchase: '',
-        deduction_interest: '',
-        other_deductions: '',
-      }
-    }
-  },
-
-  created() {
-    // 1. Сначала заполняем данные из Store
-    this.initializeFieldsIncomeFromStore();
-
-    // 2. ⭐ ТОЛЬКО ТЕПЕРЬ говорим компоненту, что инициализация завершена.
-    // Все изменения до этой строки игнорируются вотчером.
-    this.isInitialized = true;
-
-    // 3. Создаем debounce-функцию
-    this.debouncedIncomeUpdate = debounce((newFields) => {
-      if (this.isUpdatingFromStore) return;
-
-      const cleanedFields = {};
-      for (const key in newFields) {
-        const val = newFields[key];
-
-        // Умная очистка: не ломаем массивы/объекты от select
-        if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
-          cleanedFields[key] = val;
+      state.array_all_income_period_man.forEach((item, index) => {
+        if (index === activeIndex) {
+          item.isActive = true;
         } else {
-          const cleanStr = String(val).replace(/\s/g, '');
-          if (cleanStr === '') {
-            cleanedFields[key] = '';
-          } else {
-            const num = parseFloat(cleanStr);
-            cleanedFields[key] = isNaN(num) ? cleanStr : num;
+          item.isActive = false;
+
+          // ГЛАВНОЕ: если год идет ПОСЛЕ выбранного, очищаем ВСЮ сущность целиком
+          if (index > activeIndex) {
+            item.value = '';
+
+            if (item.additionalCoefficient) {
+              item.additionalCoefficient.districtCoefficient.value = '';
+              item.additionalCoefficient.northernAllowance.value = '';
+            }
           }
         }
-      }
-
-      store.dispatch('ActionShowLoader', true);
-      store.dispatch('ActionInputIncomeMan', cleanedFields)
-        .finally(() => {
-          store.dispatch('ActionShowLoader', false);
-        });
-    }, 500);
-  },
-
-  watch: {
-    // === СЛУШАТЕЛЬ 1: Реагируем на изменения в Store (клик по табу) ===
-    array_all_income_period: {
-      handler() {
-        this.isUpdatingFromStore = true;
-
-        if (this.debouncedIncomeUpdate) {
-          this.debouncedIncomeUpdate.cancel();
-        }
-
-        this.initializeFieldsIncomeFromStore();
-
-        this.$nextTick(() => {
-          this.isUpdatingFromStore = false;
-        });
-      },
-      deep: true
-    },
-
-    // === СЛУШАТЕЛЬ 2: Реагируем на ввод пользователя ===
-    fieldsIncomeMan: {
-      handler(newFields) {
-        // ⭐ ДВОЙНАЯ ЗАЩИТА:
-        // 1. Игнорируем, если это обновление пришло из Store (клик по табу)
-        // 2. Игнорируем, если компонент еще не закончил начальную инициализацию
-        if (this.isUpdatingFromStore || !this.isInitialized) return;
-
-        this.debouncedIncomeUpdate(newFields);
-      },
-      deep: true,
-      immediate: false
-    },
-
-    // === СЛУШАТЕЛЬ 3: Чекбокс ===
-    dataFieldCheckbox() {
-      store.dispatch('ActionCheckDistrictCoefficientMan', this.dataFieldCheckbox);
-    },
-
-    // === СЛУШАТЕЛЬ 4: Предыдущие вычеты ===
-    previousPayments: {
-      handler: debounce(function (newValue) {
-        // Здесь тоже добавим защиту на всякий случай
-        if (!this.isInitialized) return;
-
-        const cleanedPayments = {};
-        for (const key in newValue) {
-          const val = newValue[key];
-          const cleanStr = String(val).replace(/\s/g, '');
-          cleanedPayments[key] = cleanStr === '' ? '' : (isNaN(parseFloat(cleanStr)) ? cleanStr : parseFloat(cleanStr));
-        }
-
-        store.dispatch('ActionShowLoader', true);
-        store.dispatch('ActionInputPreviousPaymentsMan', cleanedPayments)
-          .finally(() => {
-            store.dispatch('ActionShowLoader', false);
-          });
-      }, 500),
-      deep: true,
-      immediate: false
-    },
-  },
-
-  beforeUnmount() {
-    if (this.debouncedIncomeUpdate) {
-      this.debouncedIncomeUpdate.cancel();
-    }
-  },
-
-  methods: {
-    initializeFieldsIncomeFromStore() {
-      const fields = {};
-
-      this.array_all_income_period.forEach(tab => {
-        fields[tab.modelInput] = tab.value || '';
-
-        if (tab.additionalCoefficient) {
-          const baseKey = tab.additionalCoefficient.modelInput;
-          fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
-          fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
-        }
       });
+    },
 
-      this.fieldsIncomeMan = fields;
-    },
-  },
 
-  computed: {
-    check_calculate_together() {
-      return store.getters.CHECKCALCULATETOGETHER;
-    },
-    data_year() {
-      return store.getters.DATAYEAR;
-    },
-    array_all_income_period() {
-      return store.getters.ARRAYALLINCOMEPERIODMAN;
-    },
-    visibleBlockIncomePeriod() {
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
-      if (activeIndex === -1) return [];
-      return this.array_all_income_period.slice(0, activeIndex + 1);
-    },
-    check_district_coefficient() {
-      return store.getters.CHECKDISTRICTCOEFFICIENTMAN;
-    },
-  },
+state:{
+//год в календаре
+    data_year: new Date().getFullYear() - 3,
 
-  components: {
-    DsInput,
-    DsCheckbox,
-    ComponentincomeWithAdditionalCoefficient,
-    ComponenTabsTimeInterval
-  },
-};
-</script>
+}
+
+array_all_income_period_man:[
+      {
+        //касается табов
+        "id": "1",
+        "text": "1 год",
+        "isActive": false,
+        "isShow":true,
+        //касается полей input
+        modelInput:'field_1',
+        placeholder: `Среднемесячный доход в 2023 году, ₽`,
+        value:60000,
