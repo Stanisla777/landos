@@ -1,25 +1,36 @@
- array_all_income_period_man:[
-      {
-        //касается табов
-        "id": "1",
-        "text": "1 год",
-        "isActive": false,
-        "isShow":true,
-         ..........
-      },
-      {
-        //касается табов
-        "id": "2",
-        "text": "2 год",
-        "isActive": false,
-        "isShow":true,
-         ..........
-      },
-      {
-        //касается табов
-        "id": "3",
-        "text": "3 год",
-        "isActive": false,
-        "isShow":true,
-         ..........
+/**
+ * Универсальная функция для обновления состояния массива периодов (муж/жена)
+ * @param {Array} array - Массив объектов периодов
+ * @param {string|null} targetId - ID активного таба ("1", "2", "3") или null (если текущий год)
+ */
+function updateIncomePeriodArray(array, targetId) {
+  // Находим индекс активного элемента. Если targetId === null, индекс будет -1.
+  const activeIndex = targetId !== null 
+    ? array.findIndex(item => String(item.id) === String(targetId)) 
+    : -1;
+
+  array.forEach((item, index) => {
+    if (targetId === null) {
+      // Сценарий 1: Текущий год. Всё скрыто и неактивно.
+      item.isActive = false;
+      item.isShow = false;
+    } else {
+      // Сценарий 2: Прошлые годы.
+      
+      // 1. Управляем isActive (только у выбранного таба true)
+      item.isActive = (String(item.id) === String(targetId));
+
+      // 2. Управляем isShow (показываем текущий и все предыдущие табы)
+      item.isShow = (index <= activeIndex);
+
+      // 3. Очищаем данные у табов, которые скрыты (идут ПОСЛЕ активного)
+      if (index > activeIndex) {
+        item.value = '';
+        if (item.additionalCoefficient) {
+          item.additionalCoefficient.districtCoefficient.value = '';
+          item.additionalCoefficient.northernAllowance.value = '';
+        }
       }
+    }
+  });
+}
