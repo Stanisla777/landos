@@ -1,37 +1,75 @@
-/**
- * Универсальная функция для обновления состояния массива периодов (муж/жена)
- * @param {Array} array - Массив объектов периодов
- * @param {string|null} targetId - ID активного таба ("1", "2", "3") или null (если текущий год)
- */
-function updateIncomePeriodArray(array, targetId) {
-  // Находим индекс активного элемента. Если targetId === null, индекс будет -1.
-  const activeIndex = targetId !== null 
-    ? array.findIndex(item => String(item.id) === String(targetId)) 
-    : -1;
+<div data-vue-app="tax-deduction-calculator-apartment-new"
+                data-tooltip-mortgage-interest='{"size":"small","info":"Калькулятор"}'
+</div>
 
-  array.forEach((item, index) => {
-    // 1. УПРАВЛЕНИЕ ВИДИМОСТЬЮ И АКТИВНОСТЬЮ
-    if (targetId === null) {
-      // Текущий год: всё скрыто и неактивно
-      item.isActive = false;
-      item.isShow = false;
-    } else {
-      // Прошлые годы: показываем текущий и предыдущие, активируем только выбранный
-      item.isActive = (String(item.id) === String(targetId));
-      item.isShow = (index <= activeIndex);
-    }
+mounted() {
+    //получаю все тултипы и помещаю в один объект
+    this.$nextTick(() => {
+      const tooltips = {};
+      const attributes = this.$el.attributes;
 
-    // 2. ЕДИНАЯ ЛОГИКА ОЧИСТКИ ДАННЫХ
-    // Очищаем, если это текущий год ИЛИ если элемент идет после активного (скрыт)
-    const shouldClear = (targetId === null) || (index > activeIndex);
+      for (let i = 0; i < attributes.length; i++) {
+        const attr = attributes[i];
 
-    if (shouldClear) {
-      item.value = '';
-      
-      if (item.additionalCoefficient) {
-        item.additionalCoefficient.districtCoefficient.value = '';
-        item.additionalCoefficient.northernAllowance.value = '';
+
+        if (attr.name.startsWith('tooltip')) {
+          try {
+            const value = JSON.parse(attr.value);
+
+
+            const name = attr.name.replace('tooltip', '');
+
+            if (!value.name) {
+              value.name = name;
+            }
+
+            tooltips[name] = value;
+          } catch (error) {
+            console.error(`Ошибка парсинга атрибута ${attr.name}:`, error);
+          }
+        }
       }
-    }
-  });
+
+
+      if (Object.keys(tooltips).length > 0) {
+        store.dispatch('ActionTransferTooltip', tooltips);
+      }
+    });
 }
+
+ActionTransferTooltip({commit,state,dispatch},param){
+      commit('mutationTransferTooltip',param)
+    },
+
+mutationTransferTooltip(state,received_perem){
+      state.transfer_tooltip = received_perem;
+      console.log('state.transfer_tooltip');
+      console.log(state.transfer_tooltip);
+    },
+
+getters:{
+ TRANSFERTOOLTIP(state){
+      return state.transfer_tooltip
+    },
+}
+
+В компоненте:
+computed:{
+    data_year() {
+      return store.getters.DATAYEAR;
+    },
+    transfer_tooltip(){
+      console.log(store.getters.TRANSFERTOOLTIP)
+      return store.getters.TRANSFERTOOLTIP;
+    }
+
+
+  },
+
+<p>За проценты по ипотеке<span
+            class="content-note aside-location always-aside always-right class-for-tooltip-calculator js--content-note-new"
+            v-if="transfer_tooltip!==null&&transfer_tooltip['mortgageInterest']&&transfer_tooltip['mortgageInterest']['info']!==''"
+            data-content-title="Доход семьи"
+            :data-content-text="transfer_tooltip['mortgageInterest']['info']"></span>
+
+          </p>
