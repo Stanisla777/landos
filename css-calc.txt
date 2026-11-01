@@ -1,109 +1,126 @@
-/**
- * Универсальная функция для обновления массива доходов из data-answers
- * @param {Array} stateArray - Массив из state (man или wife)
- * @param {Array} incomingArray - Массив из пришедших данных (received_perem)
- */
-function updateIncomeArrayFromAnswers(stateArray, incomingArray) {
-  if (!incomingArray || !Array.isArray(incomingArray)) return;
+<template>
+  <div class="input-story-container">
+    <DsInput
+      class="height-56"
+      v-model="dataField"
+      label="Стоимость недвижимости, ₽"
+      preset="amount"
+      labelPosition="inside"
+      :unit="''"
+      :maxlength="100"
+      :autocomplete="'off'"
+    />
+  </div>
+</template>
+<script>
+import store from "../store";
+import { DsInput } from '@ringsites/ui-components/DsInput';
+import {sandToStoreAmountField} from '../mixin/sandToStoreAmountField';
+export default {
+  name: 'component-apartment-prise',
+  mixins: [sandToStoreAmountField('ActionApartmentPrice')],
+  data(){
+    return {
 
-  incomingArray.forEach((incomingItem, index) => {
-    if (stateArray[index]) {
-      const stateItem = stateArray[index];
+    }
+  },
+  methods:{
+    initializeFieldsIncomeFromStore() {
+      this.dataField = this.apartment_price
+    }
+  },
+  computed:{
+    apartment_price() {
+      return store.getters.APARTMENTPRICE
+    }
+  },
 
-      // 1. Обновляем базовые поля
-      stateItem.isActive = incomingItem.isActive;
-      stateItem.isShow = incomingItem.isShow;
-      stateItem.value = incomingItem.value;
+  components: {
+    DsInput
+  }
+};
+</script>
+<style scoped>
+</style>
+--------------
+миксин
 
-      // 2. Обновляем коэффициенты
-      if (incomingItem.additionalCoefficient && stateItem.additionalCoefficient) {
-        const distVal = incomingItem.additionalCoefficient.districtCoefficient;
-        const northVal = incomingItem.additionalCoefficient.northernAllowance;
+/* eslint-disable */
+import store from "../store";
+import {debounce} from "../../../modules/debounce";
+export function sandToStoreAmountField(actioName) {
+  return {
+    data() {
+      return {
+        dataField:0,
+        isInitialized: false,
+        isUpdatingFromStore: false,
+      };
+    },
 
-        // Вспомогательная функция для поиска нужного объекта в variant по label
-        const findMatchingVariant = (variants, targetValue) => {
-          if (!variants || targetValue === undefined || targetValue === null || targetValue === '') {
-            return null;
-          }
-          // Ищем объект в variant, у которого label совпадает с пришедшим значением
-          return variants.find(v => String(v.label).trim() === String(targetValue).trim()) || null;
-        };
+    methods:{
 
-        // --- Районный коэффициент ---
-        if (distVal !== undefined) {
-          const matchedDist = findMatchingVariant(
-            stateItem.additionalCoefficient.districtCoefficient.variant, 
-            distVal
-          );
-          // Если нашли совпадение, записываем его в массив (как ожидает ds-multi-select)
-          // Если нет, записываем пустой массив, чтобы сбросить выбор
-          stateItem.additionalCoefficient.districtCoefficient.value = matchedDist ? [matchedDist] : [];
+    },
+    created() {
+      this.$nextTick(() => {
+
+      })
+      this.initializeFieldsIncomeFromStore();
+      this.debouncedIncomeUpdate = debounce((newFields) => {
+        if (this.isUpdatingFromStore) return;
+        const cleanedFields = String(newFields).replace(/\s/g, '');
+        store.dispatch('ActionShowLoader', true);
+        if (cleanedFields===''){
+          store.dispatch(actioName, '')
+            .finally(() => {
+              store.dispatch('ActionShowLoader', false);
+            });
         }
-
-        // --- Северная надбавка ---
-        if (northVal !== undefined) {
-          const matchedNorth = findMatchingVariant(
-            stateItem.additionalCoefficient.northernAllowance.variant, 
-            northVal
-          );
-          stateItem.additionalCoefficient.northernAllowance.value = matchedNorth ? [matchedNorth] : [];
+        else {
+          store.dispatch(actioName, parseInt(cleanedFields))
+            .finally(() => {
+              store.dispatch('ActionShowLoader', false);
+            });
         }
+      }, 500);
+    },
+    mounted(){
+      this.$nextTick(()=>{
+        this.isInitialized = true;
+      })
+    },
+    watch:{
+      dataField: {
+        handler(newFields) {
+          if (this.isUpdatingFromStore || !this.isInitialized) return;
+          this.debouncedIncomeUpdate(newFields);
+        },
+        deep: true,
+        immediate: false
+      }
+    },
+    beforeUnmount() {
+      if (this.debouncedIncomeUpdate) {
+        this.debouncedIncomeUpdate.cancel();
       }
     }
-  });
-}
-
-----------------
-
-mutationAnswers(state, received_perem) {
-  // 1. Базовые поля
-  state.data_year = received_perem.dataYear;
-  state.check_calculate_together = received_perem.calculateTogether;
-  state.apartment_price = received_perem.apartmentPrice;
-  state.interest_paid = received_perem.interestPaid;
-  state.funds_used = received_perem.fundsUsed;
-
-  // 2. Предыдущие вычеты (мужчина)
-  if (received_perem.previousPaymentsMan) {
-    state.previousPaymentsMan = {
-      ...state.previousPaymentsMan,
-      ...received_perem.previousPaymentsMan
-    };
-  }
-  
-  // 3. Предыдущие вычеты (женщина)
-  if (received_perem.previousPaymentsWife) {
-    state.previousPaymentsWife = {
-      ...state.previousPaymentsWife,
-      ...received_perem.previousPaymentsWife
-    };
-  }
-
-  // 4. Динамическое обновление доходов с помощью нашей функции!
-  updateIncomeArrayFromAnswers(state.array_all_income_period_man, received_perem.incomeMan);
-  updateIncomeArrayFromAnswers(state.array_all_income_period_wife, received_perem.incomeWife);
-}
-
-----------------
-
-methods: {
-  initializeFieldsIncomeFromStore() {
-    const fields = {};
-
-    this.array_all_income_period.forEach(tab => {
-      // 1. Основной доход
-      fields[tab.modelInput] = tab.value || '';
-
-      // 2. Коэффициенты
-      if (tab.additionalCoefficient) {
-        const baseKey = tab.additionalCoefficient.modelInput;
-        
-        // Мы передаем массив объектов напрямую, так как ds-multi-select ожидает именно это
-        fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || [];
-        fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || [];
-      }
-    });
-
-    this.fieldsIncome = fields;
   }
 }
+
+
+ошибка
+
+Cannot read properties of null (reading 'emitsOptions')
+TypeError: Cannot read properties of null (reading 'emitsOptions')
+    at shouldUpdateComponent (http://localhost:8081/js/bundle.js:36734:27)
+    at updateComponent (http://localhost:8081/js/bundle.js:38036:9)
+    at processComponent (http://localhost:8081/js/bundle.js:37982:7)
+    at patch (http://localhost:8081/js/bundle.js:37478:11)
+    at patchBlockChildren (http://localhost:8081/js/bundle.js:37856:7)
+    at patchElement (http://localhost:8081/js/bundle.js:37774:7)
+    at processElement (http://localhost:8081/js/bundle.js:37616:9)
+    at patch (http://localhost:8081/js/bundle.js:37466:11)
+    at ReactiveEffect.componentUpdateFn [as fn] (http://localhost:8081/js/bundle.js:38200:9)
+    at ReactiveEffect.run (http://localhost:8081/js/bundle.js:29990:19)
+
+
