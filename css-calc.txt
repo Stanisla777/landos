@@ -1,281 +1,78 @@
-data-answers='{"dataYear":2023,"calculateTogether":true,"apartmentPrice":5000000,"interestPaid":5000000,"fundsUsed":45694,"coefficientMan":true,"coefficientWife":true,
-                 "incomeMan":[{"text":"1 год","isActive":false,"isShow":true,"value":1000000,"additionalCoefficient":
-                 {"districtCoefficient":"0.3","northernAllowance" : 20}},
-                 {"text":"2 год","isActive":false,"isShow":true,"value":50000,"additionalCoefficient":
-                 {"districtCoefficient":"0.1","northernAllowance" : 10}},
-                 {"text":"2 год","isActive":true,"isShow":true,"value":50000,"additionalCoefficient":
-                 {"districtCoefficient":"0.1","northernAllowance" : 10}}],
-                 "previousPaymentsMan" : {"deduction_purchase":1000 ,"deduction_interest":20000,"other_deductions":300000}
-                 }'
+mutationAnswers(state, received_perem) {
+  // 1. Базовые поля
+  state.data_year = received_perem.dataYear;
+  state.check_calculate_together = received_perem.calculateTogether;
+  state.apartment_price = received_perem.apartmentPrice;
+  state.interest_paid = received_perem.interestPaid;
+  state.funds_used = received_perem.fundsUsed;
 
+  // 2. Предыдущие вычеты (безопасное слия объектов)
+  if (received_perem.previousPaymentsMan) {
+    state.previousPaymentsMan = { 
+      ...state.previousPaymentsMan, 
+      ...received_perem.previousPaymentsMan 
+    };
+  }
 
+  // 3. Динамическое обновление массива доходов (для всех лет!)
+  if (received_perem.incomeMan && Array.isArray(received_perem.incomeMan)) {
+    received_perem.incomeMan.forEach((incomingItem, index) => {
+      // Проверяем, что в state есть элемент с таким индексом
+      if (state.array_all_income_period_man[index]) {
+        const stateItem = state.array_all_income_period_man[index];
 
-<template>
-  <div class="calculator__row extra-small" v-for="(item, index) in visibleBlockIncomePeriod" :key="item.id">
-    <div class="calc-tax-deduc-new__row-three-column">
+        // Обновляем флаги и значение
+        stateItem.isActive = incomingItem.isActive;
+        stateItem.isShow = incomingItem.isShow;
+        stateItem.value = incomingItem.value;
 
-      <!-- Основной доход -->
-      <div class="input-story-container">
-        <DsInput
-          class="height-56"
-          v-model="fieldsIncome[item.modelInput]"
-          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
-          preset="amount"
-          labelPosition="inside"
-          :unit="''"
-          :maxlength="100"
-          :autocomplete="'off'"
-        />
+        // Обновляем коэффициенты, приводя их к формату, который ожидает ds-multi-select
+        if (incomingItem.additionalCoefficient && stateItem.additionalCoefficient) {
+          const distVal = incomingItem.additionalCoefficient.districtCoefficient;
+          const northVal = incomingItem.additionalCoefficient.northernAllowance;
 
-      </div>
-
-      <!--Районный коэффициент-->
-      <div class="input-story-container">
-        <ds-multi-select
-          class="height-56"
-          v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_district']"
-          :options="item.additionalCoefficient.districtCoefficient.variant"
-          :flat="true"
-          :singleSelect="true"
-          :placeholder="''"
-          :label="item.additionalCoefficient.districtCoefficient.placeholder"
-          :label-position="'inside'"
-        />
-      </div>
-
-      <!-- Северная надбавка -->
-      <div class="input-story-container">
-        <ds-multi-select
-          class="height-56"
-          v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_northern']"
-          :options="item.additionalCoefficient.northernAllowance.variant"
-          :flat="true"
-          :singleSelect="true"
-          :placeholder="''"
-          :label="item.additionalCoefficient.northernAllowance.placeholder"
-          :label-position="'inside'"
-        />
-      </div>
-
-    </div>
-  </div>
-
-
-</template>
-<script>
-import store from "../store";
-import { DsInput } from '@ringsites/ui-components/DsInput'
-import { DsMultiSelect } from '@ringsites/ui-components'
-import {debounce} from "../../../modules/debounce";
-
-export default {
-  name: 'component-income-with-additional-coefficient',
-  mixins: [],
-  props:['view'],
-  data(){
-    return {
-      //поля средний доход по годам, заполняется в created
-      fieldsIncome: {},
-      isUpdatingFromStore: false,
-      isInitialized: false,
-      options:[],
-      selected:''
-    }
-  },
-  methods:{
-    //заполнеия поля fieldsIncome при загрузке из store
-    initializeFieldsIncomeFromStore() {
-      this.$nextTick(() => {
-        const fields = {};
-        this.array_all_income_period.forEach(tab => {
-          // 1. Основной доход
-          fields[tab.modelInput] = tab.value || '';
-          // 2. Районный коэффициент (если он есть в структуре)
-          if (tab.additionalCoefficient) {
-            const baseCoeffKey = tab.additionalCoefficient.modelInput;
-            fields[baseCoeffKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
-            fields[baseCoeffKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
+          // Формируем массив объектов, понятный для ds-multi-select
+          if (distVal !== undefined) {
+            stateItem.additionalCoefficient.districtCoefficient.value = [
+              { label: String(distVal), value: String(distVal) } // или { id: 1, label: String(distVal) } в зависимости от вашей UI-библиотеки
+            ];
           }
-        });
-        this.fieldsIncome = fields;
-      });
-
-    },,
-  },
-  computed:{
-    data_year() {
-      return store.getters.DATAYEAR;
-    },
-
-    array_all_income_period(){
-      if (this.view === 'man') {
-        return store.getters.ARRAYALLINCOMEPERIODMAN
-      } else {
-        return store.getters.ARRAYALLINCOMEPERIODWIFE
-      }
-
-    },
-
-    //этот компьютед не только получает со стор массив полей, но и вычисляет какие инпуты показывать в зависимости от выбранных лет
-    //на основе него по циклу формируются поля с доходом
-    visibleBlockIncomePeriod() {
-      // Ищем индекс первого элемента, у которого isActive === true
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
-
-      // Если такой элемент не найден — возвращаю пустой массив
-      if (activeIndex === -1) return []
-
-      // Беру все элементы от начала до активного включительно
-      return this.array_all_income_period.slice(0, activeIndex + 1)
-    },
-
-  },
-  created() {
-    this.initializeFieldsIncomeFromStore();
-    this.debouncedIncomeUpdate = debounce((newFields) => {
-      if (this.isUpdatingFromStore) return;
-
-      const cleanedFields = {};
-      for (const key in newFields) {
-        const val = newFields[key];
-
-        // Умная очистка: не ломаем массивы/объекты от select
-        if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
-          cleanedFields[key] = val;
-        } else {
-          const cleanStr = String(val).replace(/\s/g, '');
-          if (cleanStr === '') {
-            cleanedFields[key] = '';
-          } else {
-            const num = parseFloat(cleanStr);
-            cleanedFields[key] = isNaN(num) ? cleanStr : num;
+          if (northVal !== undefined) {
+            stateItem.additionalCoefficient.northernAllowance.value = [
+              { label: String(northVal), value: String(northVal) }
+            ];
           }
         }
       }
+    });
+  }
+}
 
-      store.dispatch('ActionShowLoader', true);
-      // Если флаг опущен, значит это реальный ввод пользователя. Отправляем в Store.
-      if (this.view === 'man') {
-        store.dispatch('ActionInputIncomeMan', cleanedFields);
-      } else {
-        store.dispatch('ActionInputIncomeWife', cleanedFields)
-          .finally(() => {
-            store.dispatch('ActionShowLoader', false);
-          });
+
+
+methods: {
+  initializeFieldsIncomeFromStore() {
+    const fields = {};
+
+    this.array_all_income_period.forEach(tab => {
+      // 1. Основной доход
+      fields[tab.modelInput] = tab.value || '';
+
+      // 2. Коэффициенты
+      if (tab.additionalCoefficient) {
+        const baseKey = tab.additionalCoefficient.modelInput;
+
+        // Берем значение из Store. 
+        // Если это массив (как мы сохранили в мутации), передаем его целиком для ds-multi-select.
+        // Иначе передаем как есть.
+        const distVal = tab.additionalCoefficient.districtCoefficient?.value;
+        fields[baseKey + '_district'] = Array.isArray(distVal) ? distVal : (distVal || '');
+
+        const northVal = tab.additionalCoefficient.northernAllowance?.value;
+        fields[baseKey + '_northern'] = Array.isArray(northVal) ? northVal : (northVal || '');
       }
+    });
 
-    }, 500);
-  },
-  mounted(){
-    this.$nextTick(()=>{
-      this.isInitialized = true;
-    })
-
-  },
-  watch: {
-    // 1. Следим за изменениями в Store (например, очистка полей при клике на таб)
-    array_all_income_period: {
-      handler() {
-        this.isUpdatingFromStore = true;
-
-        if (this.debouncedIncomeUpdate) {
-          this.debouncedIncomeUpdate.cancel();
-        }
-
-        this.initializeFieldsIncomeFromStore();
-
-        this.$nextTick(() => {
-          this.isUpdatingFromStore = false;
-        });
-      },
-      deep: true
-    },
-
-    // 2. Следим за изменениями в локальных полях (когда печатает пользователь)
-    fieldsIncome: {
-      handler(newFields) {
-        if (this.isUpdatingFromStore || !this.isInitialized) return;
-
-        this.debouncedIncomeUpdate(newFields);
-      },
-      deep: true,
-      immediate: false
-    },
-
-  },
-  beforeUnmount() {
-    if (this.debouncedIncomeUpdate) {
-      this.debouncedIncomeUpdate.cancel();
-    }
-  },
-  components: {
-    DsInput,
-    DsMultiSelect
-  },
-};
-</script>
-<style scoped>
-</style>
-
-------------------
-
-array_all_income_period_man:[
-      {
-additionalCoefficient : {
-          modelInput:'field_coefficient_1',
-          districtCoefficient:{
-            value:[{id: 1,label: '0.1'}], //значение выбранного районного коэффициенты
-            placeholder:'Районный коэффициент',
-            variant:[{
-              id: 1,
-              label: '0.1',
-            },
-              {
-                id: 2,
-                label: '0.2',
-              },
-              {
-                id: 3,
-                label: '0.3',
-              }]
-          },
+    this.fieldsIncome = fields;
+  }
 }
-}
-]
-
- mutationAnswers(state,received_perem){
-      state.answers = received_perem;
-
-      state.data_year = received_perem.dataYear;
-      state.check_calculate_together = received_perem.calculateTogether;
-      state.apartment_price = received_perem.apartmentPrice;
-      state.interest_paid = received_perem.interestPaid;
-      state.funds_used = received_perem.fundsUsed;
-      state.array_all_income_period_man[0].isActive = received_perem.incomeMan[0].isActive
-      state.array_all_income_period_man[0].isShow = received_perem.incomeMan[0].isShow
-      state.array_all_income_period_man[0].value = received_perem.incomeMan[0].value
-      state.array_all_income_period_man[0].additionalCoefficient.districtCoefficient.value[0].label = received_perem.incomeMan[0].additionalCoefficient.districtCoefficient
-      state.array_all_income_period_man[0].additionalCoefficient.northernAllowance.value[0].label = received_perem.incomeMan[0].additionalCoefficient.northernAllowance
-      state.previousPaymentsMan.deduction_purchase = received_perem.previousPaymentsMan.deduction_purchase
-      state.previousPaymentsMan.deduction_interest = received_perem.previousPaymentsMan.deduction_interest
-      state.previousPaymentsMan.other_deductions = received_perem.previousPaymentsMan.other_deductions
-    },
-
-где получается
-
-methods:{
-    initializeFieldsIncomeFromStore() {
-      this.$nextTick(() => {
-        this.dataField = this.funds_used
-      });
-
-    }
-
-
-  },
-
-
-
-
-
-
