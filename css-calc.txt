@@ -1,11 +1,267 @@
-Ошибка парсинга answers: TypeError: Cannot read properties of undefined (reading 'districtCoefficient')
-
 data-answers='{"dataYear":2023,"calculateTogether":true,"apartmentPrice":5000000,"interestPaid":5000000,"fundsUsed":45694,"coefficientMan":true,"coefficientWife":true,
                  "incomeMan":[{"text":"1 год","isActive":false,"isShow":true,"value":1000000,"additionalCoefficient":
                  {"districtCoefficient":"0.3","northernAllowance" : 20}},
                  {"text":"2 год","isActive":false,"isShow":true,"value":50000,"additionalCoefficient":
                  {"districtCoefficient":"0.1","northernAllowance" : 10}},
                  {"text":"2 год","isActive":true,"isShow":true,"value":50000,"additionalCoefficient":
-                 {"districtCoefficient":"0.1","northernAllowance" : 10}}]}'
+                 {"districtCoefficient":"0.1","northernAllowance" : 10}}],
+                 "previousPaymentsMan" : {"deduction_purchase":1000 ,"deduction_interest":20000,"other_deductions":300000}
+                 }'
+
+
+
+<template>
+  <div class="calculator__row extra-small" v-for="(item, index) in visibleBlockIncomePeriod" :key="item.id">
+    <div class="calc-tax-deduc-new__row-three-column">
+
+      <!-- Основной доход -->
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncome[item.modelInput]"
+          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
+          preset="amount"
+          labelPosition="inside"
+          :unit="''"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+
+      </div>
+
+      <!--Районный коэффициент-->
+      <div class="input-story-container">
+        <ds-multi-select
+          class="height-56"
+          v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_district']"
+          :options="item.additionalCoefficient.districtCoefficient.variant"
+          :flat="true"
+          :singleSelect="true"
+          :placeholder="''"
+          :label="item.additionalCoefficient.districtCoefficient.placeholder"
+          :label-position="'inside'"
+        />
+      </div>
+
+      <!-- Северная надбавка -->
+      <div class="input-story-container">
+        <ds-multi-select
+          class="height-56"
+          v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_northern']"
+          :options="item.additionalCoefficient.northernAllowance.variant"
+          :flat="true"
+          :singleSelect="true"
+          :placeholder="''"
+          :label="item.additionalCoefficient.northernAllowance.placeholder"
+          :label-position="'inside'"
+        />
+      </div>
+
+    </div>
+  </div>
+
+
+</template>
+<script>
+import store from "../store";
+import { DsInput } from '@ringsites/ui-components/DsInput'
+import { DsMultiSelect } from '@ringsites/ui-components'
+import {debounce} from "../../../modules/debounce";
+
+export default {
+  name: 'component-income-with-additional-coefficient',
+  mixins: [],
+  props:['view'],
+  data(){
+    return {
+      //поля средний доход по годам, заполняется в created
+      fieldsIncome: {},
+      isUpdatingFromStore: false,
+      isInitialized: false,
+      options:[],
+      selected:''
+    }
+  },
+  methods:{
+    //заполнеия поля fieldsIncome при загрузке из store
+    initializeFieldsIncomeFromStore() {
+      this.$nextTick(() => {
+        const fields = {};
+        this.array_all_income_period.forEach(tab => {
+          // 1. Основной доход
+          fields[tab.modelInput] = tab.value || '';
+          // 2. Районный коэффициент (если он есть в структуре)
+          if (tab.additionalCoefficient) {
+            const baseCoeffKey = tab.additionalCoefficient.modelInput;
+            fields[baseCoeffKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
+            fields[baseCoeffKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
+          }
+        });
+        this.fieldsIncome = fields;
+      });
+
+    },,
+  },
+  computed:{
+    data_year() {
+      return store.getters.DATAYEAR;
+    },
+
+    array_all_income_period(){
+      if (this.view === 'man') {
+        return store.getters.ARRAYALLINCOMEPERIODMAN
+      } else {
+        return store.getters.ARRAYALLINCOMEPERIODWIFE
+      }
+
+    },
+
+    //этот компьютед не только получает со стор массив полей, но и вычисляет какие инпуты показывать в зависимости от выбранных лет
+    //на основе него по циклу формируются поля с доходом
+    visibleBlockIncomePeriod() {
+      // Ищем индекс первого элемента, у которого isActive === true
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
+
+      // Если такой элемент не найден — возвращаю пустой массив
+      if (activeIndex === -1) return []
+
+      // Беру все элементы от начала до активного включительно
+      return this.array_all_income_period.slice(0, activeIndex + 1)
+    },
+
+  },
+  created() {
+    this.initializeFieldsIncomeFromStore();
+    this.debouncedIncomeUpdate = debounce((newFields) => {
+      if (this.isUpdatingFromStore) return;
+
+      const cleanedFields = {};
+      for (const key in newFields) {
+        const val = newFields[key];
+
+        // Умная очистка: не ломаем массивы/объекты от select
+        if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
+          cleanedFields[key] = val;
+        } else {
+          const cleanStr = String(val).replace(/\s/g, '');
+          if (cleanStr === '') {
+            cleanedFields[key] = '';
+          } else {
+            const num = parseFloat(cleanStr);
+            cleanedFields[key] = isNaN(num) ? cleanStr : num;
+          }
+        }
+      }
+
+      store.dispatch('ActionShowLoader', true);
+      // Если флаг опущен, значит это реальный ввод пользователя. Отправляем в Store.
+      if (this.view === 'man') {
+        store.dispatch('ActionInputIncomeMan', cleanedFields);
+      } else {
+        store.dispatch('ActionInputIncomeWife', cleanedFields)
+          .finally(() => {
+            store.dispatch('ActionShowLoader', false);
+          });
+      }
+
+    }, 500);
+  },
+  mounted(){
+    this.$nextTick(()=>{
+      this.isInitialized = true;
+    })
+
+  },
+  watch: {
+    // 1. Следим за изменениями в Store (например, очистка полей при клике на таб)
+    array_all_income_period: {
+      handler() {
+        this.isUpdatingFromStore = true;
+
+        if (this.debouncedIncomeUpdate) {
+          this.debouncedIncomeUpdate.cancel();
+        }
+
+        this.initializeFieldsIncomeFromStore();
+
+        this.$nextTick(() => {
+          this.isUpdatingFromStore = false;
+        });
+      },
+      deep: true
+    },
+
+    // 2. Следим за изменениями в локальных полях (когда печатает пользователь)
+    fieldsIncome: {
+      handler(newFields) {
+        if (this.isUpdatingFromStore || !this.isInitialized) return;
+
+        this.debouncedIncomeUpdate(newFields);
+      },
+      deep: true,
+      immediate: false
+    },
+
+  },
+  beforeUnmount() {
+    if (this.debouncedIncomeUpdate) {
+      this.debouncedIncomeUpdate.cancel();
+    }
+  },
+  components: {
+    DsInput,
+    DsMultiSelect
+  },
+};
+</script>
+<style scoped>
+</style>
+
+------------------
+
+array_all_income_period_man:[
+      {
+additionalCoefficient : {
+          modelInput:'field_coefficient_1',
+          districtCoefficient:{
+            value:[{id: 1,label: '0.1'}], //значение выбранного районного коэффициенты
+            placeholder:'Районный коэффициент',
+            variant:[{
+              id: 1,
+              label: '0.1',
+            },
+              {
+                id: 2,
+                label: '0.2',
+              },
+              {
+                id: 3,
+                label: '0.3',
+              }]
+          },
+}
+}
+]
+
+mutationAnswers(state,received_perem){
+   state.array_all_income_period_man[0].additionalCoefficient.districtCoefficient.value[0].label = received_perem.incomeMan[0].additionalCoefficient.districtCoefficient
+}
+
+где получается
+
+methods:{
+    initializeFieldsIncomeFromStore() {
+      this.$nextTick(() => {
+        this.dataField = this.funds_used
+      });
+
+    }
+
+
+  },
+
+
+
+
 
 
