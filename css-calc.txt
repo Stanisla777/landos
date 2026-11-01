@@ -1,52 +1,225 @@
-mutationAnswers(state, received_perem) {
-  // 1. Базовые поля
-  state.data_year = received_perem.dataYear;
-  state.check_calculate_together = received_perem.calculateTogether;
-  state.apartment_price = received_perem.apartmentPrice;
-  state.interest_paid = received_perem.interestPaid;
-  state.funds_used = received_perem.fundsUsed;
+data-answers='{"dataYear":2022,"calculateTogether":true,"apartmentPrice":5000000,"interestPaid":5000000,"fundsUsed":45694,"coefficientMan":true,"coefficientWife":true,
+                 "incomeMan":[{"text":"1 год","isActive":false,"isShow":true,"value":1000000,"additionalCoefficient":
+                 {"districtCoefficient":"0.3","northernAllowance" : 20}},
+                 {"text":"2 год","isActive":false,"isShow":true,"value":50000,"additionalCoefficient":
+                 {"districtCoefficient":"0.1","northernAllowance" : 10}},
+                 {"text":"2 год","isActive":true,"isShow":true,"value":50000,"additionalCoefficient":
+                 {"districtCoefficient":"0.1","northernAllowance" : 10}}],
+                 "previousPaymentsMan" : {"deduction_purchase":1000 ,"deduction_interest":20000,"other_deductions":300000},
+                 "incomeWife":[{"text":"1 год","isActive":false,"isShow":true,"value":1000000,"additionalCoefficient":
+                 {"districtCoefficient":"0.3","northernAllowance" : 20}},
+                 {"text":"2 год","isActive":false,"isShow":true,"value":50000,"additionalCoefficient":
+                 {"districtCoefficient":"0.1","northernAllowance" : 10}},
+                 {"text":"2 год","isActive":true,"isShow":true,"value":50000,"additionalCoefficient":
+                 {"districtCoefficient":"0.1","northernAllowance" : 10}}],
+                 "previousPaymentsWife" : {"deduction_purchase":3000000 ,"deduction_interest":2000000,"other_deductions":1000000}
+                 }'
 
-  // 2. Предыдущие вычеты (безопасное слия объектов)
-  if (received_perem.previousPaymentsMan) {
-    state.previousPaymentsMan = { 
-      ...state.previousPaymentsMan, 
-      ...received_perem.previousPaymentsMan 
-    };
-  }
-
-  // 3. Динамическое обновление массива доходов (для всех лет!)
-  if (received_perem.incomeMan && Array.isArray(received_perem.incomeMan)) {
-    received_perem.incomeMan.forEach((incomingItem, index) => {
-      // Проверяем, что в state есть элемент с таким индексом
-      if (state.array_all_income_period_man[index]) {
-        const stateItem = state.array_all_income_period_man[index];
-
-        // Обновляем флаги и значение
-        stateItem.isActive = incomingItem.isActive;
-        stateItem.isShow = incomingItem.isShow;
-        stateItem.value = incomingItem.value;
-
-        // Обновляем коэффициенты, приводя их к формату, который ожидает ds-multi-select
-        if (incomingItem.additionalCoefficient && stateItem.additionalCoefficient) {
-          const distVal = incomingItem.additionalCoefficient.districtCoefficient;
-          const northVal = incomingItem.additionalCoefficient.northernAllowance;
-
-          // Формируем массив объектов, понятный для ds-multi-select
-          if (distVal !== undefined) {
-            stateItem.additionalCoefficient.districtCoefficient.value = [
-              { label: String(distVal), value: String(distVal) } // или { id: 1, label: String(distVal) } в зависимости от вашей UI-библиотеки
-            ];
-          }
-          if (northVal !== undefined) {
-            stateItem.additionalCoefficient.northernAllowance.value = [
-              { label: String(northVal), value: String(northVal) }
-            ];
+array_all_income_period_wife:[
+      {
+        //касается табов
+        "id": "1",
+        "text": "1 год",
+        "isActive": false,
+        "isShow":true,
+        //касается полей input
+        modelInput:'field_1',
+        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
+        //касается дополнительных полей при районных коффициентах или северных надбавках
+        additionalCoefficient : {
+          modelInput:'field_coefficient_1',
+          districtCoefficient:{
+            value:[{id: 1,label: '0.1'}],//значение выбранного районного коэффициенты
+            placeholder:'Районный коэффициент',
+            variant:[{
+              id: 1,
+              label: '0.7',
+            },
+              {
+                id: 2,
+                label: '0.8',
+              },
+              {
+                id: 3,
+                label: '0.9',
+              }]
+          },
+          northernAllowance:{
+            value:[{id: 1,label: '10'}],//значение выбранной северной надбавки
+            placeholder:'Северная надбавка',
+            variant:[{
+              id: 1,
+              label: '40',
+            },
+              {
+                id: 2,
+                label: '50',
+              },
+              {
+                id: 3,
+                label: '60',
+              }]
           }
         }
+      },
+      {
+        //касается табов
+        "id": "2",
+        "text": "2 года",
+        "isActive": false,
+        "isShow":true,
+        //касается полей input
+        modelInput: 'field_2',
+        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
+        additionalCoefficient : {
+          "modelInput":'field_coefficient_2',
+          districtCoefficient:{
+            value: [{id: 2,label: '0.8'}],//значение выбранного районного коэффициенты
+            placeholder:'Районный коэффициент',
+            variant: [{
+              id: 1,
+              label: '0.7',
+            },
+              {
+                id: 2,
+                label: '0.8',
+              },
+              {
+                id: 3,
+                label: '0.9',
+              }]
+          },
+          northernAllowance:{
+            value:[{id: 1,label: '40'}],//значение выбранной северной надбавки
+            placeholder:'Северная надбавка',
+            variant:[{
+              id: 1,
+              label: '40',
+            },
+              {
+                id: 2,
+                label: '50',
+              },
+              {
+                id: 3,
+                label: '60',
+              }]
+          }
+        }
+      },
+      {
+        //касается табов
+        "id": "3",
+        "text": "3 года",
+        "isActive": true,
+        "isShow":true,
+        //касается полей input
+        modelInput: 'field_3',
+        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
+        additionalCoefficient : {
+          "modelInput":'field_coefficient_3',
+          districtCoefficient:{
+            value:[{id: 3,label: '0.9'}],//значение выбранного районного коэффициенты
+            placeholder:'Районный коэффициент',
+            variant:[{
+              id: 1,
+              label: '0.7',
+            },
+              {
+                id: 2,
+                label: '0.2',
+              },
+              {
+                id: 3,
+                label: '0.9',
+              }]
+          },
+          northernAllowance:{
+            value:[{id: 1,label: '40'}],//значение выбранной северной надбавки
+            placeholder:'Северная надбавка',
+            variant:[{
+              id: 1,
+              label: '40',
+            },
+              {
+                id: 2,
+                label: '50',
+              },
+              {
+                id: 3,
+                label: '60',
+              }]
+          }
+        }
+      },
+    ],
+
+
+-------------
+
+
+mutationAnswers(state, received_perem) {
+      // 1. Базовые поля
+      state.data_year = received_perem.dataYear;
+      state.check_calculate_together = received_perem.calculateTogether;
+      state.apartment_price = received_perem.apartmentPrice;
+      state.interest_paid = received_perem.interestPaid;
+      state.funds_used = received_perem.fundsUsed;
+
+      // 2. Предыдущие вычеты (мужчины)
+      if (received_perem.previousPaymentsMan) {
+        state.previousPaymentsMan = {
+          ...state.previousPaymentsMan,
+          ...received_perem.previousPaymentsMan
+        };
       }
-    });
-  }
-}
+      // 2. Предыдущие вычеты (женщины)
+      if (received_perem.previousPaymentsWife) {
+        state.previousPaymentsWife = {
+          ...state.previousPaymentsWife,
+          ...received_perem.previousPaymentsWife
+        };
+      }
+
+
+      // 3. Динамическое обновление массива доходов (для всех лет!)
+      if (received_perem.incomeMan && Array.isArray(received_perem.incomeMan)) {
+        received_perem.incomeMan.forEach((incomingItem, index) => {
+          // Проверяем, что в state есть элемент с таким индексом
+          if (state.array_all_income_period_man[index]) {
+            const stateItem = state.array_all_income_period_man[index];
+
+            // Обновляем флаги и значение
+            stateItem.isActive = incomingItem.isActive;
+            stateItem.isShow = incomingItem.isShow;
+            stateItem.value = incomingItem.value;
+
+            // Обновляем коэффициенты, приводя их к формату, который ожидает ds-multi-select
+            if (incomingItem.additionalCoefficient && stateItem.additionalCoefficient) {
+              const distVal = incomingItem.additionalCoefficient.districtCoefficient;
+              const northVal = incomingItem.additionalCoefficient.northernAllowance;
+
+              // Формируем массив объектов, понятный для ds-multi-select
+              if (distVal !== undefined) {
+                stateItem.additionalCoefficient.districtCoefficient.value = [
+                  { label: String(distVal), value: String(distVal) } // или { id: 1, label: String(distVal) } в зависимости от вашей UI-библиотеки
+                ];
+              }
+              if (northVal !== undefined) {
+                stateItem.additionalCoefficient.northernAllowance.value = [
+                  { label: String(northVal), value: String(northVal) }
+                ];
+              }
+            }
+          }
+        });
+      }
+    },
+
+
+
+
+---------------
 
 
 
