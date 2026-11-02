@@ -1,78 +1,166 @@
-mixins: [sandToStoreAmountField('ActionApartmentPrice', 'apartment_price')],
+array_all_income_period_wife:[
+      {
+        //касается табов
+        "id": "1",
+        "text": "1 год",
+        "isActive": false,
+        "isShow":true,
+        //касается полей input
+        modelInput:'field_1',
+        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
+        //касается дополнительных полей при районных коффициентах или северных надбавках
+        additionalCoefficient : {
+          modelInput:'field_coefficient_1',
+          districtCoefficient:{
+            value:[{id: 1,label: '0.1'}],//значение выбранного районного коэффициенты
+            placeholder:'Районный коэффициент',
+            variant:[{
+              id: 1,
+              label: '0.7',
+            },
+              {
+                id: 2,
+                label: '0.8',
+              },
+              {
+                id: 3,
+                label: '0.9',
+              }]
+          },
+          northernAllowance:{
+            value:[{id: 1,label: '10'}],//значение выбранной северной надбавки
+            placeholder:'Северная надбавка',
+            variant:[{
+              id: 1,
+              label: '40',
+            },
+              {
+                id: 2,
+                label: '50',
+              },
+              {
+                id: 3,
+                label: '60',
+              }]
+          }
+        }
+      },
+      {
+        //касается табов
+        "id": "2",
+        "text": "2 года",
+        "isActive": false,
+        "isShow":true,
+        //касается полей input
+        modelInput: 'field_2',
+        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
+        additionalCoefficient : {
+          "modelInput":'field_coefficient_2',
+          districtCoefficient:{
+            value: [{id: 2,label: '0.8'}],//значение выбранного районного коэффициенты
+            placeholder:'Районный коэффициент',
+            variant: [{
+              id: 1,
+              label: '0.7',
+            },
+              {
+                id: 2,
+                label: '0.8',
+              },
+              {
+                id: 3,
+                label: '0.9',
+              }]
+          },
+          northernAllowance:{
+            value:[{id: 1,label: '40'}],//значение выбранной северной надбавки
+            placeholder:'Северная надбавка',
+            variant:[{
+              id: 1,
+              label: '40',
+            },
+              {
+                id: 2,
+                label: '50',
+              },
+              {
+                id: 3,
+                label: '60',
+              }]
+          }
+        }
+      },
+      {
+        //касается табов
+        "id": "3",
+        "text": "3 года",
+        "isActive": true,
+        "isShow":true,
+        //касается полей input
+        modelInput: 'field_3',
+        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
+        additionalCoefficient : {
+          "modelInput":'field_coefficient_3',
+          districtCoefficient:{
+            value:[{id: 3,label: '0.9'}],//значение выбранного районного коэффициенты
+            placeholder:'Районный коэффициент',
+            variant:[{
+              id: 1,
+              label: '0.7',
+            },
+              {
+                id: 2,
+                label: '0.2',
+              },
+              {
+                id: 3,
+                label: '0.9',
+              }]
+          },
+          northernAllowance:{
+            value:[{id: 1,label: '40'}],//значение выбранной северной надбавки
+            placeholder:'Северная надбавка',
+            variant:[{
+              id: 1,
+              label: '40',
+            },
+              {
+                id: 2,
+                label: '50',
+              },
+              {
+                id: 3,
+                label: '60',
+              }]
+          }
+        }
+      },
+    ],
 
+--------------------------------
 
-/* eslint-disable */
-import store from "../store";
-import { debounce } from "../../../modules/debounce";
+mutationCalculateResult(state) {
+      state.answers_to_send.dataYear=state.data_year;
+      state.answers_to_send.calculateTogether=state.check_calculate_together;
+      state.answers_to_send.apartmentPrice=state.apartment_price;
+      state.answers_to_send.interestPaid=state.interest_paid;
+      state.answers_to_send.fundsUsed=state.funds_used;
+      state.answers_to_send.coefficientMan=state.check_district_coefficient_man;
+      state.answers_to_send.coefficientWife=state.check_district_coefficient_wife;
+      state.answers_to_send.previousPaymentsMan=state.previousPaymentsMan;
+      state.answers_to_send.previousPaymentsWife=state.previousPaymentsWife;
+      state.answers_to_send.incomeMan=state.array_all_income_period_man;
+      state.answers_to_send.incomeWife=state.array_all_income_period_wife;
 
-// Добавляем второй параметр: имя computed-свойства в компоненте, откуда брать значение
-export function sandToStoreAmountField(actionName, computedPropName) {
-  return {
-    data() {
-      return {
-        dataField: '',
-        isInitialized: false,
-        isUpdatingFromStore: false,
-      };
+      console.log('state.answers_to_send')
+      console.log(state.answers_to_send)
     },
 
-    created() {
-      // В created мы ТОЛЬКО готовим debounce. 
-      // Никаких изменений данных здесь не делаем, чтобы избежать ошибки emitsOptions.
-      this.debouncedIncomeUpdate = debounce((newValue) => {
-        if (this.isUpdatingFromStore || !this.isInitialized) return;
+------------------------------------
 
-        const cleanedFields = String(newValue).replace(/\s/g, '');
-        store.dispatch('ActionShowLoader', true);
-
-        const valueToSave = cleanedFields === '' ? '' : parseInt(cleanedFields, 10);
-
-        store.dispatch(actionName, valueToSave)
-          .finally(() => {
-            store.dispatch('ActionShowLoader', false);
-          });
-      }, 500);
-    },
-
-    // ⭐ ВСЯ ИНИЦИАЛИЗАЦИЯ ТЕПЕРЬ ЗДЕСЬ (в миксине)
-    mounted() {
-      // 1. Блокируем отправку данных обратно
-      this.isUpdatingFromStore = true;
-
-      // 2. Динамически читаем значение из computed-свойства компонента
-      const val = this[computedPropName];
-
-      // 3. Корректная обработка 0, пустой строки и null
-      if (val === 0 || val === '' || val === null || val === undefined) {
-        this.dataField = '';
-      } else {
-        this.dataField = val;
-      }
-
-      // 4. Ждем, пока DsInput полностью отрисует это значение в DOM, 
-      // и только потом разрешаем реакцию на действия пользователя
-      this.$nextTick(() => {
-        this.isUpdatingFromStore = false;
-        this.isInitialized = true;
-      });
-    },
-
-    watch: {
-      dataField: {
-        handler(newValue) {
-          if (this.isUpdatingFromStore || !this.isInitialized) return;
-          this.debouncedIncomeUpdate(newValue);
-        },
-        immediate: false // Обязательно false
-      }
-    },
-
-    beforeUnmount() {
-      if (this.debouncedIncomeUpdate) {
-        this.debouncedIncomeUpdate.cancel();
-      }
-    }
-  };
-}
-
---------
+"incomeMan":[{"isActive":false,"isShow":true,"value":1000000,"additionalCoefficient":
+                 {"districtCoefficient":"0.3","northernAllowance" : 20}},
+                 {"isActive":false,"isShow":true,"value":50000,"additionalCoefficient":
+                 {"districtCoefficient":"0.2","northernAllowance" : 10}},
+                 {"isActive":true,"isShow":true,"value":50000,"additionalCoefficient":
+                 {"districtCoefficient":"0.1","northernAllowance" : 10}}]
