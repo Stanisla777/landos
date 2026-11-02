@@ -1,3 +1,127 @@
-amountInterestTooltipText() {
-    return this.transfer_tooltip?.amountinterest?.info || '';
+<template>
+  <div class="input-story-container">
+    <DsInput
+      class="height-56"
+      v-model="dataField"
+      label="Стоимость недвижимости, ₽"
+      preset="amount"
+      labelPosition="inside"
+      :unit="''"
+      :maxlength="100"
+      :autocomplete="'off'"
+    />
+  </div>
+</template>
+<script>
+import store from "../store";
+import { DsInput } from '@ringsites/ui-components/DsInput';
+import {sandToStoreAmountField} from '../mixin/sandToStoreAmountField';
+
+
+
+export default {
+  name: 'component-apartment-prise',
+  mixins: [sandToStoreAmountField('ActionApartmentPrice')],
+  data(){
+    return {
+
+    }
+  },
+  methods:{
+    // initializeFieldsIncomeFromStore() {
+    //   this.dataField = this.apartment_price
+    // }
+  },
+  computed:{
+    apartment_price() {
+      return store.getters.APARTMENTPRICE
+    }
+  },
+  created() {
+
+  },
+  mounted(){
+  },
+  watch:{
+    apartment_price: {
+      handler(newVal) {
+        // 1. Блокируем отправку данных обратно в Store
+        this.isUpdatingFromStore = true;
+
+        // 2. Обновляем локальное поле
+        this.dataField = newVal || 0;
+
+        // 3. Снимаем блокировку после обновления DOM инпута
+        this.$nextTick(() => {
+          this.isUpdatingFromStore = false;
+        });
+      },
+      immediate: true //
+    }
+
+  },
+  beforeUnmount() {
+
+  },
+  components: {
+    DsInput
   }
+};
+</script>
+
+/* eslint-disable */
+import store from "../store";
+import { debounce } from "../../../modules/debounce";
+
+export function sandToStoreAmountField(actionName) {
+  return {
+    data() {
+      return {
+        dataField: 0,
+        isInitialized: false,
+        isUpdatingFromStore: false,
+      };
+    },
+
+    created() {
+      // Настраиваем debounce. Он готов к работе.
+      this.debouncedIncomeUpdate = debounce((newValue) => {
+        // Двойная защита: не отправляем, если обновление инициировано Store или компонент не готов
+        if (this.isUpdatingFromStore || !this.isInitialized) return;
+
+        const cleanedFields = String(newValue).replace(/\s/g, '');
+        store.dispatch('ActionShowLoader', true);
+
+        const valueToSave = cleanedFields === '' ? '' : parseInt(cleanedFields, 10);
+
+        store.dispatch(actionName, valueToSave)
+          .finally(() => {
+            store.dispatch('ActionShowLoader', false);
+          });
+      }, 500);
+    },
+
+    mounted() {
+      // Разрешаем реакцию на действия пользователя только после полной отрисовки
+      this.isInitialized = true;
+    },
+
+    watch: {
+      dataField: {
+        handler(newValue) {
+          if (this.isUpdatingFromStore || !this.isInitialized) return;
+          this.debouncedIncomeUpdate(newValue);
+        },
+        immediate: false
+      }
+    },
+
+    beforeUnmount() {
+      if (this.debouncedIncomeUpdate) {
+        this.debouncedIncomeUpdate.cancel();
+      }
+    }
+  };
+}
+
+
