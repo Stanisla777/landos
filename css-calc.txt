@@ -1,50 +1,31 @@
 props: {
-answers: {
-      type: [Object, String],
-      default: () => ({}),
-      validator: (value) => {
-        console.log(value);
-        // Если уже объект — ок
-        if (typeof value === 'object' && value !== null && value!=='') return true;
-        // Если строка — пробуем распарсить
-        if (typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value);
-            return typeof parsed === 'object' && parsed !== null; //
-          } catch (e) {
-            return false;
-          }
-        }
-        return false;
+  answers: {
+    type: [Object, String],
+    default: () => ({}),
+    validator: (value) => {
+      // 1. Явно разрешаем пустую строку, null или undefined 
+      // (атрибут может отсутствовать или быть пустым)
+      if (value === '' || value === null || value === undefined) {
+        return true;
       }
 
-methods: {
-
-    //парсим атрибут answers, если он не пустой, там значения когда лделятся расчётами
-    parseAnswerData(data) {
-      console.log(data);
-      if (!data) return;
-      // Если уже объект — используем как есть
-      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-        store.dispatch('ActionAnswers', data);
-        return;
+      // 2. Если это уже объект — ок
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        return true;
       }
-      // Если строка — парсим
-      if (typeof data === 'string') {
+
+      // 3. Если это строка — пробуем распарсить
+      if (typeof value === 'string') {
         try {
-          const parsed = JSON.parse(data);
-          store.dispatch('ActionAnswers', parsed);
+          const parsed = JSON.parse(value);
+          return typeof parsed === 'object' && parsed !== null;
         } catch (e) {
-          console.warn('Ошибка парсинга answers:', e);
+          // Если строка не является валидным JSON, считаем это ошибкой
+          return false;
         }
       }
-    },
 
---------------------
-
-[Vue warn]: Invalid prop: custom validator check failed for prop "answers". 
-
------------
-
-<div data-vue-app="tax-deduction-calculator-apartment-new" data-answers ></div>
-  
+      return false;
+    }
+  }
+}
