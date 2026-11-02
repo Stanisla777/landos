@@ -1,81 +1,21 @@
-<template>
-  <div class="input-story-container">
-    <DsInput
-      class="height-56"
-      v-model="dataField"
-      label="Стоимость недвижимости, ₽"
-      preset="amount"
-      labelPosition="inside"
-      :unit="''"
-      :maxlength="100"
-      :autocomplete="'off'"
-    />
-  </div>
-</template>
-<script>
-import store from "../store";
-import { DsInput } from '@ringsites/ui-components/DsInput';
-import {sandToStoreAmountField} from '../mixin/sandToStoreAmountField';
-
-
-
-export default {
-  name: 'component-apartment-prise',
-  mixins: [sandToStoreAmountField('ActionApartmentPrice', 'apartment_price')],
-  data(){
-    return {
-
-    }
-  },
-  methods:{
-
-  },
-  computed:{
-    apartment_price() {
-      return store.getters.APARTMENTPRICE
-    }
-  },
-  created() {
-
-  },
-  mounted(){
-  },
-  watch:{
-
-
-  },
-  beforeUnmount() {
-
-  },
-  components: {
-    DsInput
-  }
-};
-</script>
-<style scoped>
-</style>
----------------------------------------------------
-
 /* eslint-disable */
 import store from "../store";
 import { debounce } from "../../../modules/debounce";
 
-// Добавляем второй параметр: имя computed-свойства в компоненте, откуда брать значение
 export function sandToStoreAmountField(actionName, computedPropName) {
   return {
     data() {
       return {
         dataField: '',
         isInitialized: false,
-        isUpdatingFromStore: false,
+        skipNextWatch: true, // ⭐ НОВЫЙ ФЛАГ: Игнорировать первое срабатывание вотчера
       };
     },
 
     created() {
-      // В created мы ТОЛЬКО готовим debounce.
-      // Никаких изменений данных здесь не делаем, чтобы избежать ошибки emitsOptions.
       this.debouncedIncomeUpdate = debounce((newValue) => {
-        if (this.isUpdatingFromStore || !this.isInitialized) return;
+        // Дополнительная защита: если по какой-то причине skipNextWatch не сработал
+        if (this.skipNextWatch || !this.isInitialized) return;
 
         const cleanedFields = String(newValue).replace(/\s/g, '');
         store.dispatch('ActionShowLoader', true);
@@ -89,30 +29,36 @@ export function sandToStoreAmountField(actionName, computedPropName) {
       }, 500);
     },
 
-    // ⭐ ВСЯ ИНИЦИАЛИЗАЦИЯ ТЕПЕРЬ ЗДЕСЬ (в миксине)
     mounted() {
-      // Блокирую отправку данных обратно
-      this.isUpdatingFromStore = true;
+      // Гарантируем, что флаг поднят перед любым изменением
+      this.skipNextWatch = true;
 
       this.$nextTick(() => {
         const val = this[computedPropName];
+        
         if (val === 0 || val === '' || val === null || val === undefined) {
           this.dataField = '';
         } else {
-          this.dataField = val;
+          this.dataField = val; // Это изменение будет проигнорировано вотчером
         }
-        this.isUpdatingFromStore = false;
-        this.isInitialized = true;
+
+        // Снимаем блокировку только в СЛЕДУЮЩЕМ тике, когда вотчер уже точно отработал (и был пропущен)
+        this.$nextTick(() => {
+          this.skipNextWatch = false;
+          this.isInitialized = true;
+        });
       });
     },
 
     watch: {
       dataField: {
         handler(newValue) {
-          if (this.isUpdatingFromStore || !this.isInitialized) return;
+          // ⭐ ГЛАВНАЯ ЗАЩИТА: Если флаг поднят, молча выходим
+          if (this.skipNextWatch || !this.isInitialized) return;
+          
           this.debouncedIncomeUpdate(newValue);
         },
-        immediate: false // Обязательно false
+        immediate: false
       }
     },
 
@@ -124,37 +70,45 @@ export function sandToStoreAmountField(actionName, computedPropName) {
   };
 }
 
-----------------------------------------
+-----------------------------------------------
 
+import { debounce } from "../../../modules/debounce"; // Импортируйте ваш debounce сюда
 
-plugins: [
+// Создаем дебаунс-функцию для тяжелого расчета ВНЕ watch, чтобы она была одной на всё приложение
+const debouncedCalculateResult = debounce((storeInstance) => {
+  storeInstance.commit('mutationCalculateResult');
+}, 300); // 300 мс достаточно, чтобы "схлопнуть" все начальные инициализации в один вызов
+
+export default createStore({
+  // ... state, mutations, actions
+
+  plugins: [
     store => {
-
-      // Также сохраняем общий watch для пересчета графика платежей
+      // 1. Watch для основных расчетов
       store.watch(
-        state => [state.array_all_income_period_man, state.data_year, state.check_calculate_together,
+        state => [
+          state.array_all_income_period_man, state.data_year, state.check_calculate_together,
           state.apartment_price, state.interest_paid, state.funds_used, state.previousPaymentsMan,
-          state.check_district_coefficient_man, state.array_all_income_period_wife, state.check_district_coefficient_wife, state.previousPaymentsWife],
-        ([array_all_income_period_man, data_year,
-           check_calculate_together,
-           apartment_price,
-           interest_paid,
-           funds_used,
-           previousPaymentsMan,
-           check_district_coefficient_man,
-           array_all_income_period_wife,
-           check_district_coefficient_wife,
-           previousPaymentsWife]) => {
-          if (array_all_income_period_man !== null) {
-            store.commit('mutationCalculateResult');
+          state.check_district_coefficient_man, state.array_all_income_period_wife, 
+          state.check_district_coefficient_wife, state.previousPaymentsWife
+        ],
+        (newValues) => {
+          // newValues[0] - это array_all_income_period_man
+          if (newValues[0] !== null) {
+            // Вместо мгновенного commit, мы вызываем debounced-функцию.
+            // Если 5 компонентов обновят стейт в течение 300мс, мутация сработает ТОЛЬКО ОДИН РАЗ!
+            debouncedCalculateResult(store);
           }
         },
-        {deep: true, immediate: false}
+        { deep: true, immediate: false }
       );
+
+      // 2. Watch для проверки на null (здесь debounce не обязателен, так как операция легкая, 
+      // но можно добавить, если mutationSomeThingNull тяжелая)
       store.watch(
-        state => [state.family_income, state.family_count, state.whom_counting,state.selected_region],
-        ([family_income, family_count, whom_counting,selected_region]) => {
-          if (family_income ===null || family_count ===null || whom_counting ===null || selected_region ===null) {
+        state => [state.family_income, state.family_count, state.whom_counting, state.selected_region],
+        ([family_income, family_count, whom_counting, selected_region]) => {
+          if (family_income === null || family_count === null || whom_counting === null || selected_region === null) {
             store.commit('mutationSomeThingNull');
           }
         },
@@ -162,3 +116,4 @@ plugins: [
       );
     }
   ],
+});
