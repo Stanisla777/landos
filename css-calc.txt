@@ -1,31 +1,125 @@
+<template>
+  <div class="input-story-container">
+    <DsInput
+      class="height-56"
+      v-model="dataField"
+      label="Стоимость недвижимости, ₽"
+      preset="amount"
+      labelPosition="inside"
+      :unit="''"
+      :maxlength="100"
+      :autocomplete="'off'"
+    />
+  </div>
+</template>
+<script>
+import store from "../store";
+import { DsInput } from '@ringsites/ui-components/DsInput';
+import {sandToStoreAmountField} from '../mixin/sandToStoreAmountField';
 
-function formatIncomeForBackend(incomeArray) {
-  if (!Array.isArray(incomeArray)) return [];
 
-  // Вспомогательная функция для безопасного извлечения значения коэффициента
-  const extractCoeffValue = (coeffObj) => {
-    if (!coeffObj || !coeffObj.value) return "";
-    
-    // Если value - это массив (как в нашем случае: [{id: 1, label: '0.1'}])
-    if (Array.isArray(coeffObj.value) && coeffObj.value.length > 0) {
-      // Берем label (или value) первого элемента и превращаем в строку
-      return String(coeffObj.value[0].label || coeffObj.value[0].value || "");
+
+export default {
+  name: 'component-apartment-prise',
+  mixins: [sandToStoreAmountField('ActionApartmentPrice', 'apartment_price')],
+  data(){
+    return {
+
     }
-    
-    // Если вдруг value уже строка или число
-    return String(coeffObj.value);
+  },
+  methods:{
+
+  },
+  computed:{
+    apartment_price() {
+      return store.getters.APARTMENTPRICE
+    }
+  },
+  created() {
+
+  },
+  mounted(){
+  },
+  watch:{
+
+
+  },
+  beforeUnmount() {
+
+  },
+  components: {
+    DsInput
+  }
+};
+</script>
+<style scoped>
+</style>
+---------------------------------------------------
+
+/* eslint-disable */
+import store from "../store";
+import { debounce } from "../../../modules/debounce";
+
+// Добавляем второй параметр: имя computed-свойства в компоненте, откуда брать значение
+export function sandToStoreAmountField(actionName, computedPropName) {
+  return {
+    data() {
+      return {
+        dataField: '',
+        isInitialized: false,
+        isUpdatingFromStore: false,
+      };
+    },
+
+    created() {
+      // В created мы ТОЛЬКО готовим debounce.
+      // Никаких изменений данных здесь не делаем, чтобы избежать ошибки emitsOptions.
+      this.debouncedIncomeUpdate = debounce((newValue) => {
+        if (this.isUpdatingFromStore || !this.isInitialized) return;
+
+        const cleanedFields = String(newValue).replace(/\s/g, '');
+        store.dispatch('ActionShowLoader', true);
+
+        const valueToSave = cleanedFields === '' ? '' : parseInt(cleanedFields, 10);
+
+        store.dispatch(actionName, valueToSave)
+          .finally(() => {
+            store.dispatch('ActionShowLoader', false);
+          });
+      }, 500);
+    },
+
+    // ⭐ ВСЯ ИНИЦИАЛИЗАЦИЯ ТЕПЕРЬ ЗДЕСЬ (в миксине)
+    mounted() {
+      // Блокирую отправку данных обратно
+      this.isUpdatingFromStore = true;
+
+      this.$nextTick(() => {
+        const val = this[computedPropName];
+        if (val === 0 || val === '' || val === null || val === undefined) {
+          this.dataField = '';
+        } else {
+          this.dataField = val;
+        }
+        this.isUpdatingFromStore = false;
+        this.isInitialized = true;
+      });
+    },
+
+    watch: {
+      dataField: {
+        handler(newValue) {
+          if (this.isUpdatingFromStore || !this.isInitialized) return;
+          this.debouncedIncomeUpdate(newValue);
+        },
+        immediate: false // Обязательно false
+      }
+    },
+
+    beforeUnmount() {
+      if (this.debouncedIncomeUpdate) {
+        this.debouncedIncomeUpdate.cancel();
+      }
+    }
   };
-
-  return incomeArray.map(item => ({
-    isActive: item.isActive,
-    isShow: item.isShow,
-    value: item.value,
-    additionalCoefficient: {
-      districtCoefficient: extractCoeffValue(item.additionalCoefficient?.districtCoefficient),
-      northernAllowance: extractCoeffValue(item.additionalCoefficient?.northernAllowance)
-    }
-  }));
 }
-
-state.answers_to_send.incomeMan = formatIncomeForBackend(state.array_all_income_period_man);
-state.answers_to_send.incomeWife = formatIncomeForBackend(state.array_all_income_period_wife);
