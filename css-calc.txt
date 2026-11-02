@@ -1,4 +1,34 @@
-initializeFieldsIncomeFromStore() {
+<template>
+  <div class="input-story-container">
+    <DsInput
+      class="height-56"
+      v-model="dataField"
+      label="Стоимость недвижимости, ₽"
+      preset="amount"
+      labelPosition="inside"
+      :unit="''"
+      :maxlength="100"
+      :autocomplete="'off'"
+    />
+  </div>
+</template>
+<script>
+import store from "../store";
+import { DsInput } from '@ringsites/ui-components/DsInput';
+import {sandToStoreAmountField} from '../mixin/sandToStoreAmountField';
+
+
+
+export default {
+  name: 'component-apartment-prise',
+  mixins: [sandToStoreAmountField('ActionApartmentPrice')],
+  data(){
+    return {
+
+    }
+  },
+  methods:{
+    initializeFieldsIncomeFromStore() {
       // Правильная обработка пустых значений
       if (this.apartment_price === '' || this.apartment_price === null || this.apartment_price === undefined) {
         this.dataField = '';
@@ -8,8 +38,46 @@ initializeFieldsIncomeFromStore() {
         this.dataField = this.apartment_price;
       }
     }
+  },
+  computed:{
+    apartment_price() {
+      return store.getters.APARTMENTPRICE
+    }
+  },
+  created() {
 
-миксин
+  },
+  mounted(){
+  },
+  watch:{
+    // apartment_price: {
+    //   handler(newVal) {
+    //     // 1. Блокируем отправку данных обратно в Store
+    //     this.isUpdatingFromStore = true;
+    //
+    //     // 2. Обновляем локальное поле
+    //     this.dataField = newVal || 0;
+    //
+    //     // 3. Снимаем блокировку после обновления DOM инпута
+    //     this.$nextTick(() => {
+    //       this.isUpdatingFromStore = false;
+    //     });
+    //   },
+    //   immediate: true //
+    // }
+
+  },
+  beforeUnmount() {
+
+  },
+  components: {
+    DsInput
+  }
+};
+</script>
+<style scoped>
+</style>
+
 
 /* eslint-disable */
 import store from "../store";
