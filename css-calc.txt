@@ -1,166 +1,31 @@
-array_all_income_period_wife:[
-      {
-        //касается табов
-        "id": "1",
-        "text": "1 год",
-        "isActive": false,
-        "isShow":true,
-        //касается полей input
-        modelInput:'field_1',
-        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
-        //касается дополнительных полей при районных коффициентах или северных надбавках
-        additionalCoefficient : {
-          modelInput:'field_coefficient_1',
-          districtCoefficient:{
-            value:[{id: 1,label: '0.1'}],//значение выбранного районного коэффициенты
-            placeholder:'Районный коэффициент',
-            variant:[{
-              id: 1,
-              label: '0.7',
-            },
-              {
-                id: 2,
-                label: '0.8',
-              },
-              {
-                id: 3,
-                label: '0.9',
-              }]
-          },
-          northernAllowance:{
-            value:[{id: 1,label: '10'}],//значение выбранной северной надбавки
-            placeholder:'Северная надбавка',
-            variant:[{
-              id: 1,
-              label: '40',
-            },
-              {
-                id: 2,
-                label: '50',
-              },
-              {
-                id: 3,
-                label: '60',
-              }]
-          }
-        }
-      },
-      {
-        //касается табов
-        "id": "2",
-        "text": "2 года",
-        "isActive": false,
-        "isShow":true,
-        //касается полей input
-        modelInput: 'field_2',
-        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
-        additionalCoefficient : {
-          "modelInput":'field_coefficient_2',
-          districtCoefficient:{
-            value: [{id: 2,label: '0.8'}],//значение выбранного районного коэффициенты
-            placeholder:'Районный коэффициент',
-            variant: [{
-              id: 1,
-              label: '0.7',
-            },
-              {
-                id: 2,
-                label: '0.8',
-              },
-              {
-                id: 3,
-                label: '0.9',
-              }]
-          },
-          northernAllowance:{
-            value:[{id: 1,label: '40'}],//значение выбранной северной надбавки
-            placeholder:'Северная надбавка',
-            variant:[{
-              id: 1,
-              label: '40',
-            },
-              {
-                id: 2,
-                label: '50',
-              },
-              {
-                id: 3,
-                label: '60',
-              }]
-          }
-        }
-      },
-      {
-        //касается табов
-        "id": "3",
-        "text": "3 года",
-        "isActive": true,
-        "isShow":true,
-        //касается полей input
-        modelInput: 'field_3',
-        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
-        additionalCoefficient : {
-          "modelInput":'field_coefficient_3',
-          districtCoefficient:{
-            value:[{id: 3,label: '0.9'}],//значение выбранного районного коэффициенты
-            placeholder:'Районный коэффициент',
-            variant:[{
-              id: 1,
-              label: '0.7',
-            },
-              {
-                id: 2,
-                label: '0.2',
-              },
-              {
-                id: 3,
-                label: '0.9',
-              }]
-          },
-          northernAllowance:{
-            value:[{id: 1,label: '40'}],//значение выбранной северной надбавки
-            placeholder:'Северная надбавка',
-            variant:[{
-              id: 1,
-              label: '40',
-            },
-              {
-                id: 2,
-                label: '50',
-              },
-              {
-                id: 3,
-                label: '60',
-              }]
-          }
-        }
-      },
-    ],
 
---------------------------------
+function formatIncomeForBackend(incomeArray) {
+  if (!Array.isArray(incomeArray)) return [];
 
-mutationCalculateResult(state) {
-      state.answers_to_send.dataYear=state.data_year;
-      state.answers_to_send.calculateTogether=state.check_calculate_together;
-      state.answers_to_send.apartmentPrice=state.apartment_price;
-      state.answers_to_send.interestPaid=state.interest_paid;
-      state.answers_to_send.fundsUsed=state.funds_used;
-      state.answers_to_send.coefficientMan=state.check_district_coefficient_man;
-      state.answers_to_send.coefficientWife=state.check_district_coefficient_wife;
-      state.answers_to_send.previousPaymentsMan=state.previousPaymentsMan;
-      state.answers_to_send.previousPaymentsWife=state.previousPaymentsWife;
-      state.answers_to_send.incomeMan=state.array_all_income_period_man;
-      state.answers_to_send.incomeWife=state.array_all_income_period_wife;
+  // Вспомогательная функция для безопасного извлечения значения коэффициента
+  const extractCoeffValue = (coeffObj) => {
+    if (!coeffObj || !coeffObj.value) return "";
+    
+    // Если value - это массив (как в нашем случае: [{id: 1, label: '0.1'}])
+    if (Array.isArray(coeffObj.value) && coeffObj.value.length > 0) {
+      // Берем label (или value) первого элемента и превращаем в строку
+      return String(coeffObj.value[0].label || coeffObj.value[0].value || "");
+    }
+    
+    // Если вдруг value уже строка или число
+    return String(coeffObj.value);
+  };
 
-      console.log('state.answers_to_send')
-      console.log(state.answers_to_send)
-    },
+  return incomeArray.map(item => ({
+    isActive: item.isActive,
+    isShow: item.isShow,
+    value: item.value,
+    additionalCoefficient: {
+      districtCoefficient: extractCoeffValue(item.additionalCoefficient?.districtCoefficient),
+      northernAllowance: extractCoeffValue(item.additionalCoefficient?.northernAllowance)
+    }
+  }));
+}
 
-------------------------------------
-
-"incomeMan":[{"isActive":false,"isShow":true,"value":1000000,"additionalCoefficient":
-                 {"districtCoefficient":"0.3","northernAllowance" : 20}},
-                 {"isActive":false,"isShow":true,"value":50000,"additionalCoefficient":
-                 {"districtCoefficient":"0.2","northernAllowance" : 10}},
-                 {"isActive":true,"isShow":true,"value":50000,"additionalCoefficient":
-                 {"districtCoefficient":"0.1","northernAllowance" : 10}}]
+state.answers_to_send.incomeMan = formatIncomeForBackend(state.array_all_income_period_man);
+state.answers_to_send.incomeWife = formatIncomeForBackend(state.array_all_income_period_wife);
