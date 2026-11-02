@@ -123,3 +123,42 @@ export function sandToStoreAmountField(actionName, computedPropName) {
     }
   };
 }
+
+----------------------------------------
+
+
+plugins: [
+    store => {
+
+      // Также сохраняем общий watch для пересчета графика платежей
+      store.watch(
+        state => [state.array_all_income_period_man, state.data_year, state.check_calculate_together,
+          state.apartment_price, state.interest_paid, state.funds_used, state.previousPaymentsMan,
+          state.check_district_coefficient_man, state.array_all_income_period_wife, state.check_district_coefficient_wife, state.previousPaymentsWife],
+        ([array_all_income_period_man, data_year,
+           check_calculate_together,
+           apartment_price,
+           interest_paid,
+           funds_used,
+           previousPaymentsMan,
+           check_district_coefficient_man,
+           array_all_income_period_wife,
+           check_district_coefficient_wife,
+           previousPaymentsWife]) => {
+          if (array_all_income_period_man !== null) {
+            store.commit('mutationCalculateResult');
+          }
+        },
+        {deep: true, immediate: false}
+      );
+      store.watch(
+        state => [state.family_income, state.family_count, state.whom_counting,state.selected_region],
+        ([family_income, family_count, whom_counting,selected_region]) => {
+          if (family_income ===null || family_count ===null || whom_counting ===null || selected_region ===null) {
+            store.commit('mutationSomeThingNull');
+          }
+        },
+        { deep: true, immediate: false }
+      );
+    }
+  ],
