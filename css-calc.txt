@@ -1,73 +1,15 @@
-<template>
-  <div class="input-story-container">
-    <DsInput
-      class="height-56"
-      v-model="dataField"
-      label="Стоимость недвижимости, ₽"
-      preset="amount"
-      labelPosition="inside"
-      :unit="''"
-      :maxlength="100"
-      :autocomplete="'off'"
-    />
-  </div>
-</template>
-<script>
-import store from "../store";
-import { DsInput } from '@ringsites/ui-components/DsInput';
-import {sandToStoreAmountField} from '../mixin/sandToStoreAmountField';
-
-
-
-export default {
-  name: 'component-apartment-prise',
-  mixins: [sandToStoreAmountField('ActionApartmentPrice')],
-  data(){
-    return {
-
-    }
-  },
-  methods:{
-    // initializeFieldsIncomeFromStore() {
-    //   this.dataField = this.apartment_price
-    // }
-  },
-  computed:{
-    apartment_price() {
-      return store.getters.APARTMENTPRICE
-    }
-  },
-  created() {
-
-  },
-  mounted(){
-  },
-  watch:{
-    apartment_price: {
-      handler(newVal) {
-        // 1. Блокируем отправку данных обратно в Store
-        this.isUpdatingFromStore = true;
-
-        // 2. Обновляем локальное поле
-        this.dataField = newVal || 0;
-
-        // 3. Снимаем блокировку после обновления DOM инпута
-        this.$nextTick(() => {
-          this.isUpdatingFromStore = false;
-        });
-      },
-      immediate: true //
+initializeFieldsIncomeFromStore() {
+      // Правильная обработка пустых значений
+      if (this.apartment_price === '' || this.apartment_price === null || this.apartment_price === undefined) {
+        this.dataField = '';
+      } else if (this.apartment_price === 0) {
+        this.dataField = '';
+      } else {
+        this.dataField = this.apartment_price;
+      }
     }
 
-  },
-  beforeUnmount() {
-
-  },
-  components: {
-    DsInput
-  }
-};
-</script>
+миксин
 
 /* eslint-disable */
 import store from "../store";
@@ -77,16 +19,20 @@ export function sandToStoreAmountField(actionName) {
   return {
     data() {
       return {
-        dataField: 0,
+        dataField: '', // ⭐ Изменили с 0 на ''
         isInitialized: false,
         isUpdatingFromStore: false,
       };
     },
 
     created() {
-      // Настраиваем debounce. Он готов к работе.
+      // ⭐ Вызываем метод инициализации компонента
+      if (typeof this.initializeFieldsIncomeFromStore === 'function') {
+        this.initializeFieldsIncomeFromStore();
+      }
+
+      // Настраиваем debounce
       this.debouncedIncomeUpdate = debounce((newValue) => {
-        // Двойная защита: не отправляем, если обновление инициировано Store или компонент не готов
         if (this.isUpdatingFromStore || !this.isInitialized) return;
 
         const cleanedFields = String(newValue).replace(/\s/g, '');
@@ -102,7 +48,6 @@ export function sandToStoreAmountField(actionName) {
     },
 
     mounted() {
-      // Разрешаем реакцию на действия пользователя только после полной отрисовки
       this.isInitialized = true;
     },
 
@@ -123,18 +68,3 @@ export function sandToStoreAmountField(actionName) {
     }
   };
 }
------
-ERROR
-Cannot read properties of null (reading 'emitsOptions')
-TypeError: Cannot read properties of null (reading 'emitsOptions')
-    at shouldUpdateComponent (http://localhost:8081/js/bundle.js:36734:27)
-    at updateComponent (http://localhost:8081/js/bundle.js:38036:9)
-    at processComponent (http://localhost:8081/js/bundle.js:37982:7)
-    at patch (http://localhost:8081/js/bundle.js:37478:11)
-    at patchBlockChildren (http://localhost:8081/js/bundle.js:37856:7)
-    at patchElement (http://localhost:8081/js/bundle.js:37774:7)
-    at processElement (http://localhost:8081/js/bundle.js:37616:9)
-    at patch (http://localhost:8081/js/bundle.js:37466:11)
-    at ReactiveEffect.componentUpdateFn [as fn] (http://localhost:8081/js/bundle.js:38200:9)
-    at ReactiveEffect.run (http://localhost:8081/js/bundle.js:29990:19)
-
