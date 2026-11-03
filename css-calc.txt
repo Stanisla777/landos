@@ -1,22 +1,35 @@
-filteredVariants() {
-      // 1. Безопасно получаем исходный массив
-      const variants = this.item?.additionalCoefficient?.districtCoefficient?.variant || [];
-      
-      // 2. Приводим текущее значение инпута к строке и убираем пробелы
-      // (toLowerCase() здесь не нужен, так как у нас только цифры и точки)
-      const searchQuery = String(this.dataField).trim();
+isUserInteracted: false,
 
-      // 3. Если поле пустое или содержит только точку, показываем весь список
-      if (!searchQuery || searchQuery === '.') {
-        return variants;
-      }
+mounted() {
+  // Безопасно получаем начальное значение (добавил ?.[0] для надежности)
+  this.dataField = this.item?.additionalCoefficient?.districtCoefficient?.value?.[0]?.label || '';
+  
+  // Флаг isUserInteracted остаётся false, поэтому список будет полным
+}
 
-      // 4. ⭐ ФИЛЬТРАЦИЯ ПО НАЧАЛУ СТРОКИ
-      return variants.filter(item2 => {
-        return String(item2.label).startsWith(searchQuery);
-      });
+methods: {
+  logEvent(event) {
+    // ⭐ ПОЛЬЗОВАТЕЛЬ НАЧАЛ ВВОД: включаем фильтрацию
+    this.isUserInteracted = true;
+
+computed: {
+  filteredVariants() {
+    const variants = this.item?.additionalCoefficient?.districtCoefficient?.variant || [];
+    const searchQuery = String(this.dataField).trim();
+
+    // ⭐ ГЛАВНОЕ: Если пользователь еще не печатал, отдаем полный список
+    if (!this.isUserInteracted) {
+      return variants;
     }
 
-mounted(){
-    this.dataField = this.item?.additionalCoefficient?.districtCoefficient.value[0].label
-  },
+    // Если пользователь начал печатать, но потом стер всё (или осталась только точка)
+    if (!searchQuery || searchQuery === '.') {
+      return variants;
+    }
+
+    // Фильтрация по началу строки (только если isUserInteracted === true)
+    return variants.filter(item2 => {
+      return String(item2.label).startsWith(searchQuery);
+    });
+  }
+}
