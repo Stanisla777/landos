@@ -1,23 +1,23 @@
-devServer.client
+dataField(newValue) {
+    // 1. Пропускаем пустое поле и промежуточные состояния ввода
+    if (newValue === '' || newValue === '.' || newValue === null || newValue === undefined) {
+      return;
+    }
 
-client: {
-        overlay: {
-          // Фильтр для ошибок компиляции
-          errors: (error) => {
-            if (error.message && error.message.includes('ResizeObserver loop')) {
-              return false; // Игнорируем эту ошибку
-            }
-            return true; // Все остальные ошибки показываем как обычно
-          },
-          // Фильтр для runtime-ошибок (ошибок выполнения в браузере)
-          runtimeErrors: (error) => {
-            if (error.message && error.message.includes('ResizeObserver loop')) {
-              return false; // Игнорируем эту ошибку
-            }
-            return true; // Все остальные ошибки показываем
-          },
-          warnings: false,
-        },
-        progress: true,
-        reconnect: true
-      }
+    const num = parseFloat(newValue);
+
+    // 2. Если NaN (например, пользователь ввёл только точку и что-то ещё некорректное)
+    if (isNaN(num)) return;
+
+    // 3. Ограничение снизу: меньше 1 → ставим 1
+    if (num < 1) {
+      this.dataField = '1';
+      return;
+    }
+
+    // 4. Ограничение сверху: больше 3 → ставим 3
+    if (num > 3) {
+      this.dataField = '3';
+      return;
+    }
+  }
