@@ -1,77 +1,18 @@
-<template>
-  <div class="input-story-container ds-input__field-wrapper feed_back__story-wr-select input-emty select-list__wrapper js--select js--openlist-container js--only-mobile-fixed"
-       :class="dropDown ? 'open' : ''"
-       @click="clickdropDown">
-       
-    <div class="select__background" :class="dropDown ? 'show-vue' : ''"></div>
-    
-    <DsInput
-      class="height-56 z11"
-      ref="Input"
-      v-model="dataField"
-      :label="item.additionalCoefficient?.districtCoefficient?.placeholder"
-      preset="decimal"
-      labelPosition="inside"
-      @input="logEvent"
-      :unit="''"
-      :maxlength="3"
-      :autocomplete="'off'"
-    />
-    
-    <div class="ds-multiselect__dropdown z-16 select-list__selection-window modal-special-styles">
-      <div class="select-list__head">
-        <p>Категория вопроса</p>
-        <div class="select-list__head-close js--select-list-close" @click.stop="dropDown = false"></div>
-      </div>
-      
-      <div class="feed_back__story-wr-search js--scroll-wrap">
-        <div class="feed_back__story-scroll-inner js--scroll">
-          
-          <!-- ⭐ ИЗМЕНЕНИЕ ЗДЕСЬ: используем filteredVariants -->
-          <div class="ds-multiselect__option-item"
-               v-for="(item2, index) in filteredVariants" 
-               :key="item2.id"
-               :data-value="item2.label"
-               @click="clickdropDownItem(item2.label)">
-               
-            <p class="ds-multiselect__checkbox-label">{{ item2.label }}</p>
-          </div>
-
-          <!-- Опционально: сообщение, если ничего не найдено -->
-          <div v-if="filteredVariants.length === 0 && dataField" class="no-results">
-            <p>Нет совпадений</p>
-          </div>
-
-        </div>
-
-        <div class="feed_back__story-scrollbar js--scrollbar" aria-hidden="true">
-          <div class="feed_back__story-scrollbar-thumb js--scrollbar-thumb"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-
---------------------------------
-
-computed: {
-  
-    filteredVariants() {
+filteredVariants() {
       // 1. Безопасно получаем исходный массив
       const variants = this.item?.additionalCoefficient?.districtCoefficient?.variant || [];
       
       // 2. Приводим текущее значение инпута к строке и убираем пробелы
-      const searchQuery = String(this.dataField).trim().toLowerCase();
+      // (toLowerCase() здесь не нужен, так как у нас только цифры и точки)
+      const searchQuery = String(this.dataField).trim();
 
-      // 3. Если поле пустое, показываем весь список
-      if (!searchQuery) {
+      // 3. Если поле пустое или содержит только точку, показываем весь список
+      if (!searchQuery || searchQuery === '.') {
         return variants;
       }
 
-      // 4. Фильтруем массив: оставляем только те элементы, label которых содержит searchQuery
+      // 4. ⭐ ФИЛЬТРАЦИЯ ПО НАЧАЛУ СТРОКИ
       return variants.filter(item2 => {
-        return String(item2.label).toLowerCase().includes(searchQuery);
+        return String(item2.label).startsWith(searchQuery);
       });
     }
-  },
