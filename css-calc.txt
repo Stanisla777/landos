@@ -1,24 +1,26 @@
+lastValidValue: '1'
+
 dataField(newValue) {
-    // 1. Пропускаем пустое поле и промежуточные состояния ввода
+    // Пропускаем пустое поле
     if (newValue === '' || newValue === '.' || newValue === null || newValue === undefined) {
       return;
     }
 
     const num = parseFloat(newValue);
 
-    // 2. Если NaN (некорректный ввод)
-    if (isNaN(num)) return;
-
-    // 3. Ограничение снизу: меньше 1 → ставим 1
-    if (num < 1) {
-      this.dataField = '1';
+    if (isNaN(num)) {
+      // Некорректный ввод — возвращаемся к последнему валидному
+      this.dataField = this.lastValidValue;
       return;
     }
 
-    // 4. ⭐ ИСПРАВЛЕНИЕ: больше ИЛИ РАВНО 3 → ставим 3
-    // Это блокирует ввод точки после 3, так как 3. = 3, 3.0 = 3, 3.01 > 3
-    if (num >= 3) {
-      this.dataField = '3';
+    // Проверяем диапазон
+    if (num < 1 || num >= 3) {
+      // ⭐ ГЛАВНОЕ: Возвращаемся к последнему валидному значению
+      this.dataField = this.lastValidValue;
       return;
     }
+
+    // Если всё валидно — сохраняем как последнее валидное
+    this.lastValidValue = newValue;
   }
