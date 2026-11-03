@@ -1,26 +1,22 @@
-lastValidValue: '1'
-
-dataField(newValue) {
-    // Пропускаем пустое поле
-    if (newValue === '' || newValue === '.' || newValue === null || newValue === undefined) {
-      return;
+logEvent(event) {
+    let val = event.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
+    
+    // Ограничение дробной части до 2 знаков
+    const parts = val.split('.');
+    if (parts.length === 2 && parts[1].length > 2) {
+      val = parts[0] + '.' + parts[1].substring(0, 2);
     }
 
-    const num = parseFloat(newValue);
-
-    if (isNaN(num)) {
-      // Некорректный ввод — возвращаемся к последнему валидному
-      this.dataField = this.lastValidValue;
-      return;
+    // Проверяем диапазон и заменяем на граничное значение
+    const num = parseFloat(val);
+    
+    if (!isNaN(num)) {
+      if (num < 1) {
+        val = '1';
+      } else if (num >= 3) {
+        val = '3';
+      }
     }
 
-    // Проверяем диапазон
-    if (num < 1 || num >= 3) {
-      // ⭐ ГЛАВНОЕ: Возвращаемся к последнему валидному значению
-      this.dataField = this.lastValidValue;
-      return;
-    }
-
-    // Если всё валидно — сохраняем как последнее валидное
-    this.lastValidValue = newValue;
+    this.dataField = val;
   }
