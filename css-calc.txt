@@ -1,35 +1,236 @@
-isUserInteracted: false,
+Раньше был такой
 
-mounted() {
-  // Безопасно получаем начальное значение (добавил ?.[0] для надежности)
-  this.dataField = this.item?.additionalCoefficient?.districtCoefficient?.value?.[0]?.label || '';
-  
-  // Флаг isUserInteracted остаётся false, поэтому список будет полным
-}
+<div class="calculator__row extra-small" v-for="(item, index) in visibleBlockIncomePeriod" :key="item.id">
+    <div class="calc-tax-deduc-new__row-three-column">
 
-methods: {
-  logEvent(event) {
-    // ⭐ ПОЛЬЗОВАТЕЛЬ НАЧАЛ ВВОД: включаем фильтрацию
-    this.isUserInteracted = true;
+      <!-- Основной доход -->
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncome[item.modelInput]"
+          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
+          preset="amount"
+          labelPosition="inside"
+          :unit="''"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
 
-computed: {
-  filteredVariants() {
-    const variants = this.item?.additionalCoefficient?.districtCoefficient?.variant || [];
-    const searchQuery = String(this.dataField).trim();
+      </div>
 
-    // ⭐ ГЛАВНОЕ: Если пользователь еще не печатал, отдаем полный список
-    if (!this.isUserInteracted) {
-      return variants;
+      <!--Районный коэффициент-->
+      <div class="input-story-container">
+        <ds-multi-select
+          class="height-56"
+          v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_district']"
+          :options="item.additionalCoefficient.districtCoefficient.variant"
+          :flat="true"
+          :singleSelect="true"
+          :placeholder="''"
+          :label="item.additionalCoefficient.districtCoefficient.placeholder"
+          :label-position="'inside'"
+        />
+      </div>
+
+      <!-- Северная надбавка -->
+      <div class="input-story-container">
+        <ds-multi-select
+          class="height-56"
+          v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_northern']"
+          :options="item.additionalCoefficient.northernAllowance.variant"
+          :flat="true"
+          :singleSelect="true"
+          :placeholder="''"
+          :label="item.additionalCoefficient.northernAllowance.placeholder"
+          :label-position="'inside'"
+        />
+      </div>
+
+    </div>
+  </div>
+
+сейчас такой
+
+<div class="calculator__row extra-small" v-for="(item, index) in visibleBlockIncomePeriod" :key="item.id">
+    <div class="calc-tax-deduc-new__row-three-column">
+
+      <!-- Основной доход -->
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncome[item.modelInput]"
+          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
+          preset="amount"
+          labelPosition="inside"
+          :unit="''"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
+
+      </div>
+
+      <component-district-coefficient :item="item"/>
+
+    </div>
+  </div>
+
+методы были такие
+
+import {debounce} from "../../../modules/debounce";
+
+export default {
+  name: 'component-income-with-additional-coefficient',
+  mixins: [],
+  props:['view'],
+  data(){
+    return {
+      //поля средний доход по годам, заполняется в created
+      fieldsIncome: {},
+      isInitialized: false,
+      skipNextWatch: true,
+
+      //поле дополнительные доходы
+
+
     }
+  },
+  methods:{
 
-    // Если пользователь начал печатать, но потом стер всё (или осталась только точка)
-    if (!searchQuery || searchQuery === '.') {
-      return variants;
-    }
+  },
+  computed:{
+    data_year() {
+      return store.getters.DATAYEAR;
+    },
 
-    // Фильтрация по началу строки (только если isUserInteracted === true)
-    return variants.filter(item2 => {
-      return String(item2.label).startsWith(searchQuery);
+    array_all_income_period(){
+      if (this.view === 'man') {
+        return store.getters.ARRAYALLINCOMEPERIODMAN
+      } else {
+        return store.getters.ARRAYALLINCOMEPERIODWIFE
+      }
+
+    },
+
+    //этот компьютед не только получает со стор массив полей, но и вычисляет какие инпуты показывать в зависимости от выбранных лет
+    //на основе него по циклу формируются поля с доходом
+    visibleBlockIncomePeriod() {
+      // Ищем индекс первого элемента, у которого isActive === true
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
+
+      // Если такой элемент не найден — возвращаю пустой массив
+      if (activeIndex === -1) return []
+
+      // Беру все элементы от начала до активного включительно
+      return this.array_all_income_period.slice(0, activeIndex + 1)
+    },
+
+  },
+  created() {
+
+    this.debouncedIncomeUpdate = debounce((newFields) => {
+      if (this.skipNextWatch || !this.isInitialized) return;
+
+      const cleanedFields = {};
+      for (const key in newFields) {
+        const val = newFields[key];
+
+        // Умная очистка: не ломаем массивы/объекты от select
+        if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
+          cleanedFields[key] = val;
+        } else {
+          const cleanStr = String(val).replace(/\s/g, '');
+          if (cleanStr === '') {
+            cleanedFields[key] = '';
+          } else {
+            const num = parseFloat(cleanStr);
+            cleanedFields[key] = isNaN(num) ? cleanStr : num;
+          }
+        }
+      }
+
+      store.dispatch('ActionShowLoader', true);
+      // Если флаг опущен, значит это реальный ввод пользователя. Отправляем в Store.
+      if (this.view === 'man') {
+        store.dispatch('ActionInputIncomeMan', cleanedFields);
+      } else {
+        store.dispatch('ActionInputIncomeWife', cleanedFields)
+          .finally(() => {
+            store.dispatch('ActionShowLoader', false);
+          });
+      }
+
+    }, 500);
+  },
+  mounted(){
+    this.skipNextWatch = true;
+    this.$nextTick(() => {
+      const fields = {};
+      this.array_all_income_period.forEach(tab => {
+        // 1. Основной доход
+        fields[tab.modelInput] = tab.value || '';
+        // 2. Районный коэффициент (если он есть в структуре)
+        if (tab.additionalCoefficient) {
+          const baseCoeffKey = tab.additionalCoefficient.modelInput;
+          fields[baseCoeffKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
+          fields[baseCoeffKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
+        }
+      });
+      this.fieldsIncome = fields;
+      this.$nextTick(() => {
+        this.skipNextWatch = false;
+        this.isInitialized = true;
+      });
     });
-  }
-}
+
+
+  },
+  watch: {
+    // 1. Следим за изменениями в Store (например, очистка полей при клике на таб)
+    array_all_income_period: {
+      handler() {
+        this.skipNextWatch = true;
+        this.$nextTick(() => {
+          const fields = {};
+          this.array_all_income_period.forEach(tab => {
+            // 1. Основной доход
+            fields[tab.modelInput] = tab.value || '';
+            // 2. Районный коэффициент (если он есть в структуре)
+            if (tab.additionalCoefficient) {
+              const baseCoeffKey = tab.additionalCoefficient.modelInput;
+              fields[baseCoeffKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
+              fields[baseCoeffKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
+            }
+          });
+          this.fieldsIncome = fields;
+          this.$nextTick(() => {
+            this.skipNextWatch = false;
+            this.isInitialized = true;
+          });
+        });
+      },
+      deep: true
+    },
+
+    // 2. Следим за изменениями в локальных полях (когда печатает пользователь)
+    fieldsIncome: {
+      handler(newValue) {
+        if (this.skipNextWatch || !this.isInitialized) return;
+
+        this.debouncedIncomeUpdate(newValue);
+      },
+      deep: true,
+      immediate: false
+    },
+
+  },
+  beforeUnmount() {
+    if (this.debouncedIncomeUpdate) {
+      this.debouncedIncomeUpdate.cancel();
+    }
+  },
+  components: {
+    DsInput,
+    DsMultiSelect,
+    ComponentDistrictCoefficient
+  },
+};
