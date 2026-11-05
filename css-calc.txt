@@ -1,63 +1,271 @@
-function updateIncomeArrayFromAnswers(stateArray, incomingArray) {
-  if (!incomingArray || !Array.isArray(incomingArray)) return;
+<template>
+  <div class="input-story-container ds-input__field-wrapper feed_back__story-wr-select input-emty select-list__wrapper js--select js--openlist-container js--only-mobile-fixed"
+         :class="dropDown ? 'open' : ''"
+         @click="clickdropDown"
+    >
+      <div class="select__background" :class="dropDown ? 'show-vue' : ''"></div>
+      <DsInput
+        class="height-56 z11"
+        ref="Input"
+        v-model="dataField"
+        :label="view==='district' ? item.additionalCoefficient?.districtCoefficient?.placeholder : item.additionalCoefficient?.northernAllowance?.placeholder"
+        preset="decimal"
+        labelPosition="inside"
+        @input="logEvent"
+        :unit="''"
+        :maxlength="3"
+        :autocomplete="'off'"
 
-  incomingArray.forEach((incomingItem, index) => {
-    if (stateArray[index]) {
-      const stateItem = stateArray[index];
+      />
+      <div class="ds-multiselect__dropdown z-16 select-list__selection-window modal-special-styles">
+        <div class="select-list__head">
+          <p v-if="view==='district'">{{item.additionalCoefficient?.districtCoefficient?.placeholder}}</p>
+          <p v-else>{{item.additionalCoefficient?.northernAllowance?.placeholder}}</p>
+          <div class="select-list__head-close js--select-list-close">
+            <svg width="10" height="10" viewbox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M0.209209 0.209209C0.488155 -0.0697365 0.940416 -0.0697365 1.21936 0.209209L5 3.98985L8.78064 0.209209C9.05958 -0.0697365 9.51184 -0.0697365 9.79079 0.209209C10.0697 0.488155 10.0697 0.940416 9.79079 1.21936L6.01015 5L9.79079 8.78064C10.0697 9.05958 10.0697 9.51184 9.79079 9.79079C9.51184 10.0697 9.05958 10.0697 8.78064 9.79079L5 6.01015L1.21936 9.79079C0.940416 10.0697 0.488155 10.0697 0.209209 9.79079C-0.0697365 9.51184 -0.0697365 9.05958 0.209209 8.78064L3.98985 5L0.209209 1.21936C-0.0697365 0.940416 -0.0697365 0.488155 0.209209 0.209209Z" fill="#252628"></path>
+            </svg>
+          </div>
+        </div>
 
-      // 1. Обновляем базовые поля
-      stateItem.isActive = incomingItem.isActive;
-      stateItem.isShow = incomingItem.isShow;
-      stateItem.value = incomingItem.value;
+        <div class="feed_back__story-wr-search js--scroll-wrap">
+          <div class="feed_back__story-scroll-inner js--scroll">
+            <div class="ds-multiselect__option-item"
+                 v-for="item2 in filteredVariants"
+                 :key="item2.id"
+                 @click="selectItem(item2.label, $event)"
+            >
+              <p class="ds-multiselect__checkbox-label">{{ item2.label }}</p>
+            </div>
+          </div>
 
-      // 2. Обновляем коэффициенты
-      if (incomingItem.additionalCoefficient && stateItem.additionalCoefficient) {
-        const distVal = incomingItem.additionalCoefficient.districtCoefficient;
-        const northVal = incomingItem.additionalCoefficient.northernAllowance;
+          <div class="feed_back__story-scrollbar js--scrollbar" aria-hidden="true">
+            <div class="feed_back__story-scrollbar-thumb js--scrollbar-thumb"></div>
+          </div>
 
-        // Вспомогательная функция для поиска нужного объекта в variant по label
-        const findMatchingVariant = (variants, targetValue) => {
-          if (!variants || targetValue === undefined || targetValue === null || targetValue === '') {
-            return null;
-          }
-          return variants.find(v => String(v.label).trim() === String(targetValue).trim()) || null;
-        };
+        </div>
+      </div>
+    </div>
+</template>
+<script>
+import store from "../store";
+import {DsInput} from '@ringsites/ui-components/DsInput';
+import ScrollbarThumb from '../../../modules/scrollbarThumb.js';
 
-        // --- Районный коэффициент ---
-        if (distVal !== undefined) {
-          const matchedDist = findMatchingVariant(
-            stateItem.additionalCoefficient.districtCoefficient.variant,
-            distVal
-          );
-          
-          // Если нашли в variant, используем его. 
-          // Если НЕ нашли, создаем "виртуальный" объект с этим значением, чтобы оно не потерялось!
-          if (matchedDist) {
-            stateItem.additionalCoefficient.districtCoefficient.value = [matchedDist];
-          } else {
-            stateItem.additionalCoefficient.districtCoefficient.value = [
-              { label: String(distVal), value: String(distVal) }
-            ];
+
+export default {
+  name: 'component-district-coefficient',
+  props: {
+    item: {
+      type: Object,
+      required: true,
+      // Валидатор поможет отловить проблемы на этапе разработки
+      validator(value) {
+        return value && typeof value === 'object';
+      }
+    },
+    modelValue: {
+      type: [String, Number, Array],
+      default: ''
+    },
+    view:{
+      type:String,
+      default: ''
+    }
+  },
+  // mixins: [sandToStoreAmountField('ActionApartmentPrice', 'apartment_price')],
+  data(){
+    return {
+      dataField:'',
+      dropDown:false,
+      isUserInteracted: false,
+    }
+  },
+  methods:{
+    clickdropDown(el){
+      if (!this.dropDown) {
+        this.dropDown = true
+      }
+      if (this.dropDown && !el.target.classList.contains('ds-input__field')) {
+        this.dropDown = false
+      }
+
+
+    },
+    selectItem(label,e) {
+      this.dataField = String(label);
+      this.dropDown = false;
+      this.isUserInteracted = true;
+      const element = e.currentTarget;
+      const parent = element.closest('.js--select');
+
+      if(parent.querySelector('.ds-multiselect__option-item.active')){
+        parent.querySelector('.ds-multiselect__option-item.active').classList.remove('active')
+      }
+      element.classList.add('active');
+      //  Отправляем выбранное значение родителю
+      this.$emit('update:modelValue', this.dataField);
+    },
+    clickdropDownItem(el){
+      const element = el.currentTarget;
+      const parent = element.closest('.js--select');
+
+      if (element.hasAttribute('data-value')) {
+        this.dataField = element.getAttribute('data-value');
+      }
+
+      if(parent.querySelector('.ds-multiselect__option-item.active')){
+        parent.querySelector('.ds-multiselect__option-item.active').classList.remove('active')
+      }
+      element.classList.add('active');
+
+    },
+    logEvent(event) {
+
+      this.isUserInteracted = true;
+      let val = event.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
+
+      // Ограничение дробной части до 2 знаков
+      const parts = val.split('.');
+      if (parts.length === 2 && parts[1].length > 2) {
+        val = parts[0] + '.' + parts[1].substring(0, 2);
+      }
+
+      // Проверяем диапазон и заменяем на граничное значение
+      const num = parseFloat(val);
+
+      if (this.view === 'district') {
+        if (!isNaN(num)) {
+          if (num < 1) {
+            val = '1';
+          } else if (num >= 3) {
+            val = '3';
           }
         }
-
-        // --- Северная надбавка ---
-        if (northVal !== undefined) {
-          const matchedNorth = findMatchingVariant(
-            stateItem.additionalCoefficient.northernAllowance.variant,
-            northVal
-          );
-          
-          //Та же логика для северной надбавки
-          if (matchedNorth) {
-            stateItem.additionalCoefficient.northernAllowance.value = [matchedNorth];
-          } else {
-            stateItem.additionalCoefficient.northernAllowance.value = [
-              { label: String(northVal), value: String(northVal) }
-            ];
+      } else {
+        if (!isNaN(num)) {
+          if (num < 0.1) {
+            val = '0.1';
+          } else if (num >= 100) {
+            val = '100';
           }
         }
       }
+
+
+
+      this.dataField = val;
+      //  Отправляем обновленное значение родителю
+      this.$emit('update:modelValue', this.dataField);
     }
-  });
-}
+
+  },
+  computed:{
+    filteredVariants() {
+      let variants;
+      if (this.view === 'district') {
+        variants = this.item?.additionalCoefficient?.districtCoefficient?.variant || [];
+      }
+      else {
+        variants = this.item?.additionalCoefficient?.northernAllowance?.variant || [];
+      }
+
+      const searchQuery = String(this.dataField).trim();
+
+      // ⭐ ГЛАВНОЕ: Если пользователь еще не печатал, отдаем полный список
+      if (!this.isUserInteracted) {
+        return variants;
+      }
+
+      // Если пользователь начал печатать, но потом стер всё (или осталась только точка)
+      if (!searchQuery || searchQuery === '.') {
+        return variants;
+      }
+
+      // Фильтрация по началу строки (только если isUserInteracted === true)
+      return variants.filter(item2 => {
+        return String(item2.label).startsWith(searchQuery);
+      });
+    }
+
+  },
+
+  created() {
+
+  },
+  mounted(){
+    ScrollbarThumb();
+    this.dataField = this.item?.additionalCoefficient?.districtCoefficient?.value?.[0]?.label || '';
+  },
+  watch: {
+    //  Если значение изменилось извне (например, Store очистил поле при смене таба), обновляем локальное поле
+    modelValue: {
+      handler(newVal) {
+        // Нормализуем: если пришел массив (от старого ds-multi-select), берем label, иначе строку
+        if (Array.isArray(newVal) && newVal.length > 0) {
+          this.dataField = String(newVal[0].label || newVal[0].value || '');
+        } else {
+          this.dataField = String(newVal || '');
+        }
+        // Сбрасываем флаг взаимодействия, чтобы при следующем открытии список был полным
+        this.isUserInteracted = false;
+      },
+      immediate: true
+    }
+  },
+  beforeUnmount() {
+
+  },
+  components: {
+    DsInput
+  }
+};
+</script>
+<style scoped>
+</style>
+
+Там где подключается
+ <component-district-coefficient
+        :view="'district'"
+        :item="item"
+        v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_district']"
+      />
+
+      <component-district-coefficient
+        :view="'northern'"
+        :item="item"
+        v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_northern']"
+      />
+
+data(){
+    return {
+      //поля средний доход по годам, заполняется в created
+      fieldsIncome: {},
+      isInitialized: false,
+      skipNextWatch: true,
+
+      //поле дополнительные доходы
+
+
+    }
+  },
+  methods:{
+    syncFieldsFromStore() {
+      const fields = {};
+      this.array_all_income_period.forEach(tab => {
+        fields[tab.modelInput] = tab.value || '';
+
+        if (tab.additionalCoefficient) {
+          const baseCoeffKey = tab.additionalCoefficient.modelInput;
+
+          // ⭐ НОРМАЛИЗАЦИЯ: Преобразуем массив (от старого селекта) в строку для нового инпута
+          const distVal = tab.additionalCoefficient.districtCoefficient.value;
+          fields[baseCoeffKey + '_district'] = Array.isArray(distVal) ? (distVal[0]?.label || '') : (distVal || '');
+
+          const northVal = tab.additionalCoefficient.northernAllowance.value;
+          fields[baseCoeffKey + '_northern'] = Array.isArray(northVal) ? (northVal[0]?.label || '') : (northVal || '');
+        }
+      });
+      this.fieldsIncome = fields;
+    }
+  },
