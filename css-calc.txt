@@ -1,9 +1,3 @@
-mutationAnswers(state, received_perem) {
-// 4. Динамическое обновление доходов с помощью нашей функции!
-      updateIncomeArrayFromAnswers(state.array_all_income_period_man, received_perem.incomeMan);
-      updateIncomeArrayFromAnswers(state.array_all_income_period_wife, received_perem.incomeWife);
-    },
-
 function updateIncomeArrayFromAnswers(stateArray, incomingArray) {
   if (!incomingArray || !Array.isArray(incomingArray)) return;
 
@@ -26,7 +20,6 @@ function updateIncomeArrayFromAnswers(stateArray, incomingArray) {
           if (!variants || targetValue === undefined || targetValue === null || targetValue === '') {
             return null;
           }
-          // Ищем объект в variant, у которого label совпадает с пришедшим значением
           return variants.find(v => String(v.label).trim() === String(targetValue).trim()) || null;
         };
 
@@ -36,9 +29,16 @@ function updateIncomeArrayFromAnswers(stateArray, incomingArray) {
             stateItem.additionalCoefficient.districtCoefficient.variant,
             distVal
           );
-          // Если нашли совпадение, записываем его в массив (как ожидает ds-multi-select)
-          // Если нет, записываем пустой массив, чтобы сбросить выбор
-          stateItem.additionalCoefficient.districtCoefficient.value = matchedDist ? [matchedDist] : [];
+          
+          // Если нашли в variant, используем его. 
+          // Если НЕ нашли, создаем "виртуальный" объект с этим значением, чтобы оно не потерялось!
+          if (matchedDist) {
+            stateItem.additionalCoefficient.districtCoefficient.value = [matchedDist];
+          } else {
+            stateItem.additionalCoefficient.districtCoefficient.value = [
+              { label: String(distVal), value: String(distVal) }
+            ];
+          }
         }
 
         // --- Северная надбавка ---
@@ -47,25 +47,17 @@ function updateIncomeArrayFromAnswers(stateArray, incomingArray) {
             stateItem.additionalCoefficient.northernAllowance.variant,
             northVal
           );
-          stateItem.additionalCoefficient.northernAllowance.value = matchedNorth ? [matchedNorth] : [];
+          
+          //Та же логика для северной надбавки
+          if (matchedNorth) {
+            stateItem.additionalCoefficient.northernAllowance.value = [matchedNorth];
+          } else {
+            stateItem.additionalCoefficient.northernAllowance.value = [
+              { label: String(northVal), value: String(northVal) }
+            ];
+          }
         }
       }
     }
   });
 }
-
-districtCoefficient:{
-            value:[{id: 1,label: '1.9'}], //значение выбранного районного коэффициенты
-            placeholder:'Районный коэффициент',
-            variant: [
-              {
-                id: 1,
-                label: '1.1',
-              },
-              {
-                id: 2,
-                label: '1.15',
-              },
-
-"incomeMan":[{"isActive":false,"isShow":true,"value":1000000,"additionalCoefficient":
-                 {"districtCoefficient":"1.45","northernAllowance" : 20}},
