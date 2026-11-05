@@ -1,303 +1,71 @@
-clickdropDownItem(el){
-      const element = el.currentTarget;
-      const parent = element.closest('.js--select');
-
-      if (element.hasAttribute('data-value')) {
-        this.dataField = element.getAttribute('data-value');
-      }
-
-      if(parent.querySelector('.ds-multiselect__option-item.active')){
-        parent.querySelector('.ds-multiselect__option-item.active').classList.remove('active')
-      }
-      element.classList.add('active');
-
+mutationAnswers(state, received_perem) {
+// 4. Динамическое обновление доходов с помощью нашей функции!
+      updateIncomeArrayFromAnswers(state.array_all_income_period_man, received_perem.incomeMan);
+      updateIncomeArrayFromAnswers(state.array_all_income_period_wife, received_perem.incomeWife);
     },
 
+function updateIncomeArrayFromAnswers(stateArray, incomingArray) {
+  if (!incomingArray || !Array.isArray(incomingArray)) return;
 
+  incomingArray.forEach((incomingItem, index) => {
+    if (stateArray[index]) {
+      const stateItem = stateArray[index];
 
+      // 1. Обновляем базовые поля
+      stateItem.isActive = incomingItem.isActive;
+      stateItem.isShow = incomingItem.isShow;
+      stateItem.value = incomingItem.value;
 
+      // 2. Обновляем коэффициенты
+      if (incomingItem.additionalCoefficient && stateItem.additionalCoefficient) {
+        const distVal = incomingItem.additionalCoefficient.districtCoefficient;
+        const northVal = incomingItem.additionalCoefficient.northernAllowance;
 
+        // Вспомогательная функция для поиска нужного объекта в variant по label
+        const findMatchingVariant = (variants, targetValue) => {
+          if (!variants || targetValue === undefined || targetValue === null || targetValue === '') {
+            return null;
+          }
+          // Ищем объект в variant, у которого label совпадает с пришедшим значением
+          return variants.find(v => String(v.label).trim() === String(targetValue).trim()) || null;
+        };
 
-
-
-Дочерний компонент
-
-<template>
-  <div class="input-story-container ds-input__field-wrapper feed_back__story-wr-select input-emty select-list__wrapper js--select js--openlist-container js--only-mobile-fixed"
-       :class="dropDown ? 'open' : ''"
-       @click="clickdropDown">
-       
-    <div class="select__background" :class="dropDown ? 'show-vue' : ''"></div>
-    
-    <!-- Используем v-model на локальном dataField, но при вводе эмитим изменение родителю -->
-    <DsInput
-      class="height-56 z11"
-      ref="Input"
-      v-model="dataField"
-      :label="item.additionalCoefficient?.districtCoefficient?.placeholder"
-      preset="decimal"
-      labelPosition="inside"
-      @input="logEvent"
-      :unit="''"
-      :maxlength="5"
-      :autocomplete="'off'"
-    />
-    
-    <div class="ds-multiselect__dropdown z-16 select-list__selection-window modal-special-styles">
-      <div class="select-list__head">
-        <p>Выберите значение</p>
-        <div class="select-list__head-close" @click.stop="dropDown = false">✕</div>
-      </div>
-      
-      <div class="feed_back__story-wr-search js--scroll-wrap">
-        <div class="feed_back__story-scroll-inner js--scroll">
-          <div class="ds-multiselect__option-item"
-               v-for="item2 in filteredVariants" 
-               :key="item2.id"
-               @click="selectItem(item2.label)">
-            <p class="ds-multiselect__checkbox-label">{{ item2.label }}</p>
-          </div>
-
-          <div v-if="filteredVariants.length === 0 && isUserInteracted" class="no-results">
-            <p>Нет совпадений</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'component-district-coefficient',
-  props: {
-    item: { type: Object, required: true },
-    //  Стандартное имя пропа для v-model во Vue 3
-    modelValue: { type: [String, Number, Array], default: '' }
-  },
-  data() {
-    return {
-      dataField: '',
-      dropDown: false,
-      isUserInteracted: false // Флаг для показа полного списка при инициализации
-    }
-  },
-  computed: {
-    filteredVariants() {
-      const variants = this.item?.additionalCoefficient?.districtCoefficient?.variant || [];
-      const searchQuery = String(this.dataField).trim();
-
-      // Если пользователь еще не печатал или поле пустое, показываем всё
-      if (!this.isUserInteracted || !searchQuery || searchQuery === '.') {
-        return variants;
-      }
-
-      // Фильтрация по началу строки
-      return variants.filter(item2 => String(item2.label).startsWith(searchQuery));
-    }
-  },
-  watch: {
-    //  Если значение изменилось извне (например, Store очистил поле при смене таба), обновляем локальное поле
-    modelValue: {
-      handler(newVal) {
-        // Нормализуем: если пришел массив (от старого ds-multi-select), берем label, иначе строку
-        if (Array.isArray(newVal) && newVal.length > 0) {
-          this.dataField = String(newVal[0].label || newVal[0].value || '');
-        } else {
-          this.dataField = String(newVal || '');
+        // --- Районный коэффициент ---
+        if (distVal !== undefined) {
+          const matchedDist = findMatchingVariant(
+            stateItem.additionalCoefficient.districtCoefficient.variant,
+            distVal
+          );
+          // Если нашли совпадение, записываем его в массив (как ожидает ds-multi-select)
+          // Если нет, записываем пустой массив, чтобы сбросить выбор
+          stateItem.additionalCoefficient.districtCoefficient.value = matchedDist ? [matchedDist] : [];
         }
-        // Сбрасываем флаг взаимодействия, чтобы при следующем открытии список был полным
-        this.isUserInteracted = false; 
-      },
-      immediate: true
-    }
-  },
-  methods: {
-    logEvent() {
-      this.isUserInteracted = true; // Пользователь начал печатать
-      
-      let val = this.dataField.replace(/[^\d.,]/g, '').replace(',', '.');
-      const parts = val.split('.');
-      
-      if (parts.length === 2 && parts[1].length > 2) {
-        val = parts[0] + '.' + parts[1].substring(0, 2);
-      }
 
-      const num = parseFloat(val);
-      if (!isNaN(num)) {
-        if (num < 1) val = '1';
-        else if (num >= 3) val = '3'; // Или другое ограничение, если нужно
+        // --- Северная надбавка ---
+        if (northVal !== undefined) {
+          const matchedNorth = findMatchingVariant(
+            stateItem.additionalCoefficient.northernAllowance.variant,
+            northVal
+          );
+          stateItem.additionalCoefficient.northernAllowance.value = matchedNorth ? [matchedNorth] : [];
+        }
       }
-
-      this.dataField = val;
-      //  Отправляем обновленное значение родителю
-      this.$emit('update:modelValue', this.dataField);
-    },
-    selectItem(label) {
-      this.dataField = String(label);
-      this.dropDown = false;
-      this.isUserInteracted = true;
-      //  Отправляем выбранное значение родителю
-      this.$emit('update:modelValue', this.dataField);
-    },
-    clickdropDown() {
-      this.dropDown = !this.dropDown;
     }
-  }
+  });
 }
-</script>
 
-<style scoped>
-.no-results { padding: 10px; text-align: center; color: #999; font-size: 14px; }
-</style>
+districtCoefficient:{
+            value:[{id: 1,label: '1.9'}], //значение выбранного районного коэффициенты
+            placeholder:'Районный коэффициент',
+            variant: [
+              {
+                id: 1,
+                label: '1.1',
+              },
+              {
+                id: 2,
+                label: '1.15',
+              },
 
-Родительский компонент
-
-<template>
-  <div class="calculator__row extra-small" v-for="(item, index) in visibleBlockIncomePeriod" :key="item.id">
-    <div class="calc-tax-deduc-new__row-three-column">
-
-      <!-- Основной доход -->
-      <div class="input-story-container">
-        <DsInput
-          class="height-56"
-          v-model="fieldsIncome[item.modelInput]"
-          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
-          preset="amount"
-          labelPosition="inside"
-          :unit="''"
-          :maxlength="100"
-          :autocomplete="'off'"
-        />
-      </div>
-
-      <!-- ⭐ Районный коэффициент: используем v-model к нашему новому компоненту -->
-      <component-district-coefficient 
-        :item="item"
-        v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_district']"
-      />
-
-      <!-- Позже точно так же добавите Северную надбавку -->
-      <!-- <component-northern-allowance :item="item" v-model="fieldsIncome[item.additionalCoefficient.modelInput + '_northern']" /> -->
-
-    </div>
-  </div>
-</template>
-
-<script>
-import store from "../store";
-import { DsInput } from '@ringsites/ui-components/DsInput';
-import ComponentDistrictCoefficient from './component-district-coefficient.vue';
-import { debounce } from "../../../modules/debounce";
-
-export default {
-  name: 'component-income-with-additional-coefficient',
-  props: ['view'],
-  data() {
-    return {
-      fieldsIncome: {},
-      isInitialized: false,
-      skipNextWatch: true,
-    }
-  },
-  computed: {
-    data_year() { return store.getters.DATAYEAR; },
-    array_all_income_period() {
-      return this.view === 'man' ? store.getters.ARRAYALLINCOMEPERIODMAN : store.getters.ARRAYALLINCOMEPERIODWIFE;
-    },
-    visibleBlockIncomePeriod() {
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
-      if (activeIndex === -1) return [];
-      return this.array_all_income_period.slice(0, activeIndex + 1);
-    },
-  },
-  created() {
-    this.debouncedIncomeUpdate = debounce((newFields) => {
-      if (this.skipNextWatch || !this.isInitialized) return;
-
-      const cleanedFields = {};
-      for (const key in newFields) {
-        const val = newFields[key];
-        // Теперь val для коэффициентов будет просто строкой (например, "1.5"), 
-        // а не массивом. Умная очистка это корректно обработает.
-        if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
-          cleanedFields[key] = val;
-        } else {
-          const cleanStr = String(val).replace(/\s/g, '');
-          cleanedFields[key] = cleanStr === '' ? '' : (isNaN(parseFloat(cleanStr)) ? cleanStr : parseFloat(cleanStr));
-        }
-      }
-
-      store.dispatch('ActionShowLoader', true);
-      const actionName = this.view === 'man' ? 'ActionInputIncomeMan' : 'ActionInputIncomeWife';
-      
-      store.dispatch(actionName, cleanedFields).finally(() => {
-        store.dispatch('ActionShowLoader', false);
-      });
-    }, 500);
-  },
-  methods: {
-    // ⭐ Вынесли логику инициализации в отдельный метод, чтобы не дублировать код
-    syncFieldsFromStore() {
-      const fields = {};
-      this.array_all_income_period.forEach(tab => {
-        fields[tab.modelInput] = tab.value || '';
-        
-        if (tab.additionalCoefficient) {
-          const baseCoeffKey = tab.additionalCoefficient.modelInput;
-          
-          // ⭐ НОРМАЛИЗАЦИЯ: Преобразуем массив (от старого селекта) в строку для нового инпута
-          const distVal = tab.additionalCoefficient.districtCoefficient.value;
-          fields[baseCoeffKey + '_district'] = Array.isArray(distVal) ? (distVal[0]?.label || '') : (distVal || '');
-
-          const northVal = tab.additionalCoefficient.northernAllowance.value;
-          fields[baseCoeffKey + '_northern'] = Array.isArray(northVal) ? (northVal[0]?.label || '') : (northVal || '');
-        }
-      });
-      this.fieldsIncome = fields;
-    }
-  },
-  mounted() {
-    this.skipNextWatch = true;
-    this.$nextTick(() => {
-      this.syncFieldsFromStore();
-      this.$nextTick(() => {
-        this.skipNextWatch = false;
-        this.isInitialized = true;
-      });
-    });
-  },
-  watch: {
-    array_all_income_period: {
-      handler() {
-        this.skipNextWatch = true;
-        this.$nextTick(() => {
-          this.syncFieldsFromStore();
-          this.$nextTick(() => {
-            this.skipNextWatch = false;
-            this.isInitialized = true;
-          });
-        });
-      },
-      deep: true
-    },
-    fieldsIncome: {
-      handler(newValue) {
-        if (this.skipNextWatch || !this.isInitialized) return;
-        this.debouncedIncomeUpdate(newValue);
-      },
-      deep: true,
-      immediate: false
-    },
-  },
-  beforeUnmount() {
-    if (this.debouncedIncomeUpdate) {
-      this.debouncedIncomeUpdate.cancel();
-    }
-  },
-  components: {
-    DsInput,
-    ComponentDistrictCoefficient
-  },
-};
-</script>
+"incomeMan":[{"isActive":false,"isShow":true,"value":1000000,"additionalCoefficient":
+                 {"districtCoefficient":"1.45","northernAllowance" : 20}},
