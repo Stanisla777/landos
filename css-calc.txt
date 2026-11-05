@@ -1,68 +1,37 @@
- state:{
-    //лоадер для блока резалт
-    show_loader:false,
+store.watch(
+      state => state.data_year,
+      (newYear) => {
+        const currentYear = new Date().getFullYear();
+        const diff = currentYear - newYear;
 
-    //год в календаре
-    // data_year: new Date().getFullYear() - 3,
-    data_year: 2025,
+        let targetId = null;
+        if (diff === 0) targetId = null;       // Текущий год
+        else if (diff === 1) targetId = "1";   // Прошлый год
+        else if (diff === 2) targetId = "2";   // Два года назад
+        else if (diff >= 3) targetId = "3";    // Три и более лет назад
 
-// дата в календаре
-    mutationCalendarYear(state, received_perem) {
-      // 1. Сохраняем выбранный год
-      state.data_year = received_perem;
+        // Вызываем нашу универсальную функцию для применения состояний
+        updateIncomePeriodArray(store.state.array_all_income_period_man, targetId);
+        updateIncomePeriodArray(store.state.array_all_income_period_wife, targetId);
+      },
+      { immediate: true } // <--- МАГИЯ ЗДЕСЬ: сработает мгновенно при создании Store
+    );
 
-      // 2. Вычисляем, какой таб должен быть активен
-      const currentYear = new Date().getFullYear();
-      const diff = currentYear - received_perem;
+-----------------
 
-      let targetId = null;
-      if (diff === 0) targetId = null;       // Текущий год
-      else if (diff === 1) targetId = "1";   // Прошлый год
-      else if (diff === 2) targetId = "2";   // Два года назад
-      else if (diff >= 3) targetId = "3";    // Три и более лет назад
+mutationCalendarYear(state, received_perem) {
+    // Просто меняем год. Watch в плагине автоматически отреагирует на это изменение
+    // и вызовет updateIncomePeriodArray с правильными параметрами.
+    state.data_year = received_perem;
+  },
 
-      updateIncomePeriodArray(state.array_all_income_period_man, targetId);
-      updateIncomePeriodArray(state.array_all_income_period_wife, targetId);
-      console.log('state.data_year');
-      console.log(state.data_year);
-    },
-
-
-Компонент
-
-<!--Доходы по годам, когда не выбран чекбокс Есть районный коэффициент-->
-    <div v-if="!check_district_coefficient && data_year!==new Date().getFullYear()" class="calculator__row small-margin">
-<!--      <p v-if="data_year===new Date().getFullYear()" class="p2-semibold ds-color-muted">Нет доступных периодов для возврата</p>-->
-      <div class="calc-tax-deduc-new__row-grid-auto-column">
-        <div v-for="(item,index) in visibleBlockIncomePeriod" :key="item.id"  class="input-story-container">
-          <DsInput
-            class="height-56"
-            v-model="fieldsIncome[item.modelInput]"
-            :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
-            preset="amount"
-            labelPosition="inside"
-            :unit="''"
-            :maxlength="100"
-            :autocomplete="'off'"
-          />
-        </div>
-      </div>
-    </div>
-
+------------------
 
 computed: {
-    
-    data_year() {
-      return store.getters.DATAYEAR;
-    },
-    array_all_income_period() {
-      return store.getters.ARRAYALLINCOMEPERIODMAN;
-    },
-    visibleBlockIncomePeriod() {
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
-      if (activeIndex === -1) return [];
-      return this.array_all_income_period.slice(0, activeIndex + 1);
-    },
-   
-
+  data_year() {
+    return store.getters.DATAYEAR;
   },
+  isCurrentYear() {
+    return this.data_year === new Date().getFullYear();
+  },
+
