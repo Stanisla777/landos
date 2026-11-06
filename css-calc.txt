@@ -1,46 +1,24 @@
-<div class="ds-multiselect__option-item"
-               v-for="item2 in filteredVariants"
-               :class="item2?.active ? 'active' : ''"
-               :key="item2.id"
-               @click="selectItem(item2.label, $event)">
-            <p class="ds-multiselect__checkbox-label">{{ item2.label }}</p>
-          </div>
+:class="{ 'active': String(item2.label) === String(dataField) }" 
 
-computed: {
-    filteredVariants() {
-      // 1. Динамически выбираем массив variant в зависимости от view
-      const variants = this.view === 'district'
-        ? (this.item?.additionalCoefficient?.districtCoefficient?.variant || [])
-        : (this.item?.additionalCoefficient?.northernAllowance?.variant || []);
+methods: {
+  // ... другие методы
 
-      const searchQuery = String(this.dataField).trim();
-
-      // 2. Если пользователь еще не печатал или поле пустое, отдаем полный список
-      if (!this.isUserInteracted || !searchQuery || searchQuery === '.') {
-        return variants;
-      }
-
-      // 3. Фильтрация по началу строки
-      return variants.filter(item2 => {
-        return String(item2.label).startsWith(searchQuery);
-      });
-    }
+  selectItem(label, event) {
+    // 1. Обновляем значение в инпуте
+    this.dataField = String(label);
+    
+    // 2. Закрываем дропдаун
+    this.dropDown = false;
+    
+    // 3. Помечаем, что пользователь взаимодействовал
+    this.isUserInteracted = true;
+    
+    // 4. Отправляем значение родителю (в Store)
+    this.$emit('update:modelValue', this.dataField);
+    
+    // ⭐ УДАЛИТЕ отсюда весь код с element.closest и classList.add/remove.
+    // Vue сам добавит класс 'active' нужному элементу благодаря :class в шаблоне!
   },
-array_all_income_period_man:[
-      {
-        .......
-        additionalCoefficient : {
-          modelInput:'field_coefficient_1',
-          districtCoefficient:{
-            value:[{id: 1,label: '1.1'}], //значение выбранного районного коэффициенты
-            placeholder:'Районный коэффициент',
-            variant: [
-              {
-                id: 1,
-                label: '1.1',
-                active:true
-              },
-              {
-                id: 2,
-                label: '1.15',
-              },
+
+  // ...
+}
