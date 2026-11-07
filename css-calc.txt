@@ -1,52 +1,40 @@
-@blur="validateOnBlur" 
-
 logEvent(event) {
     this.isUserInteracted = true;
 
     // 1. Оставляем только цифры и точку (заменяем запятую)
     let val = event.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
-
-    // 2. Гарантируем, что точка только одна
     const parts = val.split('.');
+
+    // Если пользователь умудрился ввести больше одной точки, оставляем только первую
     if (parts.length > 2) {
       val = parts[0] + '.' + parts.slice(1).join('');
     }
 
-    // 3. Ограничение до 2 знаков после точки
+    // 2. Ограничение до 2 знаков после точки
     if (parts.length === 2 && parts[1].length > 2) {
       val = parts[0] + '.' + parts[1].substring(0, 2);
     }
 
+    // 3. ⭐ ГЛАВНОЕ ИСПРАВЛЕНИЕ: Проверка на "промежуточный ввод"
+    // Если строка заканчивается на точку, или это "0", или "0.", 
+    // значит пользователь ещё печатает дробную часть. Не применяем жёсткие ограничения!
+    const isIntermediate = val.endsWith('.') || val === '0' || val === '0.';
 
-    this.dataField = val;
-    this.$emit('update:modelValue', this.dataField);
-  },
-
-  //  Жёсткая валидация при потере фокуса (Blur)
-  validateOnBlur() {
-    let val = this.dataField;
-
-    // Если поле пустое или пользователь оставил только точку
-    if (!val || val === '.') {
-      val = '1'; // Возвращаем минимальное значение по умолчанию
-    } else {
+    if (!isIntermediate) {
       const num = parseFloat(val);
 
       if (!isNaN(num)) {
         if (this.view === 'district') {
           if (num < 1) val = '1';
-          else if (num > 3) val = '3'; // Вот здесь мы жёстко ограничиваем максимум
+          else if (num > 3) val = '3'; // Строго больше 3
         } else {
+          // northern
           if (num < 0.1) val = '0.1';
           else if (num > 100) val = '100';
         }
-      } else {
-        // На случай совсем некорректного ввода (например, буквами)
-        val = '1'; 
       }
     }
 
-    // Применяем исправленное значение
     this.dataField = val;
     this.$emit('update:modelValue', this.dataField);
   },
