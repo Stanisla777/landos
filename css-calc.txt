@@ -1,41 +1,52 @@
+@blur="validateOnBlur" 
+
 logEvent(event) {
-      this.isUserInteracted = true; // Пользователь начал взаимодействовать
+    this.isUserInteracted = true;
 
-      let val = event.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
-      const parts = val.split('.');
+    // 1. Оставляем только цифры и точку (заменяем запятую)
+    let val = event.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
 
-      // Ограничение до 2 знаков после точки
-      if (parts.length === 2 && parts[1].length > 2) {
-        val = parts[0] + '.' + parts[1].substring(0, 2);
-      }
+    // 2. Гарантируем, что точка только одна
+    const parts = val.split('.');
+    if (parts.length > 2) {
+      val = parts[0] + '.' + parts.slice(1).join('');
+    }
 
+    // 3. Ограничение до 2 знаков после точки
+    if (parts.length === 2 && parts[1].length > 2) {
+      val = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+
+
+    this.dataField = val;
+    this.$emit('update:modelValue', this.dataField);
+  },
+
+  //  Жёсткая валидация при потере фокуса (Blur)
+  validateOnBlur() {
+    let val = this.dataField;
+
+    // Если поле пустое или пользователь оставил только точку
+    if (!val || val === '.') {
+      val = '1'; // Возвращаем минимальное значение по умолчанию
+    } else {
       const num = parseFloat(val);
 
       if (!isNaN(num)) {
         if (this.view === 'district') {
           if (num < 1) val = '1';
-          else if (num >= 3) val = '3'; // Если введено 3 или больше, фиксируем на 3
+          else if (num > 3) val = '3'; // Вот здесь мы жёстко ограничиваем максимум
         } else {
           if (num < 0.1) val = '0.1';
-          else if (num >= 100) val = '100';
+          else if (num > 100) val = '100';
         }
+      } else {
+        // На случай совсем некорректного ввода (например, буквами)
+        val = '1'; 
       }
+    }
 
-      this.dataField = val;
-      this.$emit('update:modelValue', this.dataField);
-    },
-
-<DsInput
-        class="height-56 z-11 styled-as-select"
-        ref="Input"
-        v-model="dataField"
-        :label="view === 'district' ? item.additionalCoefficient?.districtCoefficient?.placeholder : item.additionalCoefficient?.northernAllowance?.placeholder"
-        preset="decimal"
-        labelPosition="inside"
-        @input="logEvent"
-        :unit="''"
-        :maxlength="5"
-        :autocomplete="'off'"
-
-      >
-      </DsInput>
+    // Применяем исправленное значение
+    this.dataField = val;
+    this.$emit('update:modelValue', this.dataField);
+  },
