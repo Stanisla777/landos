@@ -1,11 +1,12 @@
 logEvent(event) {
     this.isUserInteracted = true;
-
-    // 1. Оставляем только цифры и точку (заменяем запятую)
-    let val = event.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
+    
+    // 1. Получаем "сырое" значение из инпута
+    let rawVal = event.target.value;
+    let val = rawVal.replace(/[^\d.,]/g, '').replace(',', '.');
     const parts = val.split('.');
 
-    // Если пользователь умудрился ввести больше одной точки, оставляем только первую
+    // Если точек больше одной (пользователь как-то умудрился), оставляем только первую
     if (parts.length > 2) {
       val = parts[0] + '.' + parts.slice(1).join('');
     }
@@ -15,23 +16,27 @@ logEvent(event) {
       val = parts[0] + '.' + parts[1].substring(0, 2);
     }
 
-    // 3. ⭐ ГЛАВНОЕ ИСПРАВЛЕНИЕ: Проверка на "промежуточный ввод"
-    // Если строка заканчивается на точку, или это "0", или "0.", 
-    // значит пользователь ещё печатает дробную часть. Не применяем жёсткие ограничения!
-    const isIntermediate = val.endsWith('.') || val === '0' || val === '0.';
+    // ⭐ ГЛАВНОЕ ИСПРАВЛЕНИЕ:
+    // Если значение заканчивается на точку (например, "1."), это промежуточный ввод.
+    // Мы НЕ обновляем this.dataField, чтобы DsInput/Vue не обрезал эту точку 
+    // при перерисовке v-model. Инпут визуально продолжит показывать "1.", 
+    // и когда пользователь введёт следующую цифру, всё сработает штатно.
+    if (val.endsWith('.')) {
+      return; 
+    }
 
-    if (!isIntermediate) {
-      const num = parseFloat(val);
+    const num = parseFloat(val);
 
-      if (!isNaN(num)) {
-        if (this.view === 'district') {
-          if (num < 1) val = '1';
-          else if (num > 3) val = '3'; // Строго больше 3
-        } else {
-          // northern
-          if (num < 0.1) val = '0.1';
-          else if (num > 100) val = '100';
-        }
+    if (!isNaN(num)) {
+      if (this.view === 'district') {
+        // Если ввели 0, он сразу станет 1 (как вы и хотели, это интуитивно понятно!)
+        if (num < 1) val = '1';
+        // Если ввели 14 (забыли точку), это невалидно, ограничиваем максимумом
+        else if (num > 3) val = '3';
+      } else {
+        // Для northern
+        if (num < 0.1) val = '0.1';
+        else if (num > 100) val = '100';
       }
     }
 
