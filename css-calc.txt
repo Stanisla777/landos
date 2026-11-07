@@ -1,52 +1,28 @@
+modelValue: {
+      handler(newVal) {
+        let normalizedVal = '';
+        if (Array.isArray(newVal) && newVal.length > 0) {
+          normalizedVal = String(newVal[0].label || newVal[0].value || '');
+        } else {
+          normalizedVal = String(newVal || '');
+        }
+
+        // Обновляем поле и сбрасываем флаг ТОЛЬКО если значение пришло извне
+        // и отличается от текущего (например, Store очистил поле при смене таба).
+        // Если пользователь просто печатает, родитель вернет то же значение,
+        // условие this.dataField !== normalizedVal будет false, и флаг НЕ сбросится!
+        if (this.dataField !== normalizedVal) {
+          this.dataField = normalizedVal;
+          if (normalizedVal === '') {
+            this.isUserInteracted = false;
+          }
+        }
+      },
+      immediate: true
+    }
+
 logEvent(event) {
-    this.isUserInteracted = true;
-    
-    // 1. Получаем значение и чистим его
-    let val = event.target.value.replace(/[^\d.,]/g, '').replace(',', '.');
-    const parts = val.split('.');
-
-    // Оставляем только первую точку, если их вдруг стало больше
-    if (parts.length > 2) {
-      val = parts[0] + '.' + parts.slice(1).join('');
-    }
-
-    // Ограничение до 2 знаков после точки
-    if (parts.length === 2 && parts[1].length > 2) {
-      val = parts[0] + '.' + parts[1].substring(0, 2);
-    }
-
-    // 2. ⭐ ЗАЩИТА ТОЧКИ: Если ввод не завершён (висит точка), не обновляем dataField, 
-    // чтобы Vue не перерисовывал инпут и не "съедал" эту точку.
-    if (val.endsWith('.')) {
-      return; 
-    }
-
-    // 3. Мгновенная валидация границ (как вы хотели, чтобы 0 сразу становился 1)
-    const num = parseFloat(val);
-    if (!isNaN(num)) {
-      if (this.view === 'district') {
-        if (num < 1) val = '1';
-        else if (num > 3) val = '3';
-      } else {
-        if (num < 0.1) val = '0.1';
-        else if (num > 100) val = '100';
-      }
-    }
-
-    this.dataField = val;
-    this.$emit('update:modelValue', this.dataField);
-  },
-
-
-cleanupInput(event) {
-  // Берём реальное значение из DOM. 
-  // DsInput уже сам убрал висящую точку/запятую, превратив "1." в "1"
-  let val = event.target.value.replace(',', '.');
-
-  // Синхронизируем dataField с реальным значением в инпуте, 
-  // только если они отличаются (например, dataField был "1.4", а в инпуте теперь "1" или "")
-  if (this.dataField !== val) {
-    this.dataField = val;
-    this.$emit('update:modelValue', this.dataField);
-  }
-}
+      this.isUserInteracted = true;
+this.dataField = val;
+      this.$emit('update:modelValue', this.dataField);
+    },
