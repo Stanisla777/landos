@@ -1,39 +1,46 @@
-:model-value="dataField"
-@update:model-value="onModelUpdate"
+onModelUpdate(value) {
+  this.isUserInteracted = true;
 
-methods: {
-  onModelUpdate(value) {
-    this.isUserInteracted = true;
-
-    // Крестик или внешняя очистка — пробрасываем пустое значение как есть,
-    // без валидации (иначе min/max вернёт '1' или '0.1' и поле не очистится!)
-    if (value === '' || value === null || value === undefined) {
-      this.dataField = '';
-      this.$emit('update:modelValue', '');
-      return;
-    }
-
-    let val = String(value).replace(/[^\d.,]/g, '').replace(',', '.');
-    const parts = val.split('.');
-
-    // Ограничение до 2 знаков после точки
-    if (parts.length === 2 && parts[1].length > 2) {
-      val = parts[0] + '.' + parts[1].substring(0, 2);
-    }
-
-    const num = parseFloat(val);
-
-    if (!isNaN(num)) {
-      if (this.view === 'district') {
-        if (num < 1) val = '1';
-        else if (num >= 3) val = '3';
-      } else {
-        if (num < 0.1) val = '0.1';
-        else if (num >= 100) val = '100';
-      }
-    }
-
-    this.dataField = val;
-    this.$emit('update:modelValue', this.dataField);
+  // Крестик / внешняя очистка
+  if (value === '' || value === null || value === undefined) {
+    this.dataField = '';
+    this.$emit('update:modelValue', '');
+    return;
   }
+
+  let val = String(value).replace(/[^\d.,]/g, '').replace(',', '.');
+
+  // Обрезаем лишние знаки после точки
+  const parts = val.split('.');
+  if (parts.length === 2 && parts[1].length > 2) {
+    val = parts[0] + '.' + parts[1].substring(0, 2);
+  }
+
+  // ПРОМЕЖУТОЧНОЕ СОСТОЯНИЕ: пользователь ещё печатает.
+  // Не трогаем — отдаём как есть, чтобы не съесть разделитель.
+  const isIntermediate =
+    val === '' ||
+    val === '.' ||
+    val.endsWith('.');
+
+  if (isIntermediate) {
+    this.dataField = val; // сохраняем '1.' — DsInput покажет '1,'
+    this.$emit('update:modelValue', val);
+    return;
+  }
+
+  const num = parseFloat(val);
+
+  if (!isNaN(num)) {
+    if (this.view === 'district') {
+      if (num < 1) val = '1';
+      else if (num >= 3) val = '3';
+    } else {
+      if (num < 0.1) val = '0.1';
+      else if (num >= 100) val = '100';
+    }
+  }
+
+  this.dataField = val;
+  this.$emit('update:modelValue', this.dataField);
 }
