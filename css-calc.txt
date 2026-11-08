@@ -157,6 +157,33 @@ data(){
     },
 
   },
+created() {
+
+    this.debouncedIncomeUpdate = debounce((newFields) => {
+      if (this.skipNextWatch || !this.isInitialized) return;
+
+      const cleanedFields = {};
+      for (const key in newFields) {
+        const val = newFields[key];
+        // Теперь val для коэффициентов будет просто строкой (например, "1.5"),
+        // а не массивом. Умная очистка это корректно обработает.
+        if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
+          cleanedFields[key] = val;
+        } else {
+          const cleanStr = String(val).replace(/\s/g, '');
+          cleanedFields[key] = cleanStr === '' ? '' : (isNaN(parseFloat(cleanStr)) ? cleanStr : parseFloat(cleanStr));
+        }
+      }
+      console.log('created')
+
+      store.dispatch('ActionShowLoader', true);
+      const actionName = this.view === 'man' ? 'ActionInputIncomeMan' : 'ActionInputIncomeWife';
+
+      store.dispatch(actionName, cleanedFields).finally(() => {
+        store.dispatch('ActionShowLoader', false);
+      });
+    }, 500);
+  },
 
 mounted(){
     this.skipNextWatch = true;
