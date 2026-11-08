@@ -1,31 +1,32 @@
 onModelUpdate(value) {
+  console.log('[onModelUpdate] IN  value =', JSON.stringify(value));
+  console.log('[onModelUpdate] dataField BEFORE =', JSON.stringify(this.dataField));
+
   this.isUserInteracted = true;
 
-  // Крестик / внешняя очистка
   if (value === '' || value === null || value === undefined) {
     this.dataField = '';
     this.$emit('update:modelValue', '');
+    console.log('[onModelUpdate] OUT (clear) dataField =', JSON.stringify(this.dataField));
     return;
   }
 
   let val = String(value).replace(/[^\d.,]/g, '').replace(',', '.');
+  console.log('[onModelUpdate] normalized val =', JSON.stringify(val));
 
-  // Обрезаем лишние знаки после точки
   const parts = val.split('.');
   if (parts.length === 2 && parts[1].length > 2) {
     val = parts[0] + '.' + parts[1].substring(0, 2);
+    console.log('[onModelUpdate] after trim =', JSON.stringify(val));
   }
 
-  // ПРОМЕЖУТОЧНОЕ СОСТОЯНИЕ: '1.', '.', ''
-  // НЕ трогаем dataField — иначе DsInput пересинхронизирует отображение
-  // и съест висящую запятую. Только эмитим в родителя.
   if (val === '' || val === '.' || val.endsWith('.')) {
+    console.log('[onModelUpdate] INTERMEDIATE — emit only, dataField untouched =', JSON.stringify(this.dataField));
     this.$emit('update:modelValue', val);
     return;
   }
 
   const num = parseFloat(val);
-
   if (!isNaN(num)) {
     if (this.view === 'district') {
       if (num < 1) val = '1';
@@ -37,5 +38,22 @@ onModelUpdate(value) {
   }
 
   this.dataField = val;
+  console.log('[onModelUpdate] OUT dataField =', JSON.stringify(this.dataField));
   this.$emit('update:modelValue', this.dataField);
 }
+
+--------------------
+
+console.log('[watch modelValue] >>> OVERWRITE dataField:', JSON.stringify(this.dataField), '->', JSON.stringify(normalizedVal));
+
+-----------------
+
+console.log('[parent debounce] newFields =', JSON.parse(JSON.stringify(newFields)));
+
+console.log('[parent debounce] cleanedFields (going to store) =', JSON.parse(JSON.stringify(cleanedFields)));
+
+-----------------------
+syncFieldsFromStore() {
+  console.log('[syncFieldsFromStore] called');
+
+ console.log('[syncFieldsFromStore] fields =', JSON.parse(JSON.stringify(fields)));
