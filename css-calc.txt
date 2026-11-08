@@ -1,48 +1,41 @@
-<DsInput
-        class="height-56 z-11 styled-as-select"
-        ref="Input"
-        :model-value="dataField"
-        :label="view === 'district' ? item.additionalCoefficient?.districtCoefficient?.placeholder : item.additionalCoefficient?.northernAllowance?.placeholder"
-        preset="decimal"
-        labelPosition="inside"
-        @update:model-value="onModelUpdate"
-        :unit="''"
-        :maxlength="5"
-        :autocomplete="'off'"
-
-      >
-
 onModelUpdate(value) {
-      this.isUserInteracted = true;
+  this.isUserInteracted = true;
 
-      // Крестик или внешняя очистка — пробрасываем пустое значение как есть,
-      // без валидации (иначе min/max вернёт '1' или '0.1' и поле не очистится!)
-      if (value === '' || value === null || value === undefined) {
-        this.dataField = '';
-        this.$emit('update:modelValue', '');
-        return;
-      }
+  // Крестик / внешняя очистка
+  if (value === '' || value === null || value === undefined) {
+    this.dataField = '';
+    this.$emit('update:modelValue', '');
+    return;
+  }
 
-      let val = String(value).replace(/[^\d.,]/g, '').replace(',', '.');
-      const parts = val.split('.');
+  let val = String(value).replace(/[^\d.,]/g, '').replace(',', '.');
 
-      // Ограничение до 2 знаков после точки
-      if (parts.length === 2 && parts[1].length > 2) {
-        val = parts[0] + '.' + parts[1].substring(0, 2);
-      }
+  // Обрезаем лишние знаки после точки
+  const parts = val.split('.');
+  if (parts.length === 2 && parts[1].length > 2) {
+    val = parts[0] + '.' + parts[1].substring(0, 2);
+  }
 
-      const num = parseFloat(val);
+  // ПРОМЕЖУТОЧНОЕ СОСТОЯНИЕ: '1.', '.', ''
+  // НЕ трогаем dataField — иначе DsInput пересинхронизирует отображение
+  // и съест висящую запятую. Только эмитим в родителя.
+  if (val === '' || val === '.' || val.endsWith('.')) {
+    this.$emit('update:modelValue', val);
+    return;
+  }
 
-      if (!isNaN(num)) {
-        if (this.view === 'district') {
-          if (num < 1) val = '1';
-          else if (num >= 3) val = '3';
-        } else {
-          if (num < 0.1) val = '0.1';
-          else if (num >= 100) val = '100';
-        }
-      }
+  const num = parseFloat(val);
 
-      this.dataField = val;
-      this.$emit('update:modelValue', this.dataField);
-    },
+  if (!isNaN(num)) {
+    if (this.view === 'district') {
+      if (num < 1) val = '1';
+      else if (num >= 3) val = '3';
+    } else {
+      if (num < 0.1) val = '0.1';
+      else if (num >= 100) val = '100';
+    }
+  }
+
+  this.dataField = val;
+  this.$emit('update:modelValue', this.dataField);
+}
