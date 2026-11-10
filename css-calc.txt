@@ -1,3 +1,147 @@
-if (typeof val === 'string' && (val === '.' || val.endsWith('.'))) {
-  continue;
+[CaptchaCore] Виджет уже существует, выполняем execute для widgetId: 0
+
+
+function formSubmission() {
+  const btn = document.querySelectorAll('.js--btn-universal-form');
+  for(let item_btn = 0; item_btn<btn.length; item_btn++){
+
+    const parent_form = btn[item_btn].closest('.js--universal-form');
+
+    btn[item_btn].onclick=(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      let count_required = 0
+      const element = e.target
+
+      // Уникальный ID контейнера для этой формы
+      const containerId = `yandex-smart-captcha-${item_btn}`;
+
+      ..............................
+
+      if(count_required===0){
+          //вот тут команды в случае если всё хорошо
+          btn[item_btn].classList.add('submitting')
+          const _form_button =  parent_form.querySelector('.js--btn-universal-form')
+          if (_form_button){
+            _form_button.setAttribute('disabled','disabled')
+          }
+          // Запускаем капчу
+          initCaptchaForForm(parent_form, containerId);
+          return true;
+        }
+        else {
+          //а тут не отправлять, появляется ошибка
+          const parent =  btn[item_btn].closest('.js--feedback-bottom')
+          if (parent){
+            const array_error = parent.querySelectorAll('.input__error.visible')
+            if(array_error.length===0){
+              createElementError ('visible','Не все поля заполнены корректно',parent)
+            }
+          }
+        }
+     }
+   }
+}
+
+/**
+ * Инициализация и запуск капчи для формы
+ * @param {HTMLElement} form - Элемент формы
+ * @param {string} containerId - Уникальный ID контейнера
+ */
+function initCaptchaForForm(form, containerId) {
+  const container = CaptchaCore.createCaptchaContainer(form, containerId);
+
+  CaptchaCore.runCaptcha(container, (token) => {
+    submitForm(form, token);
+  }, {
+    sitekey: conf?.smartcaptcha_key,
+
+    // Подпись на события  после создания виджета
+    onWidgetCreated: (widgetId) => {
+      // Пользователь закрыл окно капчи
+      CaptchaCore.subscribeCaptcha(container, 'challenge-hidden', () => {
+        const button = form.querySelectorAll('.js--btn-universal-form');
+        // if (button) {
+        //   button.classList.remove('submitting');
+        //   button.removeAttribute('disabled');
+        // }
+        button.forEach(item => {
+          item.classList.remove('submitting');
+          item.removeAttribute('disabled');
+        });
+        CaptchaCore.resetCaptcha(container, false);
+      });
+
+      // Токен истёк
+      CaptchaCore.subscribeCaptcha(container, 'token-expired', () => {
+        console.warn('Токен капчи истёк');
+        const button = form.querySelectorAll('.js--btn-universal-form');
+        // if (button) {
+        //   button.classList.remove('submitting');
+        //   button.removeAttribute('disabled');
+        // }
+        button.forEach(item => {
+          item.classList.remove('submitting');
+          item.removeAttribute('disabled');
+        });
+        CaptchaCore.resetCaptcha(container, false);
+      });
+    }
+  });
+}
+
+function submitForm(form, token){
+  if (!form) return false;
+
+  // Вспомогательная функция для разблокировки (аналог .finally в аксиос)
+  const cleanup = () => {
+    // Разблокируем кнопку
+    const button = form.querySelector('.js--btn-universal-form');
+    if (button) {
+      button.classList.remove('submitting');
+      button.removeAttribute('disabled');
+    }
+
+    // Сбрасываю капчу
+    const container = form.querySelector('.captcha-element');
+    if (container) {
+      CaptchaCore.resetCaptcha(container, false); // false = не удалять DOM
+    }
+  };
+
+  const formDataObj = new FormData(form);
+  // Удаляю smart-token из формы (если Яндекс его создал), чтобы не дублировать
+  formDataObj.delete('smart-token');
+  // Добавляю токен явно:
+  //  Если капча сработала: token = реальный токен от Яндекса
+  //  Если капча не работает: token = FALLBACK_TOKEN из переменной в файле captchaCore.js
+  //  Если token === null/undefined (FALLBACK_TOKEN = null): поле не добавляем
+  if (token !== null && token !== undefined) {
+    formDataObj.append('smart-token', token);
+  }
+
+  let formData = new URLSearchParams(Array.from(formDataObj)).toString();
+  BX.ajax({
+    url:'',
+    data: formData,
+    onsuccess: function(result){
+    .....
+    if (_form_bottom){
+        createElementError ('visible','Ошибка при отправке',_form_bottom)
+      }
+      cleanup();
+    }
+  onfailure: function(){
+      // _form_button.removeAttribute('disabled')
+      // _form_button.classList.remove('submitting')
+      _form_button.forEach(item => {
+        item.disabled=false;
+        item.classList.remove('submitting');
+      });
+      if (_form_bottom){
+        createElementError ('visible','Ошибка при отправке',_form_bottom)
+      }
+      cleanup();
+    }
+  });
 }
