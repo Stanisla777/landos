@@ -1,47 +1,49 @@
-<div class="advanced-editor__table-container">
-    <div class="advanced-editor__table-scroll">
-        <table class="advanced-editor__table">
-            <thead>
-            <tr>
-                <th scope="col">Регион</th>
-                <th scope="col">Условие</th>
-                <th scope="col">Категории</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr data-row-id="1">
-                <td>Дальневосточная и арктическая</td>
-                <td>индивидуально</td>
-                <td>льготные категории + жители района</td>
-            </tr>
-            <!-- сюда админка может вставлять <p>, <a>, <span> и т.д. -->
-            </tbody>
-        </table>
-    </div>
-</div>
+.advanced-editor {
+  &__table-container {
+    width: 100%;
+  }
 
-.advanced-editor{
+  &__table-scroll {
+    overflow-x: auto;
+  }
+
   &__table {
-    &-container{
-      width: 100%;             /* растянуть на контейнер, если контента мало */
-      min-width: max-content;  /* и не дать сжаться меньше контента — тогда скролл */
-      table-layout: auto;
-      border-collapse: collapse;
-    }
-    &-scroll{
-      overflow-x: auto;
-    }
-    & :is(th, td) {
-      --col-min: 140px;        /* единственные константы — правки дизайнера меняются тут */
-      --col-max: 409px;
+    --col-min: 140px;
+    --col-max: 409px;
+    --cell-border: 1px solid #d9d9d9; /* цвет рамок ячеек */
+    --thead-bg: #f2f2f4;              /* сероватый фон шапки — подставьте свой */
+
+    width: 100%;             /* растянуть на контейнер, если контента мало */
+    min-width: max-content;  /* не сжиматься меньше контента — тогда скролл */
+    table-layout: auto;
+    border-collapse: separate; /* вместо collapse: у него артефакты рамок при скролле */
+    border-spacing: 0;
+
+    :is(th, td) {
       min-width: var(--col-min);
       max-width: var(--col-max);
       padding: 12px 16px;
+      text-align: left;      /* th по умолчанию центрируется — перебиваем */
       vertical-align: top;
-      overflow-wrap: anywhere; /* длинные ссылки/слова из админки не порвут колонку */
-      /* НЕ ставим white-space: nowrap — текст переносится внутри лимита 409 */
-    }
-    & :is(p, ul, ol) { margin: 0; }
+      overflow-wrap: anywhere;
 
-   }
+      /* только правая и нижняя грань — так сетка не дублируется */
+      border-right: var(--cell-border);
+      border-bottom: var(--cell-border);
+    }
+
+    /* верхняя кромка + фон шапки */
+    thead th {
+      border-top: var(--cell-border);
+      background: var(--thead-bg);
+      /* font-weight: 600; — если дизайнер захочет не дефолтный bold */
+    }
+
+    /* левая кромка таблицы */
+    :is(th, td):first-child {
+      border-left: var(--cell-border);
+    }
+
+    :is(p, ul, ol) { margin: 0; }
+  }
 }
