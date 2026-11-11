@@ -1,130 +1,53 @@
-onsuccess: function(result){
-      // _form_button.removeAttribute('disabled')
-      // _form_button.classList.remove('submitting')
-      _form_button.forEach(item => {
-        item.disabled=false;
-        item.classList.remove('submitting');
-      });
-      if (!!result) {
-        if (result['debug'])
-          console.log(result);
-        // если форма успешно отправлена
-        if (result['result']) {
-          formReset(form)
-          form.dispatchEvent(new CustomEvent('vue:form-success', { bubbles: true }));
-          const arrayInput = form.querySelectorAll('.js--story-input-field');
-          arrayInput.forEach(item => {
-            item.classList.remove('active');
-          });
+<div class="tw">
+  <div class="tw__scroll">
+    <table class="tw__table">
+      <thead>
+        <tr>
+          <th scope="col">Регион</th>
+          <th scope="col">Условие</th>
+          <th scope="col">Категории</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-row-id="1">
+          <td>Дальневосточная и арктическая</td>
+          <td>индивидуально</td>
+          <td>льготные категории + жители района</td>
+        </tr>
+        <!-- сюда админка может вставлять <p>, <a>, <span> и т.д. -->
+      </tbody>
+    </table>
+  </div>
+</div>
 
-
-          const _errors = form.querySelectorAll('.js--input__error');
-          if (_errors) {
-            for (const _error of _errors) {
-              _error.remove()
-            }
-          }
-
-        //если при отправке модальное окно не закрывается, а в неё появляется контент об успешной отправке
-        if (form.closest('.js--modal-sending-without-closing')) {
-            if (form.closest('.js--modal-main-content') && form.closest('.js--modal-sending-without-closing').querySelector('.js--modal-wr-success')) {
-              form.closest('.js--modal-main-content').classList.add('unactive');
-              form.closest('.js--modal-sending-without-closing').querySelector('.js--modal-wr-success').classList.add('active')
-              form.classList.add('successful-form-submission');
-
-            }
-          } else {
-          // закрываем модальное окно, если форма модальная
-          if (_form_modal_wrapper){
-            //_form_modal_wrapper.classList.remove('open');
-            closeModal(_form_modal_wrapper.id);
-            _form_modal_wrapper.setAttribute('data-formsubmit', 'success');
-          }
-          // отображаем окно с сообщением об успешной отправке, если есть
-          if (_success) {
-            _success.classList.add('show');
-            AddClassBody();
-            //----убрал, чтобы окно закрывал только пользователь
-            // setTimeout(() => {
-            //   _success.classList.remove('show');
-            // }, 10000);
-            //-----убрал, чтобы закрытие было только по кнопкам
-            // _success.addEventListener('click', function (e) {
-            //   _success.classList.remove('show');
-            // });
-          }
-        }
-          // блокируем input с вставкой текста об успешной отправке, если указан
-          if (_success_input_with_placeholder && _success_input_with_placeholder.getAttribute('data-ok-placeholder')){
-            _success_input_with_placeholder.value = ''
-            _success_input_with_placeholder.setAttribute('placeholder',_success_input_with_placeholder.getAttribute('data-ok-placeholder'))
-            _success_input_with_placeholder.setAttribute('disabled','disabled')
-            // кнопку отправки тоже блокируем вместе с input
-            // if (_form_button) {
-            //   _form_button.setAttribute('disabled', 'disabled')
-            // }
-            _form_button.forEach(item => {
-              item.disabled=true;
-            });
-          }
-          // блокируем кнопку вызова модальной формы с вставкой текста об успешной отправке, если указан
-          if (_button_opener && _button_opener.getAttribute('data-ok-button-text')){
-            _button_opener.innerHTML = _button_opener.getAttribute('data-ok-button-text')
-            _button_opener.setAttribute('disabled','disabled')
-          }
-          // отправляем метку-цель DmpKit
-          if (form_dmpkit_event_uid && typeof window.dmpkitdl !== "undefined" && window.dmpkitdl !== null) {
-            window.dmpkitdl.push({event: form_dmpkit_event_uid});
-          }
-          return;
-        }
-        else {
-          if (result['errors']) {
-            console.warn(result['errors']);
-            // отображаем ошибки с backend в футере формы, если есть
-            if (_form_bottom){
-              createElementError ('visible',result['errors'],_form_bottom)
-            }
-            return;
-          }
-        }
-      }
-      if (_form_bottom){
-        createElementError ('visible','Ошибка при отправке',_form_bottom)
-      }
-      cleanup();
-    },
-
-function formReset(form){
-  if (form) {
-    form.reset();
-    iMaskReset(form);
-    const _selects = form.querySelectorAll('.js--select')
-    if (_selects) {
-      for (const _select of _selects) {
-        _select.classList.add('input-emty');
-        const _select_el = _select.querySelector('.js--openlist-btn');
-        if (!_select_el) continue;
-
-        const placeholder = _select_el.getAttribute('data-placeholder');
-        if (!placeholder) continue;
-
-
-        const targets = _select_el.querySelectorAll('.select__substituted-text, .js--selected-item-text');
-        targets.forEach(target => {
-          target.classList.add('input-emty');
-          target.textContent = placeholder;
-        });
-        const _select_input = _select.querySelector('input[type="hidden"]');
-        if (_select_input) {
-          _select_input.value = '';
-        }
-        const activeItem = _select.querySelector('.js--openlist-item.active')
-        if (activeItem) {
-          activeItem.classList.remove('active')
-        }
-
-      }
-    }
-  }
+.tw__scroll {
+  overflow-x: auto;
 }
+
+.tw__table {
+  width: 100%;             /* растянуть на контейнер, если контента мало */
+  min-width: max-content;  /* и не дать сжаться меньше контента — тогда скролл */
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+.tw__table :is(th, td) {
+  --col-min: 140px;        /* единственные константы — правки дизайнера меняются тут */
+  --col-max: 409px;
+  min-width: var(--col-min);
+  max-width: var(--col-max);
+  padding: 12px 16px;
+  vertical-align: top;
+  overflow-wrap: anywhere; /* длинные ссылки/слова из админки не порвут колонку */
+  /* НЕ ставим white-space: nowrap — текст переносится внутри лимита 409 */
+}
+
+/* Нормализуем то, что прилетает из админки */
+.tw__table :is(p, ul, ol) { margin: 0; }
+.tw__table img { max-width: 100%; height: auto; }
+
+
+--------------------
+
+.tw__table .is-stretch { width: 100%; } /* на ячейках резиновой колонки */
+.tw__table :is(th, td) { min-width: 140px; max-width: 409px; }
