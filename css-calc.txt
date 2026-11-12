@@ -4,12 +4,197 @@
 .tw__table :is(th, td) { min-width: 140px; max-width: 409px; }
 
 
- &.same-column {
+ .advanced-editor{
+   &__table-container {
+    width: 100%;
+    @include respondTo(small) {
+      //width: calc(100% + 16px);
+    }
+
+    //первая колонка всегда шириной по контенту
+    &.number {
+      .advanced-editor__table {
+        :is(th, td):first-child {
+          width: 1px;           /* сигнал "сделай меня максимально узкой" */
+          min-width: 0;         /* разрешаем быть меньше 140px */
+          white-space: nowrap;  /* цифры не переносятся */
+          text-align: center;   /* нумерация по центру выглядит аккуратнее */
+          padding-left: 12px;
+          padding-right: 12px;
+        }
+      }
+    }
+    /* Все колонки равной ширины */
+    &.same-column {
       .advanced-editor__table {
         --col-min:188px;
         table-layout: fixed; /* вместо auto — теперь ширина не зависит от контента */
         :is(th, td) {
+          width: var(--col-min);
           max-width: none; /* снимаем потолок 409px, чтобы реально делить пространство */
         }
       }
     }
+    //липкая шапка
+    &.sticky-head {
+      .advanced-editor__table-scroll {
+        max-height: 800px;
+        overflow-y: auto;
+      }
+
+      .advanced-editor__table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+    }
+    //Липкая первая колонка
+    &.sticky-first {
+      .advanced-editor__table {
+        :is(th, td):first-child {
+          position: sticky;
+          left: 0;
+          z-index: 1;
+          background: #fff; /* обязателен, иначе контент будет просвечивать */
+        }
+
+        thead th:first-child {
+          z-index: 3; /* выше остальных ячеек и шапки */
+          background: var(--thead-bg);
+        }
+      }
+    }
+    //Чередование строк - зебра
+    &.zebra {
+      .advanced-editor__table tbody tr:nth-child(even) {
+        background-color: #FAFAFA;
+      }
+    }
+
+
+  }
+  &__table-scroll {
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+    @-moz-document url-prefix() {
+      scrollbar-color: #dedede transparent;
+      scrollbar-width: thin;
+    }
+    &::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+      @include respondTo(small) {
+        width: 1px;
+      }
+    }
+    &::-webkit-scrollbar-button {
+      width: 0;
+      height: 0;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #dedede;
+      border: 0 transparent;
+      border-radius: 50px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border: 0 transparent;
+      border-radius: 50px;
+    }
+    &::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+  }
+  &__table {
+    --col-min: 140px;
+    --col-max: 409px;
+    --cell-border: 1px solid #EFEFEF; /* цвет рамок ячеек */
+    --thead-bg: #F4F4F4;              /* сероватый фон шапки — подставьте свой */
+    padding-bottom: 12px;
+    width: 100%;             /* растянуть на контейнер, если контента мало */
+    min-width: max-content;  /* не сжиматься меньше контента — тогда скролл */
+    table-layout: auto;
+    border-collapse: separate; /* вместо collapse: у него артефакты рамок при скролле */
+    border-spacing: 0;
+    :is(th, td) {
+      min-width: var(--col-min);
+      max-width: var(--col-max);
+      padding: 12px 16px;
+      text-align: left;      /* th по умолчанию центрируется — перебиваем */
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      border-bottom: var(--cell-border);
+      &:not(:last-child){
+        border-right: var(--cell-border);
+      }
+      &>*{
+        &:first-child{
+          margin-top: 0;
+        }
+      }
+      &:last-child{
+        width: 100%;
+      }
+    }
+    tr{
+      &:last-child{
+        td{
+          border-bottom:none;
+        }
+      }
+    }
+    /* верхняя кромка + фон шапки */
+    thead {
+      th {
+        border-bottom: var(--cell-border);
+        background: var(--thead-bg);
+        font-family: $font-family;
+        @include style-common-text;
+        color: #999999;
+        p, a{
+          font-size: inherit!important;
+          line-height: inherit!important;
+          font-family: inherit!important;
+          color:inherit!important;
+        }
+      }
+    }
+    tbody{
+      td{
+        font-family: $ff-medium;
+        @include style-common-text;
+        p, a, li{
+          font-size: inherit;
+          line-height: inherit;
+          font-family: inherit;
+          color:inherit;
+        }
+        p{
+          &:not(:first-child) {
+            margin-top: 10px;
+          }
+        }
+        a{
+          @include underline-link(4px);
+        }
+        ul,ol{
+          &:not(:first-child) {
+            margin-top: 24px;
+          }
+        }
+      }
+    }
+
+    :is(p, ul, ol) { margin: 0; }
+    font-family: $font-family;
+    @include style-common-text;
+    a{
+      font-size: inherit;
+      font-family: inherit;
+      color: inherit;
+      line-height: inherit;
+    }
+  }
+
+ }
