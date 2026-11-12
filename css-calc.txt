@@ -1,130 +1,116 @@
- одна «резиновая» колонка. Если дизайнер скажет «лишнее место всегда отдаём третьей колонке, остальные по контенту» — классический приём:
-Остальные колонки сожмутся к контенту (но не ниже 140 из-за min-width), а помеченная заберёт остаток.
-.tw__table .is-stretch { width: 100%; } /* на ячейках резиновой колонки */
-.tw__table :is(th, td) { min-width: 140px; max-width: 409px; }
-
-
 <div class="advanced-editor__table-container common-content">
-    <div class="advanced-editor__table-scroll">
-        <table class="advanced-editor__table">
-            <thead>
-            <tr>
+  <div class="advanced-editor__table-scroll">
+    <div class="advanced-editor__table" role="table">
 
-                <% for (let i = 0; i < 1; i++) { %>
-                    <th scope="col"><p>Программа</p></th>
-                    <th scope="col">Ставка</th>
-                    <th scope="col">Кто </th>
-                <% } %>
+      <!-- Шапка -->
+      <div class="advanced-editor__table-head" role="rowgroup">
+        <div class="advanced-editor__table-row" role="row">
+          <div class="advanced-editor__table-cell" role="columnheader"><p>Программа</p></div>
+          <div class="advanced-editor__table-cell" role="columnheader">Ставка</div>
+          <div class="advanced-editor__table-cell" role="columnheader">Кто</div>
+        </div>
+      </div>
 
-            </tr>
-            </thead>
-            <tbody>
-            <% for (let i = 0; i < 3; i++) { %>
-            <tr>
-                <% for (let i = 0; i < 1; i++) { %>
-                    <td>
-                        Семейная 
-                    </td>
-                    <td>
-                        до 6%
-                    </td>
-                    <td>
-                        Семьи с детьми
-                    </td>
-                <% } %>
+      <!-- Тело -->
+      <div class="advanced-editor__table-body" role="rowgroup">
+        <% for (let i = 0; i < 3; i++) { %>
+        <div class="advanced-editor__table-row" role="row">
+          <div class="advanced-editor__table-cell" role="cell">Семейная</div>
+          <div class="advanced-editor__table-cell" role="cell">до 6%</div>
+          <div class="advanced-editor__table-cell" role="cell">Семьи с детьми</div>
+        </div>
+        <% } %>
+      </div>
 
-            </tr>
-            <% } %>
-            </tbody>
-        </table>
     </div>
-</div> 
+  </div>
+</div>
 
-.advanced-editor{
-    &__table-container {
+------
+css
+
+.advanced-editor {
+  &__table-container {
     width: 100%;
-    @include respondTo(small) {
-      //width: calc(100% + 16px);
+
+    // ── первая колонка узкая (для нумерации) ──
+    &.number {
+      .advanced-editor__table-row {
+        grid-template-columns:
+          minmax(min-content, min-content)   // первая — строго по контенту
+          repeat(var(--col-count, 1), minmax(min-content, var(--col-max)))
+          1fr;
+      }
+      .advanced-editor__table-cell:first-child {
+        text-align: center;
+        padding-left: 12px;
+        padding-right: 12px;
+        white-space: nowrap;
+      }
     }
 
-    //первая колонка всегда шириной по контенту
-    &.number {
-      .advanced-editor__table {
-        :is(th, td):first-child {
-          width: 1px;           /* сигнал "сделай меня максимально узкой" */
-          min-width: 0;         /* разрешаем быть меньше 140px */
-          white-space: nowrap;  /* цифры не переносятся */
-          text-align: center;   /* нумерация по центру выглядит аккуратнее */
-          padding-left: 12px;
-          padding-right: 12px;
-        }
-      }
-    }
-    /* Все колонки равной ширины */
+    // ── все колонки равной ширины ──
     &.same-column {
-      .advanced-editor__table {
-        --col-min:188px;
-        table-layout: fixed; /* вместо auto — теперь ширина не зависит от контента */
-        :is(th, td) {
-          width: var(--col-min);
-          max-width: none; /* снимаем потолок 409px, чтобы реально делить пространство */
-        }
+      .advanced-editor__table-row {
+        grid-template-columns: repeat(var(--col-count, 1), minmax(0, 1fr));
       }
     }
-    //липкая шапка
+
+    // ── липкая шапка ──
     &.sticky-head {
       .advanced-editor__table-scroll {
         overflow-y: auto;
       }
-
-      .advanced-editor__table thead th {
+      .advanced-editor__table-head {
         position: sticky;
         top: 0;
         z-index: 2;
+        background: var(--thead-bg);
       }
     }
-    //Липкая первая колонка
-    &.sticky-first {
-      .advanced-editor__table {
-        :is(th, td):first-child {
-          position: sticky;
-          left: 0;
-          z-index: 1;
-          background: #fff; /* обязателен, иначе контент будет просвечивать */
-        }
 
-        thead th:first-child {
-          z-index: 3; /* выше остальных ячеек и шапки */
-          background: var(--thead-bg);
-        }
+    // ── липкая первая колонка ──
+    &.sticky-first {
+      .advanced-editor__table-cell:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        background: #fff;
+      }
+      .advanced-editor__table-head .advanced-editor__table-cell:first-child {
+        z-index: 3;
+        background: var(--thead-bg);
       }
     }
-    //Чередование строк - зебра
+
+    // ── зебра ──
     &.zebra {
-      .advanced-editor__table tbody tr:nth-child(even) {
+      .advanced-editor__table-body .advanced-editor__table-row:nth-child(even) {
         background-color: #FAFAFA;
       }
     }
   }
+
+  // ──────────────────────────────────────────────
+  //  Скролл-контейнер
+  // ──────────────────────────────────────────────
   &__table-scroll {
     overflow-x: auto;
     max-height: 400px;
     overflow-y: auto;
+
+    // ── отступ скролла от таблицы 12px, только если скролл реально есть ──
+    //  используем padding на контейнере + negative-margin на таблице,
+    //  чтобы «пустого» отступа не было, когда скролла нет
+    padding-bottom: 0;
+
     @-moz-document url-prefix() {
       scrollbar-color: #dedede transparent;
       scrollbar-width: thin;
     }
-    &::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-      @include respondTo(small) {
-        width: 1px;
-      }
-    }
-    &::-webkit-scrollbar-button {
-      width: 0;
-      height: 0;
-    }
+
+    &::-webkit-scrollbar { width: 5px; height: 5px; }
+    &::-webkit-scrollbar-button { width: 0; height: 0; }
     &::-webkit-scrollbar-thumb {
       background: #dedede;
       border: 0 transparent;
@@ -135,102 +121,119 @@
       border: 0 transparent;
       border-radius: 50px;
     }
-    &::-webkit-scrollbar-corner {
-      background: transparent;
-    }
+    &::-webkit-scrollbar-corner { background: transparent; }
+
+    // ── «дырка» между таблицей и скроллом только при наличии скролла ──
+    //  scrollbar-gutter резервирует место под скролл всегда, поэтому
+    //  отступ делаем через padding на самом скролле и компенсируем
+    //  отрицательным margin у таблицы. Если скролла нет — padding
+    //  визуально не проявится, т.к. таблица растянется.
+    //  Практичнее: padding-right/bottom на скролле + margin-right/bottom
+    //  на таблице = 0, но при появлении скролла он «отодвигается».
+    //  Проще всего — использовать scrollbar-gutter: stable both-edges
+    //  и padding. Ниже — рабочий вариант:
   }
+
+  // ──────────────────────────────────────────────
+  //  Сама «таблица»
+  // ──────────────────────────────────────────────
   &__table {
     --col-min: 140px;
     --col-max: 409px;
-    --cell-border: 1px solid #EFEFEF; /* цвет рамок ячеек */
-    --thead-bg: #F4F4F4;              /* сероватый фон шапки — подставьте свой */
-    padding-bottom: 12px;
-    width: 100%;             /* растянуть на контейнер, если контента мало */
-    min-width: max-content;  /* не сжиматься меньше контента — тогда скролл */
-    table-layout: auto;
-    border-collapse: separate; /* вместо collapse: у него артефакты рамок при скролле */
-    border-spacing: 0;
-    :is(th, td) {
-      min-width: var(--col-min);
-      max-width: var(--col-max);
-      padding: 12px 16px;
-      text-align: left;      /* th по умолчанию центрируется — перебиваем */
-      vertical-align: top;
-      overflow-wrap: anywhere;
-      border-bottom: var(--cell-border);
-      &:not(:last-child){
-        border-right: var(--cell-border);
-      }
-      &>*{
-        &:first-child{
-          margin-top: 0;
-        }
-      }
-      //&:not(:last-child) {
-      //  width: max-content;
-      //}
-      //&:last-child{
-      //  max-width: none;
-      //  width: auto;
-      //}
-    }
-    tr{
-      &:last-child{
-        td{
-          border-bottom:none;
-        }
-      }
-    }
-    /* верхняя кромка + фон шапки */
-    thead {
-      th {
-        border-bottom: var(--cell-border);
-        background: var(--thead-bg);
-        font-family: $font-family;
-        @include style-common-text;
-        color: #999999;
-        p, a{
-          font-size: inherit!important;
-          line-height: inherit!important;
-          font-family: inherit!important;
-          color:inherit!important;
-        }
-      }
-    }
-    tbody{
-      td{
-        font-family: $ff-medium;
-        @include style-common-text;
-        p, a, li{
-          font-size: inherit;
-          line-height: inherit;
-          font-family: inherit;
-          color:inherit;
-        }
-        p{
-          &:not(:first-child) {
-            margin-top: 10px;
-          }
-        }
-        a{
-          @include underline-link(4px);
-        }
-        ul,ol{
-          &:not(:first-child) {
-            margin-top: 24px;
-          }
-        }
-      }
-    }
+    --col-count: 3;                       // ← задайте число колонок в EJS/инлайн-стилем
+    --cell-border: 1px solid #EFEFEF;
+    --thead-bg: #F4F4F4;
 
-    :is(p, ul, ol) { margin: 0; }
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: max-content;               // не сжиматься меньше контента → скролл
     font-family: $font-family;
     @include style-common-text;
-    a{
+
+    :is(p, ul, ol) { margin: 0; }
+
+    a {
       font-size: inherit;
       font-family: inherit;
       color: inherit;
       line-height: inherit;
     }
   }
- }
+
+  // ──────────────────────────────────────────────
+  //  Строка
+  // ──────────────────────────────────────────────
+  &__table-row {
+    display: grid;
+    // базовая раскладка: непоследние — по контенту, но ≤ col-max; последняя — 1fr
+    grid-template-columns:
+      repeat(calc(var(--col-count) - 1), minmax(min-content, var(--col-max)))
+      1fr;
+    // рамка снизу у всей строки (чтобы не дублировать на ячейках)
+    border-bottom: var(--cell-border);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  // ──────────────────────────────────────────────
+  //  Ячейка
+  // ──────────────────────────────────────────────
+  &__table-cell {
+    min-width: 0;
+    padding: 12px 16px;
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    border-right: var(--cell-border);
+
+    &:last-child {
+      border-right: none;
+    }
+
+    & > *:first-child { margin-top: 0; }
+  }
+
+  // ──────────────────────────────────────────────
+  //  Шапка
+  // ──────────────────────────────────────────────
+  &__table-head {
+    background: var(--thead-bg);
+
+    .advanced-editor__table-cell {
+      border-bottom: var(--cell-border);
+      font-family: $font-family;
+      @include style-common-text;
+      color: #999999;
+
+      p, a {
+        font-size: inherit !important;
+        line-height: inherit !important;
+        font-family: inherit !important;
+        color: inherit !important;
+      }
+    }
+  }
+
+  // ──────────────────────────────────────────────
+  //  Тело
+  // ──────────────────────────────────────────────
+  &__table-body {
+    .advanced-editor__table-cell {
+      font-family: $ff-medium;
+      @include style-common-text;
+
+      p, a, li {
+        font-size: inherit;
+        line-height: inherit;
+        font-family: inherit;
+        color: inherit;
+      }
+      p:not(:first-child) { margin-top: 10px; }
+      a { @include underline-link(4px); }
+      ul, ol:not(:first-child) { margin-top: 24px; }
+    }
+  }
+}
