@@ -1,6 +1,15 @@
 computed: {
+  normalizedHeaders() {
+    return this.tableData.headers?.map((header, index) => ({
+      id: header.id ?? index,
+      label: header.label || '',
+      sortable: header.sortable ?? false,
+      ...header
+    })) || [];
+  },
+  
   normalizedRows() {
-    const headerCount = this.tableData.headers?.length || 0;
+    const headerCount = this.normalizedHeaders.length;
     
     if (headerCount === 0) return [];
     
@@ -8,17 +17,14 @@ computed: {
       const cells = row.cells || [];
       const currentCount = cells.length;
       
-      // Логируем в dev-режиме, если количество ячеек не совпадает
       if (process.env.NODE_ENV === 'development' && currentCount !== headerCount) {
         console.warn(
           `[TableStory] Строка ${rowIndex}: ожидается ${headerCount} ячеек, получено ${currentCount}`
         );
       }
       
-      // Обрезаем лишние ячейки
       let normalizedCells = [...cells].slice(0, headerCount);
       
-      // Добавляем пустые ячейки, если не хватает
       while (normalizedCells.length < headerCount) {
         normalizedCells.push({
           id: `empty-${rowIndex}-${normalizedCells.length}`,
@@ -28,7 +34,6 @@ computed: {
         });
       }
       
-      // Всегда возвращаем объект с id и нормализованными cells
       return {
         id: row.id || `row-${rowIndex}`,
         ...row,
@@ -37,5 +42,3 @@ computed: {
     }) || [];
   }
 }
-
-
