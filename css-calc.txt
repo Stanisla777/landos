@@ -1,70 +1,14 @@
-computed: {
-  normalizedHeaders() {
-    // Находим максимальное количество ячеек среди всех строк
-    const maxCellsInRows = Math.max(
-      ...this.tableData.rows?.map(row => (row.cells || []).length) || [0]
-    );
-    
-    const targetCount = Math.max(
-      this.tableData.headers?.length || 0,
-      maxCellsInRows
-    );
-    
-    if (targetCount === 0) return [];
-    
-    let headers = [...(this.tableData.headers || [])];
-    
-    // Добавляем пустые заголовки, если не хватает
-    while (headers.length < targetCount) {
-      headers.push({
-        id: `empty-header-${headers.length}`,
-        label: '',
-        sortable: false
-      });
-    }
-    
-    // Нормализуем существующие заголовки
-    return headers.map((header, index) => ({
-      id: header.id ?? `header-${index}`,
-      label: header.label || '',
-      sortable: header.sortable ?? false,
-      ...header
-    }));
-  },
-  
-  normalizedRows() {
-    const headerCount = this.normalizedHeaders.length;
-    
-    if (headerCount === 0) return [];
-    
-    return this.tableData.rows?.map((row, rowIndex) => {
-      const cells = row.cells || [];
-      const currentCount = cells.length;
-      
-      if (process.env.NODE_ENV === 'development' && currentCount !== headerCount) {
-        console.warn(
-          `[TableStory] Строка ${rowIndex}: ожидается ${headerCount} ячеек, получено ${currentCount}`
-        );
-      }
-      
-      // Обрезаем лишние ячейки (хотя теперь это не должно происходить)
-      let normalizedCells = [...cells].slice(0, headerCount);
-      
-      // Добавляем пустые ячейки, если не хватает
-      while (normalizedCells.length < headerCount) {
-        normalizedCells.push({
-          id: `empty-${rowIndex}-${normalizedCells.length}`,
-          label: '',
-          link: '',
-          icon: ''
-        });
-      }
-      
-      return {
-        id: row.id || `row-${rowIndex}`,
-        ...row,
-        cells: normalizedCells
-      };
-    }) || [];
-  }
-}
+<td
+              v-for="col in row.cells"
+              :key="col.id"
+            >
+              <div class="advanced-editor__th-body">
+                <div class="advanced-editor__th-content">
+                  <div v-if="col.icon" v-html="col.icon" class="advanced-editor__th-content-icon"></div>
+                  <a v-if="col?.link" :href="col.link" v-html="col.label"></a>
+                  <p v-else v-html="col.label || ''"></p>
+                </div>
+                <div class="advanced-editor__th-content-icon"></div>
+              </div>
+
+            </td>
