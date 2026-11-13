@@ -1,42 +1,32 @@
 isImagePath(icon) {
     if (!icon || typeof icon !== 'string') return false;
     
-    // Проверяем расширения изображений
-    const imageExtensions = ['.svg', '.jpg', '.jpeg', '.png', '.webp', '.gif'];
-    const lowerIcon = icon.toLowerCase();
+    const trimmed = icon.trim();
     
-    // Если содержит расширение изображения или начинается с пути
-    return (
-      imageExtensions.some(ext => lowerIcon.includes(ext)) ||
-      icon.startsWith('/') ||
-      icon.startsWith('http://') ||
-      icon.startsWith('https://') ||
-      icon.startsWith('./') ||
-      icon.startsWith('../')
-    );
+    // Если это inline SVG (начинается с тега <svg)
+    if (trimmed.toLowerCase().startsWith('<svg')) {
+      return false;
+    }
+    
+    // Если содержит расширения изображений (с учётом query-параметров)
+    const imageExtensions = ['.svg', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
+    const lowerIcon = trimmed.toLowerCase();
+    
+    if (imageExtensions.some(ext => lowerIcon.includes(ext))) {
+      return true;
+    }
+    
+    // Если это путь к ресурсу (начинается с /, ./, ../ или http)
+    if (
+      trimmed.startsWith('/') ||
+      trimmed.startsWith('./') ||
+      trimmed.startsWith('../') ||
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://')
+    ) {
+      return true;
+    }
+    
+    // По умолчанию считаем inline SVG
+    return false;
   }
-
-
-<component
-      :is="col.link ? 'a' : 'div'"
-      :href="col.link || undefined"
-      :target="isExternalLink(col.link) ? '_blank' : undefined"
-      :rel="isExternalLink(col.link) ? 'noopener noreferrer' : undefined"
-      class="advanced-editor__th-content"
-    >
-      <div
-        v-if="col.icon"
-        class="advanced-editor__th-content-icon"
-      >
-        <img
-          v-if="isImagePath(col.icon)"
-          :src="col.icon"
-          :alt="col.label || ''"
-        />
-        <div
-          v-else
-          v-html="col.icon"
-        ></div>
-      </div>
-      <p v-html="col.label || ''"></p>
-    </component>
