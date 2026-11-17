@@ -1,216 +1,111 @@
-data() {
-    return {
-      activeSortColumn: null,
-      sortDirection: null // null, 'asc', 'desc'
-    }
-  },
-
-  computed: {
-    //проверка объекта и нормализация, ,
-    //если к-во объектов для шапки и body отличаются, чтобы таблица не ломалась. Вывожу в консоль
-
-    //для шапки
-    normalizedHeaders() {
-      // Нахожу максимальное количество ячеек среди всех строк
-      const maxCellsInRows = Math.max(
-        ...this.tableData.rows?.map(row => (row.cells || []).length) || [0]
-      );
-
-      const targetCount = Math.max(
-        this.tableData.headers?.length || 0,
-        maxCellsInRows
-      );
-
-      if (targetCount === 0) return [];
-
-      let headers = [...(this.tableData.headers || [])];
-
-      // Добавляю пустые заголовки, если не хватает
-      while (headers.length < targetCount) {
-        headers.push({
-          id: `empty-header-${headers.length}`,
-          label: '',
-          sortable: false
-        });
-      }
-
-      // Нормализую существующие заголовки
-      return headers.map((header, index) => ({
-        id: header.id ?? `header-${index}`,
-        label: header.label || '',
-        sortable: header.sortable ?? false,
-        ...header
-      }));
-    },
-
-    //для body
-    normalizedRows() {
-      const headerCount = this.normalizedHeaders.length;
-
-      if (headerCount === 0) return [];
-
-      return this.tableData.rows?.map((row, rowIndex) => {
-        const cells = row.cells || [];
-        const currentCount = cells.length;
-
-        if (process.env.NODE_ENV === 'development' && currentCount !== headerCount) {
-          console.warn(
-            `[TableStory] Строка ${rowIndex}: ожидается ${headerCount} ячеек, получено ${currentCount}`
-          );
+computed: {
+  normalizedHeaders() { /* ваш код */ },
+  normalizedRows() { /* ваш код */ },
+  sortedRows() { /* ваш код */ },
+  
+  // Определяем тип каждой колонки на основе содержимого
+  columnTypes() {
+    const types = [];
+    const rows = this.normalizedRows;
+    
+    if (rows.length === 0) return [];
+    
+    const colCount = this.normalizedHeaders.length;
+    
+    for (let colIndex = 0; colIndex < colCount; colIndex++) {
+      let numberCount = 0;
+      let dateCount = 0;
+      let totalCount = 0;
+      
+      rows.forEach(row => {
+        const cell = row.cells[colIndex];
+        if (cell && cell.label) {
+          const extracted = this.extractValue(cell.label);
+          totalCount++;
+          if (extracted.type === 'number') numberCount++;
+          else if (extracted.type === 'date') dateCount++;
         }
-
-        // Обреза. лишние ячейки (хотя теперь это не должно происходить)
-        let normalizedCells = [...cells].slice(0, headerCount);
-
-        // ДобавляЮ пустые ячейки, если не хватает
-        while (normalizedCells.length < headerCount) {
-          normalizedCells.push({
-            id: `empty-${rowIndex}-${normalizedCells.length}`,
-            label: '',
-            link: '',
-            icon: ''
-          });
-        }
-
-        return {
-          id: row.id || `row-${rowIndex}`,
-          ...row,
-          cells: normalizedCells
-        };
-      }) || [];
-    },
-    //computed свойства для фильтрации
-    sortedRows() {
-      if (this.activeSortColumn === null || this.sortDirection === null) {
-        return this.normalizedRows;
-      }
-
-      const col = this.activeSortColumn;
-      const direction = this.sortDirection === 'asc' ? 1 : -1;
-
-      return [...this.normalizedRows].sort((a, b) => {
-        const valA = this.extractValue(a.cells[col]?.label || '');
-        const valB = this.extractValue(b.cells[col]?.label || '');
-
-        // Если типы разные — сравниваем как строки
-        if (valA.type !== valB.type) {
-          return direction * String(valA.value).localeCompare(String(valB.value), 'ru');
-        }
-
-        // Числа и даты сравниваем численно
-        if (valA.type === 'number' || valA.type === 'date') {
-          return direction * (valA.value - valB.value);
-        }
-
-        // Строки — по алфавиту с русской локалью
-        return direction * valA.value.localeCompare(valB.value, 'ru');
+      });
+      
+      // Колонка числовая, если больше половины значений — числа
+      types.push({
+        isNumeric: totalCount > 0 && numberCount > totalCount / 2,
+        isDate: totalCount > 0 && dateCount > totalCount / 2
       });
     }
-  },
-  methods: {
-    //метод для проверки ссылки, если https:// - добавить target="_blank"
-    isExternalLink(link) {
-      if (!link) return false;
-      return link.startsWith('http://') || link.startsWith('https://');
-    },
-    //метод для проверки какого вида картинка в ключе icon - это элемент svg или путь к кратинке
-    isImagePath(icon) {
-      if (!icon || typeof icon !== 'string') return false;
-
-      const trimmed = icon.trim();
-
-      // Если это inline SVG (начинается с тега <svg)
-      if (trimmed.toLowerCase().startsWith('<svg')) {
-        return false;
-      }
-
-      // Если содержит расширения изображений
-      const imageExtensions = ['.svg', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
-      const lowerIcon = trimmed.toLowerCase();
-
-      if (imageExtensions.some(ext => lowerIcon.includes(ext))) {
-        return true;
-      }
-
-      // Если это путь к ресурсу (начинается с /, ./, ../ или http)
-      if (
-        trimmed.startsWith('/') ||
-        trimmed.startsWith('./') ||
-        trimmed.startsWith('../') ||
-        trimmed.startsWith('http://') ||
-        trimmed.startsWith('https://')
-      ) {
-        return true;
-      }
-
-      // По умолчанию считаем inline SVG
-      return false;
-    },
-    //методы для сортировки
-    handleSort(columnIndex) {
-      if (this.activeSortColumn !== columnIndex) {
-        // Клик по новой колонке — начинаем с 'asc'
-        this.activeSortColumn = columnIndex;
-        this.sortDirection = 'asc';
-      } else if (this.sortDirection === 'asc') {
-        // Второй клик — переключаем на 'desc'
-        this.sortDirection = 'desc';
-      } else {
-        // Третий клик — сброс к исходному порядку
-        this.activeSortColumn = null;
-        this.sortDirection = null;
-      }
-    },
-
-    extractValue(text) {
-      if (!text) return { type: 'string', value: '' };
-
-      const trimmed = String(text).trim();
-
-      // Дата в формате ДД.ММ.ГГГГ
-      const dateMatch = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-      if (dateMatch) {
-        const [, day, month, year] = dateMatch;
-        return {
-          type: 'date',
-          value: new Date(year, month - 1, day).getTime()
-        };
-      }
-
-      // Число с тысячными разделителями, валютой, дробями
-      const cleaned = trimmed.replace(/\s/g, '').replace(/[^\d.,-]/g, '');
-      if (cleaned && !isNaN(cleaned)) {
-        const number = parseFloat(cleaned.replace(',', '.'));
-        if (!isNaN(number)) {
-          return { type: 'number', value: number };
-        }
-      }
-
-      // Обычная строка
-      return { type: 'string', value: trimmed.toLowerCase() };
-    }
+    
+    return types;
   }
+}
 
----------------------------------------------
+------------------
 
+methods: {
+  isNumericColumn(columnIndex) {
+    return this.columnTypes[columnIndex]?.isNumeric || false;
+  },
+  
+  isDateColumn(columnIndex) {
+    return this.columnTypes[columnIndex]?.isDate || false;
+  },
+  
+  // ... остальные методы
+}
+-------------
 <thead>
-          <tr>
-            <th
-              v-for="(header,columnIndex) in normalizedHeaders"
-              :key="header?.id"
-              scope="col"
-            >
-              <div :class="alignRight ? 'align-right' : ''" class="advanced-editor__table-th">
-
-****
+  <tr>
+    <th
+      v-for="(header, columnIndex) in normalizedHeaders"
+      :key="header.id"
+      scope="col"
+    >
+      <div 
+        :class="{ 'align-right': alignRight || isNumericColumn(columnIndex) }" 
+        class="advanced-editor__table-th"
+      >
+        <!-- содержимое шапки -->
+      </div>
+    </th>
+  </tr>
+</thead>
+---------------------
 <tbody>
-          <tr
-            v-for="row in sortedRows"
-            :key="row.id"
-            :data-row-id="row.id"
+  <tr
+    v-for="row in sortedRows"
+    :key="row.id"
+    :data-row-id="row.id"
+  >
+    <td
+      v-for="(col, colIndex) in row.cells"
+      :key="col.id"
+    >
+      <div 
+        :class="{ 'align-right': alignRight || isNumericColumn(colIndex) }" 
+        class="advanced-editor__th-body p1-medium ds-color-primary"
+      >
+        <component
+          :is="col.link ? 'a' : 'div'"
+          :href="col.link || undefined"
+          :target="isExternalLink(col.link) ? '_blank' : undefined"
+          :rel="isExternalLink(col.link) ? 'noopener noreferrer' : undefined"
+          class="advanced-editor__th-content"
+        >
+          <div
+            v-if="col.icon"
+            class="advanced-editor__th-content-icon"
           >
-            <td
-              v-for="col in row.cells"
-              :key="col.id"
-            >
-              <div :class="alignRight ? 'align-right' : ''" class="advanced-editor__th-body p1-medium ds-color-primary">
+            <img
+              v-if="isImagePath(col.icon)"
+              :src="col.icon"
+              :alt="col.label || ''"
+            />
+            <div v-else v-html="col.icon"></div>
+          </div>
+          <div v-if="col.link && !col.icon"></div>
+          <p v-html="col.label || ''"></p>
+        </component>
+        <div class="advanced-editor__th-content-icon"></div>
+      </div>
+    </td>
+  </tr>
+</tbody>
