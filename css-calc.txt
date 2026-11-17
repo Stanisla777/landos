@@ -1,41 +1,93 @@
-Действия: — Нажатие кнопки сворачивания в шапке таблицы сворачивает весь блок до строк первого уровня. — Повторное нажатие разворачивает все строки до максимального уровня вложенности.
-<thead>
-          <tr>
-            <th
-              v-for="(header,columnIndex) in normalizedHeaders"
-              :key="header?.id"
-              scope="col"
+data() {
+  return {
+    activeSortColumn: null,
+    sortDirection: null,
+    isExpanded: false  // свёрнуто по умолчанию
+  };
+}
+----------------------------
+computed: {
+  normalizedHeaders() { /* ваш код */ },
+  normalizedRows() { /* ваш код */ },
+  sortedRows() { /* ваш код */ },
+  columnTypes() { /* ваш код */ },
+  
+  hasNestedContent() {
+    return this.normalizedRows.some(row => {
+      const label = row.nesting?.label;
+      return label && String(label).trim() !== '';
+    });
+  }
+}
+---------------------------
+methods: {
+  toggleExpand() {
+    this.isExpanded = !this.isExpanded;
+  },
+  
+  // ... остальные методы
+}
+
+---------------------
+<div
+          v-if="hasNestedContent"
+          class="ds-table__table-th-icon"
+          :class="{ 'is-expanded': isExpanded }"
+          @click="toggleExpand"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+--------------------
+
+<tbody>
+  <template v-for="(row, rowIndex) in sortedRows" :key="row.id">
+    <!-- Основная строка -->
+    <tr :data-row-id="row.id">
+      <td
+        v-for="(col, colIndex) in row.cells"
+        :key="col.id"
+      >
+        <div 
+          :class="{ 'align-right': alignRight || isNumericColumn(colIndex) }" 
+          class="ds-table__th-body p1-medium ds-color-primary"
+        >
+          <component
+            :is="col.link ? 'a' : 'div'"
+            :href="col.link || undefined"
+            :target="isExternalLink(col.link) ? '_blank' : undefined"
+            :rel="isExternalLink(col.link) ? 'noopener noreferrer' : undefined"
+            class="ds-table__th-content"
+          >
+            <div
+              v-if="col.icon"
+              class="ds-table__th-content-icon"
             >
-              <div
-                :class="{ 'align-right': alignRight || isNumericColumn(columnIndex) }"
-                class="ds-table__table-th">
-                <div class="ds-table__table-th-body p1-semibold ds-color-disabled"
-                     @click="handleSort(columnIndex)"
-                     :class="sortingRow && sortedRows.length > 1 ? 'pointer' : ''"
-                >
-                  <p v-html="header?.label"></p>
-                  <div class="ds-table__table-sorting"
-                       v-if="sortingRow && sortedRows.length > 1"
-                       :class="{
-                        'is-active': activeSortColumn === columnIndex,
-                        'is-asc': activeSortColumn === columnIndex && sortDirection === 'asc',
-                        'is-desc': activeSortColumn === columnIndex && sortDirection === 'desc'
-                      }"
-
-                  >
-<!--                    
-                    <div class="ds-table__table-sorting-arrow">
-                      
-                      
-                    </div>
-                  </div>
-                </div>
-                <div class="ds-table__table-th-icon" @click="toggleExpand">
-                  
-                </div>
-
-              </div>
-
-            </th>
-          </tr>
-        </thead>
+              <img
+                v-if="isImagePath(col.icon)"
+                :src="col.icon"
+                :alt="col.label || ''"
+              />
+              <div v-else v-html="col.icon"></div>
+            </div>
+            <div v-if="col.link && !col.icon"></div>
+            <p v-html="getDisplayValue(col, colIndex)"></p>
+          </component>
+          <div class="ds-table__th-content-icon"></div>
+        </div>
+      </td>
+    </tr>
+    
+    <!-- Вложенная строка — выводится только если есть nesting и isExpanded -->
+    <tr
+      v-if="row.nesting?.label && String(row.nesting.label).trim() !== '' && isExpanded"
+      class="ds-table__nested-row"
+    >
+      <td :colspan="normalizedHeaders.length">
+        <div class="ds-table__nested-content" v-html="row.nesting.label"></div>
+      </td>
+    </tr>
+  </template>
+</tbody>
