@@ -1,85 +1,25 @@
-emits: ['update:modelValue'],
+<form ref="captchaContainer" class="status-kadastr-block__form" @submit.prevent="handlerSendForm">
 
+....
+<ds-button type="submit"
+        :text="'Проверить'"
+        :variant="'secondary'"
+        :size="'large'"
+        :disabled="value.length===0"
+        :loading="loadingButton"
+        :rounded="false"
+        :block="false"
+        :dark-mode="false"
+        :arrow="false"
+         @click="loadingButton = true;clearBlock = true"
+      />
 
-<template>
-  <label
-    class="ds-chip"
-    :class="{
-      'ds-chip--active': modelValue,
-      'ds-chip--disabled': disabled,
-      'ds-chip--dark': darkMode,
-    }"
-  >
-    <!-- Нативный чекбокс: Tab/Space и скринридеры из коробки, визуально скрыт -->
-    <input
-      class="ds-chip__input"
-      type="checkbox"
-      :name="name || undefined"
-      :value="value"
-      :checked="modelValue"
-      :disabled="disabled"
-      @change="onChange"
-    />
-    <span class="ds-chip__text">
-      <slot>{{ label }}</slot>
-    </span>
-    <span v-if="showClose && modelValue && !disabled" class="ds-chip__icon" aria-hidden="true">
-      <slot name="icon">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M3.20921 3.20921C3.48816 2.93026 3.94042 2.93026 4.21936 3.20921L8 6.98985L11.7806 3.20921C12.0596 2.93026 12.5118 2.93026 12.7908 3.20921C13.0697 3.48816 13.0697 3.94042 12.7908 4.21936L9.01015 8L12.7908 11.7806C13.0697 12.0596 13.0697 12.5118 12.7908 12.7908C12.5118 13.0697 12.0596 13.0697 11.7806 12.7908L8 9.01015L4.21936 12.7908C3.94042 13.0697 3.48816 13.0697 3.20921 12.7908C2.93026 12.5118 2.93026 12.0596 3.20921 11.7806L6.98985 8L3.20921 4.21936C2.93026 3.94042 2.93026 3.48816 3.20921 3.20921Z" fill="currentColor" />
-        </svg>
-      </slot>
-    </span>
-  </label>
-</template>
+</form>
 
-<script setup>
-defineProps({
-  // Активное состояние (v-model)
-  modelValue: {
-    type: Boolean,
-    default: false,
-  },
-  label: {
-    type: String,
-    default: '',
-  },
-  // Крестик у активного чипа. Это индикатор: клик по нему, как и по всему чипу, выключает чип
-  showClose: {
-    type: Boolean,
-    default: true,
-  },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
-  darkMode: {
-    type: Boolean,
-    default: false,
-  },
-  // Прокидываются в нативный input — для отправки формой
-  name: {
-    type: String,
-    default: '',
-  },
-  value: {
-    type: [String, Number],
-    default: undefined,
-  },
-})
-
-const emit = defineEmits(['update:modelValue', 'change'])
-
-const onChange = (event) => {
-  const checked = event.target.checked
-  emit('update:modelValue', checked)
-  emit('change', checked)
-}
-</script>
-
-<style lang="scss">
-@import '../../assets/styles/tokens/_ds-chip.scss';
-@import './_ds-chip.scss';
-</style>
-
+handlerSendForm() {
+      // Запускаю капчу через миксин
+      this.runCaptcha((token) => {
+        this.onSubmit(token);
+      });
+    },
 
