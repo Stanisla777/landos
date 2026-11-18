@@ -1,93 +1,85 @@
-data() {
-  return {
-    activeSortColumn: null,
-    sortDirection: null,
-    isExpanded: false  // свёрнуто по умолчанию
-  };
-}
-----------------------------
-computed: {
-  normalizedHeaders() { /* ваш код */ },
-  normalizedRows() { /* ваш код */ },
-  sortedRows() { /* ваш код */ },
-  columnTypes() { /* ваш код */ },
-  
-  hasNestedContent() {
-    return this.normalizedRows.some(row => {
-      const label = row.nesting?.label;
-      return label && String(label).trim() !== '';
-    });
-  }
-}
----------------------------
-methods: {
-  toggleExpand() {
-    this.isExpanded = !this.isExpanded;
+emits: ['update:modelValue'],
+
+
+<template>
+  <label
+    class="ds-chip"
+    :class="{
+      'ds-chip--active': modelValue,
+      'ds-chip--disabled': disabled,
+      'ds-chip--dark': darkMode,
+    }"
+  >
+    <!-- Нативный чекбокс: Tab/Space и скринридеры из коробки, визуально скрыт -->
+    <input
+      class="ds-chip__input"
+      type="checkbox"
+      :name="name || undefined"
+      :value="value"
+      :checked="modelValue"
+      :disabled="disabled"
+      @change="onChange"
+    />
+    <span class="ds-chip__text">
+      <slot>{{ label }}</slot>
+    </span>
+    <span v-if="showClose && modelValue && !disabled" class="ds-chip__icon" aria-hidden="true">
+      <slot name="icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M3.20921 3.20921C3.48816 2.93026 3.94042 2.93026 4.21936 3.20921L8 6.98985L11.7806 3.20921C12.0596 2.93026 12.5118 2.93026 12.7908 3.20921C13.0697 3.48816 13.0697 3.94042 12.7908 4.21936L9.01015 8L12.7908 11.7806C13.0697 12.0596 13.0697 12.5118 12.7908 12.7908C12.5118 13.0697 12.0596 13.0697 11.7806 12.7908L8 9.01015L4.21936 12.7908C3.94042 13.0697 3.48816 13.0697 3.20921 12.7908C2.93026 12.5118 2.93026 12.0596 3.20921 11.7806L6.98985 8L3.20921 4.21936C2.93026 3.94042 2.93026 3.48816 3.20921 3.20921Z" fill="currentColor" />
+        </svg>
+      </slot>
+    </span>
+  </label>
+</template>
+
+<script setup>
+defineProps({
+  // Активное состояние (v-model)
+  modelValue: {
+    type: Boolean,
+    default: false,
   },
-  
-  // ... остальные методы
+  label: {
+    type: String,
+    default: '',
+  },
+  // Крестик у активного чипа. Это индикатор: клик по нему, как и по всему чипу, выключает чип
+  showClose: {
+    type: Boolean,
+    default: true,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  darkMode: {
+    type: Boolean,
+    default: false,
+  },
+  // Прокидываются в нативный input — для отправки формой
+  name: {
+    type: String,
+    default: '',
+  },
+  value: {
+    type: [String, Number],
+    default: undefined,
+  },
+})
+
+const emit = defineEmits(['update:modelValue', 'change'])
+
+const onChange = (event) => {
+  const checked = event.target.checked
+  emit('update:modelValue', checked)
+  emit('change', checked)
 }
+</script>
 
----------------------
-<div
-          v-if="hasNestedContent"
-          class="ds-table__table-th-icon"
-          :class="{ 'is-expanded': isExpanded }"
-          @click="toggleExpand"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
+<style lang="scss">
+@import '../../assets/styles/tokens/_ds-chip.scss';
+@import './_ds-chip.scss';
+</style>
 
---------------------
 
-<tbody>
-  <template v-for="(row, rowIndex) in sortedRows" :key="row.id">
-    <!-- Основная строка -->
-    <tr :data-row-id="row.id">
-      <td
-        v-for="(col, colIndex) in row.cells"
-        :key="col.id"
-      >
-        <div 
-          :class="{ 'align-right': alignRight || isNumericColumn(colIndex) }" 
-          class="ds-table__th-body p1-medium ds-color-primary"
-        >
-          <component
-            :is="col.link ? 'a' : 'div'"
-            :href="col.link || undefined"
-            :target="isExternalLink(col.link) ? '_blank' : undefined"
-            :rel="isExternalLink(col.link) ? 'noopener noreferrer' : undefined"
-            class="ds-table__th-content"
-          >
-            <div
-              v-if="col.icon"
-              class="ds-table__th-content-icon"
-            >
-              <img
-                v-if="isImagePath(col.icon)"
-                :src="col.icon"
-                :alt="col.label || ''"
-              />
-              <div v-else v-html="col.icon"></div>
-            </div>
-            <div v-if="col.link && !col.icon"></div>
-            <p v-html="getDisplayValue(col, colIndex)"></p>
-          </component>
-          <div class="ds-table__th-content-icon"></div>
-        </div>
-      </td>
-    </tr>
-    
-    <!-- Вложенная строка — выводится только если есть nesting и isExpanded -->
-    <tr
-      v-if="row.nesting?.label && String(row.nesting.label).trim() !== '' && isExpanded"
-      class="ds-table__nested-row"
-    >
-      <td :colspan="normalizedHeaders.length">
-        <div class="ds-table__nested-content" v-html="row.nesting.label"></div>
-      </td>
-    </tr>
-  </template>
-</tbody>
