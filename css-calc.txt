@@ -1,4 +1,11 @@
+this.getMaxCellsCount is not a function
+TypeError: this.getMaxCellsCount is not a function
+
 computed: {
+  //проверка объекта и нормализация, ,
+  //если к-во объектов для шапки и body отличаются, чтобы таблица не ломалась. Вывожу в консоль
+
+  // Нормализация шапки — только если включена
   normalizedHeaders() {
     // Если нормализация выключена
     if (!this.normalizeColumn) {
@@ -34,6 +41,7 @@ computed: {
 
     let headers = hasHeaders ? [...this.tableData.headers] : [];
 
+    // Добавляю пустые заголовки, если не хватает
     while (headers.length < targetCount) {
       headers.push({
         id: `empty-header-${headers.length}`,
@@ -41,7 +49,7 @@ computed: {
         sortable: false
       });
     }
-
+    // Нормализую существующие заголовки
     return headers.map((header, index) => ({
       id: header.id ?? `header-${index}`,
       label: header.label || '',
@@ -50,6 +58,7 @@ computed: {
     }));
   },
 
+  // Нормализация строк для body — только если включена
   normalizedRows() {
     // Если нормализация выключена
     if (!this.normalizeColumn) {
@@ -70,8 +79,10 @@ computed: {
         );
       }
 
+      // Обреза. лишние ячейки (хотя теперь это не должно происходить)
       let normalizedCells = [...cells].slice(0, headerCount);
 
+      // ДобавляЮ пустые ячейки, если не хватает
       while (normalizedCells.length < headerCount) {
         normalizedCells.push({
           id: `empty-${rowIndex}-${normalizedCells.length}`,
@@ -102,6 +113,7 @@ computed: {
   },
 
   sortedRows() {
+    // Если сортировка выключена — возвращаются исходные данные
     if (!this.sortingRow || this.activeSortColumn === null || this.sortDirection === null) {
       return this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
     }
@@ -113,20 +125,21 @@ computed: {
     return [...rows].sort((a, b) => {
       const valA = this.extractValue(a.cells[col]?.label || '');
       const valB = this.extractValue(b.cells[col]?.label || '');
-
+      // Если типы разные — сравниваем как строки
       if (valA.type !== valB.type) {
         return direction * String(valA.value).localeCompare(String(valB.value), 'ru');
       }
-
+      // Числа и даты сравниваются численно
       if (valA.type === 'number' || valA.type === 'date') {
         return direction * (valA.value - valB.value);
       }
-
+      // Строки — по алфавиту с русской локалью
       return direction * valA.value.localeCompare(valB.value, 'ru');
     });
   },
 
   columnTypes() {
+    // Если numberRight = false, не делаем вычисления
     if (!this.numberRight) return [];
 
     const types = [];
