@@ -1,75 +1,8 @@
-normalizedHeaders() {
-  console.log('--- normalizedHeaders called ---');
-  console.log('tableData.headers:', this.tableData.headers);
-  console.log('headerAlways:', this.headerAlways);
-  console.log('normalizeColumn:', this.normalizeColumn);
-  
-  // Если нормализация выключена
-  if (!this.normalizeColumn) {
-    if (this.tableData.headers && this.tableData.headers.length > 0) {
-      return this.tableData.headers;
-    }
-    if (this.headerAlways) {
-      const maxCells = this.getMaxCellsCount();
-      console.log('maxCells (normalizeColumn=false):', maxCells);
-      return Array.from({ length: maxCells }, (_, i) => ({
-        id: `auto-header-${i}`,
-        label: '',
-        sortable: false
-      }));
-    }
-    return [];
-  }
-
-  // Нормализация включена
-  const hasHeaders = this.tableData.headers && this.tableData.headers.length > 0;
-  const maxCellsInRows = this.getMaxCellsCount();
-  console.log('hasHeaders:', hasHeaders);
-  console.log('maxCellsInRows:', maxCellsInRows);
-
-  if (!hasHeaders && !this.headerAlways) {
-    console.log('Returning empty array (no headers, headerAlways=false)');
-    return [];
-  }
-
-  const targetCount = hasHeaders
-    ? Math.max(this.tableData.headers.length, maxCellsInRows)
-    : maxCellsInRows;
-  console.log('targetCount:', targetCount);
-
-  if (targetCount === 0) return [];
-
-  let headers = hasHeaders ? [...this.tableData.headers] : [];
-
-  while (headers.length < targetCount) {
-    headers.push({
-      id: `empty-header-${headers.length}`,
-      label: '',
-      sortable: false
-    });
-  }
-  
-  const result = headers.map((header, index) => ({
-    id: header.id ?? `header-${index}`,
-    label: header.label || '',
-    sortable: header.sortable ?? false,
-    ...header
-  }));
-  
-  console.log('normalizedHeaders result:', result);
-  return result;
-}
-
-------------------
-
-getMaxCellsCount() {
-  const rows = this.tableData.rows || [];
-  console.log('getMaxCellsCount rows:', rows);
-  const result = rows.reduce((max, row) => {
-    const cells = Array.isArray(row) ? row : (row.cells || []);
-    console.log('row:', row, 'cells:', cells, 'length:', cells.length);
-    return Math.max(max, cells.length);
-  }, 0);
-  console.log('getMaxCellsCount result:', result);
-  return result;
-}
+--- normalizedHeaders called ---
+TableStory.vue:178 tableData.headers: undefined
+TableStory.vue:179 headerAlways: true
+TableStory.vue:180 normalizeColumn: true
+TableStory.vue:390 getMaxCellsCount rows: Proxy(Array) {0: Array(2), 1: Array(2)}[[Handler]]: MutableReactiveHandler[[Target]]: Array(2)0: Array(2)0: {label: 'Сбер', link: 'https://xn--d1aqf.xn--p1ai/'}1: {label: '60 000', icon: '<svg width="21" height="32" viewBox="0 0 21 32" fi….46587L10.3887 4.8V4.8Z" fill="#EF3124" />\n</svg>'}length: 2[[Prototype]]: Array(0)1: (2) [{…}, {…}]length: 2[[Prototype]]: Array(0)[[IsRevoked]]: false
+TableStory.vue:202 hasHeaders: undefined
+TableStory.vue:203 maxCellsInRows: 0
+TableStory.vue:213 targetCount: 0
