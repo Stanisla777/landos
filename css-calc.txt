@@ -1,90 +1,75 @@
-<thead v-if="normalizedHeaders.length > 0">
-  <tr>
-    <th
-      v-for="(header, columnIndex) in normalizedHeaders"
-      :key="header.id ?? columnIndex"
-      scope="col"
-    >
-      <!-- ваш существующий контент шапки -->
-    </th>
-  </tr>
-</thead>
-----------------------
-normalizedRows() {
+normalizedHeaders() {
+  console.log('--- normalizedHeaders called ---');
+  console.log('tableData.headers:', this.tableData.headers);
+  console.log('headerAlways:', this.headerAlways);
+  console.log('normalizeColumn:', this.normalizeColumn);
+  
   // Если нормализация выключена
   if (!this.normalizeColumn) {
-    return (this.tableData.rows || []).map((row, rowIndex) => {
-      // Поддерживается оба формата: массив и объект с cells
-      if (Array.isArray(row)) {
-        return {
-          id: `row-${rowIndex}`,
-          cells: row.map((cell, cellIndex) => ({
-            ...(typeof cell === 'object' && cell !== null ? cell : { label: cell }),
-            id: (typeof cell === 'object' && cell !== null ? cell.id : undefined) ?? `cell-${rowIndex}-${cellIndex}`
-          }))
-        };
-      }
-      return {
-        id: row.id ?? `row-${rowIndex}`,
-        ...row,
-        cells: (row.cells || []).map((cell, cellIndex) => ({
-          ...cell,
-          id: cell.id ?? `cell-${rowIndex}-${cellIndex}`
-        }))
-      };
-    });
+    if (this.tableData.headers && this.tableData.headers.length > 0) {
+      return this.tableData.headers;
+    }
+    if (this.headerAlways) {
+      const maxCells = this.getMaxCellsCount();
+      console.log('maxCells (normalizeColumn=false):', maxCells);
+      return Array.from({ length: maxCells }, (_, i) => ({
+        id: `auto-header-${i}`,
+        label: '',
+        sortable: false
+      }));
+    }
+    return [];
   }
 
-  const headerCount = this.normalizedHeaders.length;
+  // Нормализация включена
+  const hasHeaders = this.tableData.headers && this.tableData.headers.length > 0;
+  const maxCellsInRows = this.getMaxCellsCount();
+  console.log('hasHeaders:', hasHeaders);
+  console.log('maxCellsInRows:', maxCellsInRows);
 
-  // ВАЖНО: убрали ранний возврат "if (headerCount === 0) return this.tableData.rows || [];"
-  // Всегда нормализуем, даже если заголовков нет
+  if (!hasHeaders && !this.headerAlways) {
+    console.log('Returning empty array (no headers, headerAlways=false)');
+    return [];
+  }
 
-  return (this.tableData.rows || []).map((row, rowIndex) => {
-    // Поддерживаем формат массива: row может быть [{label: '...'}] или {cells: [...]}
-    const cells = Array.isArray(row) ? row : (row.cells || []);
+  const targetCount = hasHeaders
+    ? Math.max(this.tableData.headers.length, maxCellsInRows)
+    : maxCellsInRows;
+  console.log('targetCount:', targetCount);
 
-    // Если headerCount > 0, нормализуем по количеству заголовков
-    let normalizedCells = headerCount > 0
-      ? [...cells].slice(0, headerCount)
-      : [...cells];
+  if (targetCount === 0) return [];
 
-    if (process.env.NODE_ENV === 'development' && headerCount > 0 && cells.length !== headerCount) {
-      console.warn(
-        `[TableStory] Строка ${rowIndex}: ожидается ${headerCount} ячеек, получено ${cells.length}`
-      );
-    }
+  let headers = hasHeaders ? [...this.tableData.headers] : [];
 
-    // Добавляем пустые ячейки только если есть заголовки
-    if (headerCount > 0) {
-      while (normalizedCells.length < headerCount) {
-        normalizedCells.push({
-          id: `empty-${rowIndex}-${normalizedCells.length}`,
-          label: '',
-          link: '',
-          icon: ''
-        });
-      }
-    }
-
-    // Нормализуем каждую ячейку (поддержка строк как ячеек)
-    normalizedCells = normalizedCells.map((cell, cellIndex) => {
-      if (typeof cell === 'string') {
-        return {
-          id: `cell-${rowIndex}-${cellIndex}`,
-          label: cell
-        };
-      }
-      return {
-        ...cell,
-        id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`
-      };
+  while (headers.length < targetCount) {
+    headers.push({
+      id: `empty-header-${headers.length}`,
+      label: '',
+      sortable: false
     });
+  }
+  
+  const result = headers.map((header, index) => ({
+    id: header.id ?? `header-${index}`,
+    label: header.label || '',
+    sortable: header.sortable ?? false,
+    ...header
+  }));
+  
+  console.log('normalizedHeaders result:', result);
+  return result;
+}
 
-    return {
-      id: Array.isArray(row) ? `row-${rowIndex}` : (row.id ?? `row-${rowIndex}`),
-      ...(Array.isArray(row) ? {} : row),
-      cells: normalizedCells
-    };
-  });
+------------------
+
+getMaxCellsCount() {
+  const rows = this.tableData.rows || [];
+  console.log('getMaxCellsCount rows:', rows);
+  const result = rows.reduce((max, row) => {
+    const cells = Array.isArray(row) ? row : (row.cells || []);
+    console.log('row:', row, 'cells:', cells, 'length:', cells.length);
+    return Math.max(max, cells.length);
+  }, 0);
+  console.log('getMaxCellsCount result:', result);
+  return result;
 }
