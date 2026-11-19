@@ -1,260 +1,449 @@
-$(document).ready(function () {
-    const url_happy_family_rest = '/api/local/program450/statusrequest/';
-    const url_happy_family_certificate_show = '/services/check-status-450/show/';
-    
-    // ... все ваши переменные ...
-    
-    let certificate_data = {};
-    
-    // 🔥 СОЗДАЁМ КОНТЕЙНЕР КАПЧИ ОДИН РАЗ
-    const $step1Form = $('.js-check-status-step-1');
-    const captchaContainerId = 'yandex-captcha-status-450';
-    const captchaContainer = CaptchaCore.createCaptchaContainer($step1Form[0], captchaContainerId);
+//Родительский компонент
+<table-story
+    :table-data="tableData2"
+    :same-column=false
+    :sorting-row=true
+    :align-right=false
+    :number-right=true
+    :number-marker="'P'"
+    :break-thousandths=true
 
-----------------------------------
-// 🔥 НОВАЯ ФУНКЦИЯ для запуска капчи
-function runCaptchaForAction(actionCallback) {
-    CaptchaCore.runCaptcha(captchaContainer, (token) => {
-        actionCallback(token);
-    }, {
-        sitekey: conf?.smartcaptcha_key,
-        
-        onWidgetCreated: (widgetId) => {
-            // Пользователь закрыл окно капчи
-            CaptchaCore.subscribeCaptcha(captchaContainer, 'challenge-hidden', () => {
-                console.log('Пользователь закрыл окно капчи');
-                // Разблокируем все кнопки
-                $check_status_button_start_request.attr('disabled', false);
-                $check_status_repeat_smscode.attr('disabled', false);
-                $check_status_button_check_request.attr('disabled', false);
-                CaptchaCore.resetCaptcha(captchaContainer, false);
-            });
+  />
 
-            // Токен истёк
-            CaptchaCore.subscribeCaptcha(captchaContainer, 'token-expired', () => {
-                console.warn('Токен капчи истёк');
-                $check_status_button_start_request.attr('disabled', false);
-                $check_status_repeat_smscode.attr('disabled', false);
-                $check_status_button_check_request.attr('disabled', false);
-                CaptchaCore.resetCaptcha(captchaContainer, false);
-            });
-        }
-    });
-}
--------------------------------------------------
-Обновляем функции отправки (добавляем сброс капчи)
-function submitFormStartRequest(token) {
-    let order_number = $check_status_input.val().trim();
-    if (!!order_number) {
-        $check_status_button_start_request.attr('disabled', true);
-        $check_status_input.removeClass('error');
-        $check_status_hint_error.html('').hide();
-        
-        const requestData = { 'number': order_number };
-        if (token !== null && token !== undefined) {
-            requestData['smart-token'] = token;
-        }
-        
-        $.ajax({
-            type: 'POST',
-            url: url_happy_family_rest + 'start/',
-            dataType: 'json',
-            data: requestData,
-            headers: {
-                'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-            },
-            success: function (response) {
-                if (!!response?.result) {
-                    if (!!response.result?.phone) {
-                        $check_status_phone.text(response.result.phone);
-                    }
-                    resetTimer();
-                    showStep(2);
-                } else {
-                    $check_status_input.addClass('error');
-                    if (!!response?.description) {
-                        $check_status_hint_error.html(response.description).show();
-                    } else {
-                        console.log('Success response has not result', response);
-                    }
-                    if (!!response?.debug) {
-                        console.error(response.debug);
-                    }
-                    $check_status_button_start_request.attr('disabled', false);
-                }
-                // 🔥 Сбрасываем капчу
-                CaptchaCore.resetCaptcha(captchaContainer, false);
-            },
-            error: function (error) {
-                let errorMessage = error.responseJSON?.description;
-                if (!!errorMessage) {
-                    $check_status_input.addClass('error');
-                    $check_status_hint_error.html(errorMessage).show();
-                } else {
-                    console.log('Error response has not description', error);
-                }
-                $check_status_button_start_request.attr('disabled', false);
-                // 🔥 Сбрасываем капчу
-                CaptchaCore.resetCaptcha(captchaContainer, false);
-            }
-        });
+Компонент Table
+<template>
+  <div class="ds-table__table-container" :class="sameColumn ? 'same-column' : ''">
+    <div class="ds-table__table-scroll">
+      <table class="ds-table__table">
+        <thead>
+          <tr>
+            <th
+              v-for="(header,columnIndex) in normalizedHeaders"
+              :key="header?.id"
+              scope="col"
+            >
+              <div
+                :class="{ 'align-right': alignRight || isNumericColumn(columnIndex) }"
+                class="ds-table__table-th">
+                <div class="ds-table__table-th-body p1-semibold ds-color-disabled"
+                     @click="handleSort(columnIndex)"
+                     :class="sortingRow && sortedRows.length > 1 ? 'pointer' : ''"
+                >
+                  <p v-html="header?.label"></p>
+                  <div class="ds-table__table-sorting"
+                       v-if="sortingRow && sortedRows.length > 1"
+                       :class="{
+                        'is-active': activeSortColumn === columnIndex,
+                        'is-asc': activeSortColumn === columnIndex && sortDirection === 'asc',
+                        'is-desc': activeSortColumn === columnIndex && sortDirection === 'desc'
+                      }"
+
+                  >
+<!--                    <svg width="10" height="15" viewBox="0 0 10 15" fill="none" xmlns="http://www.w3.org/2000/svg">-->
+<!--                      <path d="M7.64258 9.48047C8.02555 9.08297 8.65788 9.07052 9.05566 9.45312C9.45327 9.8361 9.4657 10.4694 9.08301 10.8672L5.39844 14.6934C5.20994 14.8891 4.94946 15 4.67773 15C4.44001 14.9999 4.21093 14.915 4.03125 14.7627L3.95703 14.6934L0.279297 10.8672C-0.103338 10.4691 -0.091228 9.83589 0.306641 9.45312C0.704708 9.0706 1.33798 9.08265 1.7207 9.48047L4.67871 12.5586L7.64258 9.48047ZM4.6709 0C4.94219 -0.00187378 5.20279 0.106912 5.39258 0.300781L9.11914 4.10742C9.50515 4.50206 9.49893 5.13523 9.10449 5.52148C8.7099 5.90774 8.07679 5.90031 7.69043 5.50586L4.68848 2.44043L1.78027 5.49609C1.39965 5.89572 0.767191 5.91147 0.367188 5.53125C-0.0329145 5.15054 -0.0486744 4.51729 0.332031 4.11719L3.9541 0.310547C4.14109 0.114219 4.39977 0.00198374 4.6709 0Z" fill="#999999" />-->
+<!--                    </svg>-->
+                    <div class="ds-table__table-sorting-arrow">
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4.6709 0C4.94219 -0.00187378 5.20279 0.106912 5.39258 0.300781L9.11914 4.10742C9.50515 4.50206 9.49893 5.13523 9.10449 5.52148C8.7099 5.90774 8.07679 5.90031 7.69043 5.50586L4.68848 2.44043L1.78027 5.49609C1.39965 5.89572 0.767191 5.91147 0.367188 5.53125C-0.0329145 5.15054 -0.0486744 4.51729 0.332031 4.11719L3.9541 0.310547C4.14109 0.114219 4.39977 0.00198374 4.6709 0Z" fill="#999999"/>
+                      </svg>
+                      <svg width="10" height="6" viewBox="0 9 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7.64258 9.48047C8.02555 9.08297 8.65788 9.07052 9.05566 9.45312C9.45327 9.8361 9.4657 10.4694 9.08301 10.8672L5.39844 14.6934C5.20994 14.8891 4.94946 15 4.67773 15C4.44001 14.9999 4.21093 14.915 4.03125 14.7627L3.95703 14.6934L0.279297 10.8672C-0.103338 10.4691 -0.091228 9.83589 0.306641 9.45312C0.704708 9.0706 1.33798 9.08265 1.7207 9.48047L4.67871 12.5586L7.64258 9.48047Z" fill="#999999"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div class="ds-table__table-th-icon"
+                     v-if="hasNestedContent"
+                     :class="{ 'is-expanded': isExpanded }"
+                     @click="toggleExpand"
+                >
+                  <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11.6064 0.292893C11.9969 -0.0975925 12.6299 -0.0975153 13.0204 0.292893C13.411 0.683417 13.411 1.31643 13.0204 1.70696L7.36418 7.36418C6.97378 7.75458 6.34067 7.75433 5.95012 7.36418L0.292893 1.70696C-0.0976311 1.31643 -0.0976311 0.683417 0.292893 0.292893C0.683417 -0.0976311 1.31643 -0.0976311 1.70696 0.292893L6.65617 5.24211L11.6064 0.292893Z" fill="#252628" />
+                  </svg>
+                </div>
+
+              </div>
+
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+        <template v-for="(row, rowIndex) in sortedRows" :key="row.id">
+          <tr :data-row-id="row.id">
+            <td
+              v-for="(col, colIndex) in row.cells"
+              :key="col.id"
+            >
+              <div
+                :class="{ 'align-right': alignRight || isNumericColumn(colIndex) }"
+                class="ds-table__th-body p1-medium ds-color-primary">
+                <component
+                  :is="col.link ? 'a' : 'div'"
+                  :href="col.link || undefined"
+                  :target="isExternalLink(col.link) ? '_blank' : undefined"
+                  :rel="isExternalLink(col.link) ? 'noopener noreferrer' : undefined"
+                  class="ds-table__th-content"
+                >
+                  <div
+                    v-if="col.icon"
+                    class="ds-table__th-content-icon"
+                  >
+                    <img
+                      v-if="isImagePath(col.icon)"
+                      :src="col.icon"
+                      :alt="col.label || ''"
+                    />
+                    <div
+                      v-else
+                      v-html="col.icon"
+                    ></div>
+                  </div>
+                  <div v-if="col.link && !col.icon">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M0.68746 1C0.68746 0.447715 1.13518 0 1.68746 0H12C12.5523 0 13 0.447715 13 1V11.3125C13 11.8648 12.5523 12.3125 12 12.3125C11.4477 12.3125 11 11.8648 11 11.3125V3.41423L1.70711 12.7072C1.31659 13.0978 0.683424 13.0978 0.292897 12.7072C-0.0976293 12.3167 -0.0976329 11.6835 0.292889 11.293L9.58581 2H1.68746C1.13518 2 0.68746 1.55228 0.68746 1Z" fill-rule="evenodd" clip-rule="evenodd" fill="#252628" />
+                    </svg>
+                  </div>
+                  <div class="ds-table__descripttion" v-html="getDisplayValue(col, colIndex)"></div>
+                </component>
+<!--                <div class="ds-table__th-content-icon"></div>-->
+              </div>
+
+            </td>
+
+          </tr>
+          <tr
+            v-if="row.nesting?.label && String(row.nesting.label).trim() !== '' && isExpanded"
+            class="ds-table__nested-row"
+          >
+            <td :colspan="normalizedHeaders.length">
+              <div class="ds-table__nested-content p1-medium ds-color-primary">
+                <div v-html="row.nesting.label"></div>
+              </div>
+            </td>
+          </tr>
+        </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: "table-story",
+  props: {
+    tableData: {
+      type: Object,
+      default: () => ({headers:[],rows:[]})
+    },
+    sameColumn: {
+      type: Boolean,
+      default: false,
+    },
+    sortingRow: {
+      type: Boolean,
+      default: false,
+    },
+    alignRight: {
+      type: Boolean,
+      default: false,
+    },
+    numberRight: {
+      type: Boolean,
+      default: true,
+    },
+    numberMarker: {
+      type: String,
+      default: ''
+    },
+    breakThousandths: {
+      type: Boolean,
+      default: false,
     }
-}
 
-function submitFormRepeatSmscode(token) {
-    if (checkTimer()) {
-        $check_status_repeat_smscode.attr('disabled', true);
-        $check_status_hint_error.html('').hide();
-        
-        const requestData = {};
-        if (token !== null && token !== undefined) {
-            requestData['smart-token'] = token;
-        }
-        
-        $.ajax({
-            type: 'POST',
-            url: '',
-            dataType: 'json',
-            data: requestData,
-            headers: {
-                'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-            },
-            success: function (response) {
-                if (!!response?.result) {
-                    if (!!response.result?.phone) {
-                        $check_status_phone.text(response.result.phone);
-                    }
-                    resetTimer();
-                } else {
-                    $check_status_input.addClass('error');
-                    if (!!response?.description) {
-                        $check_status_hint_error.html(response.description).show();
-                    } else {
-                        console.log('Success response has not result', response);
-                    }
-                    if (!!response?.debug) {
-                        console.error(response.debug);
-                    }
-                    $check_status_repeat_smscode.attr('disabled', false);
-                }
-                // 🔥 Сбрасываем капчу
-                CaptchaCore.resetCaptcha(captchaContainer, false);
-            },
-            error: function (error) {
-                let errorMessage = error.responseJSON?.description;
-                if (!!errorMessage) {
-                    $check_status_input.addClass('error');
-                    $check_status_hint_error.html(errorMessage).show();
-                } else {
-                    console.log('Error response has not description', error);
-                }
-                $check_status_repeat_smscode.attr('disabled', false);
-                // 🔥 Сбрасываем капчу
-                CaptchaCore.resetCaptcha(captchaContainer, false);
-            }
-        });
+
+
+  },
+  data() {
+    return {
+      activeSortColumn: null,
+      sortDirection: null, // null, 'asc', 'desc'
+      isExpanded: true
     }
-}
+  },
 
-function submitFormCheckRequest(token) {
-    let pin = $check_status_pin.val().trim();
-    if (!!pin) {
-        $check_status_button_check_request.attr('disabled', true);
-        $check_status_hint_error.html('').hide();
-        
-        const requestData = { 'code': pin };
-        if (token !== null && token !== undefined) {
-            requestData['smart-token'] = token;
-        }
-        
-        $.ajax({
-            type: 'POST',
-            url: url_happy_family_rest + 'check/',
-            dataType: 'json',
-            data: requestData,
-            headers: {
-                'X-Bitrix-Csrf-Token': window.BX.bitrix_sessid(),
-            },
-            success: function (response) {
-                if (!!response?.result) {
-                    if (!!response.result?.data) {
-                        if (!!response.result.data?.text)
-                            $check_status_response_text.html(response.result.data.text);
-                        if (!!response.result.data?.hint)
-                            $check_status_response_hint.html(response.result.data.hint);
-                        if (!!response.result.data?.date) {
-                            $check_status_response_date.find('span').text(response.result.data.date);
-                            $check_status_response_date.show();
-                        }
-                        if (!!response.result.data?.time) {
-                            $check_status_response_time.find('span').text(response.result.data.time);
-                            $check_status_response_time.show();
-                        }
-                        if (!!response.result.data?.certificate_for_status_paid) {
-                            certificate_data = response.result.data.certificate_for_status_paid;
-                            $information_mail_block.show();
-                        }
+  computed: {
+    //проверка объекта и нормализация, ,
+    //если к-во объектов для шапки и body отличаются, чтобы таблица не ломалась. Вывожу в консоль
 
-                    } else {
-                        $check_status_hint_error.html('Ошибка сервера при получении данных.').show();
-                    }
-                    showStep(3);
+    //для шапки
+    normalizedHeaders() {
+      // Нахожу максимальное количество ячеек среди всех строк
+      const maxCellsInRows = Math.max(
+        ...this.tableData.rows?.map(row => (row.cells || []).length) || [0]
+      );
 
-                } else {
-                    $check_status_input.addClass('error');
-                    if (!!response?.description) {
-                        $check_status_hint_error.html(response.description).show();
-                    } else {
-                        console.log('Success response has not result', response);
-                    }
-                    if (!!response?.debug) {
-                        console.error(response.debug);
-                    }
-                    $check_status_button_check_request.attr('disabled', false);
-                }
-                // 🔥 Сбрасываем капчу
-                CaptchaCore.resetCaptcha(captchaContainer, false);
-            },
-            error: function (error) {
-                let errorMessage = error.responseJSON?.description;
-                let errorCode = error.responseJSON?.code;
+      const targetCount = Math.max(
+        this.tableData.headers?.length || 0,
+        maxCellsInRows
+      );
 
-                if (!!errorMessage) {
-                    $check_status_input.addClass('error');
-                    $check_status_hint_error.html(errorMessage).show();
-                } else {
-                    console.log('Error response has not description', error);
-                }
-                if (errorCode !== 406) {
-                    showStep(3);
-                }
-                $check_status_button_check_request.attr('disabled', false);
-                // 🔥 Сбрасываем капчу
-                CaptchaCore.resetCaptcha(captchaContainer, false);
-            }
+      if (targetCount === 0) return [];
+
+      let headers = [...(this.tableData.headers || [])];
+
+      // Добавляю пустые заголовки, если не хватает
+      while (headers.length < targetCount) {
+        headers.push({
+          id: `empty-header-${headers.length}`,
+          label: '',
+          sortable: false
         });
+      }
+
+      // Нормализую существующие заголовки
+      return headers.map((header, index) => ({
+        id: header.id ?? `header-${index}`,
+        label: header.label || '',
+        sortable: header.sortable ?? false,
+        ...header
+      }));
+    },
+
+    //для body
+    normalizedRows() {
+      const headerCount = this.normalizedHeaders.length;
+
+      if (headerCount === 0) return [];
+
+      return this.tableData.rows?.map((row, rowIndex) => {
+        const cells = row.cells || [];
+        const currentCount = cells.length;
+
+        if (process.env.NODE_ENV === 'development' && currentCount !== headerCount) {
+          console.warn(
+            `[TableStory] Строка ${rowIndex}: ожидается ${headerCount} ячеек, получено ${currentCount}`
+          );
+        }
+
+        // Обреза. лишние ячейки (хотя теперь это не должно происходить)
+        let normalizedCells = [...cells].slice(0, headerCount);
+
+        // ДобавляЮ пустые ячейки, если не хватает
+        while (normalizedCells.length < headerCount) {
+          normalizedCells.push({
+            id: `empty-${rowIndex}-${normalizedCells.length}`,
+            label: '',
+            link: '',
+            icon: ''
+          });
+        }
+
+        return {
+          id: row.id || `row-${rowIndex}`,
+          ...row,
+          cells: normalizedCells
+        };
+      }) || [];
+    },
+    //computed свойства для фильтрации
+    sortedRows() {
+      if (this.activeSortColumn === null || this.sortDirection === null) {
+        return this.normalizedRows;
+      }
+
+      const col = this.activeSortColumn;
+      const direction = this.sortDirection === 'asc' ? 1 : -1;
+
+      return [...this.normalizedRows].sort((a, b) => {
+        const valA = this.extractValue(a.cells[col]?.label || '');
+        const valB = this.extractValue(b.cells[col]?.label || '');
+
+        // Если типы разные — сравниваем как строки
+        if (valA.type !== valB.type) {
+          return direction * String(valA.value).localeCompare(String(valB.value), 'ru');
+        }
+
+        // Числа и даты сравниваем численно
+        if (valA.type === 'number' || valA.type === 'date') {
+          return direction * (valA.value - valB.value);
+        }
+
+        // Строки — по алфавиту с русской локалью
+        return direction * valA.value.localeCompare(valB.value, 'ru');
+      });
+    },
+
+    // Определяем тип каждой колонки на основе содержимого
+    columnTypes() {
+      // Если numberRight = false, не делаем вычисления
+      if (!this.numberRight) return [];
+
+      const types = [];
+      const rows = this.normalizedRows;
+
+      if (rows.length === 0) return [];
+
+      const colCount = this.normalizedHeaders.length;
+
+      for (let colIndex = 0; colIndex < colCount; colIndex++) {
+        let numberCount = 0;
+        let totalCount = 0;
+
+        rows.forEach(row => {
+          const cell = row.cells[colIndex];
+          if (cell && cell.label) {
+            const extracted = this.extractValue(cell.label);
+            totalCount++;
+            if (extracted.type === 'number') numberCount++;
+          }
+        });
+
+        types.push({
+          isNumeric: totalCount > 0 && numberCount > totalCount / 2
+        });
+      }
+
+      return types;
+    },
+
+    //проверка наличия вложенности
+    hasNestedContent() {
+      return this.normalizedRows.some(row => {
+        const label = row.nesting?.label;
+        return label && String(label).trim() !== '';
+      });
     }
+
+
+  },
+  methods: {
+    //открытие вложенности
+    toggleExpand() {
+      this.isExpanded = !this.isExpanded;
+    },
+    isNumericColumn(columnIndex) {
+      if (!this.numberRight) return false;
+      return this.columnTypes[columnIndex]?.isNumeric || false;
+    },
+
+    // Форматирование числа для отображения
+    formatNumber(value, colIndex) {
+      if (!this.isNumericColumn(colIndex)) return value;
+
+      let formatted = value;
+
+      // Разбиение на тысячные
+      if (this.breakThousandths) {
+        const extracted = this.extractValue(value);
+        if (extracted.type === 'number') {
+          // Форматируем число с пробелами как разделителями тысяч
+          formatted = extracted.value.toLocaleString('ru-RU').replace(/,/g, ' ');
+        }
+      }
+
+      // Добавление маркера
+      if (this.numberMarker && this.numberMarker.trim()) {
+        formatted = `${formatted} ${this.numberMarker}`;
+      }
+
+      return formatted;
+    },
+
+    // Получение значения для отображения (с форматированием)
+    getDisplayValue(cell, colIndex) {
+      if (!cell || !cell.label) return '';
+      return this.formatNumber(cell.label, colIndex);
+    },
+
+    isDateColumn(columnIndex) {
+      return this.columnTypes[columnIndex]?.isDate || false;
+    },
+    //метод для проверки ссылки, если https:// - добавить target="_blank"
+    isExternalLink(link) {
+      if (!link) return false;
+      return link.startsWith('http://') || link.startsWith('https://');
+    },
+    //метод для проверки какого вида картинка в ключе icon - это элемент svg или путь к кратинке
+    isImagePath(icon) {
+      if (!icon || typeof icon !== 'string') return false;
+
+      const trimmed = icon.trim();
+
+      // Если это inline SVG (начинается с тега <svg)
+      if (trimmed.toLowerCase().startsWith('<svg')) {
+        return false;
+      }
+
+      // Если содержит расширения изображений
+      const imageExtensions = ['.svg', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
+      const lowerIcon = trimmed.toLowerCase();
+
+      if (imageExtensions.some(ext => lowerIcon.includes(ext))) {
+        return true;
+      }
+
+      // Если это путь к ресурсу (начинается с /, ./, ../ или http)
+      if (
+        trimmed.startsWith('/') ||
+        trimmed.startsWith('./') ||
+        trimmed.startsWith('../') ||
+        trimmed.startsWith('http://') ||
+        trimmed.startsWith('https://')
+      ) {
+        return true;
+      }
+
+      // По умолчанию считаем inline SVG
+      return false;
+    },
+    //методы для сортировки
+    handleSort(columnIndex) {
+      if (this.activeSortColumn !== columnIndex) {
+        // Клик по новой колонке — начинаем с 'asc'
+        this.activeSortColumn = columnIndex;
+        this.sortDirection = 'asc';
+      } else if (this.sortDirection === 'asc') {
+        // Второй клик — переключаем на 'desc'
+        this.sortDirection = 'desc';
+      } else {
+        // Третий клик — сброс к исходному порядку
+        this.activeSortColumn = null;
+        this.sortDirection = null;
+      }
+    },
+
+    extractValue(text) {
+      if (!text) return { type: 'string', value: '' };
+
+      const trimmed = String(text).trim();
+
+      // Дата в формате ДД.ММ.ГГГГ
+      const dateMatch = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      if (dateMatch) {
+        const [, day, month, year] = dateMatch;
+        return {
+          type: 'date',
+          value: new Date(year, month - 1, day).getTime()
+        };
+      }
+
+      // Число с тысячными разделителями, валютой, дробями
+      const cleaned = trimmed.replace(/\s/g, '').replace(/[^\d.,-]/g, '');
+      if (cleaned && !isNaN(cleaned)) {
+        const number = parseFloat(cleaned.replace(',', '.'));
+        if (!isNaN(number)) {
+          return { type: 'number', value: number };
+        }
+      }
+
+      // Обычная строка
+      return { type: 'string', value: trimmed.toLowerCase() };
+    }
+  }
 }
-----------------------------
-4. Обновляем обработчики кликов
+</script>
 
-// startrequest - step 1
-$check_status_button_start_request.on('click', function (e) {
-    runCaptchaForAction((token) => {
-        submitFormStartRequest(token);
-    });
-});
+<style lang="scss">
 
-// repeatrequest - step 2
-$check_status_repeat_smscode.on('click', function (e) {
-    runCaptchaForAction((token) => {
-        submitFormRepeatSmscode(token);
-    });
-});
-
-// checkrequest - step 2
-$check_status_button_check_request.on('click', function (e) {
-    runCaptchaForAction((token) => {
-        submitFormCheckRequest(token);
-    });
-});
+</style>
