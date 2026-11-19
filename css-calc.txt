@@ -1,268 +1,55 @@
-normalizeColumn: {
-    type: Boolean,
-    default: true
-  }
+tableData2:{
+        headers:[
+          {
+            id:0,
+            label:'Заголовок 1',
 
----------------------------------------
+          },
+          {
+            id:1,
+            label:'Заголовок 2',
 
-computed: {
-  // Нормализация шапки — только если включена
-  normalizedHeaders() {
-    if (!this.normalizeColumn) return this.tableData.headers || [];
-    
-    const maxCellsInRows = Math.max(
-      ...this.tableData.rows?.map(row => (row.cells || []).length) || [0]
-    );
+          },
+          {
+            id:2,
+            label:'Заголовок 3',
 
-    const targetCount = Math.max(
-      this.tableData.headers?.length || 0,
-      maxCellsInRows
-    );
+          },
 
-    if (targetCount === 0) return [];
+        ],
+        rows: [
+          {
+            id: '0',
+            nesting:{label:'Дополнительная информация о ВТБ'},
+            cells: [
+              {
+                id: 0,
+                label: '<p>ВТБ ВТБ ВТБ ВТБ ВТБ ВТБ </p>',
+                link: 'https://xn--d1aqf.xn--p1ai/',
+                icon: '',
 
-    let headers = [...(this.tableData.headers || [])];
+              },
+              {
+                id: 1,
+                label: '60 000',
+                link: '',
+                icon: '',
+              },
+             
+            ]
+          },
+             .....
 
-    while (headers.length < targetCount) {
-      headers.push({
-        id: `empty-header-${headers.length}`,
-        label: '',
-        sortable: false
-      });
-    }
+<table class="ds-table__table">
+        <thead v-if="tableData.headers || headerAlways">
 
-    return headers.map((header, index) => ({
-      id: header.id ?? `header-${index}`,
-      label: header.label || '',
-      sortable: header.sortable ?? false,
-      ...header
-    }));
+props: {
+headerAlways: {
+  type: Boolean,
+  default: true
   },
-
-  // Нормализация строк — только если включена
-  normalizedRows() {
-    if (!this.normalizeColumn) return this.tableData.rows || [];
-    
-    const headerCount = this.normalizedHeaders.length;
-
-    if (headerCount === 0) return [];
-
-    return this.tableData.rows?.map((row, rowIndex) => {
-      const cells = row.cells || [];
-      const currentCount = cells.length;
-
-      if (process.env.NODE_ENV === 'development' && currentCount !== headerCount) {
-        console.warn(
-          `[TableStory] Строка ${rowIndex}: ожидается ${headerCount} ячеек, получено ${currentCount}`
-        );
-      }
-
-      let normalizedCells = [...cells].slice(0, headerCount);
-
-      while (normalizedCells.length < headerCount) {
-        normalizedCells.push({
-          id: `empty-${rowIndex}-${normalizedCells.length}`,
-          label: '',
-          link: '',
-          icon: ''
-        });
-      }
-
-      return {
-        id: row.id || `row-${rowIndex}`,
-        ...row,
-        cells: normalizedCells
-      };
-    }) || [];
-  },
-
-  // Сортировка — работает с любым источником данных
-  sortedRows() {
-    // Если сортировка выключена — возвращаем исходные данные
-    if (!this.sortingRow || this.activeSortColumn === null || this.sortDirection === null) {
-      return this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
-    }
-
-    const rows = this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
-    const col = this.activeSortColumn;
-    const direction = this.sortDirection === 'asc' ? 1 : -1;
-
-    return [...rows].sort((a, b) => {
-      const valA = this.extractValue(a.cells[col]?.label || '');
-      const valB = this.extractValue(b.cells[col]?.label || '');
-
-      if (valA.type !== valB.type) {
-        return direction * String(valA.value).localeCompare(String(valB.value), 'ru');
-      }
-
-      if (valA.type === 'number' || valA.type === 'date') {
-        return direction * (valA.value - valB.value);
-      }
-
-      return direction * valA.value.localeCompare(valB.value, 'ru');
-    });
-  },
-
-  // Типы колонок — только если numberRight включен
-  columnTypes() {
-    if (!this.numberRight) return [];
-
-    const types = [];
-    const rows = this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
-
-    if (rows.length === 0) return [];
-
-    const headers = this.normalizeColumn ? this.normalizedHeaders : (this.tableData.headers || []);
-    const colCount = headers.length;
-
-    for (let colIndex = 0; colIndex < colCount; colIndex++) {
-      let numberCount = 0;
-      let totalCount = 0;
-
-      rows.forEach(row => {
-        const cell = row.cells[colIndex];
-        if (cell && cell.label) {
-          const extracted = this.extractValue(cell.label);
-          totalCount++;
-          if (extracted.type === 'number') numberCount++;
-        }
-      });
-
-      types.push({
-        isNumeric: totalCount > 0 && numberCount > totalCount / 2
-      });
-    }
-
-    return types;
-  },
-
-  // Проверка вложенности
-  hasNestedContent() {
-    const rows = this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
-    
-    return rows.some(row => {
-      const label = row.nesting?.label;
-      return label && String(label).trim() !== '';
-    });
-  }
 }
 
----------------------------------------
 
-methods: {
-  toggleExpand() {
-    this.isExpanded = !this.isExpanded;
-  },
 
-  isNumericColumn(columnIndex) {
-    if (!this.numberRight) return false;
-    return this.columnTypes[columnIndex]?.isNumeric || false;
-  },
 
-  // Форматирование — быстрая проверка флагов
-  formatNumber(value, colIndex) {
-    // Если колонка не числовая — сразу возвращаем
-    if (!this.isNumericColumn(colIndex)) return value;
-
-    // Если оба флага выключены — сразу возвращаем
-    if (!this.breakThousandths && !this.numberMarker) return value;
-
-    let formatted = value;
-
-    if (this.breakThousandths) {
-      const extracted = this.extractValue(value);
-      if (extracted.type === 'number') {
-        formatted = extracted.value.toLocaleString('ru-RU').replace(/,/g, ' ');
-      }
-    }
-
-    if (this.numberMarker && this.numberMarker.trim()) {
-      formatted = `${formatted} ${this.numberMarker}`;
-    }
-
-    return formatted;
-  },
-
-  // Отображение — быстрая проверка
-  getDisplayValue(cell, colIndex) {
-    if (!cell || !cell.label) return '';
-    
-    // Если numberRight выключен — сразу возвращаем label
-    if (!this.numberRight) return cell.label;
-    
-    return this.formatNumber(cell.label, colIndex);
-  },
-
-  // Проверка ссылки — быстрая
-  isExternalLink(link) {
-    if (!link) return false;
-    return link.startsWith('http://') || link.startsWith('https://');
-  },
-
-  // Проверка иконки — быстрая
-  isImagePath(icon) {
-    if (!icon || typeof icon !== 'string') return false;
-
-    const trimmed = icon.trim();
-
-    if (trimmed.toLowerCase().startsWith('<svg')) {
-      return false;
-    }
-
-    const imageExtensions = ['.svg', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
-    const lowerIcon = trimmed.toLowerCase();
-
-    if (imageExtensions.some(ext => lowerIcon.includes(ext))) {
-      return true;
-    }
-
-    if (
-      trimmed.startsWith('/') ||
-      trimmed.startsWith('./') ||
-      trimmed.startsWith('../') ||
-      trimmed.startsWith('http://') ||
-      trimmed.startsWith('https://')
-    ) {
-      return true;
-    }
-
-    return false;
-  },
-
-  handleSort(columnIndex) {
-    if (this.activeSortColumn !== columnIndex) {
-      this.activeSortColumn = columnIndex;
-      this.sortDirection = 'asc';
-    } else if (this.sortDirection === 'asc') {
-      this.sortDirection = 'desc';
-    } else {
-      this.activeSortColumn = null;
-      this.sortDirection = null;
-    }
-  },
-
-  extractValue(text) {
-    if (!text) return { type: 'string', value: '' };
-
-    const trimmed = String(text).trim();
-
-    const dateMatch = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-    if (dateMatch) {
-      const [, day, month, year] = dateMatch;
-      return {
-        type: 'date',
-        value: new Date(year, month - 1, day).getTime()
-      };
-    }
-
-    const cleaned = trimmed.replace(/\s/g, '').replace(/[^\d.,-]/g, '');
-    if (cleaned && !isNaN(cleaned)) {
-      const number = parseFloat(cleaned.replace(',', '.'));
-      if (!isNaN(number)) {
-        return { type: 'number', value: number };
-      }
-    }
-
-    return { type: 'string', value: trimmed.toLowerCase() };
-  }
-}
