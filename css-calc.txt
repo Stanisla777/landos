@@ -1,6 +1,90 @@
-tableData: Proxy(Object) {rows: Array(2)}[[Handler]]: MutableReactiveHandler[[Target]]: Objectrows: Array(2)0: Array(2)0: {label: 'ВТБ'}label: "ВТБ"[[Prototype]]: Object1: {label: '60 000'}length: 2[[Prototype]]: Array(0)1: Array(2)0: {label: 'Альфа Банк'}1: {label: '40 000'}length: 2[[Prototype]]: Array(0)length: 2[[Prototype]]: Array(0)[[Prototype]]: Object[[IsRevoked]]: false
-TableStory.vue:484 headerAlways: false
-TableStory.vue:485 normalizeColumn: true
-TableStory.vue:486 normalizedHeaders: []
-TableStory.vue:487 normalizedRows: Proxy(Array) {0: Array(2), 1: Array(2)}[[Handler]]: MutableReactiveHandler[[Target]]: Array(2)0: Array(2)0: {label: 'ВТБ'}1: {label: '60 000'}label: "60 000"[[Prototype]]: Objectlength: 2[[Prototype]]: Array(0)1: (2) [{…}, {…}]length: 2[[Prototype]]: Array(0)[[IsRevoked]]: false
-TableStory.vue:488 sortedRows: Proxy(Array) {0: Array(2), 1: Array(2)}[[Handler]]: MutableReactiveHandler[[Target]]: Array(2)0: Array(2)0: {label: 'ВТБ'}1: {label: '60 000'}length: 2[[Prototype]]: Array(0)1: Array(2)0: {label: 'Альфа Банк'}1: {label: '40 000'}length: 2[[Prototype]]: Array(0)length: 2[[Prototype]]: Array(0)[[IsRevoked]]: false
+<thead v-if="normalizedHeaders.length > 0">
+  <tr>
+    <th
+      v-for="(header, columnIndex) in normalizedHeaders"
+      :key="header.id ?? columnIndex"
+      scope="col"
+    >
+      <!-- ваш существующий контент шапки -->
+    </th>
+  </tr>
+</thead>
+
+normalizedRows() {
+  // Если нормализация выключена
+  if (!this.normalizeColumn) {
+    return (this.tableData.rows || []).map((row, rowIndex) => {
+      // Поддерживается оба формата: массив и объект с cells
+      if (Array.isArray(row)) {
+        return {
+          id: `row-${rowIndex}`,
+          cells: row.map((cell, cellIndex) => ({
+            ...(typeof cell === 'object' && cell !== null ? cell : { label: cell }),
+            id: (typeof cell === 'object' && cell !== null ? cell.id : undefined) ?? `cell-${rowIndex}-${cellIndex}`
+          }))
+        };
+      }
+      return {
+        id: row.id ?? `row-${rowIndex}`,
+        ...row,
+        cells: (row.cells || []).map((cell, cellIndex) => ({
+          ...cell,
+          id: cell.id ?? `cell-${rowIndex}-${cellIndex}`
+        }))
+      };
+    });
+  }
+
+  const headerCount = this.normalizedHeaders.length;
+
+  // ВАЖНО: убрали ранний возврат "if (headerCount === 0) return this.tableData.rows || [];"
+  // Всегда нормализуем, даже если заголовков нет
+
+  return (this.tableData.rows || []).map((row, rowIndex) => {
+    // Поддерживаем формат массива: row может быть [{label: '...'}] или {cells: [...]}
+    const cells = Array.isArray(row) ? row : (row.cells || []);
+
+    // Если headerCount > 0, нормализуем по количеству заголовков
+    let normalizedCells = headerCount > 0
+      ? [...cells].slice(0, headerCount)
+      : [...cells];
+
+    if (process.env.NODE_ENV === 'development' && headerCount > 0 && cells.length !== headerCount) {
+      console.warn(
+        `[TableStory] Строка ${rowIndex}: ожидается ${headerCount} ячеек, получено ${cells.length}`
+      );
+    }
+
+    // Добавляем пустые ячейки только если есть заголовки
+    if (headerCount > 0) {
+      while (normalizedCells.length < headerCount) {
+        normalizedCells.push({
+          id: `empty-${rowIndex}-${normalizedCells.length}`,
+          label: '',
+          link: '',
+          icon: ''
+        });
+      }
+    }
+
+    // Нормализуем каждую ячейку (поддержка строк как ячеек)
+    normalizedCells = normalizedCells.map((cell, cellIndex) => {
+      if (typeof cell === 'string') {
+        return {
+          id: `cell-${rowIndex}-${cellIndex}`,
+          label: cell
+        };
+      }
+      return {
+        ...cell,
+        id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`
+      };
+    });
+
+    return {
+      id: Array.isArray(row) ? `row-${rowIndex}` : (row.id ?? `row-${rowIndex}`),
+      ...(Array.isArray(row) ? {} : row),
+      cells: normalizedCells
+    };
+  });
+}
