@@ -1,68 +1,32 @@
-// метод
 // Извлечение числа и исходного маркера из текста
 extractNumberAndMarker(text) {
   if (!text) return { number: null, originalMarker: '' };
   
-  const trimmed = String(text).trim();
+  // Очищаем от HTML-тегов перед анализом
+  const cleaned = String(text).trim().replace(/<[^>]*>/g, '').trim();
+  
+  // Если после очистки ничего не осталось
+  if (!cleaned) return { number: null, originalMarker: '' };
   
   // Извлекаем числовую часть и маркер
   // Числовая часть: цифры, пробелы, точки, запятые, минус
-  const match = trimmed.match(/^([\d\s.,-]+)\s*(.*)$/);
+  const match = cleaned.match(/^([\d\s.,-]+)\s*(.*)$/);
   
-  if (!match) return { number: null, originalMarker: trimmed };
+  if (!match) return { number: null, originalMarker: cleaned };
   
   const numberPart = match[1].trim();
   const originalMarker = match[2].trim();
   
   // Парсим число
-  const cleaned = numberPart.replace(/\s/g, '').replace(/[^\d.,-]/g, '');
-  if (!cleaned || isNaN(cleaned)) {
-    return { number: null, originalMarker: trimmed };
+  const cleanedNumber = numberPart.replace(/\s/g, '').replace(/[^\d.,-]/g, '');
+  if (!cleanedNumber || isNaN(cleanedNumber)) {
+    return { number: null, originalMarker: cleaned };
   }
   
-  const number = parseFloat(cleaned.replace(',', '.'));
+  const number = parseFloat(cleanedNumber.replace(',', '.'));
   if (isNaN(number)) {
-    return { number: null, originalMarker: trimmed };
+    return { number: null, originalMarker: cleaned };
   }
   
   return { number, originalMarker };
-},
-
-----------------------------------
-formatNumber(value, colIndex) {
-  // Если колонка не числовая — сразу возвращаем
-  if (!this.isNumericColumn(colIndex)) return value;
-
-  // Если оба флага выключены — возвращаем как есть
-  if (!this.breakThousandths && !this.numberMarker) return value;
-
-  // Извлекаем число и исходный маркер
-  const { number, originalMarker } = this.extractNumberAndMarker(value);
-  
-  if (number === null) return value;
-
-  let formatted;
-
-  // Разбиение на тысячные
-  if (this.breakThousandths) {
-    formatted = number.toLocaleString('ru-RU').replace(/,/g, ' ');
-  } else {
-    formatted = String(number);
-  }
-
-  // Определяем маркер
-  let marker;
-  if (this.numberMarker && this.numberMarker.trim()) {
-    // Если задан маркер в props — используем его
-    marker = this.numberMarker.trim();
-  } else {
-    // Если маркер не задан — используем исходный из label
-    marker = originalMarker;
-  }
-
-  if (marker) {
-    formatted = `${formatted} ${marker}`;
-  }
-
-  return formatted;
 }
