@@ -1,45 +1,85 @@
-{
-headers:[
-          {
-            id:0,
-            label:'Заголовок 1',
+normalizedRows() {
+  const headerCount = this.normalizeColumn ? this.normalizedHeaders.length : 0;
 
+  return (this.tableData.rows || []).map((row, rowIndex) => {
+    // Простой формат (массив)
+    if (Array.isArray(row)) {
+      return {
+        id: `row-${rowIndex}`,
+        cells: row.map((cell, cellIndex) => {
+          // Обработка строковых ячеек
+          if (cell === null || cell === undefined) {
+            return { id: `cell-${rowIndex}-${cellIndex}`, label: '' };
           }
-
-        ],
-
-        rows: [
-          {
-            id: '0',
-            nesting:{label:'Дополнительная информация о ВТБ'},
-            cells: [
-              {
-                id: 0,
-                label: '<p>ВТБ ВТБ ВТБ ВТБ ВТБ ВТБ </p>',
-                link: 'https://xn--d1aqf.xn--p1ai/',
-                icon: '',
-
-              }            
-            ]
+          if (typeof cell === 'string' || typeof cell === 'number') {
+            return { 
+              id: `cell-${rowIndex}-${cellIndex}`, 
+              label: String(cell) 
+            };
           }
+          // Ячейка — объект
+          return {
+            ...cell,
+            id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`,
+            label: cell?.label ?? ''
+          };
+        })
+      };
+    }
 
-        ],
+    // Сложный формат
+    const cells = row.cells || [];
+    
+    // Проверка: можно ли использовать как есть?
+    const hasAllIds = row.id && cells.every(cell => cell?.id);
+    const correctCellCount = !this.normalizeColumn || 
+                             headerCount === 0 || 
+                             cells.length === headerCount;
+
+    if (hasAllIds && correctCellCount) {
+      return row;  // Используем как есть
+    }
+
+    // Нормализация
+    let normalizedCells = this.normalizeColumn && headerCount > 0
+      ? [...cells].slice(0, headerCount)
+      : [...cells];
+
+    if (this.normalizeColumn && headerCount > 0) {
+      while (normalizedCells.length < headerCount) {
+        normalizedCells.push({
+          id: `empty-${rowIndex}-${normalizedCells.length}`,
+          label: '',
+          link: '',
+          icon: ''
+        });
+      }
+    }
+
+    normalizedCells = normalizedCells.map((cell, cellIndex) => {
+      // Пустые значения
+      if (cell === null || cell === undefined) {
+        return { id: `cell-${rowIndex}-${cellIndex}`, label: '' };
+      }
+      // Строковые и числовые ячейки
+      if (typeof cell === 'string' || typeof cell === 'number') {
+        return { 
+          id: `cell-${rowIndex}-${cellIndex}`, 
+          label: String(cell) 
+        };
+      }
+      // Объект
+      return {
+        ...cell,
+        id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`,
+        label: cell?.label ?? ''
+      };
+    });
+
+    return {
+      id: row.id ?? `row-${rowIndex}`,
+      ...row,
+      cells: normalizedCells
+    };
+  });
 }
-
--------------------
-rows: [
-          [
-            {
-              label: 'Сбер',
-              link: 'https://xn--d1aqf.xn--p1ai/'
-            },
-            {
-              label: '60 000',
-              icon: '<svg> ..... </svg>'
-            }
-          ],
-          [
-            {label: 'Альфа Банк'},
-            {label: '40 000'}
-          ]
-        ]
