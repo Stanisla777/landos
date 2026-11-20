@@ -1,32 +1,37 @@
-// Извлечение числа и исходного маркера из текста
-extractNumberAndMarker(text) {
-  if (!text) return { number: null, originalMarker: '' };
+formatNumber(value, colIndex) {
+  if (!this.isNumericColumn(colIndex)) return value;
+  if (!this.breakThousandths && !this.numberMarker) return value;
+
+  // Сохраняем исходные теги
+  const tagsMatch = String(value).match(/^(<[^>]*>)(.*?)(<\/[^>]*>)$/);
+  const hasTags = tagsMatch !== null;
+  const openTag = hasTags ? tagsMatch[1] : '';
+  const closeTag = hasTags ? tagsMatch[3] : '';
+  const innerContent = hasTags ? tagsMatch[2] : String(value);
+
+  // Анализируем только внутренний контент
+  const { number, originalMarker } = this.extractNumberAndMarker(innerContent);
   
-  // Очищаем от HTML-тегов перед анализом
-  const cleaned = String(text).trim().replace(/<[^>]*>/g, '').trim();
-  
-  // Если после очистки ничего не осталось
-  if (!cleaned) return { number: null, originalMarker: '' };
-  
-  // Извлекаем числовую часть и маркер
-  // Числовая часть: цифры, пробелы, точки, запятые, минус
-  const match = cleaned.match(/^([\d\s.,-]+)\s*(.*)$/);
-  
-  if (!match) return { number: null, originalMarker: cleaned };
-  
-  const numberPart = match[1].trim();
-  const originalMarker = match[2].trim();
-  
-  // Парсим число
-  const cleanedNumber = numberPart.replace(/\s/g, '').replace(/[^\d.,-]/g, '');
-  if (!cleanedNumber || isNaN(cleanedNumber)) {
-    return { number: null, originalMarker: cleaned };
+  if (number === null) return value;
+
+  let formatted;
+  if (this.breakThousandths) {
+    formatted = number.toLocaleString('ru-RU').replace(/,/g, ' ');
+  } else {
+    formatted = String(number);
   }
-  
-  const number = parseFloat(cleanedNumber.replace(',', '.'));
-  if (isNaN(number)) {
-    return { number: null, originalMarker: cleaned };
+
+  let marker;
+  if (this.numberMarker && this.numberMarker.trim()) {
+    marker = this.numberMarker.trim();
+  } else {
+    marker = originalMarker;
   }
-  
-  return { number, originalMarker };
+
+  if (marker) {
+    formatted = `${formatted} ${marker}`;
+  }
+
+  // Возвращаем с исходными тегами
+  return hasTags ? `${openTag}${formatted}${closeTag}` : formatted;
 }
