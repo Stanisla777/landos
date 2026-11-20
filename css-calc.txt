@@ -1,85 +1,21 @@
-normalizedRows() {
-  const headerCount = this.normalizeColumn ? this.normalizedHeaders.length : 0;
+<tr
+            v-if="row.nesting?.label && String(row.nesting.label).trim() !== '' && isExpanded"
+            class="ds-table__nested-row"
+          >
+            <td :colspan="normalizedHeaders.length">
+              <div class="ds-table__nested-content p1-medium ds-color-primary">
+                <div v-html="row.nesting.label"></div>
+              </div>
+            </td>
+          </tr>
 
-  return (this.tableData.rows || []).map((row, rowIndex) => {
-    // Простой формат (массив)
-    if (Array.isArray(row)) {
-      return {
-        id: `row-${rowIndex}`,
-        cells: row.map((cell, cellIndex) => {
-          // Обработка строковых ячеек
-          if (cell === null || cell === undefined) {
-            return { id: `cell-${rowIndex}-${cellIndex}`, label: '' };
-          }
-          if (typeof cell === 'string' || typeof cell === 'number') {
-            return { 
-              id: `cell-${rowIndex}-${cellIndex}`, 
-              label: String(cell) 
-            };
-          }
-          // Ячейка — объект
-          return {
-            ...cell,
-            id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`,
-            label: cell?.label ?? ''
-          };
-        })
-      };
+computed: {
+hasNestedContent() {
+      const rows = this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
+
+      return rows.some(row => {
+        const label = row.nesting?.label;
+        return label && String(label).trim() !== '';
+      });
     }
-
-    // Сложный формат
-    const cells = row.cells || [];
-    
-    // Проверка: можно ли использовать как есть?
-    const hasAllIds = row.id && cells.every(cell => cell?.id);
-    const correctCellCount = !this.normalizeColumn || 
-                             headerCount === 0 || 
-                             cells.length === headerCount;
-
-    if (hasAllIds && correctCellCount) {
-      return row;  // Используем как есть
-    }
-
-    // Нормализация
-    let normalizedCells = this.normalizeColumn && headerCount > 0
-      ? [...cells].slice(0, headerCount)
-      : [...cells];
-
-    if (this.normalizeColumn && headerCount > 0) {
-      while (normalizedCells.length < headerCount) {
-        normalizedCells.push({
-          id: `empty-${rowIndex}-${normalizedCells.length}`,
-          label: '',
-          link: '',
-          icon: ''
-        });
-      }
-    }
-
-    normalizedCells = normalizedCells.map((cell, cellIndex) => {
-      // Пустые значения
-      if (cell === null || cell === undefined) {
-        return { id: `cell-${rowIndex}-${cellIndex}`, label: '' };
-      }
-      // Строковые и числовые ячейки
-      if (typeof cell === 'string' || typeof cell === 'number') {
-        return { 
-          id: `cell-${rowIndex}-${cellIndex}`, 
-          label: String(cell) 
-        };
-      }
-      // Объект
-      return {
-        ...cell,
-        id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`,
-        label: cell?.label ?? ''
-      };
-    });
-
-    return {
-      id: row.id ?? `row-${rowIndex}`,
-      ...row,
-      cells: normalizedCells
-    };
-  });
-}
+  }
