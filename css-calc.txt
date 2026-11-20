@@ -1,21 +1,8 @@
-<tr
-            v-if="row.nesting?.label && String(row.nesting.label).trim() !== '' && isExpanded"
-            class="ds-table__nested-row"
-          >
-            <td :colspan="normalizedHeaders.length">
-              <div class="ds-table__nested-content p1-medium ds-color-primary">
-                <div v-html="row.nesting.label"></div>
-              </div>
-            </td>
-          </tr>
+extractValue(text) {
+  if (!text) return { type: 'string', value: '' };
 
-computed: {
-hasNestedContent() {
-      const rows = this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
+  // Очищаем от HTML-тегов перед анализом
+  let trimmed = String(text).trim().replace(/<[^>]*>/g, '').trim();
 
-      return rows.some(row => {
-        const label = row.nesting?.label;
-        return label && String(label).trim() !== '';
-      });
-    }
-  }
+  // Если после очистки ничего не осталось
+  if (!trimmed) return { type: 'string', value: '' };
