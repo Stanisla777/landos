@@ -1,430 +1,279 @@
-<template>
-  <div class="ds-table__table-container" :class="sameColumn ? 'same-column' : ''">
-    <div class="ds-table__table-scroll">
-      <table :class="normalizedHeaders.length === 0 ? 'ds-table__table-not-headers' : ''" class="ds-table__table">
-        <thead v-if="normalizedHeaders.length > 0">
-          <tr>
-            <th
-              v-for="(header, columnIndex) in normalizedHeaders"
-              :key="header.id ?? columnIndex"
-              scope="col"
-            >
-              <div
-                :class="{ 'align-right': alignRight || isNumericColumn(columnIndex) }"
-                class="ds-table__table-th">
-                <div class="ds-table__table-th-body p1-semibold ds-color-disabled"
-                     @click="handleSort(columnIndex)"
-                     :class="sortingRow && sortedRows.length > 1 ? 'pointer' : ''"
-                >
-                  <p v-html="header?.label"></p>
-                  <DsTooltip
-                    v-if="header.tooltip"
-                    @click.stop="handleSort"
-                    class="ds-table__hint-icon"
-                    :text="header.tooltip"
-                    title="label"
-                  >
-                    <template #icon>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M8 1.33333C4.3181 1.33333 1.33333 4.3181 1.33333 8C1.33333 11.6819 4.3181 14.6667 8 14.6667C11.6819 14.6667 14.6667 11.6819 14.6667 8C14.6667 4.3181 11.6819 1.33333 8 1.33333ZM0 8C0 3.58172 3.58172 0 8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8Z" fill-rule="evenodd" clip-rule="evenodd" fill="#999999" />
-                        <path d="M8 4.66667C7.02204 4.66667 6.33333 5.37829 6.33333 6.13333C6.33333 6.50152 6.03486 6.8 5.66667 6.8C5.29848 6.8 5 6.50152 5 6.13333C5 4.53196 6.40063 3.33333 8 3.33333C9.59937 3.33333 11 4.53196 11 6.13333C11 7.50703 9.96933 8.58436 8.66667 8.86293V9.33333C8.66667 9.70152 8.36819 10 8 10C7.63181 10 7.33333 9.70152 7.33333 9.33333V8.26667C7.33333 7.89848 7.63181 7.6 8 7.6C8.97796 7.6 9.66667 6.88838 9.66667 6.13333C9.66667 5.37829 8.97796 4.66667 8 4.66667Z" fill-rule="evenodd" clip-rule="evenodd" fill="#999999" />
-                        <path d="M8.66667 12C8.66667 12.3682 8.36819 12.6667 8 12.6667C7.63181 12.6667 7.33333 12.3682 7.33333 12C7.33333 11.6318 7.63181 11.3333 8 11.3333C8.36819 11.3333 8.66667 11.6318 8.66667 12Z" fill="#999999" />
-                      </svg>
-                    </template>
-                  </DsTooltip>
-                  <div class="ds-table__table-sorting"
-                       v-if="sortingRow && sortedRows.length > 1"
-                       :class="{
-                        'is-active': activeSortColumn === columnIndex,
-                        'is-asc': activeSortColumn === columnIndex && sortDirection === 'asc',
-                        'is-desc': activeSortColumn === columnIndex && sortDirection === 'desc'
-                      }"
-                  >
-                    <div class="ds-table__table-sorting-arrow">
-                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4.6709 0C4.94219 -0.00187378 5.20279 0.106912 5.39258 0.300781L9.11914 4.10742C9.50515 4.50206 9.49893 5.13523 9.10449 5.52148C8.7099 5.90774 8.07679 5.90031 7.69043 5.50586L4.68848 2.44043L1.78027 5.49609C1.39965 5.89572 0.767191 5.91147 0.367188 5.53125C-0.0329145 5.15054 -0.0486744 4.51729 0.332031 4.11719L3.9541 0.310547C4.14109 0.114219 4.39977 0.00198374 4.6709 0Z" fill="#999999"/>
-                      </svg>
-                      <svg width="10" height="6" viewBox="0 9 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7.64258 9.48047C8.02555 9.08297 8.65788 9.07052 9.05566 9.45312C9.45327 9.8361 9.4657 10.4694 9.08301 10.8672L5.39844 14.6934C5.20994 14.8891 4.94946 15 4.67773 15C4.44001 14.9999 4.21093 14.915 4.03125 14.7627L3.95703 14.6934L0.279297 10.8672C-0.103338 10.4691 -0.091228 9.83589 0.306641 9.45312C0.704708 9.0706 1.33798 9.08265 1.7207 9.48047L4.67871 12.5586L7.64258 9.48047Z" fill="#999999"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-                <div class="ds-table__table-th-icon"
-                     v-if="hasNestedContent"
-                     :class="{ 'is-expanded': isExpanded }"
-                     @click="toggleExpand"
-                >
-                  <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11.6064 0.292893C11.9969 -0.0975925 12.6299 -0.0975153 13.0204 0.292893C13.411 0.683417 13.411 1.31643 13.0204 1.70696L7.36418 7.36418C6.97378 7.75458 6.34067 7.75433 5.95012 7.36418L0.292893 1.70696C-0.0976311 1.31643 -0.0976311 0.683417 0.292893 0.292893C0.683417 -0.0976311 1.31643 -0.0976311 1.70696 0.292893L6.65617 5.24211L11.6064 0.292893Z" fill="#252628" />
-                  </svg>
-                </div>
-              </div>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-        <template v-for="(row, rowIndex) in sortedRows" :key="row.id ?? rowIndex">
-          <tr :data-row-id="row.id ?? rowIndex">
-            <td
-              v-for="(col, colIndex) in row.cells"
-              :key="col.id ?? colIndex"
-            >
-              <div
-                :class="{ 'align-right': alignRight || isNumericColumn(colIndex) }"
-                class="ds-table__th-body p1-medium ds-color-primary">
-                <component
-                  :is="col.link ? 'a' : 'div'"
-                  :href="col.link || undefined"
-                  :target="isExternalLink(col.link) ? '_blank' : undefined"
-                  :rel="isExternalLink(col.link) ? 'noopener noreferrer' : undefined"
-                  class="ds-table__th-content"
-                >
-                  <div
-                    v-if="col.icon"
-                    class="ds-table__th-content-icon"
-                  >
-                    <img
-                      v-if="isImagePath(col.icon)"
-                      :src="col.icon"
-                    />
-                    <div
-                      v-else
-                      v-html="col.icon"
-                    ></div>
-                  </div>
-                  <div v-if="col.link && !col.icon">
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M0.68746 1C0.68746 0.447715 1.13518 0 1.68746 0H12C12.5523 0 13 0.447715 13 1V11.3125C13 11.8648 12.5523 12.3125 12 12.3125C11.4477 12.3125 11 11.8648 11 11.3125V3.41423L1.70711 12.7072C1.31659 13.0978 0.683424 13.0978 0.292897 12.7072C-0.0976293 12.3167 -0.0976329 11.6835 0.292889 11.293L9.58581 2H1.68746C1.13518 2 0.68746 1.55228 0.68746 1Z" fill-rule="evenodd" clip-rule="evenodd" fill="#252628" />
-                    </svg>
-                  </div>
-                  <div class="ds-table__descripttion" v-html="getDisplayValue(col, colIndex)"></div>
-                  <DsTooltip
-                    v-if="col.tooltip"
-                    class="ds-table__hint-icon"
-                    :text="col.tooltip"
-                    title="label"
-                  >
-                    <template #icon>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M8 1.33333C4.3181 1.33333 1.33333 4.3181 1.33333 8C1.33333 11.6819 4.3181 14.6667 8 14.6667C11.6819 14.6667 14.6667 11.6819 14.6667 8C14.6667 4.3181 11.6819 1.33333 8 1.33333ZM0 8C0 3.58172 3.58172 0 8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8Z" fill-rule="evenodd" clip-rule="evenodd" fill="#999999" />
-                        <path d="M8 4.66667C7.02204 4.66667 6.33333 5.37829 6.33333 6.13333C6.33333 6.50152 6.03486 6.8 5.66667 6.8C5.29848 6.8 5 6.50152 5 6.13333C5 4.53196 6.40063 3.33333 8 3.33333C9.59937 3.33333 11 4.53196 11 6.13333C11 7.50703 9.96933 8.58436 8.66667 8.86293V9.33333C8.66667 9.70152 8.36819 10 8 10C7.63181 10 7.33333 9.70152 7.33333 9.33333V8.26667C7.33333 7.89848 7.63181 7.6 8 7.6C8.97796 7.6 9.66667 6.88838 9.66667 6.13333C9.66667 5.37829 8.97796 4.66667 8 4.66667Z" fill-rule="evenodd" clip-rule="evenodd" fill="#999999" />
-                        <path d="M8.66667 12C8.66667 12.3682 8.36819 12.6667 8 12.6667C7.63181 12.6667 7.33333 12.3682 7.33333 12C7.33333 11.6318 7.63181 11.3333 8 11.3333C8.36819 11.3333 8.66667 11.6318 8.66667 12Z" fill="#999999" />
-                      </svg>
-                    </template>
-                  </DsTooltip>
-                </component>
-              </div>
-            </td>
-          </tr>
-          <tr
-            v-if="row.nesting?.label && String(row.nesting.label).trim() !== '' && isExpanded"
-            class="ds-table__nested-row"
-          >
-            <td :colspan="row.cells.length">
-              <div class="ds-table__nested-content p1-medium ds-color-primary">
-                <div v-html="row.nesting.label"></div>
-              </div>
-            </td>
-          </tr>
-        </template>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</template>
-
 <script setup>
-import { ref, computed } from 'vue'
-import { DsTooltip } from '@ringsites/ui-components'
+import { ref } from 'vue';
+import DsChip from './DsChip.vue';
 
-// 1. Пропсы
-const props = defineProps({
-  tableData: {
-    type: Object,
-    default: () => ({ headers: [], rows: [] })
-  },
-  sameColumn: {
-    type: Boolean,
-    default: false,
-  },
-  sortingRow: {
-    type: Boolean,
-    default: false,
-  },
-  alignRight: {
-    type: Boolean,
-    default: false,
-  },
-  numberRight: {
-    type: Boolean,
-    default: true,
-  },
-  numberMarker: {
-    type: String,
-    default: ''
-  },
-  breakThousandths: {
-    type: Boolean,
-    default: false,
-  },
-  normalizeColumn: {
-    type: Boolean,
-    default: true
-  },
-  headerAlways: {
-    type: Boolean,
-    default: true
-  }
-})
+const playgroundProps = ref({
+  modelValue: false,
+  label: 'Chips',
+  showClose: true,
+  disabled: false,
+  darkMode: false,
+  iconLeft: false,
+});
 
-// 2. Состояние (реактивные переменные)
-const activeSortColumn = ref(null)
-const sortDirection = ref(null) // null, 'asc', 'desc'
-const isExpanded = ref(true)
+const rooms = ['Студия', '1-комнатная', '2-комнатная', '3-комнатная', '4+'];
+const selectedRooms = ref(['1-комнатная']);
+const toggleRoom = (room, checked) => {
+  selectedRooms.value = checked
+    ? [...selectedRooms.value, room]
+    : selectedRooms.value.filter((item) => item !== room);
+};
 
-// 3. Вспомогательные функции (чистые, без this)
-const extractValue = (text) => {
-  if (!text) return { type: 'string', value: '' }
-  let trimmed = String(text).trim().replace(/<[^>]*>/g, '').trim()
-  if (!trimmed) return { type: 'string', value: '' }
-
-  const dateMatch = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
-  if (dateMatch) {
-    const [, day, month, year] = dateMatch
-    return { type: 'date', value: new Date(year, month - 1, day).getTime() }
-  }
-
-  const cleaned = trimmed.replace(/\s/g, '').replace(/[^\d.,-]/g, '')
-  if (cleaned && !isNaN(cleaned)) {
-    const number = parseFloat(cleaned.replace(',', '.'))
-    if (!isNaN(number)) return { type: 'number', value: number }
-  }
-  return { type: 'string', value: trimmed.toLowerCase() }
-}
-
-const extractNumberAndMarker = (text) => {
-  if (!text) return { number: null, originalMarker: '' }
-  const cleaned = String(text).trim().replace(/<[^>]*>/g, '').trim()
-  if (!cleaned) return { number: null, originalMarker: '' }
-
-  const match = cleaned.match(/^([\d\s.,-]+)\s*(.*)$/)
-  if (!match) return { number: null, originalMarker: cleaned }
-
-  const numberPart = match[1].trim()
-  const originalMarker = match[2].trim()
-  const cleanedNumber = numberPart.replace(/\s/g, '').replace(/[^\d.,-]/g, '')
-  
-  if (!cleanedNumber || isNaN(cleanedNumber)) return { number: null, originalMarker: cleaned }
-
-  const number = parseFloat(cleanedNumber.replace(',', '.'))
-  if (isNaN(number)) return { number: null, originalMarker: cleaned }
-
-  return { number, originalMarker }
-}
-
-const isExternalLink = (link) => {
-  if (!link) return false
-  return link.startsWith('http://') || link.startsWith('https://')
-}
-
-const isImagePath = (icon) => {
-  if (!icon || typeof icon !== 'string') return false
-  const trimmed = icon.trim()
-  if (trimmed.toLowerCase().startsWith('<svg')) return false
-
-  const imageExtensions = ['.svg', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']
-  const lowerIcon = trimmed.toLowerCase()
-  if (imageExtensions.some(ext => lowerIcon.includes(ext))) return true
-
-  if (trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return true
-  }
-  return false
-}
-
-const getMaxCellsCount = () => {
-  const rows = props.tableData.rows || []
-  return rows.reduce((max, row) => {
-    const cells = Array.isArray(row) ? row : (row.cells || [])
-    return Math.max(max, cells.length)
-  }, 0)
-}
-
-// 4. Вычисляемые свойства (Computed)
-const normalizedHeaders = computed(() => {
-  if (!props.normalizeColumn) {
-    if (props.tableData.headers && props.tableData.headers.length > 0) return props.tableData.headers
-    if (props.headerAlways) {
-      const maxCells = getMaxCellsCount()
-      return Array.from({ length: maxCells }, (_, i) => ({ id: `auto-header-${i}`, label: '', sortable: false }))
-    }
-    return []
-  }
-
-  const hasHeaders = props.tableData.headers && props.tableData.headers.length > 0
-  const maxCellsInRows = getMaxCellsCount()
-
-  if (!hasHeaders && !props.headerAlways) return []
-
-  const targetCount = hasHeaders ? Math.max(props.tableData.headers.length, maxCellsInRows) : maxCellsInRows
-  if (targetCount === 0) return []
-
-  let headers = hasHeaders ? [...props.tableData.headers] : []
-  while (headers.length < targetCount) {
-    headers.push({ id: `empty-header-${headers.length}`, label: '', sortable: false })
-  }
-
-  return headers.map((header, index) => ({
-    id: header.id ?? `header-${index}`,
-    label: header.label || '',
-    sortable: header.sortable ?? false,
-    ...header
-  }))
-})
-
-const normalizedRows = computed(() => {
-  const headerCount = props.normalizeColumn ? normalizedHeaders.value.length : 0
-
-  return (props.tableData.rows || []).map((row, rowIndex) => {
-    if (Array.isArray(row)) {
-      return {
-        id: `row-${rowIndex}`,
-        cells: row.map((cell, cellIndex) => {
-          if (cell === null || cell === undefined) return { id: `cell-${rowIndex}-${cellIndex}`, label: '' }
-          if (typeof cell === 'string' || typeof cell === 'number') return { id: `cell-${rowIndex}-${cellIndex}`, label: String(cell) }
-          return { ...cell, id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`, label: cell?.label ?? '' }
-        })
-      }
-    }
-
-    const cells = row.cells || []
-    const hasAllIds = row.id && cells.every(cell => cell?.id)
-    const correctCellCount = !props.normalizeColumn || headerCount === 0 || cells.length === headerCount
-
-    if (hasAllIds && correctCellCount) return row
-
-    let normalizedCells = props.normalizeColumn && headerCount > 0 ? [...cells].slice(0, headerCount) : [...cells]
-
-    if (props.normalizeColumn && headerCount > 0) {
-      while (normalizedCells.length < headerCount) {
-        normalizedCells.push({ id: `empty-${rowIndex}-${normalizedCells.length}`, label: '', link: '', icon: '' })
-      }
-    }
-
-    normalizedCells = normalizedCells.map((cell, cellIndex) => {
-      if (cell === null || cell === undefined) return { id: `cell-${rowIndex}-${cellIndex}`, label: '' }
-      if (typeof cell === 'string' || typeof cell === 'number') return { id: `cell-${rowIndex}-${cellIndex}`, label: String(cell) }
-      return { ...cell, id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`, label: cell?.label ?? '' }
-    })
-
-    return { id: row.id ?? `row-${rowIndex}`, ...row, cells: normalizedCells }
-  })
-})
-
-const sortedRows = computed(() => {
-  if (!props.sortingRow || activeSortColumn.value === null || sortDirection.value === null) {
-    return props.normalizeColumn ? normalizedRows.value : (props.tableData.rows || [])
-  }
-
-  const rows = props.normalizeColumn ? normalizedRows.value : (props.tableData.rows || [])
-  const col = activeSortColumn.value
-  const direction = sortDirection.value === 'asc' ? 1 : -1
-
-  return [...rows].sort((a, b) => {
-    const valA = extractValue(a.cells[col]?.label || '')
-    const valB = extractValue(b.cells[col]?.label || '')
-    
-    if (valA.type !== valB.type) return direction * String(valA.value).localeCompare(String(valB.value), 'ru')
-    if (valA.type === 'number' || valA.type === 'date') return direction * (valA.value - valB.value)
-    return direction * valA.value.localeCompare(valB.value, 'ru')
-  })
-})
-
-const columnTypes = computed(() => {
-  if (!props.numberRight) return []
-  const types = []
-  const rows = props.normalizeColumn ? normalizedRows.value : (props.tableData.rows || [])
-  const headers = props.normalizeColumn ? normalizedHeaders.value : (props.tableData.headers || [])
-  const colCount = headers.length
-
-  if (rows.length === 0 || colCount === 0) return []
-
-  for (let colIndex = 0; colIndex < colCount; colIndex++) {
-    let numberCount = 0
-    let totalCount = 0
-
-    rows.forEach(row => {
-      const cell = row.cells[colIndex]
-      if (cell && cell.label) {
-        const extracted = extractValue(cell.label)
-        totalCount++
-        if (extracted.type === 'number') numberCount++
-      }
-    })
-
-    types.push({ isNumeric: totalCount > 0 && numberCount > totalCount / 2 })
-  }
-  return types
-})
-
-const hasNestedContent = computed(() => {
-  const rows = props.normalizeColumn ? normalizedRows.value : (props.tableData.rows || [])
-  return rows.some(row => {
-    const label = row.nesting?.label
-    return label && String(label).trim() !== ''
-  })
-})
-
-// 5. Методы (функции, изменяющие состояние или использующие другие функции)
-const toggleExpand = () => {
-  isExpanded.value = !isExpanded.value
-}
-
-const isNumericColumn = (columnIndex) => {
-  if (!props.numberRight) return false
-  return columnTypes.value[columnIndex]?.isNumeric || false
-}
-
-const formatNumber = (value, colIndex) => {
-  if (!isNumericColumn(colIndex)) return value
-  if (!props.breakThousandths && !props.numberMarker) return value
-
-  const tagsMatch = String(value).match(/^(<[^>]*>)(.*?)(<\/[^>]*>)$/)
-  const hasTags = tagsMatch !== null
-  const openTag = hasTags ? tagsMatch[1] : ''
-  const closeTag = hasTags ? tagsMatch[3] : ''
-  const innerContent = hasTags ? tagsMatch[2] : String(value)
-
-  const { number, originalMarker } = extractNumberAndMarker(innerContent)
-  if (number === null) return value
-
-  let formatted = props.breakThousandths ? number.toLocaleString('ru-RU').replace(/,/g, ' ') : String(number)
-  let marker = (props.numberMarker && props.numberMarker.trim()) ? props.numberMarker.trim() : originalMarker
-
-  if (marker) formatted = `${formatted} ${marker}`
-  return hasTags ? `${openTag}${formatted}${closeTag}` : formatted
-}
-
-const getDisplayValue = (cell, colIndex) => {
-  if (!cell || !cell.label) return ''
-  if (!props.numberRight) return cell.label
-  return formatNumber(cell.label, colIndex)
-}
-
-const handleSort = (columnIndex) => {
-  if (activeSortColumn.value !== columnIndex) {
-    activeSortColumn.value = columnIndex
-    sortDirection.value = 'asc'
-  } else if (sortDirection.value === 'asc') {
-    sortDirection.value = 'desc'
-  } else {
-    activeSortColumn.value = null
-    sortDirection.value = null
-  }
-}
+const states = [
+  { title: 'Default', active: false, disabled: false },
+  { title: 'Active', active: true, disabled: false },
+  { title: 'Disabled', active: false, disabled: true },
+];
 </script>
 
-<style lang="scss">
+<template>
+  <Story title="Chip" icon="material-symbols:label-outline">
+
+    <Variant title="Playground" auto-props-disabled>
+      <div class="chip-story" :class="{ 'chip-story--dark': playgroundProps.darkMode }">
+        <DsChip
+          v-model="playgroundProps.modelValue"
+          :label="playgroundProps.label"
+          :show-close="playgroundProps.showClose"
+          :disabled="playgroundProps.disabled"
+          :dark-mode="playgroundProps.darkMode"
+        >
+          <template v-if="playgroundProps.iconLeft" #icon-left>
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M8 2.2a5.8 5.8 0 1 0 0 11.6A5.8 5.8 0 0 0 8 2.2ZM1 8a7 7 0 1 1 14 0A7 7 0 0 1 1 8Zm7-3.6c.33 0 .6.27.6.6v2.75l1.82 1.83a.6.6 0 1 1-.84.84l-2-2A.6.6 0 0 1 7.4 8V5c0-.33.27-.6.6-.6Z" fill="currentColor" />
+            </svg>
+          </template>
+        </DsChip>
+      </div>
+      <template #controls>
+        <HstText v-model="playgroundProps.label" title="Label" />
+        <HstCheckbox v-model="playgroundProps.modelValue" title="Active (v-model)" />
+        <HstCheckbox v-model="playgroundProps.iconLeft" title="Icon left (слот #icon-left)" />
+        <HstCheckbox v-model="playgroundProps.showClose" title="Show close" />
+        <HstCheckbox v-model="playgroundProps.disabled" title="Disabled" />
+        <HstCheckbox v-model="playgroundProps.darkMode" title="Dark mode" />
+      </template>
+    </Variant>
+
+    <Variant title="Состояния" auto-props-disabled>
+      <div class="chip-story ds-chip-group">
+        <DsChip v-for="state in states" :key="state.title" :model-value="state.active" :disabled="state.disabled" :label="state.title" />
+        <DsChip :model-value="true" :show-close="false" label="Active без крестика" />
+      </div>
+      <div class="chip-story ds-chip-group chip-story--dark">
+        <DsChip v-for="state in states" :key="state.title" :model-value="state.active" :disabled="state.disabled" :label="state.title" dark-mode />
+        <DsChip :model-value="true" :show-close="false" label="Active без крестика" dark-mode />
+      </div>
+    </Variant>
+
+    <Variant title="С иконкой слева" auto-props-disabled>
+      <div v-for="dark in [false, true]" :key="String(dark)" class="chip-story ds-chip-group" :class="{ 'chip-story--dark': dark }">
+        <DsChip
+          v-for="state in states"
+          :key="state.title"
+          :model-value="state.active"
+          :disabled="state.disabled"
+          :dark-mode="dark"
+          label="Chips"
+        >
+          <template #icon-left>
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M8 2.2a5.8 5.8 0 1 0 0 11.6A5.8 5.8 0 0 0 8 2.2ZM1 8a7 7 0 1 1 14 0A7 7 0 0 1 1 8Zm7-3.6c.33 0 .6.27.6.6v2.75l1.82 1.83a.6.6 0 1 1-.84.84l-2-2A.6.6 0 0 1 7.4 8V5c0-.33.27-.6.6-.6Z" fill="currentColor" />
+            </svg>
+          </template>
+        </DsChip>
+      </div>
+    </Variant>
+
+    <Variant title="Группа фильтров" auto-props-disabled>
+      <div class="chip-story">
+        <div class="ds-chip-group">
+          <DsChip
+            v-for="room in rooms"
+            :key="room"
+            :label="room"
+            :model-value="selectedRooms.includes(room)"
+            @update:model-value="toggleRoom(room, $event)"
+          />
+        </div>
+        <p class="p2-medium chip-story__info">Выбрано: {{ selectedRooms.join(', ') || '—' }}</p>
+      </div>
+    </Variant>
+
+  </Story>
+</template>
+
+<style lang="scss" scoped>
 
 </style>
+
+-----------------------------
+
+<!--
+  :table-data - объект с данными
+  :same-column - колонки в таблице всегда одной ширины (по умолчанию false)
+  :sorting-row - добавляется возможность сортировать ряды по содержанию в колонках. Текст по алфавиту, числа - большее меньшее, даты - позже раньше (по умолчанию false)
+  :align-right - содержание в колокнках прижато право или лево (по умолчанию false)
+  :number-right - прижимать ли содержание в право в колонках определяемые как с цифрами, (по умолчанию true)
+  :number-marker - возможность подставлять после цифр обозначение (рубль, доллар метр и т.д.) Если пустое ничего не подставляется
+  :break-thousandths - разбивать числа на тысячные или нет (по умолчанию false)
+  :normalize-column - будет ли в компоненте происходить проверка и нормализация объекта на предмет не соответсвия кол-ва колонок
+  в шапке и теле и наоборот(например если таблица большая и есть уверенность, что всё соответсвует) (по умолчанию true)
+  :header-always - на тот случай, когда в объекте нет данных для шаки таблицы. Если true то шапка появляется в любом случае
+  без данных но с кнопками сортировки и развёртывания, если они указаны
+  если false и нет данных для шапки таблицы то таблица без шапки
+
+  -->
+
+  <table-story
+    :table-data="tableData2"
+    :same-column=false
+    :sorting-row=true
+    :align-right=false
+    :number-right=false
+    :number-marker="'$'"
+    :break-thousandths=true
+    :normalize-column=true
+    :header-always=false
+
+  />
+
+-----------------
+
+сложный объект
+tableData2:{
+        headers:[
+          {
+            id:0,
+            label:'Заголовок 1',
+            tooltip:'Какой-то тултип'
+          },
+          {
+            id:1,
+            label:'Заголовок 2',
+            tooltip:'Какой-то тултип'
+          },
+          {
+            id:2,
+            label:'Заголовок 3',
+
+          },
+
+
+
+        ],
+
+        rows: [
+          {
+            id: '0',
+            nesting: {label: 'Дополнительная информация о ВТБ'},
+            cells: [
+              {
+                id: 0,
+                label: '<p>ВТБ </p>',
+                link: 'https://xn--d1aqf.xn--p1ai/',
+                icon: '<svg width="21" height="32" viewBox="0 0 21 32" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
+                  '  <path d="M0 27.624H20.8806V32H0V27.624ZM6.21097 17.296H14.4473L15.8372 21.696H20.4041L14.2408 3.2C13.6451 1.424 12.9541 0 10.5952 0C8.23629 0 7.51353 1.4 6.89402 3.2L0.444775 21.688H4.72574L6.21097 17.296V17.296ZM10.3887 4.8H10.4919L13.2638 13.6H7.46587L10.3887 4.8V4.8Z" fill="#EF3124" />\n' +
+                  '</svg>',
+                tooltip:'Какой-то тултип'
+              },
+              {
+                id: 1,
+                label: '<p>60000 Р</p>',
+                link: 'https://xn--d1aqf.xn--p1ai/',
+                icon: '',
+              },
+              {
+                id: 2,
+                label: '18.11.2026',
+                link: '',
+                icon: '',
+              },
+
+
+
+            ]
+          },
+          {
+            id: '1',
+            cells: [
+              {
+                id: 0,
+                label: 'ДОм Рф Банк',
+                link: '',
+                icon: ''
+              },
+              {
+                id: 1,
+                label: '<p>70000 Р</p>',
+                link: '',
+                icon: ''
+              },
+              {
+                id: 2,
+                label: '20.11.2026',
+                link: '',
+                icon: ''
+              },
+
+
+            ]
+          },
+          {
+            id: '2',
+            cells: [
+              {
+                id: 0,
+                label: 'АльфаБанк',
+                link: '',
+                icon: ''
+              },
+              {
+                id: 1,
+                label: '5000',
+                link: '',
+                icon: ''
+              },
+              {
+                id: 2,
+                label: '17.02.2025',
+                link: '',
+                icon: ''
+              },
+            ]
+          },
+          {
+            id: '3',
+            cells: [
+              {
+                id: 0,
+                label: 'АкваБанк',
+                link: '',
+                icon: ''
+              },
+              {
+                id: 1,
+                label: '40000',
+                link: '',
+                icon: ''
+              },
+              {
+                id: 2,
+                label: '19.02.2025',
+                link: '',
+                icon: ''
+              },
+
+
+            ]
+          }
+        ]
+}
+
+Простой:
+rows:[
+          ['Сбер','60 000','17.02.2025'],
+          ['Альфа','30 000','17.02.2026'],
+          ['Т-Банк','35 000','13.02.2026'],
+        ]
+
