@@ -1,102 +1,188 @@
 <script setup>
-import { ref } from 'vue';
-import DsChip from './DsChip.vue';
+import { ref } from 'vue'
+import TableStory from './TableStory.vue' // Укажите правильный путь к вашему компоненту
 
+// ==========================================
+// 1. МОКОВЫЕ ДАННЫЕ (Примеры объектов)
+// ==========================================
+
+// Сложный формат (полный набор возможностей)
+const complexData = ref({
+  headers: [
+    { id: 0, label: 'Банк', tooltip: 'Название финансовой организации' },
+    { id: 1, label: 'Сумма / Ставка', tooltip: 'Процентная ставка или доступная сумма' },
+    { id: 2, label: 'Дата окончания' }
+  ],
+  rows: [
+    {
+      id: '0',
+      nesting: { label: 'Дополнительная информация: требуется подтверждение дохода и первоначальный взнос от 20%' },
+      cells: [
+        { 
+          id: 0, 
+          label: '<p>ВТБ</p>', 
+          link: 'https://xn--d1aqf.xn--p1ai/', 
+          icon: '<svg width="21" height="32" viewBox="0 0 21 32" fill="none"><path d="M0 27.624H20.8806V32H0V27.624ZM6.21097 17.296H14.4473L15.8372 21.696H20.4041L14.2408 3.2C13.6451 1.424 12.9541 0 10.5952 0C8.23629 0 7.51353 1.4 6.89402 3.2L0.444775 21.688H4.72574L6.21097 17.296V17.296ZM10.3887 4.8H10.4919L13.2638 13.6H7.46587L10.3887 4.8V4.8Z" fill="#EF3124" /></svg>',
+          tooltip: 'Перейти на сайт ВТБ'
+        },
+        { id: 1, label: '<p>60000 Р</p>', link: '', icon: '' },
+        { id: 2, label: '18.11.2026', link: '', icon: '' }
+      ]
+    },
+    {
+      id: '1',
+      cells: [
+        { id: 0, label: 'ДОм.РФ Банк', link: '', icon: '' },
+        { id: 1, label: '<p>70000 Р</p>', link: '', icon: '' },
+        { id: 2, label: '20.11.2026', link: '', icon: '' }
+      ]
+    },
+    {
+      id: '2',
+      cells: [
+        { id: 0, label: 'Альфа-Банк', link: '', icon: '' },
+        { id: 1, label: '5000', link: '', icon: '' },
+        { id: 2, label: '17.02.2025', link: '', icon: '' }
+      ]
+    },
+    {
+      id: '3',
+      cells: [
+        { id: 0, label: 'АкваБанк', link: '', icon: '' },
+        { id: 1, label: '40000', link: '', icon: '' },
+        { id: 2, label: '19.02.2025', link: '', icon: '' }
+      ]
+    }
+  ]
+})
+
+// Простой формат (массив массивов)
+const simpleData = ref({
+  rows: [
+    ['Сбер', '60 000', '17.02.2025'],
+    ['Альфа', '30 000', '17.02.2026'],
+    ['Т-Банк', '35 000', '13.02.2026']
+  ]
+})
+
+// Данные без шапки (для проверки headerAlways)
+const noHeaderData = ref({
+  rows: [
+    { cells: [{ label: 'Студия' }, { label: '25 м²' }] },
+    { cells: [{ label: '1-комнатная' }, { label: '40 м²' }] }
+  ]
+})
+
+// ==========================================
+// 2. СОСТОЯНИЕ ДЛЯ PLAYGROUND
+// ==========================================
 const playgroundProps = ref({
-  modelValue: false,
-  label: 'Chips',
-  showClose: true,
-  disabled: false,
-  darkMode: false,
-  iconLeft: false,
-});
-
-const rooms = ['Студия', '1-комнатная', '2-комнатная', '3-комнатная', '4+'];
-const selectedRooms = ref(['1-комнатная']);
-const toggleRoom = (room, checked) => {
-  selectedRooms.value = checked
-    ? [...selectedRooms.value, room]
-    : selectedRooms.value.filter((item) => item !== room);
-};
-
-const states = [
-  { title: 'Default', active: false, disabled: false },
-  { title: 'Active', active: true, disabled: false },
-  { title: 'Disabled', active: false, disabled: true },
-];
+  sameColumn: false,
+  sortingRow: true,
+  alignRight: false,
+  numberRight: true,
+  numberMarker: '₽',
+  breakThousandths: true,
+  normalizeColumn: true,
+  headerAlways: true
+})
 </script>
 
 <template>
-  <Story title="Chip" icon="material-symbols:label-outline">
-
-    <Variant title="Playground" auto-props-disabled>
-      <div class="chip-story" :class="{ 'chip-story--dark': playgroundProps.darkMode }">
-        <DsChip
-          v-model="playgroundProps.modelValue"
-          :label="playgroundProps.label"
-          :show-close="playgroundProps.showClose"
-          :disabled="playgroundProps.disabled"
-          :dark-mode="playgroundProps.darkMode"
-        >
-          <template v-if="playgroundProps.iconLeft" #icon-left>
-            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M8 2.2a5.8 5.8 0 1 0 0 11.6A5.8 5.8 0 0 0 8 2.2ZM1 8a7 7 0 1 1 14 0A7 7 0 0 1 1 8Zm7-3.6c.33 0 .6.27.6.6v2.75l1.82 1.83a.6.6 0 1 1-.84.84l-2-2A.6.6 0 0 1 7.4 8V5c0-.33.27-.6.6-.6Z" fill="currentColor" />
-            </svg>
-          </template>
-        </DsChip>
+  <Story title="Table / TableStory" icon="material-symbols:table-chart-outline">
+    
+    <!-- ВАРИАНТ 1: Интерактивная песочница -->
+    <Variant title="Playground (Интерактивный)" auto-props-disabled>
+      <div class="table-story-wrapper">
+        <TableStory
+          :table-data="complexData"
+          v-bind="playgroundProps"
+        />
       </div>
+      
       <template #controls>
-        <HstText v-model="playgroundProps.label" title="Label" />
-        <HstCheckbox v-model="playgroundProps.modelValue" title="Active (v-model)" />
-        <HstCheckbox v-model="playgroundProps.iconLeft" title="Icon left (слот #icon-left)" />
-        <HstCheckbox v-model="playgroundProps.showClose" title="Show close" />
-        <HstCheckbox v-model="playgroundProps.disabled" title="Disabled" />
-        <HstCheckbox v-model="playgroundProps.darkMode" title="Dark mode" />
+        <HstCheckbox v-model="playgroundProps.sameColumn" title="same-column (одинаковая ширина)" />
+        <HstCheckbox v-model="playgroundProps.sortingRow" title="sorting-row (сортировка)" />
+        <HstCheckbox v-model="playgroundProps.alignRight" title="align-right (всё вправо)" />
+        <HstCheckbox v-model="playgroundProps.numberRight" title="number-right (числа вправо)" />
+        <HstCheckbox v-model="playgroundProps.breakThousandths" title="break-thousandths (разделитель тысяч)" />
+        <HstCheckbox v-model="playgroundProps.normalizeColumn" title="normalize-column (нормализация)" />
+        <HstCheckbox v-model="playgroundProps.headerAlways" title="header-always (всегда показывать шапку)" />
+        <HstText v-model="playgroundProps.numberMarker" title="number-marker (символ после числа)" />
       </template>
     </Variant>
 
-    <Variant title="Состояния" auto-props-disabled>
-      <div class="chip-story ds-chip-group">
-        <DsChip v-for="state in states" :key="state.title" :model-value="state.active" :disabled="state.disabled" :label="state.title" />
-        <DsChip :model-value="true" :show-close="false" label="Active без крестика" />
-      </div>
-      <div class="chip-story ds-chip-group chip-story--dark">
-        <DsChip v-for="state in states" :key="state.title" :model-value="state.active" :disabled="state.disabled" :label="state.title" dark-mode />
-        <DsChip :model-value="true" :show-close="false" label="Active без крестика" dark-mode />
-      </div>
-    </Variant>
-
-    <Variant title="С иконкой слева" auto-props-disabled>
-      <div v-for="dark in [false, true]" :key="String(dark)" class="chip-story ds-chip-group" :class="{ 'chip-story--dark': dark }">
-        <DsChip
-          v-for="state in states"
-          :key="state.title"
-          :model-value="state.active"
-          :disabled="state.disabled"
-          :dark-mode="dark"
-          label="Chips"
-        >
-          <template #icon-left>
-            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M8 2.2a5.8 5.8 0 1 0 0 11.6A5.8 5.8 0 0 0 8 2.2ZM1 8a7 7 0 1 1 14 0A7 7 0 0 1 1 8Zm7-3.6c.33 0 .6.27.6.6v2.75l1.82 1.83a.6.6 0 1 1-.84.84l-2-2A.6.6 0 0 1 7.4 8V5c0-.33.27-.6.6-.6Z" fill="currentColor" />
-            </svg>
-          </template>
-        </DsChip>
-      </div>
-    </Variant>
-
-    <Variant title="Группа фильтров" auto-props-disabled>
-      <div class="chip-story">
-        <div class="ds-chip-group">
-          <DsChip
-            v-for="room in rooms"
-            :key="room"
-            :label="room"
-            :model-value="selectedRooms.includes(room)"
-            @update:model-value="toggleRoom(room, $event)"
+    <!-- ВАРИАНТ 2: Демонстрация форматов данных -->
+    <Variant title="Форматы данных" auto-props-disabled>
+      <div class="variants-grid">
+        <div class="variant-block">
+          <h3 class="variant-title">Сложный объект (с тултипами, иконками, nesting)</h3>
+          <TableStory 
+            :table-data="complexData" 
+            :sorting-row="true" 
+            :number-right="true" 
+            :break-thousandths="true"
+            :number-marker="'₽'"
           />
         </div>
-        <p class="p2-medium chip-story__info">Выбрано: {{ selectedRooms.join(', ') || '—' }}</p>
+        
+        <div class="variant-block">
+          <h3 class="variant-title">Простой объект (массив массивов)</h3>
+          <TableStory 
+            :table-data="simpleData" 
+            :sorting-row="true" 
+            :number-right="true" 
+            :break-thousandths="true"
+            :number-marker="'₽'"
+            :header-always="true"
+          />
+        </div>
+      </div>
+    </Variant>
+
+    <!-- ВАРИАНТ 3: Демонстрация конкретных возможностей -->
+    <Variant title="Возможности компонента" auto-props-disabled>
+      <div class="variants-grid">
+        <div class="variant-block">
+          <h3 class="variant-title">Сортировка и вложенность (nesting)</h3>
+          <p class="variant-desc">Нажмите на стрелку сортировки в шапке или на шеврон для раскрытия доп. информации.</p>
+          <TableStory 
+            :table-data="complexData" 
+            :sorting-row="true"
+            :normalize-column="true"
+          />
+        </div>
+
+        <div class="variant-block">
+          <h3 class="variant-title">Форматирование чисел</h3>
+          <p class="variant-desc">Разделение тысяч и замена маркера (было "60000 Р", стало "60 000 $").</p>
+          <TableStory 
+            :table-data="complexData" 
+            :number-right="true"
+            :break-thousandths="true"
+            :number-marker="'$'"
+          />
+        </div>
+
+        <div class="variant-block">
+          <h3 class="variant-title">Отсутствие шапки (headerAlways: false)</h3>
+          <p class="variant-desc">Если в данных нет headers и flag=false, шапка не рендерится.</p>
+          <TableStory 
+            :table-data="noHeaderData" 
+            :header-always="false"
+            :same-column="true"
+          />
+        </div>
+
+        <div class="variant-block">
+          <h3 class="variant-title">Пустая шапка (headerAlways: true, но нет headers)</h3>
+          <p class="variant-desc">Шапка рендерится с пустыми ячейками, сохраняя кнопки сортировки/сворачивания.</p>
+          <TableStory 
+            :table-data="noHeaderData" 
+            :header-always="true"
+            :sorting-row="true"
+          />
+        </div>
       </div>
     </Variant>
 
@@ -104,176 +190,37 @@ const states = [
 </template>
 
 <style lang="scss" scoped>
-
-</style>
-
------------------------------
-
-<!--
-  :table-data - объект с данными
-  :same-column - колонки в таблице всегда одной ширины (по умолчанию false)
-  :sorting-row - добавляется возможность сортировать ряды по содержанию в колонках. Текст по алфавиту, числа - большее меньшее, даты - позже раньше (по умолчанию false)
-  :align-right - содержание в колокнках прижато право или лево (по умолчанию false)
-  :number-right - прижимать ли содержание в право в колонках определяемые как с цифрами, (по умолчанию true)
-  :number-marker - возможность подставлять после цифр обозначение (рубль, доллар метр и т.д.) Если пустое ничего не подставляется
-  :break-thousandths - разбивать числа на тысячные или нет (по умолчанию false)
-  :normalize-column - будет ли в компоненте происходить проверка и нормализация объекта на предмет не соответсвия кол-ва колонок
-  в шапке и теле и наоборот(например если таблица большая и есть уверенность, что всё соответсвует) (по умолчанию true)
-  :header-always - на тот случай, когда в объекте нет данных для шаки таблицы. Если true то шапка появляется в любом случае
-  без данных но с кнопками сортировки и развёртывания, если они указаны
-  если false и нет данных для шапки таблицы то таблица без шапки
-
-  -->
-
-  <table-story
-    :table-data="tableData2"
-    :same-column=false
-    :sorting-row=true
-    :align-right=false
-    :number-right=false
-    :number-marker="'$'"
-    :break-thousandths=true
-    :normalize-column=true
-    :header-always=false
-
-  />
-
------------------
-
-сложный объект
-tableData2:{
-        headers:[
-          {
-            id:0,
-            label:'Заголовок 1',
-            tooltip:'Какой-то тултип'
-          },
-          {
-            id:1,
-            label:'Заголовок 2',
-            tooltip:'Какой-то тултип'
-          },
-          {
-            id:2,
-            label:'Заголовок 3',
-
-          },
-
-
-
-        ],
-
-        rows: [
-          {
-            id: '0',
-            nesting: {label: 'Дополнительная информация о ВТБ'},
-            cells: [
-              {
-                id: 0,
-                label: '<p>ВТБ </p>',
-                link: 'https://xn--d1aqf.xn--p1ai/',
-                icon: '<svg width="21" height="32" viewBox="0 0 21 32" fill="none" xmlns="http://www.w3.org/2000/svg">\n' +
-                  '  <path d="M0 27.624H20.8806V32H0V27.624ZM6.21097 17.296H14.4473L15.8372 21.696H20.4041L14.2408 3.2C13.6451 1.424 12.9541 0 10.5952 0C8.23629 0 7.51353 1.4 6.89402 3.2L0.444775 21.688H4.72574L6.21097 17.296V17.296ZM10.3887 4.8H10.4919L13.2638 13.6H7.46587L10.3887 4.8V4.8Z" fill="#EF3124" />\n' +
-                  '</svg>',
-                tooltip:'Какой-то тултип'
-              },
-              {
-                id: 1,
-                label: '<p>60000 Р</p>',
-                link: 'https://xn--d1aqf.xn--p1ai/',
-                icon: '',
-              },
-              {
-                id: 2,
-                label: '18.11.2026',
-                link: '',
-                icon: '',
-              },
-
-
-
-            ]
-          },
-          {
-            id: '1',
-            cells: [
-              {
-                id: 0,
-                label: 'ДОм Рф Банк',
-                link: '',
-                icon: ''
-              },
-              {
-                id: 1,
-                label: '<p>70000 Р</p>',
-                link: '',
-                icon: ''
-              },
-              {
-                id: 2,
-                label: '20.11.2026',
-                link: '',
-                icon: ''
-              },
-
-
-            ]
-          },
-          {
-            id: '2',
-            cells: [
-              {
-                id: 0,
-                label: 'АльфаБанк',
-                link: '',
-                icon: ''
-              },
-              {
-                id: 1,
-                label: '5000',
-                link: '',
-                icon: ''
-              },
-              {
-                id: 2,
-                label: '17.02.2025',
-                link: '',
-                icon: ''
-              },
-            ]
-          },
-          {
-            id: '3',
-            cells: [
-              {
-                id: 0,
-                label: 'АкваБанк',
-                link: '',
-                icon: ''
-              },
-              {
-                id: 1,
-                label: '40000',
-                link: '',
-                icon: ''
-              },
-              {
-                id: 2,
-                label: '19.02.2025',
-                link: '',
-                icon: ''
-              },
-
-
-            ]
-          }
-        ]
+.table-story-wrapper {
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
 }
 
-Простой:
-rows:[
-          ['Сбер','60 000','17.02.2025'],
-          ['Альфа','30 000','17.02.2026'],
-          ['Т-Банк','35 000','13.02.2026'],
-        ]
+.variants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
 
+.variant-block {
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+}
+
+.variant-title {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.variant-desc {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+}
+</style>
