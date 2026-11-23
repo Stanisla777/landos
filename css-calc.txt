@@ -1,37 +1,614 @@
-formatNumber(value, colIndex) {
-  if (!this.isNumericColumn(colIndex)) return value;
-  if (!this.breakThousandths && !this.numberMarker) return value;
+<template>
+  <div class="ds-table__table-container" :class="sameColumn ? 'same-column' : ''">
+    <div class="ds-table__table-scroll">
+      <table :class="normalizedHeaders.length===0 ? 'ds-table__table-not-headers' : ''" class="ds-table__table">
+        <thead v-if="normalizedHeaders.length > 0">
+          <tr>
+            <th
+              v-for="(header, columnIndex) in normalizedHeaders"
+              :key="header.id ?? columnIndex"
+              scope="col"
+            >
+              <div
+                :class="{ 'align-right': alignRight || isNumericColumn(columnIndex) }"
+                class="ds-table__table-th">
+                <div class="ds-table__table-th-body p1-semibold ds-color-disabled"
+                     @click="handleSort(columnIndex)"
+                     :class="sortingRow && sortedRows.length > 1 ? 'pointer' : ''"
+                >
+                  <p v-html="header?.label"></p>
+                  <DsTooltip
+                    v-if="header.tooltip"
+                    @click.stop="handleSort"
+                    class="ds-table__hint-icon"
+                    :text="header.tooltip"
+                    :title="'label'"
+                  >
+                    <template #icon>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 1.33333C4.3181 1.33333 1.33333 4.3181 1.33333 8C1.33333 11.6819 4.3181 14.6667 8 14.6667C11.6819 14.6667 14.6667 11.6819 14.6667 8C14.6667 4.3181 11.6819 1.33333 8 1.33333ZM0 8C0 3.58172 3.58172 0 8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8Z" fill-rule="evenodd" clip-rule="evenodd" fill="#999999" />
+                        <path d="M8 4.66667C7.02204 4.66667 6.33333 5.37829 6.33333 6.13333C6.33333 6.50152 6.03486 6.8 5.66667 6.8C5.29848 6.8 5 6.50152 5 6.13333C5 4.53196 6.40063 3.33333 8 3.33333C9.59937 3.33333 11 4.53196 11 6.13333C11 7.50703 9.96933 8.58436 8.66667 8.86293V9.33333C8.66667 9.70152 8.36819 10 8 10C7.63181 10 7.33333 9.70152 7.33333 9.33333V8.26667C7.33333 7.89848 7.63181 7.6 8 7.6C8.97796 7.6 9.66667 6.88838 9.66667 6.13333C9.66667 5.37829 8.97796 4.66667 8 4.66667Z" fill-rule="evenodd" clip-rule="evenodd" fill="#999999" />
+                        <path d="M8.66667 12C8.66667 12.3682 8.36819 12.6667 8 12.6667C7.63181 12.6667 7.33333 12.3682 7.33333 12C7.33333 11.6318 7.63181 11.3333 8 11.3333C8.36819 11.3333 8.66667 11.6318 8.66667 12Z" fill="#999999" />
+                      </svg>
+                    </template>
+                  </DsTooltip>
+                  <div class="ds-table__table-sorting"
+                       v-if="sortingRow && sortedRows.length > 1"
+                       :class="{
+                        'is-active': activeSortColumn === columnIndex,
+                        'is-asc': activeSortColumn === columnIndex && sortDirection === 'asc',
+                        'is-desc': activeSortColumn === columnIndex && sortDirection === 'desc'
+                      }"
 
-  // Сохраняем исходные теги
-  const tagsMatch = String(value).match(/^(<[^>]*>)(.*?)(<\/[^>]*>)$/);
-  const hasTags = tagsMatch !== null;
-  const openTag = hasTags ? tagsMatch[1] : '';
-  const closeTag = hasTags ? tagsMatch[3] : '';
-  const innerContent = hasTags ? tagsMatch[2] : String(value);
+                  >
+<!--                    <svg width="10" height="15" viewBox="0 0 10 15" fill="none" xmlns="http://www.w3.org/2000/svg">-->
+<!--                      <path d="M7.64258 9.48047C8.02555 9.08297 8.65788 9.07052 9.05566 9.45312C9.45327 9.8361 9.4657 10.4694 9.08301 10.8672L5.39844 14.6934C5.20994 14.8891 4.94946 15 4.67773 15C4.44001 14.9999 4.21093 14.915 4.03125 14.7627L3.95703 14.6934L0.279297 10.8672C-0.103338 10.4691 -0.091228 9.83589 0.306641 9.45312C0.704708 9.0706 1.33798 9.08265 1.7207 9.48047L4.67871 12.5586L7.64258 9.48047ZM4.6709 0C4.94219 -0.00187378 5.20279 0.106912 5.39258 0.300781L9.11914 4.10742C9.50515 4.50206 9.49893 5.13523 9.10449 5.52148C8.7099 5.90774 8.07679 5.90031 7.69043 5.50586L4.68848 2.44043L1.78027 5.49609C1.39965 5.89572 0.767191 5.91147 0.367188 5.53125C-0.0329145 5.15054 -0.0486744 4.51729 0.332031 4.11719L3.9541 0.310547C4.14109 0.114219 4.39977 0.00198374 4.6709 0Z" fill="#999999" />-->
+<!--                    </svg>-->
+                    <div class="ds-table__table-sorting-arrow">
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4.6709 0C4.94219 -0.00187378 5.20279 0.106912 5.39258 0.300781L9.11914 4.10742C9.50515 4.50206 9.49893 5.13523 9.10449 5.52148C8.7099 5.90774 8.07679 5.90031 7.69043 5.50586L4.68848 2.44043L1.78027 5.49609C1.39965 5.89572 0.767191 5.91147 0.367188 5.53125C-0.0329145 5.15054 -0.0486744 4.51729 0.332031 4.11719L3.9541 0.310547C4.14109 0.114219 4.39977 0.00198374 4.6709 0Z" fill="#999999"/>
+                      </svg>
+                      <svg width="10" height="6" viewBox="0 9 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7.64258 9.48047C8.02555 9.08297 8.65788 9.07052 9.05566 9.45312C9.45327 9.8361 9.4657 10.4694 9.08301 10.8672L5.39844 14.6934C5.20994 14.8891 4.94946 15 4.67773 15C4.44001 14.9999 4.21093 14.915 4.03125 14.7627L3.95703 14.6934L0.279297 10.8672C-0.103338 10.4691 -0.091228 9.83589 0.306641 9.45312C0.704708 9.0706 1.33798 9.08265 1.7207 9.48047L4.67871 12.5586L7.64258 9.48047Z" fill="#999999"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div class="ds-table__table-th-icon"
+                     v-if="hasNestedContent"
+                     :class="{ 'is-expanded': isExpanded }"
+                     @click="toggleExpand"
+                >
+                  <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11.6064 0.292893C11.9969 -0.0975925 12.6299 -0.0975153 13.0204 0.292893C13.411 0.683417 13.411 1.31643 13.0204 1.70696L7.36418 7.36418C6.97378 7.75458 6.34067 7.75433 5.95012 7.36418L0.292893 1.70696C-0.0976311 1.31643 -0.0976311 0.683417 0.292893 0.292893C0.683417 -0.0976311 1.31643 -0.0976311 1.70696 0.292893L6.65617 5.24211L11.6064 0.292893Z" fill="#252628" />
+                  </svg>
+                </div>
 
-  // Анализируем только внутренний контент
-  const { number, originalMarker } = this.extractNumberAndMarker(innerContent);
-  
-  if (number === null) return value;
+              </div>
 
-  let formatted;
-  if (this.breakThousandths) {
-    formatted = number.toLocaleString('ru-RU').replace(/,/g, ' ');
-  } else {
-    formatted = String(number);
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+        <template v-for="(row, rowIndex) in sortedRows" :key="row.id ?? rowIndex">
+          <tr :data-row-id="row.id ?? rowIndex">
+            <td
+              v-for="(col, colIndex) in row.cells"
+              :key="col.id ?? colIndex"
+            >
+              <div
+                :class="{ 'align-right': alignRight || isNumericColumn(colIndex) }"
+                class="ds-table__th-body p1-medium ds-color-primary">
+                <component
+                  :is="col.link ? 'a' : 'div'"
+                  :href="col.link || undefined"
+                  :target="isExternalLink(col.link) ? '_blank' : undefined"
+                  :rel="isExternalLink(col.link) ? 'noopener noreferrer' : undefined"
+                  class="ds-table__th-content"
+                >
+                  <div
+                    v-if="col.icon"
+                    class="ds-table__th-content-icon"
+                  >
+                    <img
+                      v-if="isImagePath(col.icon)"
+                      :src="col.icon"
+                    />
+                    <div
+                      v-else
+                      v-html="col.icon"
+                    ></div>
+                  </div>
+                  <div v-if="col.link && !col.icon">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M0.68746 1C0.68746 0.447715 1.13518 0 1.68746 0H12C12.5523 0 13 0.447715 13 1V11.3125C13 11.8648 12.5523 12.3125 12 12.3125C11.4477 12.3125 11 11.8648 11 11.3125V3.41423L1.70711 12.7072C1.31659 13.0978 0.683424 13.0978 0.292897 12.7072C-0.0976293 12.3167 -0.0976329 11.6835 0.292889 11.293L9.58581 2H1.68746C1.13518 2 0.68746 1.55228 0.68746 1Z" fill-rule="evenodd" clip-rule="evenodd" fill="#252628" />
+                    </svg>
+                  </div>
+                  <div class="ds-table__descripttion" v-html="getDisplayValue(col, colIndex)"></div>
+                  <DsTooltip
+                    v-if="col.tooltip"
+                    class="ds-table__hint-icon"
+                    :text="col.tooltip"
+                    :title="'label'"
+                  >
+                    <template #icon>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 1.33333C4.3181 1.33333 1.33333 4.3181 1.33333 8C1.33333 11.6819 4.3181 14.6667 8 14.6667C11.6819 14.6667 14.6667 11.6819 14.6667 8C14.6667 4.3181 11.6819 1.33333 8 1.33333ZM0 8C0 3.58172 3.58172 0 8 0C12.4183 0 16 3.58172 16 8C16 12.4183 12.4183 16 8 16C3.58172 16 0 12.4183 0 8Z" fill-rule="evenodd" clip-rule="evenodd" fill="#999999" />
+                        <path d="M8 4.66667C7.02204 4.66667 6.33333 5.37829 6.33333 6.13333C6.33333 6.50152 6.03486 6.8 5.66667 6.8C5.29848 6.8 5 6.50152 5 6.13333C5 4.53196 6.40063 3.33333 8 3.33333C9.59937 3.33333 11 4.53196 11 6.13333C11 7.50703 9.96933 8.58436 8.66667 8.86293V9.33333C8.66667 9.70152 8.36819 10 8 10C7.63181 10 7.33333 9.70152 7.33333 9.33333V8.26667C7.33333 7.89848 7.63181 7.6 8 7.6C8.97796 7.6 9.66667 6.88838 9.66667 6.13333C9.66667 5.37829 8.97796 4.66667 8 4.66667Z" fill-rule="evenodd" clip-rule="evenodd" fill="#999999" />
+                        <path d="M8.66667 12C8.66667 12.3682 8.36819 12.6667 8 12.6667C7.63181 12.6667 7.33333 12.3682 7.33333 12C7.33333 11.6318 7.63181 11.3333 8 11.3333C8.36819 11.3333 8.66667 11.6318 8.66667 12Z" fill="#999999" />
+                      </svg>
+                    </template>
+                  </DsTooltip>
+                </component>
+<!--                <div class="ds-table__th-content-icon"></div>-->
+              </div>
+
+            </td>
+
+          </tr>
+          <tr
+            v-if="row.nesting?.label && String(row.nesting.label).trim() !== '' && isExpanded"
+            class="ds-table__nested-row"
+          >
+            <td :colspan="row.cells.length">
+              <div class="ds-table__nested-content p1-medium ds-color-primary">
+                <div v-html="row.nesting.label"></div>
+              </div>
+            </td>
+          </tr>
+        </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script>
+import { DsTooltip } from '@ringsites/ui-components'
+export default {
+  name: "table-story",
+  props: {
+    tableData: {
+      type: Object,
+      default: () => ({headers:[],rows:[]})
+    },
+    sameColumn: {
+      type: Boolean,
+      default: false,
+    },
+    sortingRow: {
+      type: Boolean,
+      default: false,
+    },
+    alignRight: {
+      type: Boolean,
+      default: false,
+    },
+    numberRight: {
+      type: Boolean,
+      default: true,
+    },
+    numberMarker: {
+      type: String,
+      default: ''
+    },
+    breakThousandths: {
+      type: Boolean,
+      default: false,
+    },
+    normalizeColumn: {
+      type: Boolean,
+      default: true
+    },
+    headerAlways: {
+      type: Boolean,
+      default: true
+    },
+
+
+
+
+  },
+  data() {
+    return {
+      activeSortColumn: null,
+      sortDirection: null, // null, 'asc', 'desc'
+      isExpanded: true
+    }
+  },
+
+  computed: {
+    //проверка объекта и нормализация, ,
+    //если к-во объектов для шапки и body отличаются, чтобы таблица не ломалась. Вывожу в консоль
+
+    // Нормализация шапки — только если включена
+    normalizedHeaders() {
+      // Если нормализация выключена
+      if (!this.normalizeColumn) {
+        // Если headers есть — возвращаем как есть
+        if (this.tableData.headers && this.tableData.headers.length > 0) {
+          return this.tableData.headers;
+        }
+        // Если headers нет, но headerAlways = true — генерируем пустые
+        if (this.headerAlways) {
+          const maxCells = this.getMaxCellsCount();
+          return Array.from({ length: maxCells }, (_, i) => ({
+            id: `auto-header-${i}`,
+            label: '',
+            sortable: false
+          }));
+        }
+        return [];
+      }
+
+      // Нормализация включена
+      const hasHeaders = this.tableData.headers && this.tableData.headers.length > 0;
+      const maxCellsInRows = this.getMaxCellsCount();
+
+      if (!hasHeaders && !this.headerAlways) {
+        return [];
+      }
+
+      const targetCount = hasHeaders
+        ? Math.max(this.tableData.headers.length, maxCellsInRows)
+        : maxCellsInRows;
+
+      if (targetCount === 0) return [];
+
+      let headers = hasHeaders ? [...this.tableData.headers] : [];
+
+      // Добавляю пустые заголовки, если не хватает
+      while (headers.length < targetCount) {
+        headers.push({
+          id: `empty-header-${headers.length}`,
+          label: '',
+          sortable: false
+        });
+      }
+      // Нормализую существующие заголовки
+      const result = headers.map((header, index) => ({
+        id: header.id ?? `header-${index}`,
+        label: header.label || '',
+        sortable: header.sortable ?? false,
+        ...header
+      }));
+
+      return result;
+    },
+
+    // Нормализация строк для body — только если включена
+    normalizedRows() {
+      const headerCount = this.normalizeColumn ? this.normalizedHeaders.length : 0;
+
+      return (this.tableData.rows || []).map((row, rowIndex) => {
+        // Простой формат (массив)
+        if (Array.isArray(row)) {
+          return {
+            id: `row-${rowIndex}`,
+            cells: row.map((cell, cellIndex) => {
+              // Обработка строковых ячеек
+              if (cell === null || cell === undefined) {
+                return { id: `cell-${rowIndex}-${cellIndex}`, label: '' };
+              }
+              if (typeof cell === 'string' || typeof cell === 'number') {
+                return {
+                  id: `cell-${rowIndex}-${cellIndex}`,
+                  label: String(cell)
+                };
+              }
+              // Ячейка — объект
+              return {
+                ...cell,
+                id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`,
+                label: cell?.label ?? ''
+              };
+            })
+          };
+        }
+
+        // Сложный формат
+        const cells = row.cells || [];
+
+        // Проверка: можно ли использовать как есть?
+        const hasAllIds = row.id && cells.every(cell => cell?.id);
+        const correctCellCount = !this.normalizeColumn ||
+          headerCount === 0 ||
+          cells.length === headerCount;
+
+        if (hasAllIds && correctCellCount) {
+          return row;  // Используем как есть
+        }
+
+        // Нормализация
+        let normalizedCells = this.normalizeColumn && headerCount > 0
+          ? [...cells].slice(0, headerCount)
+          : [...cells];
+
+        if (this.normalizeColumn && headerCount > 0) {
+          while (normalizedCells.length < headerCount) {
+            normalizedCells.push({
+              id: `empty-${rowIndex}-${normalizedCells.length}`,
+              label: '',
+              link: '',
+              icon: ''
+            });
+          }
+        }
+
+        normalizedCells = normalizedCells.map((cell, cellIndex) => {
+          // Пустые значения
+          if (cell === null || cell === undefined) {
+            return { id: `cell-${rowIndex}-${cellIndex}`, label: '' };
+          }
+          // Строковые и числовые ячейки
+          if (typeof cell === 'string' || typeof cell === 'number') {
+            return {
+              id: `cell-${rowIndex}-${cellIndex}`,
+              label: String(cell)
+            };
+          }
+          // Объект
+          return {
+            ...cell,
+            id: cell?.id ?? `cell-${rowIndex}-${cellIndex}`,
+            label: cell?.label ?? ''
+          };
+        });
+
+        return {
+          id: row.id ?? `row-${rowIndex}`,
+          ...row,
+          cells: normalizedCells
+        };
+      });
+    },
+
+    sortedRows() {
+      // Если сортировка выключена — возвращаются исходные данные
+      if (!this.sortingRow || this.activeSortColumn === null || this.sortDirection === null) {
+        return this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
+      }
+
+      const rows = this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
+      const col = this.activeSortColumn;
+      const direction = this.sortDirection === 'asc' ? 1 : -1;
+
+      return [...rows].sort((a, b) => {
+        const valA = this.extractValue(a.cells[col]?.label || '');
+        const valB = this.extractValue(b.cells[col]?.label || '');
+        // Если типы разные — сравниваем как строки
+        if (valA.type !== valB.type) {
+          return direction * String(valA.value).localeCompare(String(valB.value), 'ru');
+        }
+        // Числа и даты сравниваются численно
+        if (valA.type === 'number' || valA.type === 'date') {
+          return direction * (valA.value - valB.value);
+        }
+        // Строки — по алфавиту с русской локалью
+        return direction * valA.value.localeCompare(valB.value, 'ru');
+      });
+    },
+
+    columnTypes() {
+      // Если numberRight = false, не делаем вычисления
+      if (!this.numberRight) return [];
+
+      const types = [];
+      const rows = this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
+      const headers = this.normalizeColumn ? this.normalizedHeaders : (this.tableData.headers || []);
+      const colCount = headers.length;
+
+      if (rows.length === 0 || colCount === 0) return [];
+
+      for (let colIndex = 0; colIndex < colCount; colIndex++) {
+        let numberCount = 0;
+        let totalCount = 0;
+
+        rows.forEach(row => {
+          const cell = row.cells[colIndex];
+          if (cell && cell.label) {
+            const extracted = this.extractValue(cell.label);
+            totalCount++;
+            if (extracted.type === 'number') numberCount++;
+          }
+        });
+
+        types.push({
+          isNumeric: totalCount > 0 && numberCount > totalCount / 2
+        });
+      }
+
+      return types;
+    },
+
+    hasNestedContent() {
+      const rows = this.normalizeColumn ? this.normalizedRows : (this.tableData.rows || []);
+
+      return rows.some(row => {
+        const label = row.nesting?.label;
+        return label && String(label).trim() !== '';
+      });
+    }
+  },
+  methods: {
+    // Вспомогательный метод для получения максимального количества ячеек
+    getMaxCellsCount() {
+      const rows = this.tableData.rows || [];
+      return rows.reduce((max, row) => {
+        // Поддерживаем оба формата: массив и объект с cells
+        const cells = Array.isArray(row) ? row : (row.cells || []);
+        return Math.max(max, cells.length);
+      }, 0);
+    },
+
+    //открытие вложенности
+    toggleExpand() {
+      this.isExpanded = !this.isExpanded;
+    },
+
+    isNumericColumn(columnIndex) {
+      if (!this.numberRight) return false;
+      return this.columnTypes[columnIndex]?.isNumeric || false;
+    },
+
+    // // Форматирование числа для отображения
+    formatNumber(value, colIndex) {
+      if (!this.isNumericColumn(colIndex)) return value;
+      if (!this.breakThousandths && !this.numberMarker) return value;
+
+      // Сохраняем исходные теги
+      const tagsMatch = String(value).match(/^(<[^>]*>)(.*?)(<\/[^>]*>)$/);
+      const hasTags = tagsMatch !== null;
+      const openTag = hasTags ? tagsMatch[1] : '';
+      const closeTag = hasTags ? tagsMatch[3] : '';
+      const innerContent = hasTags ? tagsMatch[2] : String(value);
+
+      // Анализируем только внутренний контент
+      const { number, originalMarker } = this.extractNumberAndMarker(innerContent);
+
+      if (number === null) return value;
+
+      let formatted;
+      if (this.breakThousandths) {
+        formatted = number.toLocaleString('ru-RU').replace(/,/g, ' ');
+      } else {
+        formatted = String(number);
+      }
+
+      let marker;
+      if (this.numberMarker && this.numberMarker.trim()) {
+        marker = this.numberMarker.trim();
+      } else {
+        marker = originalMarker;
+      }
+
+      if (marker) {
+        formatted = `${formatted} ${marker}`;
+      }
+
+      // Возвращаем с исходными тегами
+      return hasTags ? `${openTag}${formatted}${closeTag}` : formatted;
+    },
+
+    // Получение значения для отображения (с форматированием)
+    getDisplayValue(cell, colIndex) {
+      if (!cell || !cell.label) return '';
+
+      // Если numberRight выключен — сразу возвращаем label
+      if (!this.numberRight) return cell.label;
+
+      return this.formatNumber(cell.label, colIndex);
+    },
+
+    //метод для проверки ссылки, если https:// - добавить target="_blank"
+    isExternalLink(link) {
+      if (!link) return false;
+      return link.startsWith('http://') || link.startsWith('https://');
+    },
+
+    //метод для проверки какого вида картинка в ключе icon - это элемент svg или путь к кратинке
+    isImagePath(icon) {
+      if (!icon || typeof icon !== 'string') return false;
+
+      const trimmed = icon.trim();
+
+      // Если это inline SVG (начинается с тега <svg)
+      if (trimmed.toLowerCase().startsWith('<svg')) {
+        return false;
+      }
+
+      // Если содержит расширения изображений
+      const imageExtensions = ['.svg', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
+      const lowerIcon = trimmed.toLowerCase();
+
+      if (imageExtensions.some(ext => lowerIcon.includes(ext))) {
+        return true;
+      }
+
+      // Если это путь к ресурсу (начинается с /, ./, ../ или http)
+      if (
+        trimmed.startsWith('/') ||
+        trimmed.startsWith('./') ||
+        trimmed.startsWith('../') ||
+        trimmed.startsWith('http://') ||
+        trimmed.startsWith('https://')
+      ) {
+        return true;
+      }
+
+      // По умолчанию  SVG
+      return false;
+    },
+
+    //методы для сортировки
+    handleSort(columnIndex) {
+      if (this.activeSortColumn !== columnIndex) {
+        // Клик по новой колонке — начинаем с 'asc'
+        this.activeSortColumn = columnIndex;
+        this.sortDirection = 'asc';
+      } else if (this.sortDirection === 'asc') {
+        // Второй клик — переключаем на 'desc'
+        this.sortDirection = 'desc';
+      } else {
+        // Третий клик — сброс к исходному порядку
+        this.activeSortColumn = null;
+        this.sortDirection = null;
+      }
+    },
+
+    extractValue(text) {
+      if (!text) return { type: 'string', value: '' };
+
+      // Очищаю от HTML-тегов перед анализом
+      let trimmed = String(text).trim().replace(/<[^>]*>/g, '').trim();
+
+      // Если после очистки ничего не осталось
+      if (!trimmed) return { type: 'string', value: '' };
+
+
+      //Дата в формате ДДюММюГГ
+      const dateMatch = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      if (dateMatch) {
+        const [, day, month, year] = dateMatch;
+        return {
+          type: 'date',
+          value: new Date(year, month - 1, day).getTime()
+        };
+      }
+
+      //Число с тысячными разделителями, валютой, дробями
+      const cleaned = trimmed.replace(/\s/g, '').replace(/[^\d.,-]/g, '');
+      if (cleaned && !isNaN(cleaned)) {
+        const number = parseFloat(cleaned.replace(',', '.'));
+        if (!isNaN(number)) {
+          return { type: 'number', value: number };
+        }
+      }
+
+      //обычная строка уже без тегов
+      return { type: 'string', value: trimmed.toLowerCase() };
+    },
+
+    // Извлечение числа и исходного маркера из текста
+    // Извлечение числа и исходного маркера из текста
+    extractNumberAndMarker(text) {
+      if (!text) return { number: null, originalMarker: '' };
+
+      // Очищаем от HTML-тегов перед анализом
+      const cleaned = String(text).trim().replace(/<[^>]*>/g, '').trim();
+
+      // Если после очистки ничего не осталось
+      if (!cleaned) return { number: null, originalMarker: '' };
+
+      // Извлекаем числовую часть и маркер
+      // Числовая часть: цифры, пробелы, точки, запятые, минус
+      const match = cleaned.match(/^([\d\s.,-]+)\s*(.*)$/);
+
+      if (!match) return { number: null, originalMarker: cleaned };
+
+      const numberPart = match[1].trim();
+      const originalMarker = match[2].trim();
+
+      // Парсим число
+      const cleanedNumber = numberPart.replace(/\s/g, '').replace(/[^\d.,-]/g, '');
+      if (!cleanedNumber || isNaN(cleanedNumber)) {
+        return { number: null, originalMarker: cleaned };
+      }
+
+      const number = parseFloat(cleanedNumber.replace(',', '.'));
+      if (isNaN(number)) {
+        return { number: null, originalMarker: cleaned };
+      }
+
+      return { number, originalMarker };
+    }
+  },
+  components:{
+    DsTooltip
   }
-
-  let marker;
-  if (this.numberMarker && this.numberMarker.trim()) {
-    marker = this.numberMarker.trim();
-  } else {
-    marker = originalMarker;
-  }
-
-  if (marker) {
-    formatted = `${formatted} ${marker}`;
-  }
-
-  // Возвращаем с исходными тегами
-  return hasTags ? `${openTag}${formatted}${closeTag}` : formatted;
 }
+</script>
+
+<style lang="scss">
+
+</style>
