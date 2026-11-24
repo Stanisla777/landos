@@ -12,18 +12,21 @@ const getColumnClass = (index, isHeader) => {
 
   // 3. Логика специально для ШАПКИ (isHeader === true)
   if (isHeader) {
-    // Если включен спец. флаг для шапки или колонка числовая -> прижимаем вправо
-    if (props.alignRightHeaderColumn || isNumericColumn(index)) {
+    // Если явно включен спец. флаг для шапки -> прижимаем вправо
+    if (props.alignRightHeaderColumn) {
       return 'align-right';
     }
-    // Иначе, если задано глобальное выравнивание, применяем его с поправкой
+    
+    // Если задано глобальное выравнивание, применяем его к шапке
+    // (ВАЖНО: шапка никогда не центрируется, поэтому 'center' превращаем в 'left')
     if (props.alignAllColumn) {
-      // ВАЖНО: шапка никогда не центрируется, поэтому 'center' превращаем в 'left'
       const headerAlign = props.alignAllColumn === 'center' ? 'left' : props.alignAllColumn;
       return `align-${headerAlign}`;
     }
-    // Дефолт для шапки, если ничего не подошло
-    return 'align-left';
+
+    // Дефолт для шапки (если нет глобальных настроек и спец. флага): 
+    // числовые вправо, остальные влево
+    return isNumericColumn(index) ? 'align-right' : 'align-left';
   }
 
   // 4. Логика для ТЕЛА ТАБЛИЦЫ (isHeader === false)
