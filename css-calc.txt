@@ -1,14 +1,36 @@
-<table-story
-    :table-data="tableData2"
-    :same-column=false
-    :sorting-row=false
-    :align-all-column="'center'"
-    :align-right-header-column=true
-    :number-right=true
-    :number-marker="'$'"
-    :break-thousandths=true
-    :normalize-column=true
-    :header-always=false
-    :additional-column-parameters=columnAlign
+const getColumnClass = (index, isHeader) => {
+  // 1. Железный приоритет: явные настройки из массива (перебивают абсолютно всё)
+  const customParam = props.additionalColumnParameters?.find(p => p.column === index);
+  if (customParam?.align) {
+    return `align-${customParam.align}`;
+  }
 
-  />
+  // 2. Железное правило: Нулевая колонка ВСЕГДА прижата влево (и в шапке, и в теле)
+  if (index === 0) {
+    return 'align-left';
+  }
+
+  // 3. Логика специально для ШАПКИ (isHeader === true)
+  if (isHeader) {
+    // Если включен спец. флаг для шапки или колонка числовая -> прижимаем вправо
+    if (props.alignRightHeaderColumn || isNumericColumn(index)) {
+      return 'align-right';
+    }
+    // Иначе, если задано глобальное выравнивание, применяем его с поправкой
+    if (props.alignAllColumn) {
+      // ВАЖНО: шапка никогда не центрируется, поэтому 'center' превращаем в 'left'
+      const headerAlign = props.alignAllColumn === 'center' ? 'left' : props.alignAllColumn;
+      return `align-${headerAlign}`;
+    }
+    // Дефолт для шапки, если ничего не подошло
+    return 'align-left';
+  }
+
+  // 4. Логика для ТЕЛА ТАБЛИЦЫ (isHeader === false)
+  if (props.alignAllColumn) {
+    return `align-${props.alignAllColumn}`; // 'left', 'right' или 'center'
+  }
+
+  // Дефолт для тела: числовые вправо, остальные влево
+  return isNumericColumn(index) ? 'align-right' : 'align-left';
+}
