@@ -1,12 +1,42 @@
-Уточняю информацию по запрошенному ПО:
-1.  Node.js: версия 22.19.0 (как указано в первоначальной заявке)
-2 NVM (Node Version Manager): 
-Ссылка на дистрибутив (файл nvm-setup.exe): github.com/coreybutler/nvm-windows/releases/download/1.1.12/nvm-setup
+const isColumnSortable = (columnIndex) => {
+  // Если глобально включено - можно всё
+  if (props.sortingRow) return true
+  
+  // Иначе ищем разрешение в additionalColumnParameters
+  const param = props.additionalColumnParameters?.find(p => p.column === columnIndex)
+  return param?.sorting === true
+}
+ --------------------------
+const sortedRows = computed(() => {
+  const activeCol = activeSortColumn.value
+  const dir = sortDirection.value
 
-прошу установить последнюю стабильную версию ветки v1.1.12 (или актуальную v1.x.x)
+  // Блокируем сортировку, если:
+  // 1. Нет активной колонки или направления
+  // 2. ИЛИ для этой конкретной колонки сортировка запрещена
+  if (activeCol === null || dir === null || !isColumnSortable(activeCol)) {
+    return props.normalizeColumn ? normalizedRows.value : (props.tableData.rows || [])
+  }
 
-Касательно установки Node.js v22.19.0:
-Прошу вас установить эту версию через консольную команду NVM (командой nvm install 22.19.0).
-Я опасаюсь, что из-за политики безопасности в Citrix у меня не будет прав администратора для самостоятельного выполнения этой команды.
-Просто если использовать стандартный .msi установщик Node.js с официального сайта – это приведёт к перезаписи установленной версии Node.js v18.20.4 и сломает проекты.
+  const rows = props.normalizeColumn ? normalizedRows.value : (props.tableData.rows || [])
+  const direction = dir === 'asc' ? 1 : -1
+
+  return [...rows].sort((a, b) => {
+    const valA = extractValue(a.cells[activeCol]?.label || '')
+    const valB = extractValue(b.cells[activeCol]?.label || '')
+
+    if (valA.type !== valB.type) {
+      return direction * String(valA.value).localeCompare(String(valB.value), 'ru')
+    }
+    if (valA.type === 'number' || valA.type === 'date') {
+      return direction * (valA.value - valB.value)
+    }
+    return direction * valA.value.localeCompare(valB.value, 'ru')
+  })
+})
+
+---------------
+:class="{ 'pointer': isColumnSortable(columnIndex) && sortedRows.length > 1 }"
+
+v-if="isColumnSortable(columnIndex) && sortedRows.length > 1"
 
