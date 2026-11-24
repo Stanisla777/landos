@@ -1,42 +1,30 @@
-const isColumnSortable = (columnIndex) => {
-  // Если глобально включено - можно всё
-  if (props.sortingRow) return true
-  
-  // Иначе ищем разрешение в additionalColumnParameters
-  const param = props.additionalColumnParameters?.find(p => p.column === columnIndex)
-  return param?.sorting === true
-}
- --------------------------
-const sortedRows = computed(() => {
-  const activeCol = activeSortColumn.value
-  const dir = sortDirection.value
+<thead v-if="normalizedHeaders.length > 0">
+          <tr>
+            <th
+              v-for="(header, columnIndex) in normalizedHeaders"
+              :key="header.id ?? columnIndex"
+              scope="col"
+            >
+              <div
+                :class="getColumnClass(columnIndex, true)"
+                class="ds-table__table-th">
 
-  // Блокируем сортировку, если:
-  // 1. Нет активной колонки или направления
-  // 2. ИЛИ для этой конкретной колонки сортировка запрещена
-  if (activeCol === null || dir === null || !isColumnSortable(activeCol)) {
-    return props.normalizeColumn ? normalizedRows.value : (props.tableData.rows || [])
+--------------------
+const getColumnClass = (index, isHeader) => {
+  const customAlign = props.additionalColumnParameters.find(item => item.column === index);
+  if (customAlign) {
+    return `align-${customAlign.align}` // вернёт 'align-right','align-center' или 'align-left'
   }
-
-  const rows = props.normalizeColumn ? normalizedRows.value : (props.tableData.rows || [])
-  const direction = dir === 'asc' ? 1 : -1
-
-  return [...rows].sort((a, b) => {
-    const valA = extractValue(a.cells[activeCol]?.label || '')
-    const valB = extractValue(b.cells[activeCol]?.label || '')
-
-    if (valA.type !== valB.type) {
-      return direction * String(valA.value).localeCompare(String(valB.value), 'ru')
+  if (props.alignAllColumn) {
+    if ((props.alignAllColumn === 'right' || props.alignAllColumn === 'center') && index === 0) {
+      return 'align-left'
     }
-    if (valA.type === 'number' || valA.type === 'date') {
-      return direction * (valA.value - valB.value)
-    }
-    return direction * valA.value.localeCompare(valB.value, 'ru')
-  })
-})
+    return `align-${props.alignAllColumn}`
+  }
+  if (index === 0) return 'align-left'
 
----------------
-:class="{ 'pointer': isColumnSortable(columnIndex) && sortedRows.length > 1 }"
+  const shouldBeRight = isNumericColumn(index) || (isHeader && props.alignRightHeaderColumn)
 
-v-if="isColumnSortable(columnIndex) && sortedRows.length > 1"
+  return shouldBeRight ? 'align-right' : 'align-left'
 
+}
