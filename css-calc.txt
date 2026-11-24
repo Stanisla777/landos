@@ -1,10 +1,49 @@
+<!-- Рендерим строку, если в ней вообще есть nesting -->
 <tr
-            v-if="row.nesting?.label && String(row.nesting.label).trim() !== '' && isExpanded"
-            class="ds-table__nested-row"
-          >
-            <td :colspan="row.cells.length">
-              <div class="ds-table__nested-content p1-medium ds-color-primary">
-                <div v-html="row.nesting.label"></div>
-              </div>
-            </td>
-          </tr>
+  v-if="row.nesting?.label && String(row.nesting.label).trim() !== ''"
+  class="ds-table__nested-row"
+>
+  <td :colspan="row.cells.length" class="ds-table__nested-cell">
+    <!-- Обёртка для Grid-анимации -->
+    <div class="ds-table__nested-wrapper" :class="{ 'is-expanded': isExpanded }">
+      <!-- Внутренний блок с overflow: hidden (обязательно для работы трюка) -->
+      <div class="ds-table__nested-inner">
+        <div class="ds-table__nested-content p1-medium ds-color-primary">
+          <div v-html="row.nesting.label"></div>
+        </div>
+      </div each="nested-inner">
+    </div>
+  </td>
+</tr>
+
+--------------------
+
+/* Убираем стандартные отступы у ячейки, чтобы высота контролировалась только обёрткой */
+.ds-table__nested-cell {
+  padding: 0 !important;
+  border-top: none !important; /* Опционально: убираем верхнюю границу для чистоты */
+}
+
+/* Магия Grid-анимации */
+.ds-table__nested-wrapper {
+  display: grid;
+  grid-template-rows: 0fr; /* В свёрнутом состоянии высота равна 0 */
+  transition: grid-template-rows 0.3s ease-in-out; /* Плавный переход */
+}
+
+/* Когда класс is-expanded добавлен, высота становится "одной фракцией" (весь контент) */
+.ds-table__nested-wrapper.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+/* Обязательно: скрываем всё, что не влезает в текущую высоту grid */
+.ds-table__nested-inner {
+  overflow: hidden;
+}
+
+/* Возвращаем визуальные отступы самому контенту */
+.ds-table__nested-content {
+  padding: 16px 24px; /* Настройте под ваш дизайн */
+  background-color: #f9f9f9; /* Опционально: фон для вложенной строки */
+  border-radius: 0 0 8px 8px; /* Опционально: скругление снизу */
+}
