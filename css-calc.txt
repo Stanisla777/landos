@@ -1,30 +1,31 @@
-<thead v-if="normalizedHeaders.length > 0">
-          <tr>
-            <th
-              v-for="(header, columnIndex) in normalizedHeaders"
-              :key="header.id ?? columnIndex"
-              scope="col"
-            >
-              <div
-                :class="getColumnClass(columnIndex, true)"
-                class="ds-table__table-th">
-
---------------------
 const getColumnClass = (index, isHeader) => {
-  const customAlign = props.additionalColumnParameters.find(item => item.column === index);
-  if (customAlign) {
-    return `align-${customAlign.align}` // вернёт 'align-right','align-center' или 'align-left'
+  // 1. ЛОГИКА ДЛЯ ШАПКИ (isHeader === true)
+  // Шапка НИКОГДА не выравнивается по центру. 
+  // Работает только правило: правый край (если числовая или включён спец. флаг) или левый край.
+  if (isHeader) {
+    const shouldBeRight = isNumericColumn(index) || props.alignRightHeaderColumn
+    return shouldBeRight ? 'align-right' : 'align-left'
   }
+
+  // 2. ЛОГИКА ДЛЯ ТЕЛА ТАБЛИЦЫ (isHeader === false)
+  const customAlign = props.additionalColumnParameters?.find(item => item.column === index)?.align
+
+  // Приоритет А: Явное указание в additionalColumnParameters (включая 'center')
+  if (customAlign) {
+    return `align-${customAlign}`
+  }
+
+  // Приоритет Б: Глобальное выравнивание
   if (props.alignAllColumn) {
+    // Первая колонка всегда слева при глобальном right или center
     if ((props.alignAllColumn === 'right' || props.alignAllColumn === 'center') && index === 0) {
       return 'align-left'
     }
     return `align-${props.alignAllColumn}`
   }
+
+  // Приоритет В: Дефолтная логика для тела (первая колонка слева, числовые справа)
   if (index === 0) return 'align-left'
-
-  const shouldBeRight = isNumericColumn(index) || (isHeader && props.alignRightHeaderColumn)
-
-  return shouldBeRight ? 'align-right' : 'align-left'
-
+  
+  return isNumericColumn(index) ? 'align-right' : 'align-left'
 }
