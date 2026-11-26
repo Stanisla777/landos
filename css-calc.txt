@@ -14,42 +14,28 @@ export function useMaxValue(modelRef, maxValue, inputRef = null) {
       // 1. Сбрасываем значение на максимальное
       modelRef.value = cappedValue;
 
-      // 2. Исправляем "дрейф" курсора, если передан ref на инпут
+      // 2. Исправляем позицию курсора
       if (inputRef && inputRef.value) {
-        await nextTick(); // Ждем, пока Vue обновит DOM
-        
-        // Пытаемся добраться до нативного <input> внутри компонента DsInput
+        // Ждём, пока Vue обновит DOM
+        await nextTick();
+
+        // Находим нативный <input> внутри компонента DsInput
         const nativeInput = inputRef.value.$el 
           ? inputRef.value.$el.querySelector('input') 
           : inputRef.value;
 
         if (nativeInput && typeof nativeInput.setSelectionRange === 'function') {
-          // Принудительно ставим курсор в конец корректного значения
-          nativeInput.setSelectionRange(cappedValue.length, cappedValue.length);
+          // ⭐ ВАЖНО: Убеждаемся, что инпут в фокусе, иначе setSelectionRange не сработает
+          nativeInput.focus();
+
+          // ⭐ Используем setTimeout вместо второго nextTick, 
+          // чтобы дать браузеру гарантированно завершить отрисовку
+          setTimeout(() => {
+            const length = cappedValue.length;
+            nativeInput.setSelectionRange(length, length);
+          }, 0);
         }
       }
     }
   });
 }
-
-------------------
-
-ref="amountInput"
-setup() {
-    // 1. Создаем ref для доступа к DOM-элементу инпута
-    const amountInput = ref(null);
-
-    // 2. Инициализируем синхронизацию со Store
-    const { dataField } = useDebounceStoreSync(
-      'ActionApartmentPrice', 
-      () => store.getters.APARTMENTPRICE
-    );
-
-    // 3. ⭐ ПЕРЕДАЕМ ref в композабл ограничения
-    useMaxValue(dataField, 60000000, amountInput);
-
-    return {
-      dataField,
-      amountInput // Обязательно возвращаем ref, чтобы он работал в шаблоне
-    };
-  },
