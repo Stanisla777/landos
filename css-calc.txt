@@ -1,4 +1,68 @@
-if (element.value.replace(/\s/g, '') > count){
-        element.value=(count).toFixed(0)
-          .toString().replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
+// src/composables/useMaxValue.js
+import { watch, nextTick } from 'vue';
+
+export function useMaxValue(modelRef, maxValue, inputRef = null) {
+  watch(modelRef, async (newValue, oldValue) => {
+    if (!newValue) return;
+
+    const cleanStr = String(newValue).replace(/\s/g, '');
+    const num = parseFloat(cleanStr);
+    const maxFormatted = Number(maxValue).toLocaleString('ru-RU');
+
+    // Если значение уже равно максимальному, не трогаем его
+    if (newValue === maxFormatted || cleanStr === String(maxValue)) {
+      return;
+    }
+
+    // Если значение НЕ превышает максимум, тоже не трогаем
+    if (isNaN(num) || num <= maxValue) {
+      return;
+    }
+
+    // ⭐ ДОШЛИ СЮДА ЗНАЧИТ: значение действительно превысило максимум
+    // и нужно его обрезать до максимального
+    modelRef.value = maxFormatted;
+
+    // Исправляем позицию курсора
+    if (inputRef && inputRef.value) {
+      await nextTick();
+
+      const nativeInput = inputRef.value.$el 
+        ? inputRef.value.$el.querySelector('input') 
+        : inputRef.value;
+
+      if (nativeInput && typeof nativeInput.setSelectionRange === 'function') {
+        nativeInput.focus();
+        setTimeout(() => {
+          const length = maxFormatted.length;
+          nativeInput.setSelectionRange(length, length);
+        }, 0);
       }
+    }
+  });
+}
+
+--------------------
+
+ref="amountInput"
+import { ref } from 'vue';
+
+setup() {
+    // 1. Создаем ref для доступа к DOM-элементу инпута
+    const amountInput = ref(null);
+
+    // 2. Инициализируем синхронизацию со Store
+    const { dataField } = useDebounceStoreSync(
+      'ActionApartmentPrice',
+      () => store.getters.APARTMENTPRICE
+    );
+
+    // 3. Применяем ограничение максимального значения
+    useMaxValue(dataField, 60000000, amountInput);
+
+    // 4. Возвращаем переменные для использования в шаблоне
+    return {
+      dataField,
+      amountInput
+    };
+  },
