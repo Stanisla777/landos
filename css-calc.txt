@@ -1,4 +1,5 @@
 // src/composables/useMaxValue.js
+// src/composables/useMaxValue.js
 import { watch, nextTick } from 'vue';
 
 export function useMaxValue(modelRef, maxValue, inputRef = null) {
@@ -7,29 +8,32 @@ export function useMaxValue(modelRef, maxValue, inputRef = null) {
 
     const cleanStr = String(newValue).replace(/\s/g, '');
     const num = parseFloat(cleanStr);
+    
+    // ⭐ Форматируем максимальное значение для сравнения
+    const maxFormatted = Number(maxValue).toLocaleString('ru-RU');
+
+    // Если текущее значение уже равно максимальному, не трогаем его
+    if (cleanStr === String(maxValue) || newValue === maxFormatted) {
+      return;
+    }
 
     if (!isNaN(num) && num > maxValue) {
-      const cappedValue = Number(maxValue).toLocaleString('ru-RU');
+      const cappedValue = maxFormatted;
 
       // 1. Сбрасываем значение на максимальное
       modelRef.value = cappedValue;
 
       // 2. Исправляем позицию курсора
       if (inputRef && inputRef.value) {
-        // Ждём, пока Vue обновит DOM
         await nextTick();
 
-        // Находим нативный <input> внутри компонента DsInput
         const nativeInput = inputRef.value.$el 
           ? inputRef.value.$el.querySelector('input') 
           : inputRef.value;
 
         if (nativeInput && typeof nativeInput.setSelectionRange === 'function') {
-          // ⭐ ВАЖНО: Убеждаемся, что инпут в фокусе, иначе setSelectionRange не сработает
           nativeInput.focus();
 
-          // ⭐ Используем setTimeout вместо второго nextTick, 
-          // чтобы дать браузеру гарантированно завершить отрисовку
           setTimeout(() => {
             const length = cappedValue.length;
             nativeInput.setSelectionRange(length, length);
