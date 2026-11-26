@@ -1,109 +1,38 @@
 // src/composables/useMaxValue.js
-import { watch } from 'vue';
+import { watch, nextTick } from 'vue';
 
-export function useMaxValue(modelRef, maxValue) {
-  watch(modelRef, (newValue) => {
+export function useMaxValue(modelRef, maxValue, inputRef = null) {
+  watch(modelRef, async (newValue) => {
     if (!newValue) return;
 
-    // Убираем пробелы для корректного сравнения чисел
     const cleanStr = String(newValue).replace(/\s/g, '');
     const num = parseFloat(cleanStr);
 
     if (!isNaN(num) && num > maxValue) {
-      // Если превысили лимит, заменяем на максимальное значение 
-      // и сразу форматируем его с пробелами (например, "60 000 000")
-      modelRef.value = Number(maxValue).toLocaleString('ru-RU');
+      const cappedValue = Number(maxValue).toLocaleString('ru-RU');
+
+      // 1. Сбрасываем значение на максимальное
+      modelRef.value = cappedValue;
+
+      // 2. Исправляем "дрейф" курсора, если передан ref на инпут
+      if (inputRef && inputRef.value) {
+        await nextTick(); // Ждем, пока Vue обновит DOM
+        
+        // Пытаемся добраться до нативного <input> внутри компонента DsInput
+        const nativeInput = inputRef.value.$el 
+          ? inputRef.value.$el.querySelector('input') 
+          : inputRef.value;
+
+        if (nativeInput && typeof nativeInput.setSelectionRange === 'function') {
+          // Принудительно ставим курсор в конец корректного значения
+          nativeInput.setSelectionRange(cappedValue.length, cappedValue.length);
+        }
+      }
     }
   });
 }
 
------------
+------------------
 
-// src/composables/useDebounceStoreSync.js
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import store from "../store";
-import { debounce } from "../../../modules/debounce";
-
-export function useDebounceStoreSync(actionName, getInitialValue) {
-  const dataField = ref('');
-  const isInitialized = ref(false);
-  const skipNextWatch = ref(true);
-
-  // Создаем debounce-функцию
-  const debouncedUpdate = debounce((newValue) => {
-    if (skipNextWatch.value || !isInitialized.value) return;
-
-    const cleanedFields = String(newValue).replace(/\s/g, '');
-    store.dispatch('ActionShowLoader', true);
-
-    // Используем parseInt, так как для стоимости недвижимости дроби обычно не нужны
-    const valueToSave = cleanedFields === '' ? '' : parseInt(cleanedFields, 10);
-
-    store.dispatch(actionName, valueToSave)
-      .finally(() => {
-        store.dispatch('ActionShowLoader', false);
-      });
-  }, 500);
-
-  onMounted(() => {
-    skipNextWatch.value = true;
-
-    nextTick(() => {
-      // Получаем значение: поддерживаем как функцию-геттер, так и ComputedRef
-      const val = typeof getInitialValue === 'function' 
-        ? getInitialValue() 
-        : getInitialValue?.value;
-
-      if (val === 0 || val === '' || val === null || val === undefined) {
-        dataField.value = '';
-      } else {
-        // Если в Store число, форматируем его с пробелами для красивого отображения
-        dataField.value = typeof val === 'number' ? val.toLocaleString('ru-RU') : String(val);
-      }
-
-      nextTick(() => {
-        skipNextWatch.value = false;
-        isInitialized.value = true;
-      });
-    });
-  });
-
-  watch(dataField, (newValue) => {
-    if (skipNextWatch.value || !isInitialized.value) return;
-    debouncedUpdate(newValue);
-  });
-
-  onBeforeUnmount(() => {
-    debouncedUpdate.cancel();
-  });
-
-  // Возвращаем только то, что нужно компоненту
-  return {
-    dataField,
-    isInitialized,
-    skipNextWatch
-  };
-}
-
--------------------
-
-// Импортируем наши новые композаблы
-import { useDebounceStoreSync } from '../composables/useDebounceStoreSync';
-import { useMaxValue } from '../composables/useMaxValue';
-
-setup() {
-    // 1. Инициализируем синхронизацию со Store. 
-    // Передаем функцию, которая вернет актуальное значение геттера.
-    const { dataField } = useDebounceStoreSync(
-      'ActionApartmentPrice', 
-      () => store.getters.APARTMENTPRICE
-    );
-
-    // 2. Применяем ограничение максимального значения (например, 60 000 000)
-    useMaxValue(dataField, 60000000);
-
-    // 3. Возвращаем переменные, чтобы они были доступны в <template> и в Options API
-    return {
-      dataField
-    };
-  },
+ref="amountInput"
+useMaxValue(dataField, 60000000, amountInput);
