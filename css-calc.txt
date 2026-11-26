@@ -1,45 +1,82 @@
 // src/composables/useMaxValue.js
-// src/composables/useMaxValue.js
-import { watch, nextTick } from 'vue';
+import { watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
 export function useMaxValue(modelRef, maxValue, inputRef = null) {
-  watch(modelRef, async (newValue) => {
-    if (!newValue) return;
+  let nativeInput = null;
 
-    const cleanStr = String(newValue).replace(/\s/g, '');
-    const num = parseFloat(cleanStr);
-    
-    // ⭐ Форматируем максимальное значение для сравнения
-    const maxFormatted = Number(maxValue).toLocaleString('ru-RU');
+  // Достаём только цифры (для preset="amount" дробей нет)
+  const toNumber = (value) => {
+    const digits = String(value ?? '').replace(/[^\d]/g, '');
+    return digits === '' ? NaN : parseInt(digits, 10);
+  };
 
-    // Если текущее значение уже равно максимальному, не трогаем его
-    if (cleanStr === String(maxValue) || newValue === maxFormatted) {
-      return;
-    }
+  // Находим настоящий <input> внутри DsInput
+  const resolveInput = () => {
+    const target = inputRef?.value;
+    if (!target) return null;
+    if (target.tagName === 'INPUT') return target;
+    return target.$el?.querySelector?.('input') ?? target.querySelector?.('input') ?? null;
+  };
 
+  // ⭐ ГЛАВНОЕ: блокируем ввод ДО того, как символ попадёт в поле
+  const handleBeforeInput = (event) => {
+    // Удаление (Backspace/Delete) и вырезание не трогаем
+    if (event.inputType && !event.inputType.startsWith('insert')) return;
+
+    // Что именно вставляется: обычный ввод или вставка из буфера
+    const inserted = event.data ?? event.dataTransfer?.getData('text') ?? '';
+    if (!inserted) return;
+
+    const el = event.target;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+
+    // Собираем строку, которая ПОЛУЧИЛАСЬ БЫ после ввода
+    const prospective = el.value.slice(0, start) + inserted + el.value.slice(end);
+    const num = toNumber(prospective);
+
+    // Если результат больше лимита — отменяем ввод.
+    // Значение не изменится → курсор останется ровно на месте, без прыжков.
     if (!isNaN(num) && num > maxValue) {
-      const cappedValue = maxFormatted;
-
-      // 1. Сбрасываем значение на максимальное
-      modelRef.value = cappedValue;
-
-      // 2. Исправляем позицию курсора
-      if (inputRef && inputRef.value) {
-        await nextTick();
-
-        const nativeInput = inputRef.value.$el 
-          ? inputRef.value.$el.querySelector('input') 
-          : inputRef.value;
-
-        if (nativeInput && typeof nativeInput.setSelectionRange === 'function') {
-          nativeInput.focus();
-
-          setTimeout(() => {
-            const length = cappedValue.length;
-            nativeInput.setSelectionRange(length, length);
-          }, 0);
-        }
-      }
+      event.preventDefault();
     }
+  };
+
+  onMounted(() => {
+    nativeInput = resolveInput();
+    if (nativeInput) {
+      nativeInput.addEventListener('beforeinput', handleBeforeInput);
+    }
+  });
+
+  onBeforeUnmount(() => {
+    if (nativeInput) {
+      nativeInput.removeEventListener('beforeinput', handleBeforeInput);
+    }
+  });
+
+  // Страховка: программная установка значения или старые браузеры без beforeinput
+  watch(modelRef, async (newValue) => {
+    const num = toNumber(newValue);
+    if (isNaN(num) || num <= maxValue) return;
+
+    const cappedValue = Number(maxValue).toLocaleString('ru-RU');
+
+    // Если значение уже равно максимуму — ничего не делаем,
+    // чтобы не провоцировать лишнюю перерисовку и дёрганье курсора
+    if (String(newValue) === cappedValue) return;
+
+    modelRef.value = cappedValue;
+
+    const el = nativeInput || resolveInput();
+    if (!el || typeof el.setSelectionRange !== 'function') return;
+
+    await nextTick();
+    requestAnimationFrame(() => {
+      // Фокусим только если фокус потерялся (не трогаем активный инпут)
+      if (document.activeElement !== el) el.focus();
+      const len = el.value.length;
+      el.setSelectionRange(len, len);
+    });
   });
 }
