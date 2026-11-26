@@ -35,4 +35,21 @@ export function useMaxValue(modelRef, maxValue, inputRef = null) {
 ------------------
 
 ref="amountInput"
-useMaxValue(dataField, 60000000, amountInput);
+setup() {
+    // 1. Создаем ref для доступа к DOM-элементу инпута
+    const amountInput = ref(null);
+
+    // 2. Инициализируем синхронизацию со Store
+    const { dataField } = useDebounceStoreSync(
+      'ActionApartmentPrice', 
+      () => store.getters.APARTMENTPRICE
+    );
+
+    // 3. ⭐ ПЕРЕДАЕМ ref в композабл ограничения
+    useMaxValue(dataField, 60000000, amountInput);
+
+    return {
+      dataField,
+      amountInput // Обязательно возвращаем ref, чтобы он работал в шаблоне
+    };
+  },
