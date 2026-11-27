@@ -1,115 +1,174 @@
-<!-- Основной доход -->
-      <div class="input-story-container">
-        <DsInput
-          class="height-56"
-          v-model="fieldsIncome[item.modelInput]"
-          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
-          preset="amount"
-          labelPosition="inside"
-          :unit="''"
-          :maxlength="100"
-          :autocomplete="'off'"
-        />
+<DsInput
+            class="height-56"
+            v-model="fieldsIncome[item.modelInput]"
+            :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
+            preset="amount"
+            labelPosition="inside"
+            :unit="''"
+            :maxlength="100"
+            :autocomplete="'off'"
+          />
 
-data(){
+data() {
     return {
-      //поля средний доход по годам, заполняется в created
       fieldsIncome: {},
       isInitialized: false,
       skipNextWatch: true,
       isSanitizing: false
     }
   },
-computed:{
+computed: {
+    check_calculate_together() {
+      return store.getters.CHECKCALCULATETOGETHER;
+    },
     data_year() {
       return store.getters.DATAYEAR;
     },
-
-    array_all_income_period(){
-      if (this.view === 'man') {
-        return store.getters.ARRAYALLINCOMEPERIODMAN
-      } else {
-        return store.getters.ARRAYALLINCOMEPERIODWIFE
-      }
-
+    array_all_income_period() {
+      return store.getters.ARRAYALLINCOMEPERIODMAN;
     },
-
-    //этот компьютед не только получает со стор массив полей, но и вычисляет какие инпуты показывать в зависимости от выбранных лет
-    //на основе него по циклу формируются поля с доходом
     visibleBlockIncomePeriod() {
-      // Ищем индекс первого элемента, у которого isActive === true
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
-
-      // Если такой элемент не найден — возвращаю пустой массив
-      if (activeIndex === -1) return []
-
-      // Беру все элементы от начала до активного включительно
-      return this.array_all_income_period.slice(0, activeIndex + 1)
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
+      if (activeIndex === -1) return [];
+      return this.array_all_income_period.slice(0, activeIndex + 1);
     },
+    check_district_coefficient() {
+      return store.getters.CHECKDISTRICTCOEFFICIENTMAN;
+    },
+    interest_paid() {
+      return store.getters.INTERESTPAID
+    },
+    previousPaymentsMan() {
+      return store.getters.PREVIOUSPAYMENTSMAN
+    }
 
   },
-
 created() {
 
+    // 3. Создаем debounce-функцию
     this.debouncedIncomeUpdate = debounce((newFields) => {
       if (this.skipNextWatch || !this.isInitialized) return;
 
       const cleanedFields = {};
       for (const key in newFields) {
         const val = newFields[key];
-        if (typeof val === 'string' && (val === '.' || val.endsWith('.'))) {
-          continue;
-        }
-        // Теперь val для коэффициентов будет просто строкой (например, "1.5"),
-        // а не массивом. Умная очистка это корректно обработает.
+
+        // Умная очистка: не ломаем массивы/объекты от select
         if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
           cleanedFields[key] = val;
         } else {
           const cleanStr = String(val).replace(/\s/g, '');
-          cleanedFields[key] = cleanStr === '' ? '' : (isNaN(parseFloat(cleanStr)) ? cleanStr : parseFloat(cleanStr));
+          if (cleanStr === '') {
+            cleanedFields[key] = '';
+          } else {
+            const num = parseFloat(cleanStr);
+            cleanedFields[key] = isNaN(num) ? cleanStr : num;
+          }
         }
       }
 
       store.dispatch('ActionShowLoader', true);
-      const actionName = this.view === 'man' ? 'ActionInputIncomeMan' : 'ActionInputIncomeWife';
-
-      store.dispatch(actionName, cleanedFields).finally(() => {
-        store.dispatch('ActionShowLoader', false);
-      });
+      store.dispatch('ActionInputIncomeMan', cleanedFields)
+        .finally(() => {
+          store.dispatch('ActionShowLoader', false);
+        });
     }, 500);
   },
-  mounted(){
-    this.skipNextWatch = true;
-    this.$nextTick(() => {
-      this.syncFieldsFromStore();
-      this.$nextTick(() => {
-        this.skipNextWatch = false;
-        this.isInitialized = true;
-      });
-    });
-
-
-  },
-  watch: {
+watch: {
+    // 1. Реагирует на изменения в Store (клик по табу или загрузка)
     array_all_income_period: {
       handler() {
         this.skipNextWatch = true;
+        this.isSanitizing = true;
+
         this.$nextTick(() => {
-          this.syncFieldsFromStore();
+          const fields = {};
+          this.array_all_income_period.forEach(tab => {
+            fields[tab.modelInput] = tab.value ? Number(tab.value).toLocaleString('ru-RU') : '';
+
+            if (tab.additionalCoefficient) {
+              const baseKey = tab.additionalCoefficient.modelInput;
+              fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
+              fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
+            }
+          });
+
+          this.fieldsIncome = fields;
+
           this.$nextTick(() => {
             this.skipNextWatch = false;
+            this.isSanitizing = false;
             this.isInitialized = true;
           });
         });
       },
       deep: true
     },
+
+    // 2. Реагируем на ввод пользователя И применяем ограничение
     fieldsIncome: {
       handler(newValue) {
-        if (this.skipNextWatch || !this.isInitialized) return;
+        if (this.skipNextWatch || !this.isInitialized || this.isSanitizing) {
+          return;
+        }
+
+        const MAX_LIMIT = 10000000;
+        let needsCorrection = false;
+        const correctedFields = { ...newValue };
+        const validModelInputs = this.visibleBlockIncomePeriod.map(item => item.modelInput);
+
+        for (const key in correctedFields) {
+          if (validModelInputs.includes(key)) {
+            const cleanStr = String(correctedFields[key]).replace(/\s/g, '');
+            const num = parseFloat(cleanStr);
+
+            if (!isNaN(num) && num > MAX_LIMIT) {
+              correctedFields[key] = Number(MAX_LIMIT).toLocaleString('ru-RU');
+              needsCorrection = true;
+            }
+          }
+        }
+
+        if (needsCorrection) {
+          // 1. Блокируем вотчер
+          this.isSanitizing = true;
+          this.skipNextWatch = true;
+
+          // 2. Мгновенно перезаписываем значения
+          Object.assign(this.fieldsIncome, correctedFields);
+
+          // 3. ⭐ МАГИЯ ИСПРАВЛЕНИЯ КУРСОРА (как в useMaxValue)
+          this.$nextTick(() => {
+            // Находим именно тот input, в котором сейчас печатает пользователь
+            const activeInput = document.activeElement;
+
+            // Проверяем, что это действительно нативный input и он поддерживает управление курсором
+            if (activeInput && activeInput.tagName === 'INPUT' && typeof activeInput.setSelectionRange === 'function') {
+              const maxFormatted = Number(MAX_LIMIT).toLocaleString('ru-RU');
+
+              // Принудительно синхронизируем значение в DOM (на случай, если маска DsInput "отстала")
+              activeInput.value = maxFormatted;
+              activeInput.focus();
+
+              // Ждем отрисовки кадра, чтобы маска компонента успела отработать, и ставим курсор в конец
+              requestAnimationFrame(() => {
+                activeInput.setSelectionRange(maxFormatted.length, maxFormatted.length);
+              });
+            }
+
+            // 4. Снимаем блокировку
+            this.isSanitizing = false;
+            this.skipNextWatch = false;
+          });
+
+          // Прерываем выполнение, не вызывая debouncedUpdate для этой коррекции
+          return;
+        }
+
+        // Если коррекция не потребовалась, работаем как обычно
         this.debouncedIncomeUpdate(newValue);
       },
       deep: true,
       immediate: false
-    },
-  },
+    }
+}
