@@ -1,61 +1,64 @@
-handleIncomeInput(key, value) {
-    const MAX_LIMIT = 10000000;
-    const cleanStr = String(value).replace(/\s/g, '');
-    const num = parseFloat(cleanStr);
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import store from "../store";
+import { debounce } from "../../../modules/debounce";
 
-    let finalValue = value;
+export function useDebounceStoreSync(actionName, getInitialValue) {
+  const dataField = ref('');
+  const isInitialized = ref(false);
+  const skipNextWatch = ref(true);
 
-    // Если введено число и оно превышает лимит, сразу подменяем его на максимум
-    if (!isNaN(num) && num > MAX_LIMIT) {
-      finalValue = Number(MAX_LIMIT).toLocaleString('ru-RU'); // "10 000 000"
-    }
+  // Создаем debounce-функцию
+  const debouncedUpdate = debounce((newValue) => {
+    if (skipNextWatch.value || !isInitialized.value) return;
 
-    // Обновляем реактивный объект (в Vue 3 это работает без this.$set)
-    this.fieldsIncome[key] = finalValue;
+    const cleanedFields = String(newValue).replace(/\s/g, '');
+    store.dispatch('ActionShowLoader', true);
 
-    // Запускаем debounce для сохранения в стор. 
-    // Передаем копию объекта, чтобы debounce работал с актуальными данными.
-    if (this.debouncedIncomeUpdate) {
-      this.debouncedIncomeUpdate({ ...this.fieldsIncome });
-    }
-  },
+    // Используем parseInt, так как для стоимости недвижимости дроби обычно не нужны
+    const valueToSave = cleanedFields === '' ? '' : parseInt(cleanedFields, 10);
 
-watch: {
-  // Реагирует на изменения в Store (клик по табу или первоначальная загрузка)
-  array_all_income_period: {
-    handler() {
-      this.skipNextWatch = true;
-
-      this.$nextTick(() => {
-        const fields = {};
-        this.array_all_income_period.forEach(tab => {
-          // Форматируем число из стора для красивого отображения
-          fields[tab.modelInput] = tab.value ? Number(tab.value).toLocaleString('ru-RU') : '';
-
-          if (tab.additionalCoefficient) {
-            const baseKey = tab.additionalCoefficient.modelInput;
-            fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
-            fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
-          }
-        });
-        
-        this.fieldsIncome = fields;
-        
-        this.$nextTick(() => {
-          this.skipNextWatch = false;
-          this.isInitialized = true;
-        });
+    store.dispatch(actionName, valueToSave)
+      .finally(() => {
+        store.dispatch('ActionShowLoader', false);
       });
-    },
-    deep: true
-  }
-  
-  // Watcher на fieldsIncome для ввода пользователя УДАЛЕН. 
-  // Эту задачу теперь элегантно выполняет @update:modelValue + handleIncomeInput
-},
+  }, 500);
 
-beforeUnmount() {
-  if (this.debouncedIncomeUpdate) {
-    this.debouncedIncomeUpdate.cancel();
-  }
+  onMounted(() => {
+    skipNextWatch.value = true;
+
+    nextTick(() => {
+      // Получаем значение: поддерживаем как функцию-геттер, так и ComputedRef
+      const val = typeof getInitialValue === 'function'
+        ? getInitialValue()
+        : getInitialValue?.value;
+
+      if (val === 0 || val === '' || val === null || val === undefined) {
+        dataField.value = '';
+      } else {
+        // Если в Store число, форматируем его с пробелами для красивого отображения
+        dataField.value = typeof val === 'number' ? val.toLocaleString('ru-RU') : String(val);
+      }
+
+      nextTick(() => {
+        skipNextWatch.value = false;
+        isInitialized.value = true;
+      });
+    });
+  });
+
+  watch(dataField, (newValue) => {
+    if (skipNextWatch.value || !isInitialized.value) return;
+    debouncedUpdate(newValue);
+  });
+
+  onBeforeUnmount(() => {
+    debouncedUpdate.cancel();
+  });
+
+  // Возвращаем только то, что нужно компоненту
+  return {
+    dataField,
+    isInitialized,
+    skipNextWatch
+  };
 }
