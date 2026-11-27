@@ -1,159 +1,93 @@
-<div v-for="(item,index) in visibleBlockIncomePeriod" :key="item.id"  class="input-story-container">
-          <DsInput
-            class="height-56"
-            v-model="fieldsIncome[item.modelInput]"
-            :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
-            preset="amount"
-            labelPosition="inside"
-            :unit="''"
-            :maxlength="100"
-            :autocomplete="'off'"
-          />
-        </div>
+isSanitizing: false,
 
-computed: {
-    check_calculate_together() {
-      return store.getters.CHECKCALCULATETOGETHER;
-    },
-    data_year() {
-      return store.getters.DATAYEAR;
-    },
-    array_all_income_period() {
-      return store.getters.ARRAYALLINCOMEPERIODMAN;
-    },
-    visibleBlockIncomePeriod() {
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
-      if (activeIndex === -1) return [];
-      return this.array_all_income_period.slice(0, activeIndex + 1);
-    },
-    check_district_coefficient() {
-      return store.getters.CHECKDISTRICTCOEFFICIENTMAN;
-    },
-    interest_paid() {
-      return store.getters.INTERESTPAID
-    },
-    previousPaymentsMan() {
-      return store.getters.PREVIOUSPAYMENTSMAN
-    }
-
-  },
-
------------------------------------
+---------------
 
 watch: {
-    // Реагирует на изменения в Store (клик по табу)
-    array_all_income_period: {
-      handler() {
+  // 1. Реагирует на изменения в Store (клик по табу или загрузка)
+  array_all_income_period: {
+    handler() {
+      this.skipNextWatch = true;
+      this.isSanitizing = true; // Блокируем любые срабатывания во время синхронизации
+
+      this.$nextTick(() => {
+        const fields = {};
+        this.array_all_income_period.forEach(tab => {
+          fields[tab.modelInput] = tab.value ? Number(tab.value).toLocaleString('ru-RU') : '';
+
+          if (tab.additionalCoefficient) {
+            const baseKey = tab.additionalCoefficient.modelInput;
+            fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
+            fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
+          }
+        });
+        
+        this.fieldsIncome = fields;
+        
+        this.$nextTick(() => {
+          this.skipNextWatch = false;
+          this.isSanitizing = false; // Разблокируем после полной отрисовки
+          this.isInitialized = true;
+        });
+      });
+    },
+    deep: true
+  },
+
+  // 2. Реагируем на ввод пользователя И применяем ограничение
+  fieldsIncome: {
+    handler(newValue) {
+      // Если это программное изменение, компонент не готов или идет процесс санитизации — игнорируем
+      if (this.skipNextWatch || !this.isInitialized || this.isSanitizing) {
+        return;
+      }
+
+      const MAX_LIMIT = 10000000;
+      let needsCorrection = false;
+      
+      // Создаем копию объекта, чтобы безопасно менять значения во время итерации
+      const correctedFields = { ...newValue };
+
+      // Получаем список разрешенных ключей (только те, что привязаны к modelInput в v-for)
+      // Это защитит от случайной проверки полей коэффициентов (_district, _northern)
+      const validModelInputs = this.visibleBlockIncomePeriod.map(item => item.modelInput);
+
+      for (const key in correctedFields) {
+        if (validModelInputs.includes(key)) {
+          const cleanStr = String(correctedFields[key]).replace(/\s/g, '');
+          const num = parseFloat(cleanStr);
+
+          // Если введено число и оно больше лимита
+          if (!isNaN(num) && num > MAX_LIMIT) {
+            correctedFields[key] = Number(MAX_LIMIT).toLocaleString('ru-RU');
+            needsCorrection = true;
+          }
+        }
+      }
+
+      // Если мы обнаружили превышение лимита
+      if (needsCorrection) {
+        // 1. Блокируем вотчер, чтобы не вызвать debouncedUpdate для этого программного изменения
+        this.isSanitizing = true;
         this.skipNextWatch = true;
 
+        // 2. Мгновенно перезаписываем значения в реактивном объекте
+        Object.assign(this.fieldsIncome, correctedFields);
+
+        // 3. Снимаем блокировку в следующем тике, чтобы пользователь мог продолжать ввод
         this.$nextTick(() => {
-          const fields = {};
-          this.array_all_income_period.forEach(tab => {
-            fields[tab.modelInput] = tab.value || '';
-
-            if (tab.additionalCoefficient) {
-              const baseKey = tab.additionalCoefficient.modelInput;
-              fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
-              fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
-            }
-          });
-          this.fieldsIncome = fields;
-          this.$nextTick(() => {
-            this.skipNextWatch = false;
-            this.isInitialized = true;
-          });
+          this.isSanitizing = false;
+          this.skipNextWatch = false;
         });
-      },
-      deep: true
+
+        // Прерываем выполнение функции. Мы не вызываем debouncedUpdate, 
+        // так как это не действие пользователя, а наша автоматическая коррекция.
+        return;
+      }
+
+      // 3. Если коррекция не потребовалась, работаем как обычно (отправляем в стор с задержкой)
+      this.debouncedIncomeUpdate(newValue);
     },
-    // Реагируем на ввод пользователя
-    fieldsIncome: {
-      handler(newValue) {
-        if (this.skipNextWatch || !this.isInitialized) return;
-
-        this.debouncedIncomeUpdate(newValue);
-      },
-      deep: true,
-      immediate: false
-    },
-
-
-  },
-  beforeUnmount() {
-    if (this.debouncedIncomeUpdate) {
-      this.debouncedIncomeUpdate.cancel();
-    }
-
-из стор прихходит такой объект
-array_all_income_period_wife:[
-      {
-        //касается табов
-        "id": "1",
-        "text": "1 год",
-        "isActive": false,
-        "isShow":true,
-        //касается полей input
-        modelInput:'field_1',
-        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
-        //касается дополнительных полей при районных коффициентах или северных надбавках
-        additionalCoefficient : {
-          modelInput:'field_coefficient_1',
-          districtCoefficient:{
-            value:[{id: 1,label: '2'}],//значение выбранного районного коэффициенты
-            placeholder:'Районный коэффициент',
-            variant: districtCoefficient
-          },
-          northernAllowance:{
-            value:[{id: 1,label: '10'}],//значение выбранной северной надбавки
-            placeholder:'Северная надбавка',
-            variant:northernAllowance
-          }
-        }
-      },
-      {
-        //касается табов
-        "id": "2",
-        "text": "2 года",
-        "isActive": false,
-        "isShow":true,
-        //касается полей input
-        modelInput: 'field_2',
-        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
-        additionalCoefficient : {
-          "modelInput":'field_coefficient_2',
-          districtCoefficient:{
-            value: [{id: 2,label: '2'}],//значение выбранного районного коэффициенты
-            placeholder:'Районный коэффициент',
-            variant: districtCoefficient
-          },
-          northernAllowance:{
-            value:[{id: 1,label: '40'}],//значение выбранной северной надбавки
-            placeholder:'Северная надбавка',
-            variant:northernAllowance
-          }
-        }
-      },
-      {
-        //касается табов
-        "id": "3",
-        "text": "3 года",
-        "isActive": true,
-        "isShow":true,
-        //касается полей input
-        modelInput: 'field_3',
-        value:50000, //среднемесячный доход в году НУЖНО ДЛЯ РАСЧЁТА
-        additionalCoefficient : {
-          "modelInput":'field_coefficient_3',
-          districtCoefficient:{
-            value:[{id: 3,label: '2'}],//значение выбранного районного коэффициенты
-            placeholder:'Районный коэффициент',
-            variant: districtCoefficient
-          },
-          northernAllowance:{
-            value:[{id: 1,label: '40'}],//значение выбранной северной надбавки
-            placeholder:'Северная надбавка',
-            variant:northernAllowance
-          }
-        }
-      },
-    ],
+    deep: true,
+    immediate: false
+  }
+},
