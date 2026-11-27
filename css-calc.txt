@@ -1,59 +1,115 @@
-/* eslint-disable */
-import { watch, nextTick, unref } from 'vue';
+<!-- Основной доход -->
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncome[item.modelInput]"
+          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
+          preset="amount"
+          labelPosition="inside"
+          :unit="''"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
 
-export function useMaxValue(modelRef, maxValueRef, inputRef = null) {
-  
-  const applyLimit = async () => {
-    const currentVal = modelRef.value;
-    
-    if (!currentVal && currentVal !== '0') return;
-
-    const maxVal = unref(maxValueRef);
-    
-    if (maxVal === null || maxVal === undefined || maxVal === '') return;
-
-    const cleanStr = String(currentVal).replace(/\s/g, '');
-    const num = parseFloat(cleanStr);
-
-    if (isNaN(num) || num <= maxVal) {
-      return;
+data(){
+    return {
+      //поля средний доход по годам, заполняется в created
+      fieldsIncome: {},
+      isInitialized: false,
+      skipNextWatch: true,
+      isSanitizing: false
     }
+  },
+computed:{
+    data_year() {
+      return store.getters.DATAYEAR;
+    },
 
-    const maxFormatted = Number(maxVal).toLocaleString('ru-RU');
-    
-    if (currentVal === maxFormatted) return;
+    array_all_income_period(){
+      if (this.view === 'man') {
+        return store.getters.ARRAYALLINCOMEPERIODMAN
+      } else {
+        return store.getters.ARRAYALLINCOMEPERIODWIFE
+      }
 
-    // ⭐ Применяем то же решение, которое сработало в компоненте
-    modelRef.value = maxFormatted;
+    },
 
-    // Ждем следующего тика, чтобы Vue обновил реактивные данные
-    await nextTick();
+    //этот компьютед не только получает со стор массив полей, но и вычисляет какие инпуты показывать в зависимости от выбранных лет
+    //на основе него по циклу формируются поля с доходом
+    visibleBlockIncomePeriod() {
+      // Ищем индекс первого элемента, у которого isActive === true
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true)
 
-    // Работаем напрямую с активным DOM-элементом, минуя сложные внутренние механизмы компонента
-    const activeInput = document.activeElement;
-    
-    if (activeInput && activeInput.tagName === 'INPUT' && typeof activeInput.setSelectionRange === 'function') {
-      // Принудительно синхронизируем значение в DOM (на случай, если маска DsInput "отстала")
-      activeInput.value = maxFormatted;
-      activeInput.focus();
-      
-      // Ждем отрисовки кадра и ставим курсор в конец
-      requestAnimationFrame(() => {
-        activeInput.setSelectionRange(maxFormatted.length, maxFormatted.length);
+      // Если такой элемент не найден — возвращаю пустой массив
+      if (activeIndex === -1) return []
+
+      // Беру все элементы от начала до активного включительно
+      return this.array_all_income_period.slice(0, activeIndex + 1)
+    },
+
+  },
+
+created() {
+
+    this.debouncedIncomeUpdate = debounce((newFields) => {
+      if (this.skipNextWatch || !this.isInitialized) return;
+
+      const cleanedFields = {};
+      for (const key in newFields) {
+        const val = newFields[key];
+        if (typeof val === 'string' && (val === '.' || val.endsWith('.'))) {
+          continue;
+        }
+        // Теперь val для коэффициентов будет просто строкой (например, "1.5"),
+        // а не массивом. Умная очистка это корректно обработает.
+        if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
+          cleanedFields[key] = val;
+        } else {
+          const cleanStr = String(val).replace(/\s/g, '');
+          cleanedFields[key] = cleanStr === '' ? '' : (isNaN(parseFloat(cleanStr)) ? cleanStr : parseFloat(cleanStr));
+        }
+      }
+
+      store.dispatch('ActionShowLoader', true);
+      const actionName = this.view === 'man' ? 'ActionInputIncomeMan' : 'ActionInputIncomeWife';
+
+      store.dispatch(actionName, cleanedFields).finally(() => {
+        store.dispatch('ActionShowLoader', false);
       });
-    }
-  };
+    }, 500);
+  },
+  mounted(){
+    this.skipNextWatch = true;
+    this.$nextTick(() => {
+      this.syncFieldsFromStore();
+      this.$nextTick(() => {
+        this.skipNextWatch = false;
+        this.isInitialized = true;
+      });
+    });
 
-  // Следим за вводом пользователя
-  watch(modelRef, () => {
-    applyLimit();
-  });
 
-  // Следим за изменением самого лимита
-  watch(
-    () => unref(maxValueRef),
-    () => {
-      applyLimit();
-    }
-  );
-}
+  },
+  watch: {
+    array_all_income_period: {
+      handler() {
+        this.skipNextWatch = true;
+        this.$nextTick(() => {
+          this.syncFieldsFromStore();
+          this.$nextTick(() => {
+            this.skipNextWatch = false;
+            this.isInitialized = true;
+          });
+        });
+      },
+      deep: true
+    },
+    fieldsIncome: {
+      handler(newValue) {
+        if (this.skipNextWatch || !this.isInitialized) return;
+        this.debouncedIncomeUpdate(newValue);
+      },
+      deep: true,
+      immediate: false
+    },
+  },
