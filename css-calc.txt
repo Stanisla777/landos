@@ -1,1 +1,65 @@
-[{"begin":"2014","end":"2021","maxAmount":"3000000"},{"begin":"2022","end":"","maxAmount":"4000000"}]
+/* eslint-disable */
+import { watch, nextTick, unref } from 'vue';
+
+export function useMaxValue(modelRef, maxValueRef, inputRef = null) {
+  
+  // Выносим логику проверки и обрезки в отдельную функцию
+  const applyLimit = async () => {
+    const currentVal = modelRef.value;
+    
+    // Если поле пустое (но не '0'), ничего не делаем
+    if (!currentVal && currentVal !== '0') return;
+
+    // unref позволяет работать и с ref/computed, и с обычным числом (например, 60000000)
+    const maxVal = unref(maxValueRef);
+    
+    // Если лимит не задан, выходим
+    if (maxVal === null || maxVal === undefined || maxVal === '') return;
+
+    const cleanStr = String(currentVal).replace(/\s/g, '');
+    const num = parseFloat(cleanStr);
+
+    // Если значение корректно и не превышает лимит, ничего не делаем
+    if (isNaN(num) || num <= maxVal) {
+      return;
+    }
+
+    // ⭐ ДОШЛИ СЮДА: значение превышает лимит. Обрезаем его.
+    const maxFormatted = Number(maxVal).toLocaleString('ru-RU');
+    
+    // Меняем значение
+    modelRef.value = maxFormatted;
+
+    // Исправляем позицию курсора
+    if (inputRef && inputRef.value) {
+      await nextTick();
+      
+      const componentInstance = inputRef.value;
+      const nativeInput = componentInstance.$el
+        ? componentInstance.$el.querySelector('input')
+        : componentInstance;
+
+      if (nativeInput && typeof nativeInput.setSelectionRange === 'function') {
+        nativeInput.focus();
+        requestAnimationFrame(() => {
+          nativeInput.setSelectionRange(maxFormatted.length, maxFormatted.length);
+        });
+      }
+    }
+  };
+
+  // 1. Следим за вводом пользователя (изменением значения в поле)
+  watch(modelRef, () => {
+    applyLimit();
+  });
+
+  // 2. Следим за изменением самого лимита (например, при смене года)
+  // Использование геттера () => unref(maxValueRef) гарантирует реакцию, 
+  // если maxValueRef — это ref или computed. Если это просто число, watcher просто не сработает лишний раз, что нам и нужно.
+  watch(
+    () => unref(maxValueRef),
+    () => {
+      applyLimit();
+    }
+  );
+}
