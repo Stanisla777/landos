@@ -1,52 +1,11 @@
-// src/composables/useMaxValue.js
-import { watch, nextTick } from 'vue';
+Максимальное значение = значению Максимальной суммы вычета за проценты по ипотеке на год, указанный в поле "Год регистрации права собственности".
 
-export function useMaxValue(modelRef, maxValue, inputRef = null) {
-  watch(modelRef, async (newValue, oldValue) => {
-    if (!newValue) return;
+Максимальная сумма вычета за проценты по ипотеке - значение должно устанавливаться в админке, должна быть возможность внести разные значения для разных лет регистрации объекта. Для периода с 2014 и позднее необходимо указать Максимальную сумму вычета за проценты по ипотеке = 3 000 000. При изменении законодательства должна быть возможность указать окончание периода для суммы 3 000 000 (например, 2027 год) и дополнительно внести еще одну сумму для следующего периода (например, с 2028 года и позднее). Фронт должен запрашивать с бэка Максимальную сумма вычета за проценты по ипотеке на год, указанный в поле "Год регистрации права собственности".
 
-    const cleanStr = String(newValue).replace(/\s/g, '');
-    const num = parseFloat(cleanStr);
-    const maxFormatted = Number(maxValue).toLocaleString('ru-RU');
+[{"begin":"2014","end":"2027","maxAmount":"3000000"},{"begin":"2028","end":"","maxAmount":"4000000"}]
 
-    // Если значение уже равно максимальному, не трогаем его
-    if (newValue === maxFormatted || cleanStr === String(maxValue)) {
-      return;
-    }
 
-    // Если значение НЕ превышает максимум, тоже не трогаем
-    if (isNaN(num) || num <= maxValue) {
-      return;
-    }
-
-    // ⭐ ДОШЛИ СЮДА ЗНАЧИТ: значение действительно превысило максимум
-    // и нужно его обрезать до максимального
-    modelRef.value = maxFormatted;
-
-    // Исправляем позицию курсора
-    if (inputRef && inputRef.value) {
-      await nextTick();
-
-      const nativeInput = inputRef.value.$el 
-        ? inputRef.value.$el.querySelector('input') 
-        : inputRef.value;
-
-      if (nativeInput && typeof nativeInput.setSelectionRange === 'function') {
-        nativeInput.focus();
-        setTimeout(() => {
-          const length = maxFormatted.length;
-          nativeInput.setSelectionRange(length, length);
-        }, 0);
-      }
-    }
-  });
-}
-
---------------------
-
-ref="amountInput"
-import { ref } from 'vue';
-
+export default {
 setup() {
     // 1. Создаем ref для доступа к DOM-элементу инпута
     const amountInput = ref(null);
@@ -65,4 +24,3 @@ setup() {
       dataField,
       amountInput
     };
-  },
