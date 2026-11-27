@@ -1,79 +1,40 @@
-<DsInput
-            class="height-56"
-            v-model="fieldsIncome[item.modelInput]"
-            :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
-            preset="amount"
-            labelPosition="inside"
-            :unit="''"
-            :maxlength="100"
-            :autocomplete="'off'"
-          />
-
-data() {
-    return {
-      fieldsIncome: {},
-      isInitialized: false,
-      skipNextWatch: true,
-      isSanitizing: false
+props: {
+    view: {
+      type: String,
+      default: 'man' // или 'wife', в зависимости от того, как вы передаете пропс
     }
   },
-computed: {
-    check_calculate_together() {
-      return store.getters.CHECKCALCULATETOGETHER;
-    },
-    data_year() {
-      return store.getters.DATAYEAR;
-    },
-    array_all_income_period() {
-      return store.getters.ARRAYALLINCOMEPERIODMAN;
-    },
-    visibleBlockIncomePeriod() {
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
-      if (activeIndex === -1) return [];
-      return this.array_all_income_period.slice(0, activeIndex + 1);
-    },
-    check_district_coefficient() {
-      return store.getters.CHECKDISTRICTCOEFFICIENTMAN;
-    },
-    interest_paid() {
-      return store.getters.INTERESTPAID
-    },
-    previousPaymentsMan() {
-      return store.getters.PREVIOUSPAYMENTSMAN
-    }
 
-  },
 created() {
-
-    // 3. Создаем debounce-функцию
+    // Создаем debounce-функцию (ваша отличная логика очистки сохранена)
     this.debouncedIncomeUpdate = debounce((newFields) => {
       if (this.skipNextWatch || !this.isInitialized) return;
 
       const cleanedFields = {};
       for (const key in newFields) {
         const val = newFields[key];
-
-        // Умная очистка: не ломаем массивы/объекты от select
+        if (typeof val === 'string' && (val === '.' || val.endsWith('.'))) {
+          continue;
+        }
+        
         if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
           cleanedFields[key] = val;
         } else {
           const cleanStr = String(val).replace(/\s/g, '');
-          if (cleanStr === '') {
-            cleanedFields[key] = '';
-          } else {
-            const num = parseFloat(cleanStr);
-            cleanedFields[key] = isNaN(num) ? cleanStr : num;
-          }
+          cleanedFields[key] = cleanStr === '' ? '' : (isNaN(parseFloat(cleanStr)) ? cleanStr : parseFloat(cleanStr));
         }
       }
 
       store.dispatch('ActionShowLoader', true);
-      store.dispatch('ActionInputIncomeMan', cleanedFields)
-        .finally(() => {
-          store.dispatch('ActionShowLoader', false);
-        });
+      const actionName = this.view === 'man' ? 'ActionInputIncomeMan' : 'ActionInputIncomeWife';
+
+      store.dispatch(actionName, cleanedFields).finally(() => {
+        store.dispatch('ActionShowLoader', false);
+      });
     }, 500);
   },
+
+-------------------------------
 watch: {
     // 1. Реагирует на изменения в Store (клик по табу или загрузка)
     array_all_income_period: {
@@ -82,19 +43,7 @@ watch: {
         this.isSanitizing = true;
 
         this.$nextTick(() => {
-          const fields = {};
-          this.array_all_income_period.forEach(tab => {
-            fields[tab.modelInput] = tab.value ? Number(tab.value).toLocaleString('ru-RU') : '';
-
-            if (tab.additionalCoefficient) {
-              const baseKey = tab.additionalCoefficient.modelInput;
-              fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
-              fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
-            }
-          });
-
-          this.fieldsIncome = fields;
-
+          this.syncFieldsFromStore();
           this.$nextTick(() => {
             this.skipNextWatch = false;
             this.isSanitizing = false;
@@ -105,7 +54,7 @@ watch: {
       deep: true
     },
 
-    // 2. Реагируем на ввод пользователя И применяем ограничение
+    // 2. ⭐ ЗОЛОТОЙ WATCHER: Реагируем на ввод пользователя И применяем ограничение
     fieldsIncome: {
       handler(newValue) {
         if (this.skipNextWatch || !this.isInitialized || this.isSanitizing) {
@@ -130,45 +79,43 @@ watch: {
         }
 
         if (needsCorrection) {
-          // 1. Блокируем вотчер
+          // 1. Блокируем вотчер, чтобы не вызвать рекурсию
           this.isSanitizing = true;
           this.skipNextWatch = true;
 
-          // 2. Мгновенно перезаписываем значения
+          // 2. Мгновенно перезаписываем значения в реактивном объекте
           Object.assign(this.fieldsIncome, correctedFields);
 
-          // 3. ⭐ МАГИЯ ИСПРАВЛЕНИЯ КУРСОРА (как в useMaxValue)
+          // 3. ⭐ МАГИЯ ИСПРАВЛЕНИЯ КУРСОРА
           this.$nextTick(() => {
-            // Находим именно тот input, в котором сейчас печатает пользователь
             const activeInput = document.activeElement;
 
-            // Проверяем, что это действительно нативный input и он поддерживает управление курсором
             if (activeInput && activeInput.tagName === 'INPUT' && typeof activeInput.setSelectionRange === 'function') {
               const maxFormatted = Number(MAX_LIMIT).toLocaleString('ru-RU');
 
-              // Принудительно синхронизируем значение в DOM (на случай, если маска DsInput "отстала")
+              // Принудительно синхронизируем значение в DOM, стирая артефакты маски
               activeInput.value = maxFormatted;
               activeInput.focus();
 
-              // Ждем отрисовки кадра, чтобы маска компонента успела отработать, и ставим курсор в конец
+              // Ждем отрисовки кадра и ставим курсор в конец
               requestAnimationFrame(() => {
                 activeInput.setSelectionRange(maxFormatted.length, maxFormatted.length);
               });
             }
 
-            // 4. Снимаем блокировку
+            // 4. Снимаем блокировку, чтобы пользователь мог продолжать ввод
             this.isSanitizing = false;
             this.skipNextWatch = false;
           });
 
-          // Прерываем выполнение, не вызывая debouncedUpdate для этой коррекции
+          // Прерываем выполнение, не вызывая debouncedUpdate для этой программной коррекции
           return;
         }
 
-        // Если коррекция не потребовалась, работаем как обычно
+        // Если коррекция не потребовалась, работаем как обычно (отправляем в стор с задержкой)
         this.debouncedIncomeUpdate(newValue);
       },
       deep: true,
       immediate: false
     }
-}
+  },
