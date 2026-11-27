@@ -1,98 +1,59 @@
-watch: {
-  // 1. Реагирует на изменения в Store (клик по табу или загрузка)
-  array_all_income_period: {
-    handler() {
-      this.skipNextWatch = true;
-      this.isSanitizing = true; 
+/* eslint-disable */
+import { watch, nextTick, unref } from 'vue';
 
-      this.$nextTick(() => {
-        const fields = {};
-        this.array_all_income_period.forEach(tab => {
-          fields[tab.modelInput] = tab.value ? Number(tab.value).toLocaleString('ru-RU') : '';
+export function useMaxValue(modelRef, maxValueRef, inputRef = null) {
+  
+  const applyLimit = async () => {
+    const currentVal = modelRef.value;
+    
+    if (!currentVal && currentVal !== '0') return;
 
-          if (tab.additionalCoefficient) {
-            const baseKey = tab.additionalCoefficient.modelInput;
-            fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
-            fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
-          }
-        });
+    const maxVal = unref(maxValueRef);
+    
+    if (maxVal === null || maxVal === undefined || maxVal === '') return;
 
-        this.fieldsIncome = fields;
+    const cleanStr = String(currentVal).replace(/\s/g, '');
+    const num = parseFloat(cleanStr);
 
-        this.$nextTick(() => {
-          this.skipNextWatch = false;
-          this.isSanitizing = false; 
-          this.isInitialized = true;
-        });
+    if (isNaN(num) || num <= maxVal) {
+      return;
+    }
+
+    const maxFormatted = Number(maxVal).toLocaleString('ru-RU');
+    
+    if (currentVal === maxFormatted) return;
+
+    // ⭐ Применяем то же решение, которое сработало в компоненте
+    modelRef.value = maxFormatted;
+
+    // Ждем следующего тика, чтобы Vue обновил реактивные данные
+    await nextTick();
+
+    // Работаем напрямую с активным DOM-элементом, минуя сложные внутренние механизмы компонента
+    const activeInput = document.activeElement;
+    
+    if (activeInput && activeInput.tagName === 'INPUT' && typeof activeInput.setSelectionRange === 'function') {
+      // Принудительно синхронизируем значение в DOM (на случай, если маска DsInput "отстала")
+      activeInput.value = maxFormatted;
+      activeInput.focus();
+      
+      // Ждем отрисовки кадра и ставим курсор в конец
+      requestAnimationFrame(() => {
+        activeInput.setSelectionRange(maxFormatted.length, maxFormatted.length);
       });
-    },
-    deep: true
-  },
+    }
+  };
 
-  // 2. Реагируем на ввод пользователя И применяем ограничение
-  fieldsIncome: {
-    handler(newValue) {
-      if (this.skipNextWatch || !this.isInitialized || this.isSanitizing) {
-        return;
-      }
+  // Следим за вводом пользователя
+  watch(modelRef, () => {
+    applyLimit();
+  });
 
-      const MAX_LIMIT = 10000000;
-      let needsCorrection = false;
-      const correctedFields = { ...newValue };
-      const validModelInputs = this.visibleBlockIncomePeriod.map(item => item.modelInput);
-
-      for (const key in correctedFields) {
-        if (validModelInputs.includes(key)) {
-          const cleanStr = String(correctedFields[key]).replace(/\s/g, '');
-          const num = parseFloat(cleanStr);
-
-          if (!isNaN(num) && num > MAX_LIMIT) {
-            correctedFields[key] = Number(MAX_LIMIT).toLocaleString('ru-RU');
-            needsCorrection = true;
-          }
-        }
-      }
-
-      if (needsCorrection) {
-        // 1. Блокируем вотчер
-        this.isSanitizing = true;
-        this.skipNextWatch = true;
-
-        // 2. Мгновенно перезаписываем значения
-        Object.assign(this.fieldsIncome, correctedFields);
-
-        // 3. ⭐ МАГИЯ ИСПРАВЛЕНИЯ КУРСОРА (как в useMaxValue)
-        this.$nextTick(() => {
-          // Находим именно тот input, в котором сейчас печатает пользователь
-          const activeInput = document.activeElement;
-          
-          // Проверяем, что это действительно нативный input и он поддерживает управление курсором
-          if (activeInput && activeInput.tagName === 'INPUT' && typeof activeInput.setSelectionRange === 'function') {
-            const maxFormatted = Number(MAX_LIMIT).toLocaleString('ru-RU');
-            
-            // Принудительно синхронизируем значение в DOM (на случай, если маска DsInput "отстала")
-            activeInput.value = maxFormatted;
-            activeInput.focus();
-            
-            // Ждем отрисовки кадра, чтобы маска компонента успела отработать, и ставим курсор в конец
-            requestAnimationFrame(() => {
-              activeInput.setSelectionRange(maxFormatted.length, maxFormatted.length);
-            });
-          }
-
-          // 4. Снимаем блокировку
-          this.isSanitizing = false;
-          this.skipNextWatch = false;
-        });
-
-        // Прерываем выполнение, не вызывая debouncedUpdate для этой коррекции
-        return;
-      }
-
-      // Если коррекция не потребовалась, работаем как обычно
-      this.debouncedIncomeUpdate(newValue);
-    },
-    deep: true,
-    immediate: false
-  }
+  // Следим за изменением самого лимита
+  watch(
+    () => unref(maxValueRef),
+    () => {
+      applyLimit();
+    }
+  );
 }
