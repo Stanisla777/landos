@@ -1,93 +1,64 @@
-isSanitizing: false,
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import store from "../store";
+import { debounce } from "../../../modules/debounce";
 
----------------
+export function useDebounceStoreSync(actionName, getInitialValue) {
+  const dataField = ref('');
+  const isInitialized = ref(false);
+  const skipNextWatch = ref(true);
 
-watch: {
-  // 1. Реагирует на изменения в Store (клик по табу или загрузка)
-  array_all_income_period: {
-    handler() {
-      this.skipNextWatch = true;
-      this.isSanitizing = true; // Блокируем любые срабатывания во время синхронизации
+  // Создаем debounce-функцию
+  const debouncedUpdate = debounce((newValue) => {
+    if (skipNextWatch.value || !isInitialized.value) return;
 
-      this.$nextTick(() => {
-        const fields = {};
-        this.array_all_income_period.forEach(tab => {
-          fields[tab.modelInput] = tab.value ? Number(tab.value).toLocaleString('ru-RU') : '';
+    const cleanedFields = String(newValue).replace(/\s/g, '');
+    store.dispatch('ActionShowLoader', true);
 
-          if (tab.additionalCoefficient) {
-            const baseKey = tab.additionalCoefficient.modelInput;
-            fields[baseKey + '_district'] = tab.additionalCoefficient.districtCoefficient.value || '';
-            fields[baseKey + '_northern'] = tab.additionalCoefficient.northernAllowance.value || '';
-          }
-        });
-        
-        this.fieldsIncome = fields;
-        
-        this.$nextTick(() => {
-          this.skipNextWatch = false;
-          this.isSanitizing = false; // Разблокируем после полной отрисовки
-          this.isInitialized = true;
-        });
+    // Используем parseInt, так как для стоимости недвижимости дроби обычно не нужны
+    const valueToSave = cleanedFields === '' ? '' : parseInt(cleanedFields, 10);
+
+    store.dispatch(actionName, valueToSave)
+      .finally(() => {
+        store.dispatch('ActionShowLoader', false);
       });
-    },
-    deep: true
-  },
+  }, 500);
 
-  // 2. Реагируем на ввод пользователя И применяем ограничение
-  fieldsIncome: {
-    handler(newValue) {
-      // Если это программное изменение, компонент не готов или идет процесс санитизации — игнорируем
-      if (this.skipNextWatch || !this.isInitialized || this.isSanitizing) {
-        return;
+  onMounted(() => {
+    skipNextWatch.value = true;
+
+    nextTick(() => {
+      // Получаем значение: поддерживаем как функцию-геттер, так и ComputedRef
+      const val = typeof getInitialValue === 'function'
+        ? getInitialValue()
+        : getInitialValue?.value;
+
+      if (val === 0 || val === '' || val === null || val === undefined) {
+        dataField.value = '';
+      } else {
+        // Если в Store число, форматируем его с пробелами для красивого отображения
+        dataField.value = typeof val === 'number' ? val.toLocaleString('ru-RU') : String(val);
       }
 
-      const MAX_LIMIT = 10000000;
-      let needsCorrection = false;
-      
-      // Создаем копию объекта, чтобы безопасно менять значения во время итерации
-      const correctedFields = { ...newValue };
+      nextTick(() => {
+        skipNextWatch.value = false;
+        isInitialized.value = true;
+      });
+    });
+  });
 
-      // Получаем список разрешенных ключей (только те, что привязаны к modelInput в v-for)
-      // Это защитит от случайной проверки полей коэффициентов (_district, _northern)
-      const validModelInputs = this.visibleBlockIncomePeriod.map(item => item.modelInput);
+  watch(dataField, (newValue) => {
+    if (skipNextWatch.value || !isInitialized.value) return;
+    debouncedUpdate(newValue);
+  });
 
-      for (const key in correctedFields) {
-        if (validModelInputs.includes(key)) {
-          const cleanStr = String(correctedFields[key]).replace(/\s/g, '');
-          const num = parseFloat(cleanStr);
+  onBeforeUnmount(() => {
+    debouncedUpdate.cancel();
+  });
 
-          // Если введено число и оно больше лимита
-          if (!isNaN(num) && num > MAX_LIMIT) {
-            correctedFields[key] = Number(MAX_LIMIT).toLocaleString('ru-RU');
-            needsCorrection = true;
-          }
-        }
-      }
-
-      // Если мы обнаружили превышение лимита
-      if (needsCorrection) {
-        // 1. Блокируем вотчер, чтобы не вызвать debouncedUpdate для этого программного изменения
-        this.isSanitizing = true;
-        this.skipNextWatch = true;
-
-        // 2. Мгновенно перезаписываем значения в реактивном объекте
-        Object.assign(this.fieldsIncome, correctedFields);
-
-        // 3. Снимаем блокировку в следующем тике, чтобы пользователь мог продолжать ввод
-        this.$nextTick(() => {
-          this.isSanitizing = false;
-          this.skipNextWatch = false;
-        });
-
-        // Прерываем выполнение функции. Мы не вызываем debouncedUpdate, 
-        // так как это не действие пользователя, а наша автоматическая коррекция.
-        return;
-      }
-
-      // 3. Если коррекция не потребовалась, работаем как обычно (отправляем в стор с задержкой)
-      this.debouncedIncomeUpdate(newValue);
-    },
-    deep: true,
-    immediate: false
-  }
-},
+  // Возвращаем только то, что нужно компоненту
+  return {
+    dataField,
+    isInitialized,
+    skipNextWatch
+  };
+}
