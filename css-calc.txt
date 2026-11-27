@@ -4,7 +4,9 @@
 
 [{"begin":"2014","end":"2027","maxAmount":"3000000"},{"begin":"2028","end":"","maxAmount":"4000000"}]
 
-
+<script>
+import {useDebounceStoreSync} from '../composible/useDebounceStoreSync';
+import { useMaxValue } from '../../ComponentsVue/composables/useMaxValue';
 export default {
 setup() {
     // 1. Создаем ref для доступа к DOM-элементу инпута
@@ -24,3 +26,118 @@ setup() {
       dataField,
       amountInput
     };
+
+------------------
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import store from "../store";
+import { debounce } from "../../../modules/debounce";
+
+export function useDebounceStoreSync(actionName, getInitialValue) {
+  console.log('getInitialValue');
+  console.log(getInitialValue);
+  const dataField = ref('');
+  const isInitialized = ref(false);
+  const skipNextWatch = ref(true);
+
+  // Создаем debounce-функцию
+  const debouncedUpdate = debounce((newValue) => {
+    if (skipNextWatch.value || !isInitialized.value) return;
+
+    const cleanedFields = String(newValue).replace(/\s/g, '');
+    store.dispatch('ActionShowLoader', true);
+
+    // Используем parseInt, так как для стоимости недвижимости дроби обычно не нужны
+    const valueToSave = cleanedFields === '' ? '' : parseInt(cleanedFields, 10);
+
+    store.dispatch(actionName, valueToSave)
+      .finally(() => {
+        store.dispatch('ActionShowLoader', false);
+      });
+  }, 500);
+
+  onMounted(() => {
+    skipNextWatch.value = true;
+
+    nextTick(() => {
+      // Получаем значение: поддерживаем как функцию-геттер, так и ComputedRef
+      const val = typeof getInitialValue === 'function'
+        ? getInitialValue()
+        : getInitialValue?.value;
+
+      if (val === 0 || val === '' || val === null || val === undefined) {
+        dataField.value = '';
+      } else {
+        // Если в Store число, форматируем его с пробелами для красивого отображения
+        dataField.value = typeof val === 'number' ? val.toLocaleString('ru-RU') : String(val);
+      }
+
+      nextTick(() => {
+        skipNextWatch.value = false;
+        isInitialized.value = true;
+      });
+    });
+  });
+
+  watch(dataField, (newValue) => {
+    if (skipNextWatch.value || !isInitialized.value) return;
+    debouncedUpdate(newValue);
+  });
+
+  onBeforeUnmount(() => {
+    debouncedUpdate.cancel();
+  });
+
+  // Возвращаем только то, что нужно компоненту
+  return {
+    dataField,
+    isInitialized,
+    skipNextWatch
+  };
+}
+-----------------------------
+/* eslint-disable */
+import { watch, nextTick } from 'vue';
+
+export function useMaxValue(modelRef, maxValue, inputRef = null) {
+  console.log(modelRef);
+
+  watch(modelRef, async (newValue, oldValue) => {
+    if (!newValue) return;
+
+    const cleanStr = String(newValue).replace(/\s/g, '');
+    const num = parseFloat(cleanStr);
+    const maxFormatted = Number(maxValue).toLocaleString('ru-RU');
+
+    // Если значение уже равно максимальному, не трогаем его
+    if (newValue === maxFormatted || cleanStr === String(maxValue)) {
+      return;
+    }
+
+    // Если значение НЕ превышает максимум, тоже не трогаем
+    if (isNaN(num) || num <= maxValue) {
+      return;
+    }
+
+    // ⭐ ДОШЛИ СЮДА ЗНАЧИТ: значение действительно превысило максимум
+    // и нужно его обрезать до максимального
+    modelRef.value = maxFormatted;
+
+    // Исправляем позицию курсора
+    if (inputRef && inputRef.value) {
+      await nextTick();
+
+      const nativeInput = inputRef.value.$el
+        ? inputRef.value.$el.querySelector('input')
+        : inputRef.value;
+
+      if (nativeInput && typeof nativeInput.setSelectionRange === 'function') {
+        nativeInput.focus();
+        setTimeout(() => {
+          const length = maxFormatted.length;
+          nativeInput.setSelectionRange(length, length);
+        }, 0);
+      }
+    }
+  });
+}
+
