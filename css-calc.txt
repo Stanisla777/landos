@@ -1,33 +1,36 @@
-computed:{
-data_year() {
-      return store.getters.DATAYEAR;
-    },
-    array_all_income_period() {
-      return store.getters.ARRAYALLINCOMEPERIODMAN;
-    },
-    visibleBlockIncomePeriod() {
-      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
-      if (activeIndex === -1) return [];
-      return this.array_all_income_period.slice(0, activeIndex + 1);
-    },
-}
-
-<div class="calc-tax-deduc-new__block-subtitle small-grey">
-      <p>Данные за {{data_year + index}} год</p>
+<div v-for="(item, index) in visibleBlockIncomePeriodReversed" :key="item.id">
+    <div class="calc-tax-deduc-new__block-subtitle small-grey">
+      <p>Данные за {{ getDisplayYear(index) }} год</p>
     </div>
+    
     <div class="calc-tax-deduc-new__row-three-column">
-
-      <!-- Основной доход -->
       <div class="input-story-container">
         <DsInput
           class="height-56"
           v-model="fieldsIncome[item.modelInput]"
-          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
+          :label="'Среднемесячный доход в ' + getDisplayYear(index) + ' году, ₽'"
           preset="amount"
           labelPosition="inside"
           :unit="''"
           :maxlength="100"
           :autocomplete="'off'"
         />
-
       </div>
+      <!-- остальные поля -->
+    </div>
+  </div>
+
+visibleBlockIncomePeriodReversed() {
+      // slice() создаёт копию, чтобы не мутировать исходный массив
+      return this.visibleBlockIncomePeriod.slice().reverse();
+    }
+
+
+---------------
+
+getDisplayYear(index) {
+      const totalItems = this.visibleBlockIncomePeriod.length;
+      // Формула: последний год в исходном массиве минус текущий index
+      return this.data_year + (totalItems - 1 - index);
+    }
+
