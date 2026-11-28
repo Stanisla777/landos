@@ -1,121 +1,33 @@
-props: {
-    view: {
-      type: String,
-      default: 'man' // или 'wife', в зависимости от того, как вы передаете пропс
-    }
-  },
-
-created() {
-    // Создаем debounce-функцию (ваша отличная логика очистки сохранена)
-    this.debouncedIncomeUpdate = debounce((newFields) => {
-      if (this.skipNextWatch || !this.isInitialized) return;
-
-      const cleanedFields = {};
-      for (const key in newFields) {
-        const val = newFields[key];
-        if (typeof val === 'string' && (val === '.' || val.endsWith('.'))) {
-          continue;
-        }
-        
-        if (Array.isArray(val) || (typeof val === 'object' && val !== null)) {
-          cleanedFields[key] = val;
-        } else {
-          const cleanStr = String(val).replace(/\s/g, '');
-          cleanedFields[key] = cleanStr === '' ? '' : (isNaN(parseFloat(cleanStr)) ? cleanStr : parseFloat(cleanStr));
-        }
-      }
-
-      store.dispatch('ActionShowLoader', true);
-      const actionName = this.view === 'man' ? 'ActionInputIncomeMan' : 'ActionInputIncomeWife';
-
-      store.dispatch(actionName, cleanedFields).finally(() => {
-        store.dispatch('ActionShowLoader', false);
-      });
-    }, 500);
-  },
-
--------------------------------
-watch: {
-    // 1. Реагирует на изменения в Store (клик по табу или загрузка)
-    array_all_income_period: {
-      handler() {
-        this.skipNextWatch = true;
-        this.isSanitizing = true;
-
-        this.$nextTick(() => {
-          this.syncFieldsFromStore();
-          this.$nextTick(() => {
-            this.skipNextWatch = false;
-            this.isSanitizing = false;
-            this.isInitialized = true;
-          });
-        });
-      },
-      deep: true
+computed:{
+data_year() {
+      return store.getters.DATAYEAR;
     },
+    array_all_income_period() {
+      return store.getters.ARRAYALLINCOMEPERIODMAN;
+    },
+    visibleBlockIncomePeriod() {
+      const activeIndex = this.array_all_income_period.findIndex(tab => tab.isActive === true);
+      if (activeIndex === -1) return [];
+      return this.array_all_income_period.slice(0, activeIndex + 1);
+    },
+}
 
-    // 2. ⭐ ЗОЛОТОЙ WATCHER: Реагируем на ввод пользователя И применяем ограничение
-    fieldsIncome: {
-      handler(newValue) {
-        if (this.skipNextWatch || !this.isInitialized || this.isSanitizing) {
-          return;
-        }
+<div class="calc-tax-deduc-new__block-subtitle small-grey">
+      <p>Данные за {{data_year + index}} год</p>
+    </div>
+    <div class="calc-tax-deduc-new__row-three-column">
 
-        const MAX_LIMIT = 10000000;
-        let needsCorrection = false;
-        const correctedFields = { ...newValue };
-        const validModelInputs = this.visibleBlockIncomePeriod.map(item => item.modelInput);
+      <!-- Основной доход -->
+      <div class="input-story-container">
+        <DsInput
+          class="height-56"
+          v-model="fieldsIncome[item.modelInput]"
+          :label="'Среднемесячный доход в ' + (data_year + index) + ' году, ₽'"
+          preset="amount"
+          labelPosition="inside"
+          :unit="''"
+          :maxlength="100"
+          :autocomplete="'off'"
+        />
 
-        for (const key in correctedFields) {
-          if (validModelInputs.includes(key)) {
-            const cleanStr = String(correctedFields[key]).replace(/\s/g, '');
-            const num = parseFloat(cleanStr);
-
-            if (!isNaN(num) && num > MAX_LIMIT) {
-              correctedFields[key] = Number(MAX_LIMIT).toLocaleString('ru-RU');
-              needsCorrection = true;
-            }
-          }
-        }
-
-        if (needsCorrection) {
-          // 1. Блокируем вотчер, чтобы не вызвать рекурсию
-          this.isSanitizing = true;
-          this.skipNextWatch = true;
-
-          // 2. Мгновенно перезаписываем значения в реактивном объекте
-          Object.assign(this.fieldsIncome, correctedFields);
-
-          // 3. ⭐ МАГИЯ ИСПРАВЛЕНИЯ КУРСОРА
-          this.$nextTick(() => {
-            const activeInput = document.activeElement;
-
-            if (activeInput && activeInput.tagName === 'INPUT' && typeof activeInput.setSelectionRange === 'function') {
-              const maxFormatted = Number(MAX_LIMIT).toLocaleString('ru-RU');
-
-              // Принудительно синхронизируем значение в DOM, стирая артефакты маски
-              activeInput.value = maxFormatted;
-              activeInput.focus();
-
-              // Ждем отрисовки кадра и ставим курсор в конец
-              requestAnimationFrame(() => {
-                activeInput.setSelectionRange(maxFormatted.length, maxFormatted.length);
-              });
-            }
-
-            // 4. Снимаем блокировку, чтобы пользователь мог продолжать ввод
-            this.isSanitizing = false;
-            this.skipNextWatch = false;
-          });
-
-          // Прерываем выполнение, не вызывая debouncedUpdate для этой программной коррекции
-          return;
-        }
-
-        // Если коррекция не потребовалась, работаем как обычно (отправляем в стор с задержкой)
-        this.debouncedIncomeUpdate(newValue);
-      },
-      deep: true,
-      immediate: false
-    }
-  },
+      </div>
